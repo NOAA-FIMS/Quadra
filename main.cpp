@@ -31,28 +31,6 @@ struct NormalModel
     }
 };
 
-// struct REModel {
-//     double y;
-
-//     template <typename T>
-//     T operator()(const std::vector<T>& p) const {
-//         T mu = p[0];     // fixed
-//         T u  = p[1];     // random
-
-//         T sigma = 1.0;
-
-//         T nll = 0.0;
-
-//         // likelihood
-//         nll += 0.5 * (y - (mu + u))*(y - (mu + u));
-
-//         // random effect prior
-//         nll += 0.5 * u*u;
-
-//         return nll;
-//     }
-// };
-
 struct GaussianQuadratic
 {
 
@@ -103,21 +81,6 @@ quadra::ParameterVector to_parameters(const Eigen::VectorXd &x)
     }
     return p;
 }
-//  TestFunctor f;
-// // pelagia::ParameterVector params;
-// //  params.add({"x1", 0.0});
-// //  params.add({"x2", 0.0});
-// Eigen::VectorXd x(2);
-//  x << 0, 0;
-// pelagia::ParameterVector params = to_parameters(x);
-// for (auto& p : params.params) {
-//     p.is_random = false; // make all parameters fixed for this test
-//     std::cout << "is_random=" << p.is_random
-//               << " value=" << p.value << "\n";
-// }
-// // pelagia::LBFGSObjective<double> solver(f, x);
-
-// auto res = pelagia::optimize_lbfgs(f, params);
 
 struct REModel
 {
@@ -271,7 +234,7 @@ void test_scaled()
     for (int size : sizes)
     {
 
-        std::cout << "\n"
+        std::cout << "\nTest "
                   << run++ << ":" << "Testing ScaledREModel with n_random = " << size << "\n\n";
         AR1REModel model{size, 5.0};
 
@@ -309,19 +272,6 @@ int main()
 {
 
     test_scaled();
-    // pelagia::ParameterVector params;
-
-    // params.add({"mu", 0.0});                                     // fixed
-    // params.add({"u0", 0.0, pelagia::Transform::Identity, true}); // random
-    // params.add({"u1", 0.0, pelagia::Transform::Identity, true}); // random
-
-    // REModel2Nonlinear model{5.0};
-
-    // auto res = pelagia::optimize_lbfgs(model, params);
-
-    // std::cout << "final value: " << res.value << "\n";
-    // std::cout<< "final par: " << params.params[0].value << "\n";
-    // std::cout<< "final par: " << params.params[1].value << "\n";
 
     return 0;
 }

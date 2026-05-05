@@ -1,8 +1,7 @@
 CXX      := clang++
 CXXFLAGS := -std=c++17 -O3 -Icore/eigen
-TARGET   := main
+TARGET   := quadra_example
 SRC      := main.cpp
-
 all: $(TARGET)
 
 $(TARGET): $(SRC)
