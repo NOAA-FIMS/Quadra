@@ -58,47 +58,47 @@ namespace quadra
             graph.Clear();
         }
     };
-    struct ADEngine
-    {
-        had::ADGraph &graph;
+    // struct ADEngine
+    // {
+    //     had::ADGraph &graph;
 
-        explicit ADEngine(had::ADGraph &g) : graph(g)
-        {
-            had::g_ADGraph = &graph;
-            graph.Clear();
-        }
+    //     explicit ADEngine(had::ADGraph &g) : graph(g)
+    //     {
+    //         had::g_ADGraph = &graph;
+    //         graph.Clear();
+    //     }
 
-        had::AReal eval(const std::function<had::AReal()> &f)
-        {
-            return f();
-        }
+    //     had::AReal eval(const std::function<had::AReal()> &f)
+    //     {
+    //         return f();
+    //     }
 
-        void backward(const had::AReal &loss)
-        {
-            had::SetAdjoint(loss, 1.0);
-            had::PropagateAdjoint();
-        }
+    //     void backward(const had::AReal &loss)
+    //     {
+    //         had::SetAdjoint(loss, 1.0);
+    //         had::PropagateAdjoint();
+    //     }
 
-        Eigen::VectorXd gradient(const std::vector<had::AReal> &vars) const
-        {
-            Eigen::VectorXd g(vars.size());
-            for (size_t i = 0; i < vars.size(); ++i)
-                g[i] = had::GetAdjoint(vars[i]);
-            return g;
-        }
+    //     Eigen::VectorXd gradient(const std::vector<had::AReal> &vars) const
+    //     {
+    //         Eigen::VectorXd g(vars.size());
+    //         for (size_t i = 0; i < vars.size(); ++i)
+    //             g[i] = had::GetAdjoint(vars[i]);
+    //         return g;
+    //     }
 
-        Eigen::MatrixXd hessian(const std::vector<had::AReal> &vars) const
-        {
-            Eigen::MatrixXd H(vars.size(), vars.size());
-            H.setZero();
+    //     Eigen::MatrixXd hessian(const std::vector<had::AReal> &vars) const
+    //     {
+    //         Eigen::MatrixXd H(vars.size(), vars.size());
+    //         H.setZero();
 
-            for (size_t i = 0; i < vars.size(); ++i)
-                for (size_t j = 0; j < vars.size(); ++j)
-                    H(i, j) = had::GetAdjoint(vars[i], vars[j]);
+    //         for (size_t i = 0; i < vars.size(); ++i)
+    //             for (size_t j = 0; j < vars.size(); ++j)
+    //                 H(i, j) = had::GetAdjoint(vars[i], vars[j]);
 
-            return H;
-        }
-    };
+    //         return H;
+    //     }
+    // };
 
     //--------------------------------------------------
     // Convert Eigen -> std::vector<AD>
@@ -127,75 +127,75 @@ namespace quadra
         return out;
     }
 
-    class ADSession
-    {
-    public:
-        ADSession()
-        {
-            init_graph();
-        }
+    // class ADSession
+    // {
+    // public:
+    //     ADSession()
+    //     {
+    //         init_graph();
+    //     }
 
-        ~ADSession()
-        {
-            clear_graph();
-        }
+    //     ~ADSession()
+    //     {
+    //         clear_graph();
+    //     }
 
-        ADSession(const ADSession &) = delete;
-        ADSession &operator=(const ADSession &) = delete;
+    //     ADSession(const ADSession &) = delete;
+    //     ADSession &operator=(const ADSession &) = delete;
 
-        template <typename F>
-        ADResult run(F &&f, const std::vector<double> &x)
-        {
-            reset_graph();
+    //     template <typename F>
+    //     ADResult run(F &&f, const std::vector<double> &x)
+    //     {
+    //         reset_graph();
 
-            // build inputs
-            std::vector<had::AReal> x_ad;
-            x_ad.reserve(x.size());
+    //         // build inputs
+    //         std::vector<had::AReal> x_ad;
+    //         x_ad.reserve(x.size());
 
-            for (double v : x)
-                x_ad.emplace_back(v);
+    //         for (double v : x)
+    //             x_ad.emplace_back(v);
 
-            // forward
-            had::AReal y = f(x_ad);
+    //         // forward
+    //         had::AReal y = f(x_ad);
 
-            // reverse
-            had::SetAdjoint(y, 1.0);
-            had::PropagateAdjoint();
+    //         // reverse
+    //         had::SetAdjoint(y, 1.0);
+    //         had::PropagateAdjoint();
 
-            // extract
-            ADResult res;
-            res.value = y.val;
-            res.gradient.resize(x.size());
+    //         // extract
+    //         ADResult res;
+    //         res.value = y.val;
+    //         res.gradient.resize(x.size());
 
-            for (size_t i = 0; i < x_ad.size(); i++)
-            {
-                res.gradient[i] = had::GetAdjoint(x_ad[i]);
-            }
+    //         for (size_t i = 0; i < x_ad.size(); i++)
+    //         {
+    //             res.gradient[i] = had::GetAdjoint(x_ad[i]);
+    //         }
 
-            return res;
-        }
+    //         return res;
+    //     }
 
-    private:
-        void init_graph()
-        {
-            if (!had::g_ADGraph)
-            {
-                static had::ADGraph global_graph;
-                had::g_ADGraph = &global_graph;
-            }
-        }
+    // private:
+    //     void init_graph()
+    //     {
+    //         if (!had::g_ADGraph)
+    //         {
+    //             static had::ADGraph global_graph;
+    //             had::g_ADGraph = &global_graph;
+    //         }
+    //     }
 
-        void reset_graph()
-        {
-            had::g_ADGraph->Clear();
-        }
+    //     void reset_graph()
+    //     {
+    //         had::g_ADGraph->Clear();
+    //     }
 
-        void clear_graph()
-        {
-            if (had::g_ADGraph)
-                had::g_ADGraph->Clear();
-        }
-    };
+    //     void clear_graph()
+    //     {
+    //         if (had::g_ADGraph)
+    //             had::g_ADGraph->Clear();
+    //     }
+    // };
 
     //--------------------------------------------------
     // Extract gradients AFTER reverse pass
@@ -219,5 +219,5 @@ namespace quadra
     {
         return had::GetAdjoint(xi, xj);
     }
-} // namespace pelagia
+} // namespace quadra
 #endif

@@ -54,6 +54,6 @@ namespace quadra
         return total;
     }
 
-} // namespace pelagia
+} // namespace quadra
 
 #endif // PARALLEL_HPP

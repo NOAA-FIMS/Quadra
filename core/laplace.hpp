@@ -14,6 +14,8 @@
 #include "eigen/Eigen/Sparse"
 #include "eigen/Eigen/SparseCholesky"
 
+DECLARE_ADGRAPH();
+
 namespace quadra
 {
 
@@ -425,108 +427,6 @@ namespace quadra
     }
 
     template <typename Model>
-    std::vector<double> solve_random_effects(
-        Model &model,
-        ParameterVector &params,
-        const Eigen::VectorXd &x,
-        const std::vector<int> &fixed_idx,
-        const std::vector<int> &random_idx,
-        had::ADGraph &graph)
-    {
-
-        ADScope scope(graph);
-        const int max_iter = 20;
-        const double tol = 1e-8;
-        // std::vector<int> fixed_idx = build_fixed_index(params);
-        // std::vector<int> random_idx = build_random_index(params);
-        // Store numeric u separately
-        std::vector<double> u_val(x.data(), x.data() + x.size());
-
-        for (int iter = 0; iter < max_iter; ++iter)
-        {
-            //--------------------------------------------------
-            // Rebuild graph + AD variables
-            //--------------------------------------------------
-            scope.clear();
-
-            // build AD vars FROM u_val (not x!)
-            std::vector<had::AReal> u;
-            for (double v : u_val)
-                u.emplace_back(v);
-
-            std::vector<had::AReal> p(params.size());
-            // p.reserve(params.size());
-
-            // initialize ALL parameters first
-            for (int i = 0; i < params.size(); ++i)
-                p.emplace_back(0.0); // safe default
-
-            // inject fixed
-            for (size_t k = 0; k < fixed_idx.size(); ++k)
-                p[fixed_idx[k]] = had::AReal(x[k]);
-
-            // inject random
-            for (size_t k = 0; k < random_idx.size(); ++k)
-                p[random_idx[k]] = u[k];
-
-            //--------------------------------------------------
-            // Forward
-            //--------------------------------------------------
-
-            had::AReal nll = model(p);
-
-            //--------------------------------------------------
-            // Reverse (REQUIRED)
-            //--------------------------------------------------
-            scope.backward(nll);
-            //--------------------------------------------------
-            // Gradient
-            //--------------------------------------------------
-            Eigen::VectorXd g(u.size());
-            for (size_t i = 0; i < u.size(); ++i)
-            {
-                g[i] = scope.grad(u[i]);
-            }
-            //--------------------------------------------------
-            // Convergence
-            //--------------------------------------------------
-            if (g.norm() < tol)
-            {
-                std::cout << "Converged at iter " << iter << "\n";
-
-                return u_val;
-            }
-            //--------------------------------------------------
-            // Hessian
-            //--------------------------------------------------
-            Eigen::MatrixXd H(u.size(), u.size());
-            for (size_t i = 0; i < u.size(); ++i)
-                for (size_t j = 0; j < u.size(); ++j)
-                    H(i, j) = scope.hess(u[i], u[j]);
-
-            //--------------------------------------------------
-            // Newton step
-            //--------------------------------------------------
-            Eigen::LDLT<Eigen::MatrixXd> solver(H);
-            if (solver.info() != Eigen::Success)
-                throw std::runtime_error("Hessian not invertible");
-
-            Eigen::VectorXd step = solver.solve(g);
-
-            //--------------------------------------------------
-            // Update NUMERIC values only
-            //--------------------------------------------------
-            // update numeric values
-            for (size_t i = 0; i < u_val.size(); ++i)
-            {
-                u_val[i] -= step[i];
-            }
-        }
-
-        return u_val;
-    }
-
-    template <typename Model>
     struct LaplaceResult
     {
         double value;
@@ -590,63 +490,6 @@ namespace quadra
         return res;
     }
 
-    template <typename Model>
-    LaplaceResult<Model> laplace_eval(
-        Model &model,
-        ParameterVector &params,
-        const std::vector<int> &random_idx,
-        const std::vector<int> &fixed_idx,
-        const Eigen::VectorXd &x)
-    {
-
-        // 1. build AD inputs
-
-        // 2. solve random effects (IMPORTANT: must be deterministic)
-        auto u_star = solve_random_effects(model, params, x);
-
-        had::ADGraph graph;
-        had::g_ADGraph = &graph;
-
-        std::vector<had::AReal> x_ad;
-        x_ad.reserve(x.size());
-
-        for (int i = 0; i < x.size(); i++)
-            x_ad.emplace_back(x[i]);
-
-        std::vector<had::AReal> p_ad(params.size());
-
-        // start from base values
-        for (size_t i = 0; i < params.size(); i++)
-            p_ad[i] = params.params[i].value;
-
-        // inject fixed (x)
-        for (size_t i = 0; i < fixed_idx.size(); i++)
-            p_ad[fixed_idx[i]] = x_ad[i];
-
-        // inject random (u)
-        for (size_t i = 0; i < random_idx.size(); i++)
-            p_ad[random_idx[i]] = u_star[i];
-
-        // now valid
-
-        // 3. evaluate model
-        had::AReal nll = model(p_ad);
-
-        // 4. reverse pass
-        had::SetAdjoint(nll, 1.0);
-        had::PropagateAdjoint();
-
-        // 5. extract gradients
-        LaplaceResult<Model> res;
-        res.value = nll.val;
-
-        res.grad_x.resize(x.size());
-        for (int i = 0; i < x.size(); i++)
-            res.grad_x[i] = had::GetAdjoint(x_ad[i]);
-
-        return res;
-    }
-
-} // namespace pelagia
+} // namespace quadra
 
 #endif // LAPLACE_HPP

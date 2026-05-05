@@ -100,5 +100,5 @@ namespace quadra
     //     }
     // }
 
-} // namespace pelagia
+} // namespace quadra
 #endif // TRANSFORMS_HPP

@@ -98,5 +98,5 @@ namespace quadra
         return f(x);
     }
 
-} // namespace pelagia
+} // namespace quadra
 #endif // EVALUATION_HPP

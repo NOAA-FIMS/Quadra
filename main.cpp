@@ -4,13 +4,12 @@
 #include "model/objective.hpp"
 #include "core/laplace.hpp"
 #include "core/optimizer.hpp"
-#include "core/optimizer_lbfgs.hpp"
 
 #include <iostream>
 #include <chrono>
 #include <iomanip>
 
-DECLARE_ADGRAPH();
+//
 
 struct NormalModel
 {
@@ -50,7 +49,7 @@ struct TestFunctor
     template <typename T>
     T operator()(const std::vector<T> &p)
     {
-        // pelagia::ADContext ctx{};
+        // quadra::ADContext ctx{};
         // had::g_ADGraph = &ctx.graph;
         //         std::cout << "graph ptr = " << had::g_ADGraph << std::endl;
         //         std::cout << "ctx ptr   = " << &ctx.graph << std::endl;

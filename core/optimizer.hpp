@@ -170,5 +170,5 @@ namespace quadra
             niter};
     }
 
-} // namespace pelagia
+} // namespace quadra
 #endif

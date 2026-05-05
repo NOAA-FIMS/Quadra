@@ -3,11 +3,15 @@
 namespace quadra
 {
     template <typename T>
-    T dnorm(T x, T mean, T sd, bool log = true)
+    T dnorm(const T &x, const T &mean, const T &sd, bool give_log = true)
     {
-        T val = -0.5 * pow((x - mean) / sd, 2) - log(sd);
-        return log ? val : exp(val);
+        const double log_sqrt_2pi = 0.91893853320467274178;
+
+        T z = (x - mean) / sd;
+        T log_density = -0.5 * z * z - log(sd) - log_sqrt_2pi;
+
+        return give_log ? log_density : exp(log_density);
     }
-} // namespace pelagia
+} // namespace quadra
 
 #endif // DISTRIBUTIONS_HPP

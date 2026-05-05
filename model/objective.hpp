@@ -40,7 +40,7 @@ namespace quadra
         // };
 
         // auto x_ad = to_ad(x);
-        // AD y = pelagia::evaluate(f, x_ad);
+        // AD y = quadra::evaluate(f, x_ad);
 
         // ADResult res;
         // res.value = y.val;   // HAD uses `.val`, not `.value()`
@@ -56,6 +56,6 @@ namespace quadra
         return y;
     }
 
-} // namespace pelagia
+} // namespace quadra
 
 #endif // OBJECTIVE_HPP

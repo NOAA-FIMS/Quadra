@@ -150,5 +150,5 @@ namespace quadra
         }
     };
 
-} // namespace pelagia
+} // namespace quadra
 #endif // PARAMETER_HPP
