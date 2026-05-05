@@ -1,5 +1,5 @@
-#ifndef LAPLACE_HPP
-#define LAPLACE_HPP
+#ifndef QUADRA_LAPLACE_HPP
+#define QUADRA_LAPLACE_HPP
 #pragma once
 
 #include <vector>
@@ -169,6 +169,7 @@ namespace quadra
         const std::vector<int> &random_idx,
         double tol = 1e-12)
     {
+        std::cout<<"Quadra: Discovering Hessian pattern (dense) for n_random = " << random_idx.size() << " ...\n";
         const int n = (int)random_idx.size();
         HessianPattern pattern;
         pattern.reserve(n * n);

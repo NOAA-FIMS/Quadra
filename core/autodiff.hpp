@@ -1,5 +1,5 @@
-#ifndef AUTODIFF_HPP
-#define AUTODIFF_HPP
+#ifndef QUADRA_AUTODIFF_HPP
+#define QUADRA_AUTODIFF_HPP
 
 #include <vector>
 #include "had/had.h"

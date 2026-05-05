@@ -1,5 +1,5 @@
-#ifndef EVALUATION_HPP
-#define EVALUATION_HPP
+#ifndef QUADRA_EVALUATION_HPP
+#define QUADRA_EVALUATION_HPP
 
 #pragma once
 #include <iostream>
