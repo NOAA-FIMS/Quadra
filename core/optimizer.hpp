@@ -40,7 +40,7 @@ namespace quadra
         inline void print(int iter, double fx, double gnorm)
         {
             std::cout << "L-BFGS: "
-                      << "iter = " << std::setw(3) << iter
+                      << "outer iter = " << std::setw(3) << iter
                       << ", fx = " << std::setw(14) << std::fixed << std::setprecision(6) << fx
                       << ", |grad| = " << std::setw(12) << std::fixed << std::setprecision(6) << gnorm
                       << "\n";

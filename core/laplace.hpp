@@ -9,7 +9,7 @@
 #include <cassert>
 #include <unordered_map>
 #include <set>
-
+#include <iomanip>
 #include "../model/parameter.hpp"
 #include "autodiff.hpp"
 #include "evaluation.hpp"
@@ -193,8 +193,8 @@ namespace quadra
         bool include_diagonal = true,
         double tol = 1e-12)
     {
-        std::cout << "Quadra: Discovering Hessian pattern from AD graph for n_random = "
-                  << random_idx.size() << " ...\n";
+        std::cout << "Quadra: Discovering Hessian pattern from AD graph for "
+                  << random_idx.size() << " random variables ...\n";
 
         const int n = static_cast<int>(random_idx.size());
         SparseHessianPattern pattern;
@@ -267,7 +267,7 @@ namespace quadra
         for (const auto &ij : unique_pairs)
             pattern.emplace_back(ij.first, ij.second);
 
-        std::cout << "Quadra: Now model structure aware. Hessian pattern has " << pattern.size() << " entries.\n";
+        std::cout << "Quadra: Model structure aware now => Hessian pattern has " << pattern.size() << " entries.\n";
         return pattern;
     }
 
@@ -462,7 +462,7 @@ namespace quadra
                 g[i] = scope.grad(p_full[random_idx[i]]);
             }
 
-            if (g.norm() < tol)
+                        if (g.norm() < tol)
             {
                 return u;
             }
@@ -497,7 +497,11 @@ namespace quadra
                 throw std::runtime_error(
                     "Sparse Hessian solve failed in solve_random_effects_laplace");
             }
-
+            std::cout << "Newton: "
+                      << "inner iter = " << std::setw(3) << iter
+                      << ", fx = " << std::setw(14) << std::fixed << std::setprecision(6) << nll.val
+                      << ", |grad| = " << std::setw(12) << std::fixed << std::setprecision(6) << g.norm()
+                      << "\n";
             // --------------------------------------------------
             // Newton update
             // --------------------------------------------------
