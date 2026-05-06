@@ -1,5 +1,5 @@
 CXX      := clang++
-CXXFLAGS := -std=c++17 -O3 -Icore/eigen
+CXXFLAGS := -std=c++17 -O3 -Icore/eigen -fsanitize=undefined
 TARGET   := quadra_example
 SRC      := main.cpp
 all: $(TARGET)

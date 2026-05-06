@@ -3,6 +3,7 @@
 
 #include <cmath>
 #include <vector>
+#include "special_functions.hpp"
 
 namespace quadra
 {
@@ -38,7 +39,11 @@ namespace quadra
     template <typename T>
     T dpois(const int &x, const T &lambda, bool give_log = true)
     {
-        T logp = x * log(lambda) - lambda - std::lgamma(x + 1.0);
+        T xx = T(static_cast<double>(x));
+        double lg = std::lgamma(static_cast<double>(x) + 1.0); // precompute for AD
+        T logp =
+            xx * log(lambda) - lambda - T(lg);
+
         return give_log ? logp : exp(logp);
     }
 

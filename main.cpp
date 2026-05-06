@@ -4,11 +4,12 @@
 #include "model/objective.hpp"
 #include "core/laplace.hpp"
 #include "core/optimizer.hpp"
-
+#include "math/distributions.hpp"
 #include <iostream>
 #include <chrono>
 #include <iomanip>
 
+DECLARE_ADGRAPH();
 //
 
 struct NormalModel
@@ -185,6 +186,47 @@ struct ScaledREModel
     }
 };
 
+struct PoissonREModel
+{
+    std::vector<int> y;
+
+    template <typename T>
+    T operator()(const std::vector<T> &p) const
+    {
+        if (p.size() < 2)
+        {
+            throw std::runtime_error("PoissonREModel expects p.size() >= 2");
+        }
+
+        T beta = p[0];
+        T u = p[1];
+        T nll = 0.0;
+        nll -= quadra::dnorm(u, T(0.0), T(1.0), true);
+        for (size_t i = 0; i < y.size(); ++i)
+        {
+            T eta = beta + u;
+            T lambda = exp(eta);
+            T xxx = std::lgamma(static_cast<double>(y[i]) + 1.0);
+            nll -= quadra::dpois(y[i], lambda, true);
+        }
+        return nll;
+    }
+};
+
+void test_poisson_model()
+{
+
+    quadra::ParameterVector params;
+    PoissonREModel model{{2, 3, 4, 2, 5}};
+
+    params.add({"beta", 0.0});                                 // fixed
+    params.add({"u", 0.0, quadra::Transform::Identity, true}); // random
+
+    auto res = quadra::optimize_lbfgs(model, params);
+
+    std::cout << "final value: " << res.value << "\n";
+}
+
 struct AR1REModel
 {
     int n;    // number of random effects
@@ -270,6 +312,7 @@ void test_scaled()
 int main()
 {
 
+    test_poisson_model();
     test_scaled();
 
     return 0;

@@ -14,7 +14,7 @@
 #include "eigen/Eigen/Sparse"
 #include "eigen/Eigen/SparseCholesky"
 
-DECLARE_ADGRAPH();
+
 
 namespace quadra
 {
@@ -170,7 +170,7 @@ namespace quadra
         double tol = 1e-12)
     {
         std::cout<<"Quadra: Discovering Hessian pattern (dense) for n_random = " << random_idx.size() << " ...\n";
-        const int n = (int)random_idx.size();
+        const size_t n = (int)random_idx.size();
         HessianPattern pattern;
         pattern.reserve(n * n);
 
