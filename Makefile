@@ -1,5 +1,7 @@
+EIGEN_INC = core/eigen
+
 CXX      := clang++
-CXXFLAGS := -std=c++17 -O3 -Icore/eigen -fsanitize=undefined
+CXXFLAGS = -std=c++17 -O3 -flto -I$(EIGEN_INC) -fsanitize=undefined
 TARGET   := quadra_example
 SRC      := main.cpp
 all: $(TARGET)
@@ -14,3 +16,5 @@ clean:
 	rm -f $(TARGET) *.o a.out
 
 .PHONY: all run clean
+
+

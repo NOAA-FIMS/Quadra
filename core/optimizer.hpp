@@ -39,7 +39,7 @@ namespace quadra
         int print_every = 1;
         inline void print(int iter, double fx, double gnorm)
         {
-            std::cout << "[LBFGS] "
+            std::cout << "L-BFGS: "
                       << "iter = " << std::setw(3) << iter
                       << ", fx = " << std::setw(14) << std::fixed << std::setprecision(6) << fx
                       << ", |grad| = " << std::setw(12) << std::fixed << std::setprecision(6) << gnorm
@@ -60,14 +60,13 @@ namespace quadra
             : model(m), params(p),
               fixed_idx(fixed), random_idx(random)
         {
-            pattern_cache().clear();
+            laplace_pattern_cache().clear();
         }
 
         double operator()(const VectorXd &x, VectorXd &grad)
         {
-            had::ADGraph graph;
-            graph.Clear();
-            had::g_ADGraph = &graph;
+            TapeContext tape;
+            had::ADGraph &graph = tape.graph;
 
             iter++;
 

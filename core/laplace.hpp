@@ -6,6 +6,9 @@
 #include <cmath>
 #include <stdexcept>
 #include <iostream>
+#include <cassert>
+#include <unordered_map>
+#include <set>
 
 #include "../model/parameter.hpp"
 #include "autodiff.hpp"
@@ -13,8 +16,6 @@
 #include "eigen/Eigen/Dense"
 #include "eigen/Eigen/Sparse"
 #include "eigen/Eigen/SparseCholesky"
-
-
 
 namespace quadra
 {
@@ -72,9 +73,10 @@ namespace quadra
         }
     }
 
+    template <typename Scalar>
     inline void inject_fixed_params(
-        const std::vector<had::AReal> &x_ad,
-        std::vector<had::AReal> &p,
+        const std::vector<Scalar> &x_ad,
+        std::vector<Scalar> &p,
         const std::vector<int> &fixed_idx)
     {
         for (size_t k = 0; k < fixed_idx.size(); ++k)
@@ -83,13 +85,14 @@ namespace quadra
         }
     }
 
+    template <typename Scalar>
     inline void inject_fixed_params(
         const Eigen::VectorXd &x,
-        std::vector<had::AReal> &p,
+        std::vector<Scalar> &p,
         const std::vector<int> &fixed_idx)
     {
         for (size_t k = 0; k < fixed_idx.size(); ++k)
-            p[fixed_idx[k]] = had::AReal(x[k]);
+            p[fixed_idx[k]] = Scalar(x[k]);
     }
 
     inline void inject_random_params(
@@ -106,9 +109,10 @@ namespace quadra
         }
     }
 
+    template <typename Scalar>
     inline void inject_random_params(
-        const std::vector<had::AReal> &u_ad,
-        std::vector<had::AReal> &p,
+        const std::vector<Scalar> &u_ad,
+        std::vector<Scalar> &p,
         const std::vector<int> &random_idx)
     {
         for (size_t k = 0; k < random_idx.size(); ++k)
@@ -116,14 +120,16 @@ namespace quadra
             p[random_idx[k]] = u_ad[k];
         }
     }
+
+    template <typename Scalar>
     inline void inject_random_params(
         const std::vector<double> &u,
-        std::vector<had::AReal> &p,
+        std::vector<Scalar> &p,
         const std::vector<int> &random_idx)
     {
         for (size_t k = 0; k < random_idx.size(); ++k)
         {
-            p[random_idx[k]] = had::AReal(u[k]);
+            p[random_idx[k]] = Scalar(u[k]);
         }
     }
 
@@ -155,59 +161,136 @@ namespace quadra
         return p;
     }
 
-    using HessianPattern = std::vector<std::pair<int, int>>;
+    //==================================================
+    // Laplace-local Hessian pattern representation
+    //==================================================
+    // Do not name this HessianPattern. autodiff.hpp may define a
+    // graph-level HessianPattern helper for ADGraph sparsity discovery.
+    // Keeping the Laplace cache as SparseHessianPattern avoids redefinition
+    // errors and keeps this file independent of the exact autodiff helper API.
+    using SparseHessianPattern = std::vector<std::pair<int, int>>;
 
-    inline std::unordered_map<int, HessianPattern> &pattern_cache()
+    inline std::unordered_map<int, SparseHessianPattern> &laplace_pattern_cache()
     {
-        static std::unordered_map<int, HessianPattern> cache;
+        static std::unordered_map<int, SparseHessianPattern> cache;
         return cache;
     }
 
-    inline HessianPattern discover_pattern_dense(
-        const ADScope &scope,
-        const std::vector<had::AReal> &p_full,
+    //==================================================
+    // Discover Hessian sparsity from had::ADGraph
+    //==================================================
+    // This replaces the older dense pattern probe. It reads the sparse
+    // edge-pushed Hessian storage that had::PropagateAdjoint() has already
+    // populated inside scope.backward(nll).
+    //
+    // NOTE: this is still a numeric sparsity pattern. If a structurally
+    // nonzero Hessian entry evaluates to exactly zero at the discovery point,
+    // it can be missed. Diagonals are included by default for Newton stability.
+    inline SparseHessianPattern discover_pattern_from_graph(
+        const std::vector<AD> &p_full,
         const std::vector<int> &random_idx,
+        bool symmetric = true,
+        bool include_diagonal = true,
         double tol = 1e-12)
     {
-        std::cout<<"Quadra: Discovering Hessian pattern (dense) for n_random = " << random_idx.size() << " ...\n";
-        const size_t n = (int)random_idx.size();
-        HessianPattern pattern;
-        pattern.reserve(n * n);
+        std::cout << "Quadra: Discovering Hessian pattern from AD graph for n_random = "
+                  << random_idx.size() << " ...\n";
 
-        for (int i = 0; i < n; ++i)
+        const int n = static_cast<int>(random_idx.size());
+        SparseHessianPattern pattern;
+
+        if (n == 0 || had::g_ADGraph == nullptr)
+            return pattern;
+
+        std::unordered_map<had::VertexId, int> random_var_to_local;
+        random_var_to_local.reserve(static_cast<size_t>(n));
+
+        for (int local = 0; local < n; ++local)
         {
-            for (int j = 0; j < n; ++j)
+            const int full_index = random_idx[static_cast<size_t>(local)];
+            random_var_to_local.emplace(p_full[full_index].varId, local);
+        }
+
+        std::set<std::pair<int, int>> unique_pairs;
+
+        if (include_diagonal)
+        {
+            for (int i = 0; i < n; ++i)
+                unique_pairs.emplace(i, i);
+        }
+        else
+        {
+            for (int i = 0; i < n; ++i)
             {
-                double hij = scope.hess(
-                    p_full[random_idx[i]],
-                    p_full[random_idx[j]]);
-                if (std::abs(hij) > tol)
-                    pattern.emplace_back(i, j);
+                const int full_index = random_idx[static_cast<size_t>(i)];
+                const had::VertexId vi = p_full[full_index].varId;
+
+                if (vi < had::g_ADGraph->selfSoEdges.size() &&
+                    std::abs(had::g_ADGraph->selfSoEdges[vi]) > tol)
+                {
+                    unique_pairs.emplace(i, i);
+                }
             }
         }
+
+        // had stores an off-diagonal Hessian entry in soEdges[max_id]
+        // under key min_id. Walk the graph-level sparse storage and retain
+        // only entries where both endpoints are random-effect variables.
+        for (had::VertexId hi = 0;
+             hi < static_cast<had::VertexId>(had::g_ADGraph->soEdges.size());
+             ++hi)
+        {
+            auto hi_it = random_var_to_local.find(hi);
+            if (hi_it == random_var_to_local.end())
+                continue;
+
+            const int i = hi_it->second;
+            const auto &tree = had::g_ADGraph->soEdges[hi];
+
+            for (const auto &node : tree.nodes)
+            {
+                if (std::abs(node.val) <= tol)
+                    continue;
+
+                auto lo_it = random_var_to_local.find(node.key);
+                if (lo_it == random_var_to_local.end())
+                    continue;
+
+                const int j = lo_it->second;
+                unique_pairs.emplace(i, j);
+                if (symmetric)
+                    unique_pairs.emplace(j, i);
+            }
+        }
+
+        pattern.reserve(unique_pairs.size());
+        for (const auto &ij : unique_pairs)
+            pattern.emplace_back(ij.first, ij.second);
+
+        std::cout << "Quadra: Now model structure aware. Hessian pattern has " << pattern.size() << " entries.\n";
         return pattern;
     }
 
-    inline const HessianPattern &get_pattern(
-        const ADScope &scope,
-        const std::vector<had::AReal> &p_full,
+    inline const SparseHessianPattern &get_pattern(
+        const ADScope &,
+        const std::vector<AD> &p_full,
         const std::vector<int> &random_idx)
     {
-        const int n = (int)random_idx.size();
-        auto &cache = pattern_cache();
+        const int n = static_cast<int>(random_idx.size());
+        auto &cache = laplace_pattern_cache();
 
         auto it = cache.find(n);
         if (it != cache.end())
             return it->second;
 
-        auto pattern = discover_pattern_dense(scope, p_full, random_idx);
+        auto pattern = discover_pattern_from_graph(p_full, random_idx);
         auto res = cache.emplace(n, std::move(pattern));
         return res.first->second;
     }
 
-    inline HessianPattern banded_hessian_pattern(int n, int bandwidth)
+    inline SparseHessianPattern banded_hessian_pattern(int n, int bandwidth)
     {
-        HessianPattern pattern;
+        SparseHessianPattern pattern;
 
         for (int i = 0; i < n; ++i)
         {
@@ -221,9 +304,9 @@ namespace quadra
         return pattern;
     }
 
-    inline HessianPattern dense_hessian_pattern(int n)
+    inline SparseHessianPattern dense_hessian_pattern(int n)
     {
-        HessianPattern pattern;
+        SparseHessianPattern pattern;
         pattern.reserve(n * n);
 
         for (int i = 0; i < n; ++i)
@@ -235,9 +318,9 @@ namespace quadra
 
     inline Eigen::SparseMatrix<double> extract_sparse_hessian(
         const ADScope &scope,
-        const std::vector<had::AReal> &p_full,
+        const std::vector<AD> &p_full,
         const std::vector<int> &random_idx,
-        const HessianPattern &pattern,
+        const SparseHessianPattern &pattern,
         double drop_tol = 1e-12)
     {
         const int n = (int)random_idx.size();
@@ -348,12 +431,12 @@ namespace quadra
             // --------------------------------------------------
             // Build full AD parameter vector
             // --------------------------------------------------
-            std::vector<had::AReal> p_full;
+            std::vector<AD> p_full;
             p_full.reserve(params.size());
 
             for (int i = 0; i < params.size(); ++i)
             {
-                p_full.emplace_back(had::AReal(0.0));
+                p_full.emplace_back(AD(0.0));
             }
 
             inject_fixed_params(x, p_full, fixed_idx);
@@ -362,7 +445,7 @@ namespace quadra
             // --------------------------------------------------
             // Forward pass
             // --------------------------------------------------
-            had::AReal nll = model(p_full);
+            AD nll = model(p_full);
 
             // --------------------------------------------------
             // Reverse pass
@@ -450,18 +533,18 @@ namespace quadra
         using Result = LaplaceResult<Model>;
         Result res;
 
-        std::vector<had::AReal> p_full;
+        std::vector<AD> p_full;
         p_full.reserve(params.size());
 
         for (int i = 0; i < params.size(); ++i)
         {
-            p_full.emplace_back(had::AReal(0.0));
+            p_full.emplace_back(AD(0.0));
         }
 
         inject_fixed_params(x, p_full, fixed_idx);
         inject_random_params(u_star, p_full, random_idx);
 
-        had::AReal nll = model(p_full);
+        AD nll = model(p_full);
 
         scope.backward(nll);
 
@@ -486,11 +569,45 @@ namespace quadra
         // Or, if vectorD() is unavailable:
         // double logdet = sparse_logdet_llt(H);
 
-        res.value = nll.val + 0.5 * logdet;
+        res.value = value_of(nll) + 0.5 * logdet;
 
         return res;
     }
 
+#ifndef QUADRA_USE_ORIGINAL_HAD
+    //==================================================
+    // Optional third-order directional diagnostic.
+    // This evaluates D^k f(x)[direction,...] for k = 0,1,2,3
+    // using the scalar-templated model path. It is intentionally
+    // separate from LBFGS/Laplace so it can be enabled only when needed.
+    //==================================================
+    template <typename Model>
+    ThirdDirectionalResult third_directional_fixed_effects(
+        Model &model,
+        const Eigen::VectorXd &x,
+        const Eigen::VectorXd &direction)
+    {
+        if (x.size() != direction.size())
+            throw std::invalid_argument("third_directional_fixed_effects: x and direction must have same size");
+
+        std::vector<double> xv(static_cast<size_t>(x.size()));
+        std::vector<double> dv(static_cast<size_t>(direction.size()));
+        for (int i = 0; i < x.size(); ++i)
+        {
+            xv[static_cast<size_t>(i)] = x[i];
+            dv[static_cast<size_t>(i)] = direction[i];
+        }
+
+        return evaluate_third_directional(
+            [&](const std::vector<AD3> &x_ad3) -> AD3
+            {
+                return model(x_ad3);
+            },
+            xv,
+            dv);
+    }
+#endif
+
 } // namespace quadra
 
-#endif // LAPLACE_HPP
+#endif // QUADRA_LAPLACE_HPP
