@@ -6,6 +6,8 @@
 #include <iostream>
 #include <stdexcept>
 #include <iomanip>
+#include <limits>
+#include <string>
 #include "eigen/Eigen/Dense"
 #include "LBFGSpp/include/LBFGS.h"
 #include "autodiff.hpp"
@@ -51,14 +53,20 @@ namespace quadra
         ParameterVector &params;
         std::vector<int> fixed_idx;
         std::vector<int> random_idx;
+        LaplaceOptions options;
         int iter = 0;
+        double last_fx = std::numeric_limits<double>::quiet_NaN();
+        Eigen::VectorXd last_grad;
+        Eigen::VectorXd last_x;
 
         LBFGSObjective(Model &m,
                        ParameterVector &p,
                        std::vector<int> fixed,
-                       std::vector<int> random)
+                       std::vector<int> random,
+                       const LaplaceOptions &opts = default_laplace_options())
             : model(m), params(p),
-              fixed_idx(fixed), random_idx(random)
+              fixed_idx(fixed), random_idx(random),
+              options(opts)
         {
             laplace_pattern_cache().clear();
         }
@@ -85,9 +93,14 @@ namespace quadra
                 random_idx,
                 x,
                 u_star,
-                graph);
+                graph,
+                options);
 
             grad = to_eigen(res.grad_x);
+
+            last_fx = res.value;
+            last_grad = grad;
+            last_x = x;
 
             if ((iter % print_every == 0) || iter == 1)
             {
@@ -115,7 +128,8 @@ namespace quadra
     template <typename Model>
     OptResult optimize_lbfgs(
         Model &model,
-        ParameterVector &params)
+        ParameterVector &params,
+        const LaplaceOptions &options = default_laplace_options())
     {
         using namespace LBFGSpp;
         using namespace Eigen;
@@ -141,7 +155,7 @@ namespace quadra
         //--------------------------------------------------
         // Objective
         //--------------------------------------------------
-        LBFGSObjective<Model> fun(model, params, fixed_idx, random_idx);
+        LBFGSObjective<Model> fun(model, params, fixed_idx, random_idx, options);
 
         //--------------------------------------------------
         // Solver
@@ -152,8 +166,55 @@ namespace quadra
 
         LBFGSSolver<double> solver(param);
 
-        double fx;
-        int niter = solver.minimize(fun, x, fx);
+        double fx = std::numeric_limits<double>::quiet_NaN();
+        int niter = 0;
+
+        try
+        {
+            niter = solver.minimize(fun, x, fx);
+        }
+        catch (const std::runtime_error &e)
+        {
+            const double gnorm = fun.last_grad.norm();
+            const double max_grad =
+                (fun.last_grad.size() > 0)
+                    ? fun.last_grad.cwiseAbs().maxCoeff()
+                    : std::numeric_limits<double>::infinity();
+
+            // LBFGS++ can throw a line-search failure after the objective is
+            // already effectively converged, especially for large sparse
+            // Laplace problems where function decrease is tiny relative to
+            // the objective scale. Treat that case as a graceful convergence.
+            const std::string msg = e.what();
+            const bool line_search_failed =
+                msg.find("line search") != std::string::npos ||
+                msg.find("Line search") != std::string::npos;
+
+            const double convergence_like_grad = 1e-3;
+
+            if (line_search_failed && max_grad < convergence_like_grad)
+            {
+                std::cout
+                    << "L-BFGS: line search failed after convergence-like gradient. (max|grad| = " << max_grad << ") "
+                    << "\nL-BFGS: "
+                    << "outer iter = " << std::setw(3) << niter
+                    << ", fx = " << std::setw(14) << std::fixed << std::setprecision(6) << fx
+                    << ", |grad| = " << std::setw(12) << std::fixed << std::setprecision(6) << gnorm
+                    << std::endl;
+
+                if (fun.last_x.size() == x.size())
+                {
+                    x = fun.last_x;
+                }
+
+                fx = fun.last_fx;
+                niter = fun.iter;
+            }
+            else
+            {
+                throw;
+            }
+        }
 
         //--------------------------------------------------
         // Write back

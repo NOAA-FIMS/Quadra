@@ -100,7 +100,10 @@ namespace had
         AReal(const Real val, const VertexId varId) : val(val), dot(Real(0.0)), varId(varId) {}
 
         Real val;
-        // Optional first-order directional seed/tangent reserved for future forward-over-reverse extensions.
+        // First-order directional tangent used by directional edge-pushing.
+        // Important: this must be propagated on the AReal object itself,
+        // not only in ADGraph::vertices, because later operator overloads
+        // read operands' .dot values directly.
         Real dot = Real(0.0);
         VertexId varId;
     };
@@ -108,10 +111,12 @@ namespace had
     struct ADEdge
     {
         ADEdge() {}
-        ADEdge(const VertexId to, const Real w = Real(0.0)) : to(to), w(w) {}
+        ADEdge(const VertexId to, const Real w = Real(0.0), const Real dw = Real(0.0))
+            : to(to), w(w), dw(dw) {}
 
         VertexId to;
         Real w;
+        Real dw; // directional derivative of edge weight
     };
 
     // We assume there is at most 2 outgoing edges from this vertex
@@ -120,13 +125,15 @@ namespace had
         ADVertex(const VertexId newId)
         {
             e1 = e2 = ADEdge(newId);
-            w = soW = toW = dot = Real(0.0);
+            w = wDot = soW = soWDot = toW = dot = Real(0.0);
         }
 
         // If ei.to == the id of this vertex, then the edge does not exist
         ADEdge e1, e2;
-        // first-order weight
+        // first-order adjoint weight
         Real w;
+        // directional derivative of first-order adjoint weight
+        Real wDot;
         // second-order weights
         // for vertex with single outgoing edge,
         // soW represents the second-order weight of the conntecting vertex (d^2f/dx^2)
@@ -134,6 +141,8 @@ namespace had
         // soW represents the second-order weight between the conntecting vertices (d^2f/dxdy)
         // the system assumes d^2f/dx^2 & d^2f/dy^2 are both zero in the two outgoing edges case to save memory
         Real soW;
+        // directional derivative of soW along seeded primal tangent
+        Real soWDot;
         // third-order local derivative weight. For unary vertices this is d^3 child / d parent^3.
         // For binary vertices this is reserved for future full third-order edge-pushing support.
         Real toW;
@@ -270,11 +279,15 @@ namespace had
             vertices.clear();
             soEdges.clear();
             selfSoEdges.clear();
+            soEdgesDot.clear();
+            selfSoEdgesDot.clear();
         }
 
         std::vector<ADVertex> vertices;
         std::vector<BTree> soEdges;
         std::vector<Real> selfSoEdges;
+        std::vector<BTree> soEdgesDot;
+        std::vector<Real> selfSoEdgesDot;
     };
 
     inline AReal NewAReal(const Real val)
@@ -285,26 +298,40 @@ namespace had
         return AReal(val, newId);
     }
 
-    inline void AddEdge(const AReal &c, const AReal &p,
+    inline void AddEdge(AReal &c, const AReal &p,
                         const Real w, const Real soW, const Real toW = Real(0.0))
     {
         ADVertex &v = g_ADGraph->vertices[c.varId];
-        v.e1 = ADEdge(p.varId, w);
+        const Real dw = soW * p.dot;
+        v.e1 = ADEdge(p.varId, w, dw);
         v.soW = soW;
+        v.soWDot = toW * p.dot;
         v.toW = toW;
         v.dot = w * p.dot;
+        c.dot = v.dot;
     }
-    inline void AddEdge(const AReal &c,
+    inline void AddEdge(AReal &c,
                         const AReal &p1, const AReal &p2,
                         const Real w1, const Real w2,
                         const Real soW, const Real toW = Real(0.0))
     {
         ADVertex &v = g_ADGraph->vertices[c.varId];
-        v.e1 = ADEdge(p1.varId, w1);
-        v.e2 = ADEdge(p2.varId, w2);
+
+        Real dw1 = Real(0.0);
+        Real dw2 = Real(0.0);
+        if (soW != Real(0.0))
+        {
+            dw1 = soW * p2.dot;
+            dw2 = soW * p1.dot;
+        }
+
+        v.e1 = ADEdge(p1.varId, w1, dw1);
+        v.e2 = ADEdge(p2.varId, w2, dw2);
         v.soW = soW;
+        v.soWDot = toW * (p1.dot + p2.dot);
         v.toW = toW;
         v.dot = w1 * p1.dot + w2 * p2.dot;
+        c.dot = v.dot;
     }
 
     ////////////////////// Addition ///////////////////////////
@@ -597,6 +624,183 @@ namespace had
         }
     }
 
+    inline void PushEdgeDot(const ADEdge &foEdge,
+                            const ADEdge &soEdge,
+                            const Real soEdgeDot)
+    {
+        const Real valDot =
+            foEdge.dw * soEdge.w +
+            foEdge.w * soEdgeDot;
+
+        if (foEdge.to == soEdge.to)
+        {
+            g_ADGraph->selfSoEdgesDot[foEdge.to] += Real(2.0) * valDot;
+        }
+        else
+        {
+            g_ADGraph->soEdgesDot[std::max(foEdge.to, soEdge.to)].Insert(
+                std::min(foEdge.to, soEdge.to),
+                valDot);
+        }
+    }
+
+    inline Real GetAdjointDot(const AReal &i, const AReal &j)
+    {
+        if (i.varId == j.varId)
+        {
+            return g_ADGraph->selfSoEdgesDot[i.varId];
+        }
+        return g_ADGraph->soEdgesDot[std::max(i.varId, j.varId)].Query(
+            std::min(i.varId, j.varId));
+    }
+
+    inline void PropagateAdjointDirectional()
+    {
+        const VertexId n_vertices =
+            static_cast<VertexId>(g_ADGraph->vertices.size());
+
+        if (g_ADGraph->soEdges.size() < g_ADGraph->vertices.size())
+        {
+            g_ADGraph->soEdges.resize(g_ADGraph->vertices.size());
+        }
+        else
+        {
+            for (int i = 0; i < (int)g_ADGraph->soEdges.size(); ++i)
+                g_ADGraph->soEdges[i].Clear();
+        }
+
+        if (g_ADGraph->soEdgesDot.size() < g_ADGraph->vertices.size())
+        {
+            g_ADGraph->soEdgesDot.resize(g_ADGraph->vertices.size());
+        }
+        else
+        {
+            for (int i = 0; i < (int)g_ADGraph->soEdgesDot.size(); ++i)
+                g_ADGraph->soEdgesDot[i].Clear();
+        }
+
+        g_ADGraph->selfSoEdges.assign(g_ADGraph->vertices.size(), Real(0.0));
+        g_ADGraph->selfSoEdgesDot.assign(g_ADGraph->vertices.size(), Real(0.0));
+
+        for (VertexId vid = n_vertices - 1; vid > 0; --vid)
+        {
+            ADVertex &vertex = g_ADGraph->vertices[vid];
+            ADEdge &e1 = vertex.e1;
+            ADEdge &e2 = vertex.e2;
+
+            if (e1.to == vid)
+                continue;
+
+            // Push sparse off-diagonal Hessian edges and directional edges.
+            BTree &btree = g_ADGraph->soEdges[vid];
+            BTree &btreeDot = g_ADGraph->soEdgesDot[vid];
+
+            for (auto it = btree.nodes.begin(); it != btree.nodes.end(); ++it)
+            {
+                ADEdge soEdge(it->key, it->val);
+                const Real soDot = btreeDot.Query(it->key);
+
+                PushEdge(e1, soEdge);
+                PushEdgeDot(e1, soEdge, soDot);
+
+                if (e2.to != vid)
+                {
+                    PushEdge(e2, soEdge);
+                    PushEdgeDot(e2, soEdge, soDot);
+                }
+            }
+
+            // Push diagonal Hessian entry.
+            const Real S = g_ADGraph->selfSoEdges[vid];
+            const Real SDot = g_ADGraph->selfSoEdgesDot[vid];
+
+            if (S != Real(0.0) || SDot != Real(0.0))
+            {
+                g_ADGraph->selfSoEdges[e1.to] += e1.w * e1.w * S;
+                g_ADGraph->selfSoEdgesDot[e1.to] +=
+                    Real(2.0) * e1.w * e1.dw * S +
+                    e1.w * e1.w * SDot;
+
+                if (e2.to != vid)
+                {
+                    g_ADGraph->selfSoEdges[e2.to] += e2.w * e2.w * S;
+                    g_ADGraph->selfSoEdgesDot[e2.to] +=
+                        Real(2.0) * e2.w * e2.dw * S +
+                        e2.w * e2.w * SDot;
+
+                    const Real cross = e1.w * e2.w * S;
+                    const Real crossDot =
+                        (e1.dw * e2.w + e1.w * e2.dw) * S +
+                        e1.w * e2.w * SDot;
+
+                    if (e1.to == e2.to)
+                    {
+                        g_ADGraph->selfSoEdges[e1.to] += Real(2.0) * cross;
+                        g_ADGraph->selfSoEdgesDot[e1.to] += Real(2.0) * crossDot;
+                    }
+                    else
+                    {
+                        g_ADGraph->soEdges[std::max(e1.to, e2.to)].Insert(
+                            std::min(e1.to, e2.to),
+                            cross);
+                        g_ADGraph->soEdgesDot[std::max(e1.to, e2.to)].Insert(
+                            std::min(e1.to, e2.to),
+                            crossDot);
+                    }
+                }
+            }
+
+            // Create local second-order contribution and its directional derivative.
+            const Real a = vertex.w;
+            const Real aDot = vertex.wDot;
+
+            if ((a != Real(0.0) || aDot != Real(0.0)) &&
+                (vertex.soW != Real(0.0) || vertex.soWDot != Real(0.0)))
+            {
+                const Real create = a * vertex.soW;
+                const Real createDot = aDot * vertex.soW + a * vertex.soWDot;
+
+                if (e2.to == vid)
+                {
+                    g_ADGraph->selfSoEdges[e1.to] += create;
+                    g_ADGraph->selfSoEdgesDot[e1.to] += createDot;
+                }
+                else if (e1.to == e2.to)
+                {
+                    g_ADGraph->selfSoEdges[e1.to] += Real(2.0) * create;
+                    g_ADGraph->selfSoEdgesDot[e1.to] += Real(2.0) * createDot;
+                }
+                else
+                {
+                    g_ADGraph->soEdges[std::max(e1.to, e2.to)].Insert(
+                        std::min(e1.to, e2.to),
+                        create);
+                    g_ADGraph->soEdgesDot[std::max(e1.to, e2.to)].Insert(
+                        std::min(e1.to, e2.to),
+                        createDot);
+                }
+            }
+
+            // Propagate first-order adjoints and directional adjoints.
+            if (a != Real(0.0) || aDot != Real(0.0))
+            {
+                vertex.w = Real(0.0);
+                vertex.wDot = Real(0.0);
+
+                g_ADGraph->vertices[e1.to].w += a * e1.w;
+                g_ADGraph->vertices[e1.to].wDot +=
+                    aDot * e1.w + a * e1.dw;
+
+                if (e2.to != vid)
+                {
+                    g_ADGraph->vertices[e2.to].w += a * e2.w;
+                    g_ADGraph->vertices[e2.to].wDot +=
+                        aDot * e2.w + a * e2.dw;
+                }
+            }
+        }
+    }
+
     inline void PropagateAdjoint()
     {
         if (g_ADGraph->vertices.size() > g_ADGraph->soEdges.size())
@@ -694,10 +898,9 @@ namespace had
         }
     }
 
-
     ////////////////// Quadra third-order extension API //////////////////
 
-    typedef std::vector<std::vector<Real> > DenseMatrix;
+    typedef std::vector<std::vector<Real>> DenseMatrix;
 
     struct ValueGradientHessian
     {
@@ -753,9 +956,9 @@ namespace had
     struct DirectionalDerivatives3
     {
         Real value = Real(0.0);
-        Real first = Real(0.0);   // df(x)[d]
-        Real second = Real(0.0);  // d^T H(x) d
-        Real third = Real(0.0);   // D^3 f(x)[d,d,d]
+        Real first = Real(0.0);  // df(x)[d]
+        Real second = Real(0.0); // d^T H(x) d
+        Real third = Real(0.0);  // D^3 f(x)[d,d,d]
     };
 
     inline ThirdOrderScalar make_third_order_seed(const Real value, const Real direction)
@@ -923,8 +1126,8 @@ namespace had
 
     template <typename Func>
     inline DirectionalDerivatives3 evaluate_directional_derivatives3(Func &&f,
-                                                                      const std::vector<Real> &x,
-                                                                      const std::vector<Real> &direction)
+                                                                     const std::vector<Real> &x,
+                                                                     const std::vector<Real> &direction)
     {
         if (x.size() != direction.size())
         {
@@ -983,8 +1186,6 @@ namespace had
         return out;
     }
 
-
 } // namespace had
 
 #endif // HAD_QUADRA_H__
-

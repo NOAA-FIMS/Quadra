@@ -11,10 +11,12 @@
 #include <algorithm>
 
 #ifndef QUADRA_USE_ORIGINAL_HAD
-#include "had_quadra.h"
+#include "had_quadra.hpp"
 #else
 #include "had/had.h"
 #endif
+
+DECLARE_ADGRAPH();
 
 #include "eigen/Eigen/Dense"
 #include "eigen/Eigen/Sparse"
