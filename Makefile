@@ -8,7 +8,8 @@ TESTS = \
 	tests/test_poisson_random_effect \
 	tests/test_ar1_random_walk \
 	tests/test_hdot_validation \
-	tests/test_fixed_covariance
+	tests/test_fixed_covariance \
+	tests/test_report_registry
 	
 
 EXAMPLES = \
@@ -34,6 +35,7 @@ run-tests: $(TESTS)
 	./tests/test_ar1_random_walk
 	./tests/test_hdot_validation
 	./tests/test_fixed_covariance
+	./tests/test_report_registry
 
 clean:
 	rm -f $(TESTS) $(EXAMPLES)
