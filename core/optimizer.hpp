@@ -109,16 +109,6 @@ namespace quadra
 
             return res.value;
 
-            //    auto res = laplace_eval(
-            //         model,
-            //         params,
-            //         random_idx,
-            //         fixed_idx,
-            //         x
-            //     );
-
-            //     grad = res.grad_x;
-            //     return res.value;
         }
     };
 
