@@ -1,6 +1,8 @@
 
 #include "test_common.hpp"
 
+DECLARE_ADGRAPH();
+
 struct PoissonRandomIntercept {
     std::vector<double> y;
 

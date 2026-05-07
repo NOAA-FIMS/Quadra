@@ -5,6 +5,8 @@
 
 #include "../core/optimizer.hpp"
 
+DECLARE_ADGRAPH();
+
 // Simple fisheries-style biomass index model with year random effects.
 //
 // log I_t ~ Normal(log(q) + log(B_t) + u_t, sigma_obs)

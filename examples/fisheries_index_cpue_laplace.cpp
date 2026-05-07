@@ -5,6 +5,8 @@
 
 #include "../core/optimizer.hpp"
 
+DECLARE_ADGRAPH();
+
 // CPUE index model with latent abundance deviations.
 // This is a minimal fisheries-relevant Laplace example, not a full assessment.
 

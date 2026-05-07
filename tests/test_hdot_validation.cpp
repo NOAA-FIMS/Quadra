@@ -1,6 +1,8 @@
 
 #include "test_common.hpp"
 
+DECLARE_ADGRAPH();
+
 struct CurvatureDependsOnTheta {
     int n_random;
 

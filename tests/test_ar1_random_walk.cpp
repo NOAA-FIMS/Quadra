@@ -1,6 +1,7 @@
 
 #include "test_common.hpp"
 
+DECLARE_ADGRAPH();
 
 struct GaussianRandomWalk {
     std::vector<double> y;

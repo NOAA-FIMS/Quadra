@@ -16,7 +16,7 @@
 #include "had/had.h"
 #endif
 
-DECLARE_ADGRAPH();
+
 
 #include "eigen/Eigen/Dense"
 #include "eigen/Eigen/Sparse"

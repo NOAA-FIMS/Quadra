@@ -3,7 +3,11 @@
 #include <iostream>
 #include <vector>
 
+
+
 #include "../core/optimizer.hpp"
+
+DECLARE_ADGRAPH();
 
 // Fisheries-style selectivity example.
 //
