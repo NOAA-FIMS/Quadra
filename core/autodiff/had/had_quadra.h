@@ -624,6 +624,7 @@ namespace had
         }
     }
 
+
     inline void PushEdgeDot(const ADEdge &foEdge,
                             const ADEdge &soEdge,
                             const Real soEdgeDot)
@@ -801,6 +802,7 @@ namespace had
         }
     }
 
+
     inline void PropagateAdjoint()
     {
         if (g_ADGraph->vertices.size() > g_ADGraph->soEdges.size())
@@ -898,9 +900,10 @@ namespace had
         }
     }
 
+
     ////////////////// Quadra third-order extension API //////////////////
 
-    typedef std::vector<std::vector<Real>> DenseMatrix;
+    typedef std::vector<std::vector<Real> > DenseMatrix;
 
     struct ValueGradientHessian
     {
@@ -956,9 +959,9 @@ namespace had
     struct DirectionalDerivatives3
     {
         Real value = Real(0.0);
-        Real first = Real(0.0);  // df(x)[d]
-        Real second = Real(0.0); // d^T H(x) d
-        Real third = Real(0.0);  // D^3 f(x)[d,d,d]
+        Real first = Real(0.0);   // df(x)[d]
+        Real second = Real(0.0);  // d^T H(x) d
+        Real third = Real(0.0);   // D^3 f(x)[d,d,d]
     };
 
     inline ThirdOrderScalar make_third_order_seed(const Real value, const Real direction)
@@ -1126,8 +1129,8 @@ namespace had
 
     template <typename Func>
     inline DirectionalDerivatives3 evaluate_directional_derivatives3(Func &&f,
-                                                                     const std::vector<Real> &x,
-                                                                     const std::vector<Real> &direction)
+                                                                      const std::vector<Real> &x,
+                                                                      const std::vector<Real> &direction)
     {
         if (x.size() != direction.size())
         {
@@ -1186,6 +1189,8 @@ namespace had
         return out;
     }
 
+
 } // namespace had
 
 #endif // HAD_QUADRA_H__
+

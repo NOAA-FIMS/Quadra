@@ -2,14 +2,11 @@
 #ifndef QUADRA_TEST_COMMON_HPP
 #define QUADRA_TEST_COMMON_HPP
 
-
-
 #include <cmath>
 #include <iostream>
 #include <vector>
 
-
-#include "../core/optimizer.hpp"
+#include "../core/optimizer/optimizer.hpp"
 
 namespace quadra_tests {
 

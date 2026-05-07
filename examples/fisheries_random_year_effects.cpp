@@ -3,9 +3,7 @@
 #include <iostream>
 #include <vector>
 
-#include "../core/optimizer.hpp"
-
-DECLARE_ADGRAPH();
+#include "../core/optimizer/optimizer.hpp"
 
 // Simple fisheries-style biomass index model with year random effects.
 //

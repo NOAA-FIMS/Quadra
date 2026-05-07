@@ -13,12 +13,12 @@
 #include <set>
 #include <iomanip>
 #include <string>
-#include "../model/parameter.hpp"
-#include "autodiff.hpp"
+#include "../../model/parameter.hpp"
+#include "../autodiff/autodiff.hpp"
 #include "evaluation.hpp"
-#include "eigen/Eigen/Dense"
-#include "eigen/Eigen/Sparse"
-#include "eigen/Eigen/SparseCholesky"
+#include "../eigen/Eigen/Dense"
+#include "../eigen/Eigen/Sparse"
+#include "../eigen/Eigen/SparseCholesky"
 
 namespace quadra
 {
@@ -487,6 +487,8 @@ namespace quadra
             std::string(context) + ": sparse factorization failed");
     }
 
+
+
     inline double sparse_logdet_llt(
         const Eigen::SparseMatrix<double> &H)
     {
@@ -882,6 +884,7 @@ namespace quadra
 
         return du;
     }
+
 
     //==================================================
     // Fast implicit sensitivities for all fixed effects
@@ -1308,6 +1311,7 @@ namespace quadra
 
         return Hdot;
     }
+
 
     //==================================================
     // Exact Laplace log-determinant gradient contribution

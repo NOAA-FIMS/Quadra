@@ -8,10 +8,10 @@
 #include <iomanip>
 #include <limits>
 #include <string>
-#include "eigen/Eigen/Dense"
-#include "LBFGSpp/include/LBFGS.h"
-#include "autodiff.hpp"
-#include "laplace.hpp"
+#include "../eigen/Eigen/Dense"
+#include "../LBFGSpp/include/LBFGS.h"
+#include "../autodiff/autodiff.hpp"
+#include "../laplace/laplace.hpp"
 
 namespace quadra
 {
@@ -109,6 +109,16 @@ namespace quadra
 
             return res.value;
 
+            //    auto res = laplace_eval(
+            //         model,
+            //         params,
+            //         random_idx,
+            //         fixed_idx,
+            //         x
+            //     );
+
+            //     grad = res.grad_x;
+            //     return res.value;
         }
     };
 
@@ -165,7 +175,6 @@ namespace quadra
         }
         catch (const std::runtime_error &e)
         {
-            const double gnorm = fun.last_grad.norm();
             const double max_grad =
                 (fun.last_grad.size() > 0)
                     ? fun.last_grad.cwiseAbs().maxCoeff()
@@ -185,12 +194,10 @@ namespace quadra
             if (line_search_failed && max_grad < convergence_like_grad)
             {
                 std::cout
-                    << "L-BFGS: line search failed after convergence-like gradient. (max|grad| = " << max_grad << ") "
-                    << "\nL-BFGS: "
-                    << "outer iter = " << std::setw(3) << niter
-                    << ", fx = " << std::setw(14) << std::fixed << std::setprecision(6) << fx
-                    << ", |grad| = " << std::setw(12) << std::fixed << std::setprecision(6) << gnorm
-                    << std::endl;
+                    << "L-BFGS stopped: line search failed after convergence-like gradient. "
+                    << "max|grad| = " << max_grad
+                    << ", fx = " << fun.last_fx
+                    << "\n";
 
                 if (fun.last_x.size() == x.size())
                 {

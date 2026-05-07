@@ -7,19 +7,14 @@
 #include <type_traits>
 #include <utility>
 #include <vector>
-#include <set>
-#include <algorithm>
 
 #ifndef QUADRA_USE_ORIGINAL_HAD
-#include "had_quadra.hpp"
+#include "had/had_quadra.h"
 #else
 #include "had/had.h"
 #endif
 
-
-
-#include "eigen/Eigen/Dense"
-#include "eigen/Eigen/Sparse"
+#include "../eigen/Eigen/Dense"
 
 namespace quadra
 {
@@ -69,9 +64,9 @@ namespace quadra
     struct ThirdDirectionalResult
     {
         double value = 0.0;
-        double first = 0.0;  // df(x)[d]
-        double second = 0.0; // d^T H(x) d
-        double third = 0.0;  // D^3 f(x)[d,d,d]
+        double first = 0.0;   // df(x)[d]
+        double second = 0.0;  // d^T H(x) d
+        double third = 0.0;   // D^3 f(x)[d,d,d]
     };
 #endif
 
@@ -258,76 +253,6 @@ namespace quadra
         return out;
     }
 #endif
-
-    struct HessianPattern
-    {
-        int n = 0;
-        std::vector<Eigen::Triplet<double>> triplets;
-        std::vector<std::pair<int, int>> pairs;
-
-        Eigen::SparseMatrix<double> to_sparse_matrix() const
-        {
-            Eigen::SparseMatrix<double> H(n, n);
-            H.setFromTriplets(triplets.begin(), triplets.end());
-            return H;
-        }
-    };
-
-    inline HessianPattern extract_hessian_pattern_from_graph(
-        const std::vector<had::AReal> &independent_vars,
-        bool symmetric = true)
-    {
-        HessianPattern pattern;
-        pattern.n = static_cast<int>(independent_vars.size());
-
-        std::set<std::pair<int, int>> unique_pairs;
-
-        for (int i = 0; i < pattern.n; ++i)
-        {
-            const auto vi = independent_vars[i].varId;
-
-            // Diagonal
-            if (vi < had::g_ADGraph->selfSoEdges.size() &&
-                had::g_ADGraph->selfSoEdges[vi] != had::Real(0.0))
-            {
-                unique_pairs.insert({i, i});
-            }
-
-            // Off-diagonal
-            if (vi < had::g_ADGraph->soEdges.size())
-            {
-                const auto &tree = had::g_ADGraph->soEdges[vi];
-
-                for (const auto &node : tree.nodes)
-                {
-                    auto vj = node.key;
-
-                    for (int j = 0; j < pattern.n; ++j)
-                    {
-                        if (independent_vars[j].varId == vj &&
-                            node.val != had::Real(0.0))
-                        {
-
-                            unique_pairs.insert({i, j});
-
-                            if (symmetric)
-                            {
-                                unique_pairs.insert({j, i});
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        for (auto [i, j] : unique_pairs)
-        {
-            pattern.pairs.push_back({i, j});
-            pattern.triplets.emplace_back(i, j, 1.0);
-        }
-
-        return pattern;
-    }
 
 } // namespace quadra
 

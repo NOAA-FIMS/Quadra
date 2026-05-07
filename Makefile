@@ -1,6 +1,7 @@
-
 CXX ?= clang++
 CXXFLAGS ?= -std=c++17 -O3 -flto -Icore/eigen
+
+CORE_SRC = core/autodiff/adgraph.cpp
 
 TESTS = \
 	tests/test_curvature_depends_on_theta \
@@ -15,14 +16,14 @@ EXAMPLES = \
 
 all: $(TESTS) $(EXAMPLES)
 
-tests/%: tests/%.cpp
-	$(CXX) $(CXXFLAGS) -o $@ $<
+tests/%: tests/%.cpp $(CORE_SRC)
+	$(CXX) $(CXXFLAGS) -o $@ $< $(CORE_SRC)
 
-examples/%: examples/%.cpp
-	$(CXX) $(CXXFLAGS) -o $@ $<
+examples/%: examples/%.cpp $(CORE_SRC)
+	$(CXX) $(CXXFLAGS) -o $@ $< $(CORE_SRC)
 
 validate-hdot:
-	$(CXX) $(CXXFLAGS) -DQUADRA_VALIDATE_HDOT -o tests/test_hdot_validation tests/test_hdot_validation.cpp
+	$(CXX) $(CXXFLAGS) -DQUADRA_VALIDATE_HDOT -o tests/test_hdot_validation tests/test_hdot_validation.cpp $(CORE_SRC)
 	./tests/test_hdot_validation
 
 run-tests: $(TESTS)

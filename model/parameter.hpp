@@ -1,72 +1,97 @@
-#ifndef PARAMETER_HPP
-#define PARAMETER_HPP
+#ifndef QUADRA_PARAMETER_HPP
+#define QUADRA_PARAMETER_HPP
+
 #pragma once
 
-#include <vector>
-#include <map>
-#include <string>
-#include <stdexcept>
 #include <cmath>
-#include "../math/transforms.hpp"
+#include <limits>
+#include <stdexcept>
+#include <string>
+#include <vector>
 
 namespace quadra
 {
 
-    //==============================
-    // Transform types
-    //==============================
-    // enum class Transform {
-    //     Identity,
-    //     Log,
-    //     Logit
-    // };
+    enum class Transform
+    {
+        Identity,
+        Log,
+        Logit,
+        Square
+    };
 
-    // //==============================
-    // // Transform functions
-    // //==============================
-    // template <typename T>
-    // T apply_transform(T x, Transform t) {
-    //     switch (t) {
-    //         case Transform::Identity:
-    //             return x;
+    template <typename T>
+    inline T apply_transform(const T &x, Transform transform)
+    {
+        switch (transform)
+        {
+        case Transform::Identity:
+            return x;
+        case Transform::Log:
+            return exp(x);
+        case Transform::Logit:
+            return T(1.0) / (T(1.0) + exp(-x));
+        case Transform::Square:
+            return x * x;
+        default:
+            throw std::runtime_error("Unknown parameter transform");
+        }
+    }
 
-    //         case Transform::Log:
-    //             return exp(x);  // positive
+    template <typename T>
+    inline T log_jacobian(const T &x, Transform transform)
+    {
+        switch (transform)
+        {
+        case Transform::Identity:
+            return T(0.0);
+        case Transform::Log:
+            return x;
+        case Transform::Logit:
+        {
+            T y = T(1.0) / (T(1.0) + exp(-x));
+            return log(y) + log(T(1.0) - y);
+        }
+        case Transform::Square:
+            return log(T(2.0) * x);
+        default:
+            throw std::runtime_error("Unknown parameter transform");
+        }
+    }
 
-    //         case Transform::Logit:
-    //             return T(1) / (T(1) + exp(-x));  // (0,1)
-
-    //         default:
-    //             throw std::runtime_error("Unknown transform");
-    //     }
-    // }
-
-    //==============================
-    // Parameter definition
-    //==============================
     struct Parameter
     {
         std::string name;
-        double value;
-        Transform transform;
-        bool is_random;
-        int block_id;
+        double value = 0.0;
+        Transform transform = Transform::Identity;
+        bool is_random = false;
 
-        Parameter(std::string name,
-                  double value,
-                  Transform transform = Transform::Identity,
-                  bool is_random = false,
-                  int block_id = -1)
-            : name(name),
-              value(value),
-              transform(transform),
-              is_random(is_random),
-              block_id(block_id) {}
+        // Optimization/reporting metadata
+        bool active = true;
+        bool report = true;
+
+        // Post-fit covariance metadata
+        bool estimate_covariance = true;
+        double std_error = std::numeric_limits<double>::quiet_NaN();
+        int covariance_index = -1;
+
+        Parameter() = default;
+
+        Parameter(const std::string &n,
+                  double v,
+                  Transform t = Transform::Identity,
+                  bool random = false)
+            : name(n),
+              value(v),
+              transform(t),
+              is_random(random),
+              estimate_covariance(!random)
+        {
+        }
     };
 
-    class ParameterVector
+    struct ParameterVector
     {
-    public:
         std::vector<Parameter> params;
 
         void add(const Parameter &p)
@@ -74,81 +99,50 @@ namespace quadra
             params.push_back(p);
         }
 
-        size_t size() const { return params.size(); }
-
-        //====================================
-        // INDICES
-        //====================================
-        std::vector<size_t> fixed_indices() const
+        int size() const
         {
-            std::vector<size_t> idx;
-            for (size_t i = 0; i < params.size(); ++i)
-                if (!params[i].is_random)
-                    idx.push_back(i);
-            return idx;
+            return static_cast<int>(params.size());
         }
 
-        std::vector<size_t> random_indices() const
+        Parameter &operator[](std::size_t i)
         {
-            std::vector<size_t> idx;
-            for (size_t i = 0; i < params.size(); ++i)
-                if (params[i].is_random)
-                    idx.push_back(i);
-            return idx;
+            return params[i];
         }
 
-        //====================================
-        // BLOCK GROUPING
-        //====================================
-        std::map<int, std::vector<size_t>> random_blocks() const
+        const Parameter &operator[](std::size_t i) const
         {
-
-            std::map<int, std::vector<size_t>> blocks;
-
-            for (size_t i = 0; i < params.size(); ++i)
-            {
-
-                if (!params[i].is_random)
-                    continue;
-
-                int bid = params[i].block_id;
-
-                // fallback: each param its own block
-                if (bid < 0)
-                    bid = static_cast<int>(i);
-
-                blocks[bid].push_back(i);
-            }
-
-            return blocks;
-        }
-
-        //====================================
-        // BLOCK SIZES (useful for debugging/perf)
-        //====================================
-        std::vector<size_t> block_sizes() const
-        {
-            std::vector<size_t> sizes;
-
-            auto blocks = random_blocks();
-
-            for (const auto &kv : blocks)
-                sizes.push_back(kv.second.size());
-
-            return sizes;
-        }
-
-        //====================================
-        // VALUES
-        //====================================
-        std::vector<double> values() const
-        {
-            std::vector<double> x(params.size());
-            for (size_t i = 0; i < params.size(); ++i)
-                x[i] = params[i].value;
-            return x;
+            return params[i];
         }
     };
 
+    // inline std::vector<int> build_fixed_index(const ParameterVector &params)
+    // {
+    //     std::vector<int> idx;
+    //     for (int i = 0; i < params.size(); ++i)
+    //     {
+    //         if (!params.params[static_cast<std::size_t>(i)].is_random &&
+    //             params.params[static_cast<std::size_t>(i)].active)
+    //         {
+    //             idx.push_back(i);
+    //         }
+    //     }
+    //     return idx;
+    // }
+
+    // inline std::vector<int> build_random_index(const ParameterVector &params)
+    // {
+    //     std::vector<int> idx;
+    //     for (int i = 0; i < params.size(); ++i)
+    //     {
+    //         if (params.params[static_cast<std::size_t>(i)].is_random &&
+    //             params.params[static_cast<std::size_t>(i)].active)
+    //         {
+    //             idx.push_back(i);
+    //         }
+    //     }
+    //     return idx;
+    // }
+
 } // namespace quadra
-#endif // PARAMETER_HPP
+
+#endif

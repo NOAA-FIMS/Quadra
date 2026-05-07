@@ -6,9 +6,9 @@
 #include <iostream>
 #include <vector>
 
-#include "../model/parameter.hpp"
-#include "../math/transforms.hpp"
-#include "../core/autodiff.hpp"
+#include "../../model/parameter.hpp"
+#include "../optimizer/optimizer.hpp"
+#include "../autodiff/autodiff.hpp"
 
 namespace quadra
 {
