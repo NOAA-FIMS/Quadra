@@ -7,7 +7,9 @@ TESTS = \
 	tests/test_curvature_depends_on_theta \
 	tests/test_poisson_random_effect \
 	tests/test_ar1_random_walk \
-	tests/test_hdot_validation
+	tests/test_hdot_validation \
+	tests/test_fixed_covariance
+	
 
 EXAMPLES = \
 	examples/fisheries_random_year_effects \
@@ -31,6 +33,7 @@ run-tests: $(TESTS)
 	./tests/test_poisson_random_effect
 	./tests/test_ar1_random_walk
 	./tests/test_hdot_validation
+	./tests/test_fixed_covariance
 
 clean:
 	rm -f $(TESTS) $(EXAMPLES)
