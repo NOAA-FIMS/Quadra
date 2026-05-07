@@ -9,13 +9,18 @@ TESTS = \
 	tests/test_ar1_random_walk \
 	tests/test_hdot_validation \
 	tests/test_fixed_covariance \
-	tests/test_report_registry
+	tests/test_report_registry \
+	tests/test_report_v2 
 	
 
 EXAMPLES = \
 	examples/fisheries_random_year_effects \
 	examples/fisheries_age_selectivity_random_walk \
-	examples/fisheries_index_cpue_laplace
+	examples/fisheries_index_cpue_laplace \
+	examples/fisheries_report_registry \
+	examples/fisheries_report_v2 
+	
+	
 
 all: $(TESTS) $(EXAMPLES)
 

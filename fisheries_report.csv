@@ -1,0 +1,4 @@
+path,group,name,value,std_error,estimate_uncertainty,units,description
+parameters/log_q,parameters,log_q,-4.60276,,false,,
+catchability/q,catchability,q,0.0100242,7.13806e-05,true,index per biomass,Catchability coefficient
+predictions/index_year_0,predictions,index_year_0,10.062,0.07165,true,index units,Predicted index for first year
