@@ -19,6 +19,9 @@
 #include "../eigen/Eigen/Dense"
 #include "../eigen/Eigen/Sparse"
 #include "../eigen/Eigen/SparseCholesky"
+#include "../sparse/factorization.hpp"
+#include "../sparse/trace.hpp"
+#include "options.hpp"
 
 namespace quadra
 {
@@ -26,39 +29,8 @@ namespace quadra
     using Eigen::MatrixXd;
     using Eigen::VectorXd;
 
-    //==================================================
-    // Laplace options
-    //==================================================
-    struct LaplaceOptions
-    {
-        // Trace strategy for tr(H^{-1} Hdot).
-        // For very large random-effect systems Hutchinson avoids dense RHS solves.
-        bool use_hutchinson_trace = true;
-        int hutchinson_probes = 8;
-        unsigned int hutchinson_seed = 12345;
 
-        // Adaptive diagonal jitter for sparse factorizations.
-        // Jitter is only applied if the unmodified Hessian fails to factorize.
-        double jitter_initial = 1e-12;
-        int jitter_max_attempts = 12;
-
-        // Validation/debugging knobs.
-        // Compile-time validation is still controlled by QUADRA_VALIDATE_HDOT,
-        // but this flag lets the runtime call sites opt out if desired.
-        bool validate_hdot = true;
-
-        // Threshold for dropping sparse Hessian entries.
-        // Use 0.0 for logdet paths so very small curvature is not dropped.
-        double hessian_drop_tol = 0.0;
-    };
-
-    inline LaplaceOptions &default_laplace_options()
-    {
-        static LaplaceOptions options;
-        return options;
-    }
-
-    //==============================
+//==============================
     // Build fixed index map
     //==============================
     inline std::vector<int>
@@ -422,29 +394,8 @@ namespace quadra
     // to factorize. This avoids biasing gradients near valid optima
     // while still protecting against near-singular random-effect
     // Hessians during stress tests or weakly identified models.
-    //==================================================
-    inline Eigen::SparseMatrix<double> add_diagonal_jitter(
-        const Eigen::SparseMatrix<double> &H,
-        double jitter)
-    {
-        Eigen::SparseMatrix<double> H_reg = H;
-        H_reg.makeCompressed();
 
-        for (int k = 0; k < H_reg.outerSize(); ++k)
-        {
-            for (Eigen::SparseMatrix<double>::InnerIterator it(H_reg, k); it; ++it)
-            {
-                if (it.row() == it.col())
-                {
-                    it.valueRef() += jitter;
-                }
-            }
-        }
-
-        return H_reg;
-    }
-
-    inline Eigen::SparseMatrix<double> factorize_with_adaptive_jitter(
+inline Eigen::SparseMatrix<double> factorize_with_adaptive_jitter(
         const Eigen::SparseMatrix<double> &H,
         Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> &solver,
         const char *context,
@@ -724,64 +675,30 @@ namespace quadra
     // This avoids catastrophic dense materialization for large
     // random-effect systems.
     //==================================================
+    /**
+     * @brief Compatibility wrapper for the Laplace log-determinant trace term.
+     *
+     * Computes
+     *
+     * \f[
+     *   \operatorname{tr}(H^{-1}\dot H),
+     * \f]
+     *
+     * using the trace strategy configured in `LaplaceOptions`.
+     */
     template <typename SolverType>
     double logdet_directional_derivative_from_hdot(
         SolverType &solver,
         const Eigen::SparseMatrix<double> &Hdot,
         const LaplaceOptions &options = default_laplace_options())
     {
-        if (Hdot.rows() != Hdot.cols())
-        {
-            throw std::invalid_argument(
-                "logdet_directional_derivative_from_hdot: Hdot not square");
-        }
-
-        const Eigen::Index n = Hdot.rows();
-
-        if (!options.use_hutchinson_trace)
-        {
-            // Deterministic exact trace for small/moderate systems.
-            // This should not be used for very large random-effect systems.
-            Eigen::MatrixXd rhs = Eigen::MatrixXd(Hdot);
-            Eigen::MatrixXd X = solver.solve(rhs);
-
-            if (solver.info() != Eigen::Success)
-            {
-                throw std::runtime_error(
-                    "logdet_directional_derivative_from_hdot: dense trace solve failed");
-            }
-
-            return X.diagonal().sum();
-        }
-
-        std::mt19937 rng(options.hutchinson_seed);
-        std::uniform_int_distribution<int> rademacher(0, 1);
-
-        double trace_est = 0.0;
-
-        for (int sample = 0; sample < options.hutchinson_probes; ++sample)
-        {
-            Eigen::VectorXd z(n);
-
-            for (Eigen::Index i = 0; i < n; ++i)
-            {
-                z[i] = (rademacher(rng) == 0) ? -1.0 : 1.0;
-            }
-
-            Eigen::VectorXd y = Hdot * z;
-            Eigen::VectorXd x = solver.solve(y);
-
-            if (solver.info() != Eigen::Success)
-            {
-                throw std::runtime_error(
-                    "logdet_directional_derivative_from_hdot: Hutchinson sparse solve failed");
-            }
-
-            trace_est += z.dot(x);
-        }
-
-        return trace_est / static_cast<double>(options.hutchinson_probes);
+        return trace_hinv_hdot(
+            solver,
+            Hdot,
+            options.trace);
     }
+
+
 
     //==================================================
     // Finite-difference directional derivative of random Hessian
@@ -1401,7 +1318,7 @@ namespace quadra
                 H,
                 solver,
                 "laplace_logdet_gradient_exact",
-                options);
+                options.sparse);
 
         // --------------------------------------------------
         // Compute all implicit random-effect sensitivities:
