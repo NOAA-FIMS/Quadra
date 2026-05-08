@@ -351,6 +351,11 @@ struct MyModel {
 
 ---
 
+
+This keeps sparse factorization, trace estimation, and Laplace policy separate from model and inference logic.
+
+Key equations are documented in Doxygen comments throughout the new headers.
+
 # Acknowledgements
 
 Quadra builds upon ideas and techniques developed across the scientific computing, automatic differentiation, and mixed-effects modeling communities.
