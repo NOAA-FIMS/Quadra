@@ -16,10 +16,8 @@
 #include "had/had.h"
 #endif
 
-
-
-#include "eigen/Eigen/Dense"
-#include "eigen/Eigen/Sparse"
+#include "../external/eigen/Eigen/Dense"
+#include "../external/eigen/Eigen/Sparse"
 
 namespace quadra
 {
