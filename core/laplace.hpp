@@ -16,9 +16,9 @@
 #include "../model/parameter.hpp"
 #include "autodiff.hpp"
 #include "evaluation.hpp"
-#include "eigen/Eigen/Dense"
-#include "eigen/Eigen/Sparse"
-#include "eigen/Eigen/SparseCholesky"
+#include "../external/eigen/Eigen/Dense"
+#include "../external/eigen/Eigen/Sparse"
+#include "../external/eigen/Eigen/SparseCholesky"
 
 namespace quadra
 {

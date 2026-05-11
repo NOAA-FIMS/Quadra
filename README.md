@@ -112,7 +112,7 @@ Quadra currently depends on:
 
 ```bash
 clang++ -std=c++17 -O3 -flto \
-  -Icore/eigen \
+  $(QUADRA_INCLUDE_FLAGS) \
   -o examples/fisheries_random_year_effects \
   examples/fisheries_random_year_effects.cpp \
   core/adgraph.cpp

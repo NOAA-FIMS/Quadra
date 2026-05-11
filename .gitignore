@@ -1,0 +1,16 @@
+# Build outputs
+*.o
+*.so
+*.dylib
+*.dll
+*.exe
+*.a
+
+# Local binaries
+tests/test_curvature_depends_on_theta
+examples/normal_mean
+
+# macOS
+.DS_Store
+
+# Editors

@@ -8,8 +8,8 @@
 #include <iomanip>
 #include <limits>
 #include <string>
-#include "eigen/Eigen/Dense"
-#include "LBFGSpp/include/LBFGS.h"
+#include "../external/eigen/Eigen/Dense"
+#include "../external/LBFGSpp/include/LBFGS.h"
 #include "autodiff.hpp"
 #include "laplace.hpp"
 
@@ -108,7 +108,6 @@ namespace quadra
             }
 
             return res.value;
-
         }
     };
 
