@@ -1,0 +1,162 @@
+#pragma once
+
+#include <cmath>
+#include <stdexcept>
+#include <string>
+#include <vector>
+
+#include <Eigen/Dense>
+#include <Eigen/Sparse>
+#include <Eigen/SparseCholesky>
+
+#include "random_effect_hessian.hpp"
+#include "laplace_objective.hpp"
+
+namespace quadra {
+
+struct LaplaceImplicitDerivativeOptions {
+    double hessian_drop_tol_m = 0.0;
+};
+
+struct LaplaceImplicitDerivativeResult {
+    Eigen::MatrixXd H_u_theta_m;
+    Eigen::MatrixXd du_dtheta_m;
+
+    Eigen::SparseMatrix<double> H_uu_m;
+
+    std::vector<double> fixed_m;
+    std::vector<double> u_hat_m;
+    std::vector<double> full_m;
+
+    bool converged_m = false;
+    bool success_m = false;
+
+    std::string message_m;
+};
+
+// Dense finite-difference mixed Hessian wrt:
+// rows: random effects u
+// cols: fixed effects theta
+template <class Model>
+inline Eigen::MatrixXd finite_difference_mixed_hessian(
+    Model& model,
+    const std::vector<double>& fixed,
+    const std::vector<double>& random,
+    const ParameterPartition& partition,
+    double eps = 1e-6
+) {
+    const size_t n_random = random.size();
+    const size_t n_fixed = fixed.size();
+
+    Eigen::MatrixXd H(n_random, n_fixed);
+
+    for (size_t j = 0; j < n_fixed; ++j) {
+        std::vector<double> theta_plus = fixed;
+        std::vector<double> theta_minus = fixed;
+
+        theta_plus[j] += eps;
+        theta_minus[j] -= eps;
+
+        auto g_plus =
+            evaluate_random_effect_hessian(
+                model,
+                theta_plus,
+                random,
+                partition
+            );
+
+        auto g_minus =
+            evaluate_random_effect_hessian(
+                model,
+                theta_minus,
+                random,
+                partition
+            );
+
+        for (size_t i = 0; i < n_random; ++i) {
+            H(static_cast<int>(i), static_cast<int>(j)) =
+                (g_plus.gradient_random_m[i] -
+                 g_minus.gradient_random_m[i]) / (2.0 * eps);
+        }
+    }
+
+    return H;
+}
+
+template <class Model>
+inline LaplaceImplicitDerivativeResult
+evaluate_laplace_implicit_derivatives(
+    Model& model,
+    const std::vector<double>& fixed,
+    const std::vector<double>& random_initial,
+    const ParameterPartition& partition,
+    const LaplaceImplicitDerivativeOptions& options =
+        LaplaceImplicitDerivativeOptions()
+) {
+    LaplaceImplicitDerivativeResult result;
+
+    auto laplace =
+        evaluate_laplace_objective(
+            model,
+            fixed,
+            random_initial,
+            partition
+        );
+
+    result.fixed_m = fixed;
+    result.u_hat_m = laplace.u_hat_m;
+    result.full_m = laplace.full_m;
+    result.H_uu_m = laplace.hessian_random_m;
+    result.converged_m = laplace.converged_m;
+
+    if (!laplace.converged_m) {
+        result.message_m = "Laplace objective failed.";
+        return result;
+    }
+
+    result.H_u_theta_m =
+        finite_difference_mixed_hessian(
+            model,
+            fixed,
+            laplace.u_hat_m,
+            partition
+        );
+
+    Eigen::MatrixXd H_dense(laplace.hessian_random_m);
+
+    Eigen::LDLT<Eigen::MatrixXd> solver(H_dense);
+
+    if (solver.info() != Eigen::Success) {
+        result.message_m = "Failed LDLT solve for implicit derivatives.";
+        return result;
+    }
+
+    result.du_dtheta_m =
+        -solver.solve(result.H_u_theta_m);
+
+    result.success_m = true;
+    result.message_m = "Implicit derivatives computed.";
+
+    return result;
+}
+
+template <class Model>
+inline LaplaceImplicitDerivativeResult
+evaluate_laplace_implicit_derivatives(
+    Model& model,
+    const std::vector<double>& fixed,
+    const std::vector<double>& random_initial,
+    const ParameterSet& parameters,
+    const LaplaceImplicitDerivativeOptions& options =
+        LaplaceImplicitDerivativeOptions()
+) {
+    return evaluate_laplace_implicit_derivatives(
+        model,
+        fixed,
+        random_initial,
+        partition_parameters(parameters),
+        options
+    );
+}
+
+} // namespace quadra
