@@ -75,6 +75,25 @@ namespace had
     typedef double Real;
     typedef unsigned int VertexId;
 
+    enum class OpCode
+    {
+        Independent,
+        Add,
+        AddConstant,
+        Subtract,
+        SubtractConstant,
+        ConstantSubtract,
+        Multiply,
+        MultiplyConstant,
+        Divide,
+        DivideConstant,
+        ConstantDivide,
+        Exp,
+        Log,
+        Sqrt,
+        Negate
+    };
+
     struct ADGraph;
     struct AReal;
 
@@ -148,6 +167,13 @@ namespace had
         Real toW;
         // Optional directional tangent associated with this vertex.
         Real dot;
+
+        // Replay primal value and operation metadata.
+        Real primal = Real(0.0);
+        OpCode op = OpCode::Independent;
+        VertexId left = 0;
+        VertexId right = 0;
+        Real constant = Real(0.0);
     };
 
     struct BTNode
@@ -283,6 +309,162 @@ namespace had
             selfSoEdgesDot.clear();
         }
 
+        // Reset accumulated reverse-mode adjoints and Hessian accumulator
+        // state without deleting the graph structure or local derivative
+        // metadata stored on vertices.
+
+        // Replay primal values and local derivative weights using stored
+        // operation metadata.
+        inline void Forward()
+        {
+            for (size_t i = 0; i < vertices.size(); ++i)
+            {
+                ADVertex& v = vertices[i];
+
+                switch (v.op)
+                {
+                    case OpCode::Independent:
+                        break;
+
+                    case OpCode::Add:
+                        v.primal =
+                            vertices[v.left].primal +
+                            vertices[v.right].primal;
+                        v.e1.w = Real(1.0);
+                        v.e2.w = Real(1.0);
+                        v.soW = Real(0.0);
+                        break;
+
+                    case OpCode::AddConstant:
+                        v.primal =
+                            vertices[v.left].primal +
+                            v.constant;
+                        v.e1.w = Real(1.0);
+                        v.soW = Real(0.0);
+                        break;
+
+                    case OpCode::Subtract:
+                        v.primal =
+                            vertices[v.left].primal -
+                            vertices[v.right].primal;
+                        v.e1.w = Real(1.0);
+                        v.e2.w = -Real(1.0);
+                        v.soW = Real(0.0);
+                        break;
+
+                    case OpCode::SubtractConstant:
+                        v.primal =
+                            vertices[v.left].primal -
+                            v.constant;
+                        v.e1.w = Real(1.0);
+                        v.soW = Real(0.0);
+                        break;
+
+                    case OpCode::ConstantSubtract:
+                        v.primal =
+                            v.constant -
+                            vertices[v.left].primal;
+                        v.e1.w = -Real(1.0);
+                        v.soW = Real(0.0);
+                        break;
+
+                    case OpCode::Multiply:
+                        v.primal =
+                            vertices[v.left].primal *
+                            vertices[v.right].primal;
+                        v.e1.w = vertices[v.right].primal;
+                        v.e2.w = vertices[v.left].primal;
+                        v.soW = Real(1.0);
+                        break;
+
+                    case OpCode::MultiplyConstant:
+                        v.primal =
+                            vertices[v.left].primal *
+                            v.constant;
+                        v.e1.w = v.constant;
+                        v.soW = Real(0.0);
+                        break;
+
+                    case OpCode::Divide:
+                        v.primal =
+                            vertices[v.left].primal /
+                            vertices[v.right].primal;
+                        v.e1.w = Real(1.0) / vertices[v.right].primal;
+                        v.e2.w =
+                            -vertices[v.left].primal /
+                            (vertices[v.right].primal * vertices[v.right].primal);
+                        v.soW =
+                            -Real(1.0) /
+                            (vertices[v.right].primal * vertices[v.right].primal);
+                        break;
+
+                    case OpCode::DivideConstant:
+                        v.primal =
+                            vertices[v.left].primal /
+                            v.constant;
+                        v.e1.w = Real(1.0) / v.constant;
+                        v.soW = Real(0.0);
+                        break;
+
+                    case OpCode::ConstantDivide:
+                        v.primal =
+                            v.constant /
+                            vertices[v.left].primal;
+                        v.e1.w =
+                            -v.constant /
+                            (vertices[v.left].primal * vertices[v.left].primal);
+                        v.soW =
+                            Real(2.0) * v.constant /
+                            (vertices[v.left].primal *
+                             vertices[v.left].primal *
+                             vertices[v.left].primal);
+                        break;
+
+                    case OpCode::Exp:
+                        v.primal = std::exp(vertices[v.left].primal);
+                        v.e1.w = v.primal;
+                        v.soW = v.primal;
+                        break;
+
+                    case OpCode::Log:
+                        v.primal = std::log(vertices[v.left].primal);
+                        v.e1.w = Real(1.0) / vertices[v.left].primal;
+                        v.soW =
+                            -Real(1.0) /
+                            (vertices[v.left].primal * vertices[v.left].primal);
+                        break;
+
+                    case OpCode::Sqrt:
+                        v.primal = std::sqrt(vertices[v.left].primal);
+                        v.e1.w = Real(0.5) / v.primal;
+                        v.soW =
+                            -Real(0.25) /
+                            (vertices[v.left].primal * v.primal);
+                        break;
+
+                    case OpCode::Negate:
+                        v.primal = -vertices[v.left].primal;
+                        v.e1.w = -Real(1.0);
+                        v.soW = Real(0.0);
+                        break;
+                }
+            }
+        }
+
+        inline void ZeroAdjoints()
+        {
+            for (ADVertex& v : vertices)
+            {
+                v.w = Real(0.0);
+                v.wDot = Real(0.0);
+            }
+
+            soEdges.clear();
+            selfSoEdges.clear();
+            soEdgesDot.clear();
+            selfSoEdgesDot.clear();
+        }
+
         std::vector<ADVertex> vertices;
         std::vector<BTree> soEdges;
         std::vector<Real> selfSoEdges;
@@ -295,6 +477,8 @@ namespace had
         std::vector<ADVertex> &vertices = g_ADGraph->vertices;
         VertexId newId = vertices.size();
         vertices.push_back(ADVertex(newId));
+        vertices[newId].primal = val;
+        vertices[newId].op = OpCode::Independent;
         return AReal(val, newId);
     }
 
@@ -334,17 +518,62 @@ namespace had
         c.dot = v.dot;
     }
 
+    inline void SetReplayBinary(
+        AReal& c,
+        const OpCode op,
+        const AReal& left,
+        const AReal& right
+    )
+    {
+        ADVertex& v = g_ADGraph->vertices[c.varId];
+        v.op = op;
+        v.left = left.varId;
+        v.right = right.varId;
+    }
+
+    inline void SetReplayUnary(
+        AReal& c,
+        const OpCode op,
+        const AReal& left
+    )
+    {
+        ADVertex& v = g_ADGraph->vertices[c.varId];
+        v.op = op;
+        v.left = left.varId;
+    }
+
+    inline void SetReplayConstant(
+        AReal& c,
+        const OpCode op,
+        const AReal& left,
+        const Real constant
+    )
+    {
+        ADVertex& v = g_ADGraph->vertices[c.varId];
+        v.op = op;
+        v.left = left.varId;
+        v.constant = constant;
+    }
+
+    inline void SetValue(AReal& x, const Real value)
+    {
+        x.val = value;
+        g_ADGraph->vertices[x.varId].primal = value;
+    }
+
     ////////////////////// Addition ///////////////////////////
     inline AReal operator+(const AReal &l, const AReal &r)
     {
         AReal ret = NewAReal(l.val + r.val);
         AddEdge(ret, l, r, Real(1.0), Real(1.0), Real(0.0));
+        SetReplayBinary(ret, OpCode::Add, l, r);
         return ret;
     }
     inline AReal operator+(const AReal &l, const Real r)
     {
         AReal ret = NewAReal(l.val + r);
         AddEdge(ret, l, Real(1.0), Real(0.0));
+        SetReplayConstant(ret, OpCode::AddConstant, l, r);
         return ret;
     }
     inline AReal operator+(const Real l, const AReal &r)
@@ -366,18 +595,21 @@ namespace had
     {
         AReal ret = NewAReal(l.val - r.val);
         AddEdge(ret, l, r, Real(1.0), -Real(1.0), Real(0.0));
+        SetReplayBinary(ret, OpCode::Subtract, l, r);
         return ret;
     }
     inline AReal operator-(const AReal &l, const Real r)
     {
         AReal ret = NewAReal(l.val - r);
         AddEdge(ret, l, Real(1.0), Real(0.0));
+        SetReplayConstant(ret, OpCode::SubtractConstant, l, r);
         return ret;
     }
     inline AReal operator-(const Real l, const AReal &r)
     {
         AReal ret = NewAReal(l - r.val);
         AddEdge(ret, r, Real(-1.0), Real(0.0));
+        SetReplayConstant(ret, OpCode::ConstantSubtract, r, l);
         return ret;
     }
     inline AReal &operator-=(AReal &l, const AReal &r)
@@ -392,6 +624,7 @@ namespace had
     {
         AReal ret = NewAReal(-x.val);
         AddEdge(ret, x, Real(-1.0), Real(0.0));
+        SetReplayUnary(ret, OpCode::Negate, x);
         return ret;
     }
     ///////////////////////////////////////////////////////////
@@ -401,12 +634,14 @@ namespace had
     {
         AReal ret = NewAReal(l.val * r.val);
         AddEdge(ret, l, r, r.val, l.val, Real(1.0));
+        SetReplayBinary(ret, OpCode::Multiply, l, r);
         return ret;
     }
     inline AReal operator*(const AReal &l, const Real r)
     {
         AReal ret = NewAReal(l.val * r);
         AddEdge(ret, l, r, Real(0.0));
+        SetReplayConstant(ret, OpCode::MultiplyConstant, l, r);
         return ret;
     }
     inline AReal operator*(const Real l, const AReal &r)
@@ -431,6 +666,7 @@ namespace had
         Real invXCu = invXSq * invX;
         AReal ret = NewAReal(invX);
         AddEdge(ret, x, -invXSq, Real(2.0) * invXCu, -Real(6.0) * invXCu * invX);
+        SetReplayConstant(ret, OpCode::ConstantDivide, x, Real(1.0));
         return ret;
     }
     inline Real Inv(const Real x)
@@ -503,6 +739,7 @@ namespace had
         Real invSqrtX = Real(1.0) / sqrtX;
         AReal ret = NewAReal(sqrtX);
         AddEdge(ret, x, Real(0.5) * invSqrtX, -Real(0.25) * invSqrtX / x.val, Real(0.375) * invSqrtX / (x.val * x.val));
+        SetReplayUnary(ret, OpCode::Sqrt, x);
         return ret;
     }
     inline AReal pow(const AReal &x, const Real a)
@@ -519,6 +756,7 @@ namespace had
         Real expX = std::exp(x.val);
         AReal ret = NewAReal(expX);
         AddEdge(ret, x, expX, expX, expX);
+        SetReplayUnary(ret, OpCode::Exp, x);
         return ret;
     }
     inline AReal log(const AReal &x)
@@ -527,6 +765,7 @@ namespace had
         AReal ret = NewAReal(logX);
         Real invX = Real(1.0) / x.val;
         AddEdge(ret, x, invX, -invX * invX, Real(2.0) * invX * invX * invX);
+        SetReplayUnary(ret, OpCode::Log, x);
         return ret;
     }
     inline AReal sin(const AReal &x)
@@ -574,6 +813,33 @@ namespace had
         return ret;
     }
     ///////////////////////////////////////////////////////////
+
+
+    inline void Forward(ADGraph &graph)
+    {
+        graph.Forward();
+    }
+
+    inline void Forward()
+    {
+        if (g_ADGraph)
+        {
+            g_ADGraph->Forward();
+        }
+    }
+
+    inline void ZeroAdjoints(ADGraph &graph)
+    {
+        graph.ZeroAdjoints();
+    }
+
+    inline void ZeroAdjoints()
+    {
+        if (g_ADGraph)
+        {
+            g_ADGraph->ZeroAdjoints();
+        }
+    }
 
     inline void SetAdjoint(const AReal &v, const Real adj)
     {
