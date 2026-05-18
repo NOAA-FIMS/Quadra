@@ -23,8 +23,25 @@ all: $(TESTS) $(EXAMPLES)
 tests/%: tests/%.cpp
 	$(CXX) $(CXXFLAGS) -o $@ $<
 
+examples: $(EXAMPLES)
+
 examples/%: examples/%.cpp
+
 	$(CXX) $(CXXFLAGS) -o $@ $<
+
+run-examples: examples
+
+	@for ex in $(EXAMPLES); do \
+		echo ""; \
+		echo "======================================"; \
+		echo "Running $$ex"; \
+		echo "======================================"; \
+		/usr/bin/time -l ./$$ex; \
+	done
+
+clean-examples:
+
+	rm -f $(EXAMPLES)
 
 validate-hdot:
 	$(CXX) $(CXXFLAGS) -DQUADRA_VALIDATE_HDOT -o tests/test_hdot_validation tests/test_hdot_validation.cpp
@@ -58,7 +75,7 @@ validate-hdot:
 	./tests/test_laplace_exact_gradient
 	./tests/test_laplace_implicit_derivatives
 
-run-tests: $(TESTS)
+run-tests: $(TESTS) test-big-laplace-convergence-contract
 	./tests/test_curvature_depends_on_theta
 	./tests/test_poisson_random_effect
 	./tests/test_ar1_random_walk
@@ -382,3 +399,98 @@ benchmark-laplace-evaluator-workspace: benchmarks/laplace_evaluator_workspace_be
 
 benchmarks/laplace_evaluator_workspace_benchmark: benchmarks/laplace_evaluator_workspace_benchmark.cpp core/autodiff/had_quadra_workspace.hpp core/memory/arena_pool.hpp
 	$(CXX) $(CXXFLAGS) -std=c++17 -O3 -I. -I./external/eigen -I./external/had -I./external/LBFGSpp/include -o benchmarks/laplace_evaluator_workspace_benchmark benchmarks/laplace_evaluator_workspace_benchmark.cpp
+
+.PHONY: benchmark-had-quadra-graph-reserve
+benchmark-had-quadra-graph-reserve: benchmarks/had_quadra_graph_reserve_benchmark
+	./benchmarks/had_quadra_graph_reserve_benchmark
+
+benchmarks/had_quadra_graph_reserve_benchmark: benchmarks/had_quadra_graph_reserve_benchmark.cpp core/had_quadra.hpp core/autodiff/had_quadra_graph_reserve.hpp
+	$(CXX) $(CXXFLAGS) -std=c++17 -O3 -I. -I./external/eigen -I./external/had -I./external/LBFGSpp/include -o benchmarks/had_quadra_graph_reserve_benchmark benchmarks/had_quadra_graph_reserve_benchmark.cpp
+
+.PHONY: benchmark-btree-accumulation
+benchmark-btree-accumulation: benchmarks/btree_accumulation_benchmark
+	./benchmarks/btree_accumulation_benchmark
+
+benchmarks/btree_accumulation_benchmark: benchmarks/btree_accumulation_benchmark.cpp
+	$(CXX) $(CXXFLAGS) -std=c++17 -O3 -I. -o benchmarks/btree_accumulation_benchmark benchmarks/btree_accumulation_benchmark.cpp
+
+.PHONY: benchmark-sparse-accumulator
+benchmark-sparse-accumulator: benchmarks/sparse_accumulator_benchmark
+	./benchmarks/sparse_accumulator_benchmark
+
+benchmarks/sparse_accumulator_benchmark: benchmarks/sparse_accumulator_benchmark.cpp core/sparse/sparse_accumulator.hpp
+	$(CXX) $(CXXFLAGS) -std=c++17 -O3 -I. -o benchmarks/sparse_accumulator_benchmark benchmarks/sparse_accumulator_benchmark.cpp
+
+.PHONY: benchmark-hessian-slot-accumulator
+benchmark-hessian-slot-accumulator: benchmarks/hessian_slot_accumulator_benchmark
+	./benchmarks/hessian_slot_accumulator_benchmark
+
+benchmarks/hessian_slot_accumulator_benchmark: benchmarks/hessian_slot_accumulator_benchmark.cpp core/sparse/hessian_slot_accumulator.hpp
+	$(CXX) $(CXXFLAGS) -std=c++17 -O3 -I. -o benchmarks/hessian_slot_accumulator_benchmark benchmarks/hessian_slot_accumulator_benchmark.cpp
+
+.PHONY: benchmark-hessian-slot-hotloop
+benchmark-hessian-slot-hotloop: benchmarks/hessian_slot_accumulator_hotloop_benchmark
+	./benchmarks/hessian_slot_accumulator_hotloop_benchmark
+
+benchmarks/hessian_slot_accumulator_hotloop_benchmark: benchmarks/hessian_slot_accumulator_hotloop_benchmark.cpp core/sparse/hessian_slot_accumulator.hpp
+	$(CXX) $(CXXFLAGS) -std=c++17 -O3 -I. -o benchmarks/hessian_slot_accumulator_hotloop_benchmark benchmarks/hessian_slot_accumulator_hotloop_benchmark.cpp
+
+.PHONY: benchmark-hessian-slot-tape-workspace
+benchmark-hessian-slot-tape-workspace: benchmarks/hessian_slot_tape_workspace_benchmark
+	./benchmarks/hessian_slot_tape_workspace_benchmark
+
+benchmarks/hessian_slot_tape_workspace_benchmark: benchmarks/hessian_slot_tape_workspace_benchmark.cpp core/laplace/hessian_slot_tape_workspace.hpp core/sparse/hessian_slot_accumulator.hpp
+	$(CXX) $(CXXFLAGS) -std=c++17 -O3 -I. -o benchmarks/hessian_slot_tape_workspace_benchmark benchmarks/hessian_slot_tape_workspace_benchmark.cpp
+
+# ---- Quadra examples -------------------------------------------------------
+
+CXX ?= clang++
+CXXFLAGS ?= -std=c++17 -O3 \
+	-I. \
+	-I./external/eigen \
+	-I./external/had \
+	-I./external/LBFGSpp/include
+
+EXAMPLES := $(patsubst examples/%.cpp,examples/%,$(wildcard examples/*.cpp))
+BIG_EXAMPLES := $(patsubst examples/big/%.cpp,examples/big/%,$(wildcard examples/big/*.cpp))
+
+examples: $(EXAMPLES)
+
+big-examples: $(BIG_EXAMPLES)
+
+examples/%: examples/%.cpp
+	$(CXX) $(CXXFLAGS) -o $@ $<
+
+examples/big/%: examples/big/%.cpp
+	$(CXX) $(CXXFLAGS) -o $@ $<
+
+run-examples: examples
+	@for ex in $(EXAMPLES); do \
+		echo ""; \
+		echo "======================================"; \
+		echo "Running $$ex"; \
+		echo "======================================"; \
+		/usr/bin/time -l ./$$ex; \
+	done
+
+run-big-examples: big-examples
+	@for ex in $(BIG_EXAMPLES); do \
+		echo ""; \
+		echo "======================================"; \
+		echo "Running $$ex"; \
+		echo "======================================"; \
+		/usr/bin/time -l ./$$ex; \
+	done
+
+clean-examples:
+	rm -f $(EXAMPLES)
+
+clean-big-examples:
+	rm -f $(BIG_EXAMPLES)
+
+.PHONY: test-big-laplace-convergence-contract
+test-big-laplace-convergence-contract:
+	./tests/run_big_laplace_convergence_contract.sh
+
+.PHONY: test-contracts
+test-contracts: test-big-laplace-convergence-contract
