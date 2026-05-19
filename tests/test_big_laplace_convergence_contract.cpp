@@ -4,50 +4,6 @@
 #include <cmath>
 #include <iostream>
 
-namespace example
-{
-
-    inline quadra::ParameterVector make_big_laplace_parameter_vector()
-
-    {
-
-        quadra::ParameterVector param_vector;
-
-        param_vector.add(quadra::Parameter("log_R0", std::log(900.0), quadra::ParameterTransform::Identity, false));
-
-        param_vector.add(quadra::Parameter("log_M", std::log(0.25), quadra::ParameterTransform::Identity, false));
-
-        param_vector.add(quadra::Parameter("log_q", std::log(0.15), quadra::ParameterTransform::Identity, false));
-
-        param_vector.add(quadra::Parameter("log_Fbar", std::log(0.18), quadra::ParameterTransform::Identity, false));
-
-        param_vector.add(quadra::Parameter("sel50_raw", 0.0, quadra::ParameterTransform::Identity, false));
-
-        param_vector.add(quadra::Parameter("log_sel_slope", std::log(1.25), quadra::ParameterTransform::Identity, false));
-
-        param_vector.add(quadra::Parameter("log_sigma_index", std::log(0.20), quadra::ParameterTransform::Identity, false));
-
-        param_vector.add(quadra::Parameter("log_sigma_catch", std::log(0.18), quadra::ParameterTransform::Identity, false));
-
-        param_vector.add(quadra::Parameter("log_sigma_rec", std::log(0.35), quadra::ParameterTransform::Identity, false));
-
-        for (int y = 0; y < 30; ++y)
-        {
-
-            param_vector.add(quadra::Parameter("rec_dev_" + std::to_string(y + 1),
-
-                                               0.0,
-
-                                               quadra::ParameterTransform::Identity,
-
-                                               true));
-        }
-
-        return param_vector;
-    }
-
-} // namespace example
-
 int main()
 {
     example::CatchAtAgeLaplaceModel model;
@@ -63,8 +19,7 @@ int main()
         fit.value > -500.0 &&
         fit.grad_norm < 1.0e-3;
 
-    if (!ok)
-    {
+    if (!ok) {
         std::cerr << "FAIL: big Laplace black-box convergence contract failed\n";
         std::cerr << "  fit value: " << fit.value << "\n";
         std::cerr << "  fixed gradient norm: " << fit.grad_norm << "\n";
