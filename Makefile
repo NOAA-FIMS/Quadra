@@ -1,3 +1,10 @@
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Darwin)
+QUADRA_TIME_CMD := $(QUADRA_TIME_CMD)
+else
+QUADRA_TIME_CMD := /usr/bin/time -v
+endif
+
 include config/quadra_includes.mk
 
 CXX ?= $(QUADRA_CXX)
@@ -36,7 +43,7 @@ run-examples: examples
 		echo "======================================"; \
 		echo "Running $$ex"; \
 		echo "======================================"; \
-		/usr/bin/time -l ./$$ex; \
+		$(QUADRA_TIME_CMD) ./$$ex; \
 	done
 
 clean-examples:
@@ -470,7 +477,7 @@ run-examples: examples
 		echo "======================================"; \
 		echo "Running $$ex"; \
 		echo "======================================"; \
-		/usr/bin/time -l ./$$ex; \
+		$(QUADRA_TIME_CMD) ./$$ex; \
 	done
 
 run-big-examples: big-examples
@@ -479,7 +486,7 @@ run-big-examples: big-examples
 		echo "======================================"; \
 		echo "Running $$ex"; \
 		echo "======================================"; \
-		/usr/bin/time -l ./$$ex; \
+		$(QUADRA_TIME_CMD) ./$$ex; \
 	done
 
 clean-examples:
