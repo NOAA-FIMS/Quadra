@@ -155,20 +155,53 @@ inline RandomEffectNewtonResult optimize_random_effects_newton(
 
         Eigen::VectorXd g = std_vector_to_eigen(eval.gradient_random_m);
 
-        Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> solver;
-        solver.compute(eval.hessian_random_m);
+        Eigen::VectorXd step;
+        bool solved_newton_system = false;
 
-        if (solver.info() != Eigen::Success) {
-            result.converged_m = false;
-            result.message_m = "Failed: sparse Hessian factorization failed.";
-            break;
+        double lambda = 0.0;
+        const double lambda_initial = 1.0e-10;
+        const double lambda_growth = 10.0;
+        const int max_damping_attempts = 10;
+
+        for (int damping_attempt = 0;
+             damping_attempt <= max_damping_attempts;
+             ++damping_attempt) {
+
+            Eigen::SparseMatrix<double> H_damped = eval.hessian_random_m;
+
+            if (lambda > 0.0) {
+                H_damped.makeCompressed();
+                for (int k = 0; k < H_damped.rows(); ++k) {
+                    H_damped.coeffRef(k, k) += lambda;
+                }
+                H_damped.makeCompressed();
+            }
+
+            Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> solver;
+            solver.compute(H_damped);
+
+            if (solver.info() == Eigen::Success) {
+                step = solver.solve(-g);
+
+                if (solver.info() == Eigen::Success && step.allFinite()) {
+                    solved_newton_system = true;
+
+                    if (lambda > 0.0) {
+                        std::cout << "Newton: adaptive damping accepted lambda = "
+                                  << lambda << std::endl;
+                    }
+
+                    break;
+                }
+            }
+
+            lambda = (lambda == 0.0) ? lambda_initial : lambda * lambda_growth;
         }
 
-        Eigen::VectorXd step = solver.solve(-g);
-
-        if (solver.info() != Eigen::Success) {
+        if (!solved_newton_system) {
             result.converged_m = false;
-            result.message_m = "Failed: sparse Newton solve failed.";
+            result.message_m =
+                "Failed: sparse Newton solve failed after adaptive damping.";
             break;
         }
 
