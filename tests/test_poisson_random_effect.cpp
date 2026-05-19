@@ -41,11 +41,11 @@ int main() {
     std::vector<double> y = {3, 4, 2, 5, 7, 3, 4, 6};
 
     ParameterVector params;
-    params.add({"log_lambda", std::log(4.0), Transform::Identity, false});
-    params.add({"log_sigma", std::log(0.5), Transform::Identity, false});
+    params.add({"log_lambda", std::log(4.0), ParameterTransform::Identity, false});
+    params.add({"log_sigma", std::log(0.5), ParameterTransform::Identity, false});
 
     for (int i = 0; i < static_cast<int>(y.size()); ++i) {
-        params.add({"u_" + std::to_string(i), 0.0, Transform::Identity, true});
+        params.add({"u_" + std::to_string(i), 0.0, ParameterTransform::Identity, true});
     }
 
     PoissonRandomIntercept model{y};

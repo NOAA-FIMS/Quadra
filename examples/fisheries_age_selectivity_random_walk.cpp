@@ -69,13 +69,13 @@ int main() {
     };
 
     ParameterVector params;
-    params.add({"a50", 4.0, Transform::Identity, false});
-    params.add({"log_slope", std::log(1.0), Transform::Identity, false});
-    params.add({"log_sigma_obs", std::log(0.2), Transform::Identity, false});
-    params.add({"log_sigma_rw", std::log(0.1), Transform::Identity, false});
+    params.add({"a50", 4.0, ParameterTransform::Identity, false});
+    params.add({"log_slope", std::log(1.0), ParameterTransform::Identity, false});
+    params.add({"log_sigma_obs", std::log(0.2), ParameterTransform::Identity, false});
+    params.add({"log_sigma_rw", std::log(0.1), ParameterTransform::Identity, false});
 
     for (int a = 0; a < static_cast<int>(obs_log_sel.size()); ++a) {
-        params.add({"sel_dev_age_" + std::to_string(a + 1), 0.0, Transform::Identity, true});
+        params.add({"sel_dev_age_" + std::to_string(a + 1), 0.0, ParameterTransform::Identity, true});
     }
 
     SelectivityRandomWalk model{obs_log_sel};

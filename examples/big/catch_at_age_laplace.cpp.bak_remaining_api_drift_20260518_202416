@@ -38,14 +38,14 @@ namespace example
 
     // quadra_big_example_derived_reporting_v1
     template <typename Result, typename = void>
-    struct has_final_random_effects : std::false_type
+    struct has_random_effects_m : std::false_type
     {
     };
 
     template <typename Result>
-    struct has_final_random_effects<
+    struct has_random_effects_m<
         Result,
-        std::void_t<decltype(std::declval<Result>().final_random_effects)>>
+        std::void_t<decltype(std::declval<Result>().random_effects_m)>>
         : std::true_type
     {
     };
@@ -422,7 +422,7 @@ namespace example
     void print_derived_quantity_report(
         const CatchAtAgeLaplaceModel &model,
         const std::vector<double> &theta,
-        const Result &result, const std::vector<double> &final_random_effects)
+        const Result &result)
     {
         std::cout << std::endl;
         std::cout << "Derived quantity report" << std::endl;
@@ -432,12 +432,19 @@ namespace example
             std::cout << "derived report unavailable: expected 9 fixed effects" << std::endl;
             return;
         }
+
+        if constexpr (!has_random_effects_m<Result>::value)
         {
-            const auto &u = final_random_effects;
+            std::cout << "derived report unavailable: result.random_effects_m not exposed by LaplaceObjectiveResult" << std::endl;
+            return;
+        }
+        else
+        {
+            const auto &u = result.random_effects_m;
 
             if (u.size() < static_cast<std::size_t>(model.data.n_years))
             {
-                std::cout << "derived report unavailable: final_random_effects shorter than n_years" << std::endl;
+                std::cout << "derived report unavailable: random_effects_m shorter than n_years" << std::endl;
                 return;
             }
 
@@ -818,19 +825,26 @@ namespace example
     void print_objective_decomposition_report(
         const CatchAtAgeLaplaceModel &model,
         const std::vector<double> &theta,
-        const Result &result, const std::vector<double> &final_random_effects)
+        const Result &result)
     {
         std::cout << std::endl;
         std::cout << "Objective decomposition report" << std::endl;
+
+        if constexpr (!has_random_effects_m<Result>::value)
+        {
+            std::cout << "objective decomposition unavailable: result.random_effects_m not exposed by LaplaceObjectiveResult" << std::endl;
+            return;
+        }
+        else
         {
             ObjectiveComponents c =
-                evaluate_objective_components(model, theta, final_random_effects);
+                evaluate_objective_components(model, theta, result.random_effects_m);
 
             c.composition_proxy =
                 composition_proxy_from_age_diagnostic_basis(
                     model,
                     theta,
-                    final_random_effects);
+                    result.random_effects_m);
 
             std::cout
                 << std::setw(34) << "component"
@@ -870,7 +884,7 @@ namespace example
     void print_age_composition_diagnostics(
         const CatchAtAgeLaplaceModel &model,
         const std::vector<double> &theta,
-        const Result &result, const std::vector<double> &final_random_effects)
+        const Result &result)
     {
         std::cout << std::endl;
         std::cout << "Age-composition observed-vs-predicted diagnostics" << std::endl;
@@ -880,15 +894,22 @@ namespace example
             std::cout << "age-composition diagnostics unavailable: expected 9 fixed effects" << std::endl;
             return;
         }
+
+        if constexpr (!has_random_effects_m<Result>::value)
         {
-            const auto &u = final_random_effects;
+            std::cout << "age-composition diagnostics unavailable: result.random_effects_m not exposed" << std::endl;
+            return;
+        }
+        else
+        {
+            const auto &u = result.random_effects_m;
 
             const int n_years = model.data.n_years;
             const int n_ages = model.data.n_ages;
 
             if (u.size() < static_cast<std::size_t>(n_years))
             {
-                std::cout << "age-composition diagnostics unavailable: final_random_effects shorter than n_years" << std::endl;
+                std::cout << "age-composition diagnostics unavailable: random_effects_m shorter than n_years" << std::endl;
                 return;
             }
 
@@ -1040,7 +1061,7 @@ namespace example
     void print_index_catch_diagnostics(
         const CatchAtAgeLaplaceModel &model,
         const std::vector<double> &theta,
-        const Result &result, const std::vector<double> &final_random_effects)
+        const Result &result)
     {
         std::cout << std::endl;
         std::cout << "Index and catch observed-vs-predicted diagnostics" << std::endl;
@@ -1050,15 +1071,22 @@ namespace example
             std::cout << "index/catch diagnostics unavailable: expected 9 fixed effects" << std::endl;
             return;
         }
+
+        if constexpr (!has_random_effects_m<Result>::value)
         {
-            const auto &u = final_random_effects;
+            std::cout << "index/catch diagnostics unavailable: result.random_effects_m not exposed" << std::endl;
+            return;
+        }
+        else
+        {
+            const auto &u = result.random_effects_m;
 
             const int n_years = model.data.n_years;
             const int n_ages = model.data.n_ages;
 
             if (u.size() < static_cast<std::size_t>(n_years))
             {
-                std::cout << "index/catch diagnostics unavailable: final_random_effects shorter than n_years" << std::endl;
+                std::cout << "index/catch diagnostics unavailable: random_effects_m shorter than n_years" << std::endl;
                 return;
             }
 
@@ -1387,16 +1415,23 @@ template <typename Result>
 void print_actual_objective_path_decomposition(
     const example::CatchAtAgeLaplaceModel &model,
     const std::vector<double> &theta,
-    const Result &result, const std::vector<double> &final_random_effects)
+    const Result &result)
 {
     std::cout << std::endl;
     std::cout << "Diagnostic objective-path decomposition" << std::endl;
+
+    if constexpr (!example::has_random_effects_m<Result>::value)
+    {
+        std::cout << "actual objective-path decomposition unavailable: result.random_effects_m not exposed" << std::endl;
+        return;
+    }
+    else
     {
         const auto c =
             evaluate_actual_objective_path_components(
                 model,
                 theta,
-                final_random_effects);
+                result.random_effects_m);
 
         std::cout
             << std::setw(34) << "component"
@@ -1428,39 +1463,6 @@ void print_actual_objective_path_decomposition(
 }
 
 #ifndef QUADRA_BIG_CATCH_AT_AGE_NO_MAIN
-#ifndef QUADRA_BIG_LAPLACE_NO_MAIN
-
-namespace example {
-
-inline quadra::ParameterVector make_big_laplace_parameter_vector()
-{
-    quadra::ParameterVector param_vector;
-
-    param_vector.add(quadra::Parameter("log_R0", std::log(900.0), quadra::ParameterTransform::Identity, false));
-    param_vector.add(quadra::Parameter("log_M", std::log(0.25), quadra::ParameterTransform::Identity, false));
-    param_vector.add(quadra::Parameter("log_q", std::log(0.15), quadra::ParameterTransform::Identity, false));
-    param_vector.add(quadra::Parameter("log_Fbar", std::log(0.18), quadra::ParameterTransform::Identity, false));
-    param_vector.add(quadra::Parameter("sel50_raw", 0.0, quadra::ParameterTransform::Identity, false));
-    param_vector.add(quadra::Parameter("log_sel_slope", std::log(1.25), quadra::ParameterTransform::Identity, false));
-    param_vector.add(quadra::Parameter("log_sigma_index", std::log(0.20), quadra::ParameterTransform::Identity, false));
-    param_vector.add(quadra::Parameter("log_sigma_catch", std::log(0.18), quadra::ParameterTransform::Identity, false));
-    param_vector.add(quadra::Parameter("log_sigma_rec", std::log(0.35), quadra::ParameterTransform::Identity, false));
-
-    for (int y = 0; y < 30; ++y) {
-        param_vector.add(quadra::Parameter(
-            "rec_dev_" + std::to_string(y + 1),
-            0.0,
-            quadra::ParameterTransform::Identity,
-            true));
-    }
-
-    return param_vector;
-}
-
-} // namespace example
-
-
-#ifndef QUADRA_BIG_LAPLACE_NO_MAIN
 int main()
 {
     example::CatchAtAgeLaplaceModel model;
@@ -1474,7 +1476,7 @@ int main()
     auto add_fixed = [&](const std::string &name, double value)
     {
         parameters.add(name, value);
-        param_vector.add({name, value, quadra::ParameterTransform::Identity, false});
+        param_vector.add({name, value, quadra::Transform::Identity, false});
         fixed.push_back(value);
     };
 
@@ -1503,7 +1505,7 @@ int main()
 
         param_vector.add({rec_name,
                           0.0,
-                          quadra::ParameterTransform::Identity,
+                          quadra::Transform::Identity,
                           true});
 
         random_initial.push_back(0.0);
@@ -1517,39 +1519,22 @@ int main()
     quadra::LaplaceOptions opts;
     opts.use_hutchinson_trace = false; // small example: exact deterministic trace
     opts.hessian_drop_tol = 0.0;
-    
     // quadra_big_example_optimize_lbfgs_enabled
     auto fit = optimize_lbfgs(model, param_vector, opts);
 
     // quadra_big_example_final_eval_uses_fit_par
     const auto result = evaluator.evaluate(fit.par);
 
-    const std::vector<int> final_fixed_idx = build_fixed_index(param_vector);
-    const std::vector<int> final_random_idx = build_random_index(param_vector);
-    had::ADGraph final_mode_graph;
-    Eigen::VectorXd final_x(fit.par.size());
-    for (int i = 0; i < final_x.size(); ++i)
-        final_x[i] = fit.par[static_cast<size_t>(i)];
-
-    const std::vector<double> final_random_effects =
-        solve_random_effects_laplace(
-            model,
-            param_vector,
-            final_x,
-            final_fixed_idx,
-            final_random_idx,
-            final_mode_graph);
-
     std::vector<double> full_par = fit.par;
     full_par.insert(full_par.end(),
-                    final_random_effects.begin(),
-                    final_random_effects.end());
+                    result.random_effects_m.begin(),
+                    result.random_effects_m.end());
 
     const double direct_full_objective = model(full_par);
 
     std::cout << "\nFull direct model objective check\n";
     std::cout << "fixed parameter count: " << fit.par.size() << "\n";
-    std::cout << "random effect count: " << final_random_effects.size() << "\n";
+    std::cout << "random effect count: " << result.random_effects_m.size() << "\n";
     std::cout << "full parameter count: " << full_par.size() << "\n";
     std::cout << "model(fixed + random): " << direct_full_objective << "\n";
     std::cout << "result.joint_objective_m: " << result.joint_objective_m << "\n";
@@ -1579,15 +1564,11 @@ int main()
     std::cout << "log det Hessian: " << result.log_det_hessian_m << "\n";
     std::cout << "random gradient norm: " << result.gradient_norm_random_m << "\n";
     std::cout << "Laplace objective: " << result.laplace_objective_m << "\n";
-    example::print_objective_decomposition_report(model, fit.par, result, final_random_effects);
-    print_actual_objective_path_decomposition(model, fit.par, result, final_random_effects);
-    example::print_index_catch_diagnostics(model, fit.par, result, final_random_effects);
-    example::print_age_composition_diagnostics(model, fit.par, result, final_random_effects);
-    example::print_derived_quantity_report(model, fit.par, result, final_random_effects);
+    example::print_objective_decomposition_report(model, fit.par, result);
+    print_actual_objective_path_decomposition(model, fit.par, result);
+    example::print_index_catch_diagnostics(model, fit.par, result);
+    example::print_age_composition_diagnostics(model, fit.par, result);
+    example::print_derived_quantity_report(model, fit.par, result);
     return 0;
 }
 #endif // QUADRA_BIG_CATCH_AT_AGE_NO_MAIN
-
-#endif // QUADRA_BIG_LAPLACE_NO_MAIN
-
-#endif // QUADRA_BIG_LAPLACE_NO_MAIN

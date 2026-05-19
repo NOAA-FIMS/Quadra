@@ -371,7 +371,7 @@ namespace example
         }
     }
 
-    void print_fixed_parameter_report(const std::vector<double> &theta)
+    void print_fixed_parameter_report(const std::vector<double> &theta, const std::vector<double> &final_random_effects)
     {
         if (theta.size() < 9)
         {
@@ -1428,39 +1428,6 @@ void print_actual_objective_path_decomposition(
 }
 
 #ifndef QUADRA_BIG_CATCH_AT_AGE_NO_MAIN
-#ifndef QUADRA_BIG_LAPLACE_NO_MAIN
-
-namespace example {
-
-inline quadra::ParameterVector make_big_laplace_parameter_vector()
-{
-    quadra::ParameterVector param_vector;
-
-    param_vector.add(quadra::Parameter("log_R0", std::log(900.0), quadra::ParameterTransform::Identity, false));
-    param_vector.add(quadra::Parameter("log_M", std::log(0.25), quadra::ParameterTransform::Identity, false));
-    param_vector.add(quadra::Parameter("log_q", std::log(0.15), quadra::ParameterTransform::Identity, false));
-    param_vector.add(quadra::Parameter("log_Fbar", std::log(0.18), quadra::ParameterTransform::Identity, false));
-    param_vector.add(quadra::Parameter("sel50_raw", 0.0, quadra::ParameterTransform::Identity, false));
-    param_vector.add(quadra::Parameter("log_sel_slope", std::log(1.25), quadra::ParameterTransform::Identity, false));
-    param_vector.add(quadra::Parameter("log_sigma_index", std::log(0.20), quadra::ParameterTransform::Identity, false));
-    param_vector.add(quadra::Parameter("log_sigma_catch", std::log(0.18), quadra::ParameterTransform::Identity, false));
-    param_vector.add(quadra::Parameter("log_sigma_rec", std::log(0.35), quadra::ParameterTransform::Identity, false));
-
-    for (int y = 0; y < 30; ++y) {
-        param_vector.add(quadra::Parameter(
-            "rec_dev_" + std::to_string(y + 1),
-            0.0,
-            quadra::ParameterTransform::Identity,
-            true));
-    }
-
-    return param_vector;
-}
-
-} // namespace example
-
-
-#ifndef QUADRA_BIG_LAPLACE_NO_MAIN
 int main()
 {
     example::CatchAtAgeLaplaceModel model;
@@ -1474,7 +1441,7 @@ int main()
     auto add_fixed = [&](const std::string &name, double value)
     {
         parameters.add(name, value);
-        param_vector.add({name, value, quadra::ParameterTransform::Identity, false});
+        param_vector.add({name, value, quadra::Transform::Identity, false});
         fixed.push_back(value);
     };
 
@@ -1503,7 +1470,7 @@ int main()
 
         param_vector.add({rec_name,
                           0.0,
-                          quadra::ParameterTransform::Identity,
+                          quadra::Transform::Identity,
                           true});
 
         random_initial.push_back(0.0);
@@ -1517,28 +1484,11 @@ int main()
     quadra::LaplaceOptions opts;
     opts.use_hutchinson_trace = false; // small example: exact deterministic trace
     opts.hessian_drop_tol = 0.0;
-    
     // quadra_big_example_optimize_lbfgs_enabled
     auto fit = optimize_lbfgs(model, param_vector, opts);
 
     // quadra_big_example_final_eval_uses_fit_par
     const auto result = evaluator.evaluate(fit.par);
-
-    const std::vector<int> final_fixed_idx = build_fixed_index(param_vector);
-    const std::vector<int> final_random_idx = build_random_index(param_vector);
-    had::ADGraph final_mode_graph;
-    Eigen::VectorXd final_x(fit.par.size());
-    for (int i = 0; i < final_x.size(); ++i)
-        final_x[i] = fit.par[static_cast<size_t>(i)];
-
-    const std::vector<double> final_random_effects =
-        solve_random_effects_laplace(
-            model,
-            param_vector,
-            final_x,
-            final_fixed_idx,
-            final_random_idx,
-            final_mode_graph);
 
     std::vector<double> full_par = fit.par;
     full_par.insert(full_par.end(),
@@ -1587,7 +1537,3 @@ int main()
     return 0;
 }
 #endif // QUADRA_BIG_CATCH_AT_AGE_NO_MAIN
-
-#endif // QUADRA_BIG_LAPLACE_NO_MAIN
-
-#endif // QUADRA_BIG_LAPLACE_NO_MAIN

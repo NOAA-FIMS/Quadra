@@ -31,10 +31,10 @@ int main() {
     int n_random = 10;
 
     ParameterVector params;
-    params.add({"theta", 0.0, Transform::Identity, false});
+    params.add({"theta", 0.0, ParameterTransform::Identity, false});
 
     for (int i = 0; i < n_random; ++i) {
-        params.add({"u_" + std::to_string(i), 0.0, Transform::Identity, true});
+        params.add({"u_" + std::to_string(i), 0.0, ParameterTransform::Identity, true});
     }
 
     CurvatureDependsOnTheta model{n_random};

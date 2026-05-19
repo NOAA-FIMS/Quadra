@@ -58,12 +58,12 @@ int main() {
     };
 
     ParameterVector params;
-    params.add({"log_q", 0.0, Transform::Identity, false});
-    params.add({"log_sigma_obs", std::log(0.2), Transform::Identity, false});
-    params.add({"log_sigma_proc", std::log(0.15), Transform::Identity, false});
+    params.add({"log_q", 0.0, ParameterTransform::Identity, false});
+    params.add({"log_sigma_obs", std::log(0.2), ParameterTransform::Identity, false});
+    params.add({"log_sigma_proc", std::log(0.15), ParameterTransform::Identity, false});
 
     for (int t = 0; t < static_cast<int>(log_cpue.size()); ++t) {
-        params.add({"logN_" + std::to_string(t), 0.0, Transform::Identity, true});
+        params.add({"logN_" + std::to_string(t), 0.0, ParameterTransform::Identity, true});
     }
 
     CPUEWithLatentAbundance model{log_cpue};

@@ -15,7 +15,7 @@ namespace quadra
     //==============================
     // Transform types
     //==============================
-    // enum class ParameterTransform {
+    // enum class Transform {
     //     Identity,
     //     Log,
     //     Logit
@@ -27,7 +27,7 @@ namespace quadra
     // template <typename T>
     // T apply_transform(T x, Transform t) {
     //     switch (t) {
-    //         case ParameterTransform::Identity:
+    //         case Transform::Identity:
     //             return x;
 
     //         case Transform::Log:
@@ -48,13 +48,13 @@ namespace quadra
     {
         std::string name;
         double value;
-        ParameterTransform transform;
+        Transform transform;
         bool is_random;
         int block_id;
 
         Parameter(std::string name,
                   double value,
-                  ParameterTransform transform = ParameterTransform::Identity,
+                  Transform transform = Transform::Identity,
                   bool is_random = false,
                   int block_id = -1)
             : name(name),
