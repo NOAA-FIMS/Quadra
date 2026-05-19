@@ -137,7 +137,13 @@ namespace quadra
             {
                 std::cerr << "L-BFGS: random-effect mode solve failed; returning penalty. reason="
                           << e.what() << std::endl;
-                grad.setConstant(0.0);
+                const double penalty_gradient_scale = 1.0e3;
+
+                for (int i = 0; i < grad.size(); ++i) {
+                    const double xi = (i < x.size() && std::isfinite(x[i])) ? x[i] : 1.0;
+                    grad[i] = penalty_gradient_scale * ((xi == 0.0) ? 1.0 : xi);
+                }
+
                 return std::numeric_limits<double>::max() / 100.0;
             }
 
