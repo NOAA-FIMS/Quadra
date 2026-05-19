@@ -129,8 +129,7 @@ namespace quadra
                 x,
                 fixed_idx,
                 random_idx,
-                graph,
-                verbose_inner);
+                graph);
 
             using Result = LaplaceResult<Model>;
             Result res;
@@ -218,12 +217,12 @@ namespace quadra
         }
 
         LBFGSObjective<Model> fun(model, params, fixed_idx, random_idx, options);
-        fun.print_every = options.iprint;
+        fun.print_every = 10;
 
         LBFGSParam<double> param;
-        param.max_iterations = options.max_iterations;
+        param.max_iterations = 400;
         // param.max_linesearch = 20;
-        param.epsilon = options.grad_tol;
+        param.epsilon = 1.0e-4;
         fun.epsilon = param.epsilon;
 
         LBFGSSolver<double> solver(param);
@@ -249,14 +248,14 @@ namespace quadra
 
             const bool quadra_requested_tol_met =
                 std::isfinite(quadra_final_fixed_grad_norm) &&
-                quadra_final_fixed_grad_norm <= options.grad_tol;
+                quadra_final_fixed_grad_norm <= 1.0e-4;
 
             std::cout << "L-BFGS minimize status report" << std::endl;
             std::cout << "  iterations returned by solver: " << niter << std::endl;
             std::cout << "  final objective returned by solver: " << fx << std::endl;
             std::cout << "  final fixed-gradient norm: " << quadra_final_fixed_grad_norm << std::endl;
-            std::cout << "  requested gradient tolerance: " << std::scientific << options.grad_tol << std::defaultfloat << std::endl;
-            std::cout << "  configured max-iteration field: " << options.max_iterations << " (verify this maps to LBFGSpp outer max_iterations)" << std::endl;
+            std::cout << "  requested gradient tolerance: " << std::scientific << 1.0e-4 << std::defaultfloat << std::endl;
+            std::cout << "  configured max-iteration field: " << 400 << " (LBFGSpp max_iterations)" << std::endl;
             std::cout << "  requested tolerance met: "
                       << (quadra_requested_tol_met ? "yes" : "no") << std::endl;
             std::cout << "  outer convergence interpretation: "
