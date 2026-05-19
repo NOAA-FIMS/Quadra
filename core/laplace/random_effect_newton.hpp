@@ -36,6 +36,10 @@ struct RandomEffectNewtonResult {
     double gradient_norm_m = 0.0;
     double step_norm_m = 0.0;
 
+    bool damping_was_used_m = false;
+    int damping_retry_count_m = 0;
+    double max_damping_lambda_m = 0.0;
+
     int iterations_m = 0;
     bool converged_m = false;
     std::string message_m;
@@ -196,6 +200,14 @@ inline RandomEffectNewtonResult optimize_random_effects_newton(
             }
 
             lambda = (lambda == 0.0) ? lambda_initial : lambda * lambda_growth;
+
+            result.damping_retry_count_m++;
+
+            if (lambda > 0.0) {
+                result.damping_was_used_m = true;
+                result.max_damping_lambda_m =
+                    std::max(result.max_damping_lambda_m, lambda);
+            }
         }
 
         if (!solved_newton_system) {
@@ -278,6 +290,16 @@ inline RandomEffectNewtonResult optimize_random_effects_newton(
     result.objective_value_m = eval.objective_value_m;
     result.gradient_norm_m = eval.gradient_norm_m;
     result.reports_m = eval.reports_m;
+
+
+    if (result.damping_was_used_m) {
+        std::cout
+            << "Newton damping summary: retries="
+            << result.damping_retry_count_m
+            << ", max_lambda="
+            << result.max_damping_lambda_m
+            << std::endl;
+    }
 
     return result;
 }
