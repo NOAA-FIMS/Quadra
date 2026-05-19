@@ -123,13 +123,23 @@ namespace quadra
             std::vector<double> u_star;
             const bool verbose_inner = ((iter % print_every) == 0) || iter == 1;
 
-            u_star = solve_random_effects_laplace(
-                model,
-                params,
-                x,
-                fixed_idx,
-                random_idx,
-                graph);
+            try
+            {
+                u_star = solve_random_effects_laplace(
+                    model,
+                    params,
+                    x,
+                    fixed_idx,
+                    random_idx,
+                    graph);
+            }
+            catch (const std::exception &e)
+            {
+                std::cerr << "L-BFGS: random-effect mode solve failed; returning penalty. reason="
+                          << e.what() << std::endl;
+                grad.setConstant(0.0);
+                return std::numeric_limits<double>::max() / 100.0;
+            }
 
             using Result = LaplaceResult<Model>;
             Result res;
