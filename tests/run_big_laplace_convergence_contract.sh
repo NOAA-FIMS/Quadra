@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -x
 set -euo pipefail
 
 OUT="tests/big_laplace_convergence_contract.out"
