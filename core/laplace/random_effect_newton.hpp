@@ -18,6 +18,11 @@ struct RandomEffectNewtonOptions {
     double step_tolerance_m = 1e-10;
     double initial_step_scale_m = 1.0;
     double min_step_scale_m = 1e-8;
+
+    // Safeguard for unstable Newton directions.
+    // If the raw Newton step is too large, scale it before line search.
+    double max_newton_step_norm_m = 10.0;
+    int step_norm_guard_count_m = 0;
     double sufficient_decrease_m = 1e-4;
     double hessian_drop_tol_m = 0.0;
     bool use_backtracking_m = true;
@@ -39,6 +44,9 @@ struct RandomEffectNewtonResult {
     bool damping_was_used_m = false;
     int damping_retry_count_m = 0;
     double max_damping_lambda_m = 0.0;
+
+    int step_norm_guard_count_m = 0;
+    double max_raw_step_norm_m = 0.0;
 
     int iterations_m = 0;
     bool converged_m = false;
@@ -217,6 +225,25 @@ inline RandomEffectNewtonResult optimize_random_effects_newton(
             break;
         }
 
+        const double raw_step_norm = step.norm();
+        result.max_raw_step_norm_m =
+            std::max(result.max_raw_step_norm_m, raw_step_norm);
+
+        if (std::isfinite(raw_step_norm) &&
+            options.max_newton_step_norm_m > 0.0 &&
+            raw_step_norm > options.max_newton_step_norm_m) {
+            const double scale = options.max_newton_step_norm_m / raw_step_norm;
+            step *= scale;
+            result.step_norm_guard_count_m++;
+
+            std::cout
+                << "Newton: step norm guard scaled raw step "
+                << raw_step_norm
+                << " to "
+                << options.max_newton_step_norm_m
+                << std::endl;
+        }
+
         result.step_norm_m = step.norm();
 
         if (!std::isfinite(result.step_norm_m)) {
@@ -298,6 +325,15 @@ inline RandomEffectNewtonResult optimize_random_effects_newton(
             << result.damping_retry_count_m
             << ", max_lambda="
             << result.max_damping_lambda_m
+            << std::endl;
+    }
+
+    if (result.step_norm_guard_count_m > 0) {
+        std::cout
+            << "Newton step norm guard summary: count="
+            << result.step_norm_guard_count_m
+            << ", max_raw_step_norm="
+            << result.max_raw_step_norm_m
             << std::endl;
     }
 
