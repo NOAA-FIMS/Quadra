@@ -1,5 +1,4 @@
-#define QUADRA_BIG_LAPLACE_NO_MAIN
-#include "../examples/big/catch_at_age_laplace.cpp"
+#include "../examples/big/catch_at_age_shared.hpp"
 
 #include <cmath>
 #include <iostream>
