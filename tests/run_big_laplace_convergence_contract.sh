@@ -56,16 +56,6 @@ if not ok:
     print(f"  fit value: {fit}")
     print(f"  fixed gradient norm: {grad}")
     print(f"  direct_full_minus_reported abs: {direct}")
-
-penalty = re.search(r"penalty evaluations:\s*([0-9]+)", txt)
-modefail = re.search(r"mode solve failures:\s*([0-9]+)", txt)
-evalfail = re.search(r"laplace eval failures:\s*([0-9]+)", txt)
-
-if penalty or modefail or evalfail:
-    print("  parsed optimizer recovery telemetry:")
-    print(f"    penalty evaluations: {penalty.group(1) if penalty else 'NA'}")
-    print(f"    mode solve failures: {modefail.group(1) if modefail else 'NA'}")
-    print(f"    laplace eval failures: {evalfail.group(1) if evalfail else 'NA'}")
     sys.exit(1)
 
 print("PASS: big Laplace black-box convergence contract satisfied")

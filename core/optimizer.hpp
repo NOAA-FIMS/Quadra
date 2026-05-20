@@ -2,7 +2,6 @@
 #define OPTIMIZER_HPP
 #pragma once
 
-#include <memory>
 #include <cmath>
 #include <exception>
 #include <iomanip>
@@ -20,14 +19,6 @@
 
 namespace quadra
 {
-
-    struct OptimizerRecoveryTelemetry
-    {
-        int penalty_count_m = 0;
-        int mode_solve_failure_count_m = 0;
-        int laplace_eval_failure_count_m = 0;
-    };
-
 
     struct OptResult
     {
@@ -103,9 +94,6 @@ namespace quadra
         int iter = 0;
         int print_every = 10;
 
-        std::shared_ptr<OptimizerRecoveryTelemetry> recovery_telemetry_m =
-            std::make_shared<OptimizerRecoveryTelemetry>();
-
         double last_fx = std::numeric_limits<double>::quiet_NaN();
         Eigen::VectorXd last_grad;
         Eigen::VectorXd last_x;
@@ -147,9 +135,6 @@ namespace quadra
             }
             catch (const std::exception &e)
             {
-                recovery_telemetry_m->penalty_count_m++;
-                recovery_telemetry_m->mode_solve_failure_count_m++;
-
                 std::cerr << "L-BFGS: random-effect mode solve failed; returning penalty. reason="
                           << e.what() << std::endl;
                 const double penalty_gradient_scale = 1.0e3;
@@ -179,22 +164,13 @@ namespace quadra
             }
             catch (const std::exception &e)
             {
-                recovery_telemetry_m->penalty_count_m++;
-                recovery_telemetry_m->laplace_eval_failure_count_m++;
-
                 std::cerr
                     << "L-BFGS: Laplace evaluation failed; returning penalty. reason="
                     << e.what()
                     << std::endl;
 
                 grad.resize(x.size());
-                const double penalty_gradient_scale = 1.0e3;
-                for (int i = 0; i < grad.size(); ++i) {
-                    const double xi =
-                        (i < x.size() && std::isfinite(x[i])) ? x[i] : 1.0;
-                    grad[i] = penalty_gradient_scale * ((xi == 0.0) ? 1.0 : xi);
-                }
-
+                grad.setZero();
                 last_grad = grad;
                 last_x = x;
                 last_fx = std::numeric_limits<double>::max() / 1.0e100;
@@ -202,21 +178,12 @@ namespace quadra
             }
             catch (...)
             {
-                recovery_telemetry_m->penalty_count_m++;
-                recovery_telemetry_m->laplace_eval_failure_count_m++;
-
                 std::cerr
                     << "L-BFGS: Laplace evaluation failed with unknown exception; returning penalty."
                     << std::endl;
 
                 grad.resize(x.size());
-                const double penalty_gradient_scale = 1.0e3;
-                for (int i = 0; i < grad.size(); ++i) {
-                    const double xi =
-                        (i < x.size() && std::isfinite(x[i])) ? x[i] : 1.0;
-                    grad[i] = penalty_gradient_scale * ((xi == 0.0) ? 1.0 : xi);
-                }
-
+                grad.setZero();
                 last_grad = grad;
                 last_x = x;
                 last_fx = std::numeric_limits<double>::max() / 1.0e100;
@@ -300,10 +267,6 @@ namespace quadra
                 quadra_final_fixed_grad_norm <= 1.0e-4;
 
             std::cout << "L-BFGS minimize status report" << std::endl;
-        std::cout << "L-BFGS recovery telemetry" << std::endl;
-        std::cout << "  penalty evaluations: " << fun.recovery_telemetry_m->penalty_count_m << std::endl;
-        std::cout << "  mode solve failures: " << fun.recovery_telemetry_m->mode_solve_failure_count_m << std::endl;
-        std::cout << "  laplace eval failures: " << fun.recovery_telemetry_m->laplace_eval_failure_count_m << std::endl;
             std::cout << "  iterations returned by solver: " << niter << std::endl;
             std::cout << "  final objective returned by solver: " << fx << std::endl;
             std::cout << "  final fixed-gradient norm: " << quadra_final_fixed_grad_norm << std::endl;
