@@ -562,3 +562,9 @@ test-quadra-ift-blocks: tests/test_quadra_ift_blocks
 tests/test_quadra_ift_blocks: tests/test_quadra_ift_blocks.cpp
 	$(CXX) $(CXXFLAGS) -I. -I./external/eigen -I./external/had -I./external/LBFGSpp/include -o $@ tests/test_quadra_ift_blocks.cpp
 
+test-laplace-mode-sensitivity: tests/test_laplace_mode_sensitivity
+	./tests/test_laplace_mode_sensitivity
+
+tests/test_laplace_mode_sensitivity: tests/test_laplace_mode_sensitivity.cpp core/laplace/laplace_mode_sensitivity.hpp core/inference/ift_mode_sensitivity.hpp
+	$(CXX) $(CXXFLAGS) -I. -I./external/eigen -I./external/had -I./external/LBFGSpp/include -o $@ tests/test_laplace_mode_sensitivity.cpp
+
