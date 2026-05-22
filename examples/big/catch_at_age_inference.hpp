@@ -24,7 +24,9 @@ inline void run_big_catch_at_age_inference(
     const CatchAtAgeLaplaceModel& model,
     const std::vector<double>& final_random_effects,
     const std::vector<std::string>& parameter_names,
-    const std::vector<double>& theta_hat)
+    const std::vector<double>& theta_hat,
+    const Eigen::MatrixXd& du_dtheta,
+    bool du_dtheta_available)
 {
     using namespace quadra;
 
@@ -202,6 +204,24 @@ inline void run_big_catch_at_age_inference(
         std::cout << std::endl;
         std::cout << "Derived quantity Jacobian" << std::endl;
         std::cout << joint_dm.jacobian_m << std::endl;
+    }
+
+    std::cout << std::endl;
+    std::cout << "Laplace mode sensitivity availability" << std::endl;
+    if (!du_dtheta_available)
+    {
+        std::cout << "  unavailable: implicit derivative solve failed" << std::endl;
+    }
+    else
+    {
+        std::cout << "  du_dtheta dims: "
+                  << du_dtheta.rows()
+                  << " x "
+                  << du_dtheta.cols()
+                  << std::endl;
+        std::cout << "  du_dtheta max abs: "
+                  << du_dtheta.cwiseAbs().maxCoeff()
+                  << std::endl;
     }
 }
 

@@ -1,5 +1,6 @@
 #include "catch_at_age_shared.hpp"
 #include "catch_at_age_inference.hpp"
+#include "../../core/laplace/laplace_implicit_derivatives.hpp"
 
 int main()
 {
@@ -107,12 +108,21 @@ int main()
     // v1 derived placeholders: these scalar functions are constant wrappers
     // around final reported values. A later patch should replace these with
     // theta-dependent derived quantity functions for meaningful SEs.
+    const auto implicit_derivatives =
+        quadra::evaluate_laplace_implicit_derivatives(
+            model,
+            fit.par,
+            random_initial,
+            parameters);
+
     example::run_big_catch_at_age_inference(
         laplace_objective_for_covariance,
         model,
         final_random_effects,
         fixed_parameter_names,
-        fit.par);
+        fit.par,
+        implicit_derivatives.du_dtheta_m,
+        implicit_derivatives.success_m);
 
 
     std::vector<double> full_par = fit.par;
