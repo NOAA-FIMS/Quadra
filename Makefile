@@ -556,3 +556,9 @@ test-ift-vector-validation: tests/test_ift_vector_validation
 tests/test_ift_vector_validation: tests/test_ift_vector_validation.cpp
 	$(CXX) $(CXXFLAGS) -I. -I./external/eigen -o $@ tests/test_ift_vector_validation.cpp
 
+test-quadra-ift-blocks: tests/test_quadra_ift_blocks
+	./tests/test_quadra_ift_blocks
+
+tests/test_quadra_ift_blocks: tests/test_quadra_ift_blocks.cpp
+	$(CXX) $(CXXFLAGS) -I. -I./external/eigen -I./external/had -I./external/LBFGSpp/include -o $@ tests/test_quadra_ift_blocks.cpp
+
