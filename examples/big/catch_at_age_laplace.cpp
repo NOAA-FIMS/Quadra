@@ -1,4 +1,5 @@
 #include "catch_at_age_shared.hpp"
+#include "catch_at_age_inference.hpp"
 
 int main()
 {
@@ -78,6 +79,42 @@ int main()
             final_fixed_idx,
             final_random_idx,
             final_mode_graph);
+
+
+    // ========================================
+    // Quadra inference integration
+    // ========================================
+    std::vector<std::string> fixed_parameter_names;
+    fixed_parameter_names.reserve(static_cast<std::size_t>(final_x.size()));
+
+    for (const int idx : final_fixed_idx)
+    {
+        fixed_parameter_names.push_back(param_vector.params[static_cast<std::size_t>(idx)].name);
+    }
+
+    auto laplace_objective_for_covariance =
+        [&](const std::vector<double>& theta) -> double
+        {
+            quadra::LaplaceEvaluator<example::CatchAtAgeLaplaceModel> cov_evaluator(
+                model,
+                parameters,
+                random_initial);
+
+            const auto cov_result = cov_evaluator.evaluate(theta);
+            return cov_result.laplace_objective_m;
+        };
+
+    // v1 derived placeholders: these scalar functions are constant wrappers
+    // around final reported values. A later patch should replace these with
+    // theta-dependent derived quantity functions for meaningful SEs.
+    example::run_big_catch_at_age_inference(
+        laplace_objective_for_covariance,
+        fixed_parameter_names,
+        fit.par,
+        0.0,
+        0.0,
+        std::exp(fit.par[3]));
+
 
     std::vector<double> full_par = fit.par;
     full_par.insert(full_par.end(),
