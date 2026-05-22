@@ -4,6 +4,7 @@
 #include "../../core/inference/fixed_effect_covariance.hpp"
 #include "../../core/inference/fixed_effect_report.hpp"
 #include "../../core/inference/delta_method.hpp"
+#include "../../core/inference/ad_delta_method.hpp"
 #include "catch_at_age_derived.hpp"
 
 #include <Eigen/Dense>
@@ -54,50 +55,50 @@ inline void run_big_catch_at_age_inference(
     std::cout << "\nDerived quantity uncertainty\n";
 
     auto depletion_fn =
-        [&model, &final_random_effects](const std::vector<double>& theta) {
-            return evaluate_catch_at_age_derived_quantities(
+        [&model, &final_random_effects](const auto& theta) {
+            return evaluate_terminal_depletion_ad(
                 model,
                 theta,
-                final_random_effects).terminal_depletion_m;
+                final_random_effects);
         };
 
     auto ssb_fn =
-        [&model, &final_random_effects](const std::vector<double>& theta) {
-            return evaluate_catch_at_age_derived_quantities(
+        [&model, &final_random_effects](const auto& theta) {
+            return evaluate_terminal_ssb_proxy_ad(
                 model,
                 theta,
-                final_random_effects).terminal_ssb_proxy_m;
+                final_random_effects);
         };
 
     auto mean_f_fn =
-        [&model, &final_random_effects](const std::vector<double>& theta) {
-            return evaluate_catch_at_age_derived_quantities(
+        [&model, &final_random_effects](const auto& theta) {
+            return evaluate_mean_f_ad(
                 model,
                 theta,
-                final_random_effects).mean_f_m;
+                final_random_effects);
         };
 
     auto depletion_dm =
-        delta_method_scalar(
+        ad_delta_method_scalar(
             depletion_fn,
             theta_hat,
             covariance.covariance_m);
 
     auto ssb_dm =
-        delta_method_scalar(
+        ad_delta_method_scalar(
             ssb_fn,
             theta_hat,
             covariance.covariance_m);
 
     auto mean_f_dm =
-        delta_method_scalar(
+        ad_delta_method_scalar(
             mean_f_fn,
             theta_hat,
             covariance.covariance_m);
 
     auto print_dm =
         [](const std::string& name,
-           const quadra::DeltaMethodResult& x)
+           const auto& x)
         {
             std::cout
                 << "\n"
