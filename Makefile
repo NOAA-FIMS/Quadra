@@ -514,3 +514,9 @@ test-fixed-effect-report: tests/test_fixed_effect_report
 tests/test_fixed_effect_report: tests/test_fixed_effect_report.cpp core/inference/fixed_effect_report.hpp core/inference/fixed_effect_covariance.hpp
 	$(CXX) $(CXXFLAGS) -I. -I./external/eigen -I./external/had -I./external/LBFGSpp/include -o $@ tests/test_fixed_effect_report.cpp
 
+test-delta-method: tests/test_delta_method
+	./tests/test_delta_method
+
+tests/test_delta_method: tests/test_delta_method.cpp core/inference/delta_method.hpp
+	$(CXX) $(CXXFLAGS) -I. -I./external/eigen -I./external/had -I./external/LBFGSpp/include -o $@ tests/test_delta_method.cpp
+
