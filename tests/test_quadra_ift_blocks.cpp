@@ -1,4 +1,5 @@
 #include "../core/autodiff.hpp"
+#include "../core/inference/ift_mode_sensitivity.hpp"
 
 #include <Eigen/Dense>
 
@@ -75,8 +76,17 @@ int main()
     HuTheta << had::GetAdjoint(u1_ad, theta_ad),
                had::GetAdjoint(u2_ad, theta_ad);
 
+    const auto ift_result =
+        quadra::solve_dense_ift_mode_sensitivity(Huu, HuTheta);
+
+    if (!ift_result.success_m) {
+        std::cerr << "FAIL: IFT solve failed: "
+                  << ift_result.message_m << "\n";
+        return 1;
+    }
+
     const Eigen::Vector2d ift =
-        -Huu.ldlt().solve(HuTheta);
+        ift_result.du_dtheta_m.col(0);
 
     const double error =
         (ift - fd).norm();
