@@ -501,3 +501,9 @@ test-big-laplace-convergence-contract:
 
 .PHONY: test-contracts
 test-contracts: test-big-laplace-convergence-contract
+
+test-fixed-effect-covariance: tests/test_fixed_effect_covariance
+	./tests/test_fixed_effect_covariance
+
+tests/test_fixed_effect_covariance: tests/test_fixed_effect_covariance.cpp core/inference/fixed_effect_covariance.hpp
+	$(CXX) $(CXXFLAGS) -I. -I./external/eigen -I./external/had -I./external/LBFGSpp/include -o $@ tests/test_fixed_effect_covariance.cpp
