@@ -550,3 +550,9 @@ test-ift-dense-validation: tests/test_ift_dense_validation
 tests/test_ift_dense_validation: tests/test_ift_dense_validation.cpp
 	$(CXX) $(CXXFLAGS) -I. -I./external/eigen -I./external/had -I./external/LBFGSpp/include -o $@ tests/test_ift_dense_validation.cpp
 
+test-ift-vector-validation: tests/test_ift_vector_validation
+	./tests/test_ift_vector_validation
+
+tests/test_ift_vector_validation: tests/test_ift_vector_validation.cpp
+	$(CXX) $(CXXFLAGS) -I. -I./external/eigen -o $@ tests/test_ift_vector_validation.cpp
+
