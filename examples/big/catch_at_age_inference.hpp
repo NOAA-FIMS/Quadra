@@ -4,6 +4,7 @@
 #include "../../core/inference/fixed_effect_covariance.hpp"
 #include "../../core/inference/fixed_effect_report.hpp"
 #include "../../core/inference/delta_method.hpp"
+#include "catch_at_age_derived.hpp"
 
 #include <Eigen/Dense>
 
@@ -17,11 +18,10 @@ namespace example {
 template <typename Objective>
 inline void run_big_catch_at_age_inference(
     Objective& objective,
+    const CatchAtAgeLaplaceModel& model,
+    const std::vector<double>& final_random_effects,
     const std::vector<std::string>& parameter_names,
-    const std::vector<double>& theta_hat,
-    double terminal_ssb_proxy,
-    double terminal_depletion,
-    double mean_f)
+    const std::vector<double>& theta_hat)
 {
     using namespace quadra;
 
@@ -54,18 +54,27 @@ inline void run_big_catch_at_age_inference(
     std::cout << "\nDerived quantity uncertainty\n";
 
     auto depletion_fn =
-        [terminal_depletion](const std::vector<double>&) {
-            return terminal_depletion;
+        [&model, &final_random_effects](const std::vector<double>& theta) {
+            return evaluate_catch_at_age_derived_quantities(
+                model,
+                theta,
+                final_random_effects).terminal_depletion_m;
         };
 
     auto ssb_fn =
-        [terminal_ssb_proxy](const std::vector<double>&) {
-            return terminal_ssb_proxy;
+        [&model, &final_random_effects](const std::vector<double>& theta) {
+            return evaluate_catch_at_age_derived_quantities(
+                model,
+                theta,
+                final_random_effects).terminal_ssb_proxy_m;
         };
 
     auto mean_f_fn =
-        [mean_f](const std::vector<double>&) {
-            return mean_f;
+        [&model, &final_random_effects](const std::vector<double>& theta) {
+            return evaluate_catch_at_age_derived_quantities(
+                model,
+                theta,
+                final_random_effects).mean_f_m;
         };
 
     auto depletion_dm =

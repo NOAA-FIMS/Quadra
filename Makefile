@@ -520,3 +520,9 @@ test-delta-method: tests/test_delta_method
 tests/test_delta_method: tests/test_delta_method.cpp core/inference/delta_method.hpp
 	$(CXX) $(CXXFLAGS) -I. -I./external/eigen -I./external/had -I./external/LBFGSpp/include -o $@ tests/test_delta_method.cpp
 
+test-big-catch-at-age-derived: tests/test_big_catch_at_age_derived
+	./tests/test_big_catch_at_age_derived
+
+tests/test_big_catch_at_age_derived: tests/test_big_catch_at_age_derived.cpp examples/big/catch_at_age_derived.hpp examples/big/catch_at_age_shared.hpp
+	$(CXX) $(CXXFLAGS) -I. -I./external/eigen -I./external/had -I./external/LBFGSpp/include -o $@ tests/test_big_catch_at_age_derived.cpp
+

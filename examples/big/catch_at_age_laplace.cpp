@@ -109,11 +109,10 @@ int main()
     // theta-dependent derived quantity functions for meaningful SEs.
     example::run_big_catch_at_age_inference(
         laplace_objective_for_covariance,
+        model,
+        final_random_effects,
         fixed_parameter_names,
-        fit.par,
-        0.0,
-        0.0,
-        std::exp(fit.par[3]));
+        fit.par);
 
 
     std::vector<double> full_par = fit.par;
