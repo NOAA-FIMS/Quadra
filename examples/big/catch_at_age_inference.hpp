@@ -5,6 +5,7 @@
 #include "../../core/inference/fixed_effect_report.hpp"
 #include "../../core/inference/delta_method.hpp"
 #include "../../core/inference/ad_delta_method.hpp"
+#include "../../core/inference/ad_delta_method_vector.hpp"
 #include "catch_at_age_derived.hpp"
 
 #include <Eigen/Dense>
@@ -13,6 +14,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <type_traits>
 
 namespace example {
 
@@ -123,6 +125,84 @@ inline void run_big_catch_at_age_inference(
     print_dm("terminal depletion", depletion_dm);
     print_dm("terminal ssb proxy", ssb_dm);
     print_dm("mean fishing mortality", mean_f_dm);
+
+
+    std::cout << std::endl;
+    std::cout << "Joint derived quantity inference" << std::endl;
+
+    auto joint_fn =
+        [&model, &final_random_effects](const auto& theta)
+    {
+        using Scalar = std::decay_t<decltype(theta[0])>;
+        return std::vector<Scalar>{
+            evaluate_terminal_depletion_ad(
+                model,
+                theta,
+                final_random_effects),
+
+            evaluate_terminal_ssb_proxy_ad(
+                model,
+                theta,
+                final_random_effects),
+
+            evaluate_mean_f_ad(
+                model,
+                theta,
+                final_random_effects)
+        };
+    };
+
+    const auto joint_dm =
+        quadra::ad_delta_method_vector(
+            joint_fn,
+            theta_hat,
+            covariance.covariance_m);
+
+    if (!joint_dm.success_m)
+    {
+        std::cout << "joint derived inference failed: "
+                  << joint_dm.message_m << std::endl;
+    }
+    else
+    {
+        const std::vector<std::string> names{
+            "depletion",
+            "terminal_ssb",
+            "mean_F"
+        };
+
+        std::cout << std::endl;
+        std::cout << "Joint estimates and standard errors" << std::endl;
+
+        std::cout
+            << std::setw(20) << "quantity"
+            << std::setw(18) << "estimate"
+            << std::setw(18) << "std.error"
+            << std::endl;
+
+        for (Eigen::Index i = 0;
+             i < joint_dm.estimate_m.size();
+             ++i)
+        {
+            std::cout
+                << std::setw(20) << names[static_cast<std::size_t>(i)]
+                << std::setw(18) << joint_dm.estimate_m[i]
+                << std::setw(18) << joint_dm.std_error_m[i]
+                << std::endl;
+        }
+
+        std::cout << std::endl;
+        std::cout << "Derived quantity covariance matrix" << std::endl;
+        std::cout << joint_dm.covariance_m << std::endl;
+
+        std::cout << std::endl;
+        std::cout << "Derived quantity correlation matrix" << std::endl;
+        std::cout << joint_dm.correlation_m << std::endl;
+
+        std::cout << std::endl;
+        std::cout << "Derived quantity Jacobian" << std::endl;
+        std::cout << joint_dm.jacobian_m << std::endl;
+    }
 }
 
 } // namespace example
