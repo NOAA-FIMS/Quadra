@@ -544,3 +544,9 @@ test-ad-delta-method-vector: tests/test_ad_delta_method_vector
 tests/test_ad_delta_method_vector: tests/test_ad_delta_method_vector.cpp core/inference/ad_delta_method_vector.hpp core/inference/ad_delta_method.hpp
 	$(CXX) $(CXXFLAGS) -I. -I./external/eigen -I./external/had -I./external/LBFGSpp/include -o $@ tests/test_ad_delta_method_vector.cpp
 
+test-ift-dense-validation: tests/test_ift_dense_validation
+	./tests/test_ift_dense_validation
+
+tests/test_ift_dense_validation: tests/test_ift_dense_validation.cpp
+	$(CXX) $(CXXFLAGS) -I. -I./external/eigen -I./external/had -I./external/LBFGSpp/include -o $@ tests/test_ift_dense_validation.cpp
+
