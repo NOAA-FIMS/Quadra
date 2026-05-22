@@ -538,3 +538,9 @@ test-ad-delta-method-matches-fd: tests/test_ad_delta_method_matches_fd
 tests/test_ad_delta_method_matches_fd: tests/test_ad_delta_method_matches_fd.cpp core/inference/ad_delta_method.hpp core/inference/delta_method.hpp
 	$(CXX) $(CXXFLAGS) -I. -I./external/eigen -I./external/had -I./external/LBFGSpp/include -o $@ tests/test_ad_delta_method_matches_fd.cpp
 
+test-ad-delta-method-vector: tests/test_ad_delta_method_vector
+	./tests/test_ad_delta_method_vector
+
+tests/test_ad_delta_method_vector: tests/test_ad_delta_method_vector.cpp core/inference/ad_delta_method_vector.hpp core/inference/ad_delta_method.hpp
+	$(CXX) $(CXXFLAGS) -I. -I./external/eigen -I./external/had -I./external/LBFGSpp/include -o $@ tests/test_ad_delta_method_vector.cpp
+
