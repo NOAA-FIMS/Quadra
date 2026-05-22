@@ -7,6 +7,7 @@
 #include "../../core/inference/ad_delta_method.hpp"
 #include "../../core/inference/ad_delta_method_vector.hpp"
 #include "../../core/laplace/laplace_profiled_derived_gradient.hpp"
+#include "../../core/laplace/laplace_profiled_ad_gradient.hpp"
 #include "catch_at_age_derived.hpp"
 
 #include <Eigen/Dense>
@@ -257,48 +258,84 @@ inline void run_big_catch_at_age_inference(
         };
 
         {
-            Eigen::VectorXd g_theta =
-                depletion_dm.gradient_m;
+            auto grad_blocks =
+                quadra::evaluate_profiled_ad_gradient_blocks(
+                    [&model](const auto& theta, const auto& u) {
+                        return evaluate_terminal_depletion_ad(
+                            model,
+                            theta,
+                            std::vector<double>{});
+                    },
+                    theta_hat,
+                    final_random_effects);
 
-            Eigen::VectorXd g_u =
-                Eigen::VectorXd::Zero(
-                    du_dtheta.rows());
-
-            print_profiled(
-                "terminal depletion",
-                depletion_dm.estimate_m,
-                g_theta,
-                g_u);
+            if (!grad_blocks.success_m)
+            {
+                std::cout << "  terminal depletion: FAILED gradient blocks: "
+                          << grad_blocks.message_m << std::endl;
+            }
+            else
+            {
+                print_profiled(
+                    "terminal depletion",
+                    grad_blocks.estimate_m,
+                    grad_blocks.gradient_fixed_m,
+                    grad_blocks.gradient_random_m);
+            }
         }
 
         {
-            Eigen::VectorXd g_theta =
-                ssb_dm.gradient_m;
+            auto grad_blocks =
+                quadra::evaluate_profiled_ad_gradient_blocks(
+                    [&model](const auto& theta, const auto& u) {
+                        return evaluate_terminal_ssb_proxy_ad(
+                            model,
+                            theta,
+                            std::vector<double>{});
+                    },
+                    theta_hat,
+                    final_random_effects);
 
-            Eigen::VectorXd g_u =
-                Eigen::VectorXd::Zero(
-                    du_dtheta.rows());
-
-            print_profiled(
-                "terminal ssb proxy",
-                ssb_dm.estimate_m,
-                g_theta,
-                g_u);
+            if (!grad_blocks.success_m)
+            {
+                std::cout << "  terminal ssb proxy: FAILED gradient blocks: "
+                          << grad_blocks.message_m << std::endl;
+            }
+            else
+            {
+                print_profiled(
+                    "terminal ssb proxy",
+                    grad_blocks.estimate_m,
+                    grad_blocks.gradient_fixed_m,
+                    grad_blocks.gradient_random_m);
+            }
         }
 
         {
-            Eigen::VectorXd g_theta =
-                mean_f_dm.gradient_m;
+            auto grad_blocks =
+                quadra::evaluate_profiled_ad_gradient_blocks(
+                    [&model](const auto& theta, const auto& u) {
+                        return evaluate_mean_f_ad(
+                            model,
+                            theta,
+                            std::vector<double>{});
+                    },
+                    theta_hat,
+                    final_random_effects);
 
-            Eigen::VectorXd g_u =
-                Eigen::VectorXd::Zero(
-                    du_dtheta.rows());
-
-            print_profiled(
-                "mean fishing mortality",
-                mean_f_dm.estimate_m,
-                g_theta,
-                g_u);
+            if (!grad_blocks.success_m)
+            {
+                std::cout << "  mean fishing mortality: FAILED gradient blocks: "
+                          << grad_blocks.message_m << std::endl;
+            }
+            else
+            {
+                print_profiled(
+                    "mean fishing mortality",
+                    grad_blocks.estimate_m,
+                    grad_blocks.gradient_fixed_m,
+                    grad_blocks.gradient_random_m);
+            }
         }
     }
 
