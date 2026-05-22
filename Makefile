@@ -574,3 +574,15 @@ test-laplace-derived-gradient: tests/test_laplace_derived_gradient
 tests/test_laplace_derived_gradient: tests/test_laplace_derived_gradient.cpp core/laplace/laplace_derived_gradient.hpp core/laplace/laplace_mode_sensitivity.hpp
 	$(CXX) $(CXXFLAGS) -I. -I./external/eigen -I./external/had -I./external/LBFGSpp/include -o $@ tests/test_laplace_derived_gradient.cpp
 
+test-laplace-implicit-derived-gradient: tests/test_laplace_implicit_derived_gradient
+	./tests/test_laplace_implicit_derived_gradient
+
+tests/test_laplace_implicit-derived-gradient: tests/test_laplace_implicit_derived_gradient.cpp core/laplace/laplace_implicit_derivatives.hpp core/laplace/laplace_derived_gradient.hpp
+	$(CXX) $(CXXFLAGS) -I. -I./external/eigen -I./external/had -I./external/LBFGSpp/include -o $@ tests/test_laplace_implicit_derived_gradient.cpp
+
+test-laplace-profiled-derived-gradient: tests/test_laplace_profiled_derived_gradient
+	./tests/test_laplace_profiled_derived_gradient
+
+tests/test_laplace_profiled_derived_gradient: tests/test_laplace_profiled_derived_gradient.cpp core/laplace/laplace_profiled_derived_gradient.hpp
+	$(CXX) $(CXXFLAGS) -I. -I./external/eigen -I./external/had -I./external/LBFGSpp/include -o $@ tests/test_laplace_profiled_derived_gradient.cpp
+
