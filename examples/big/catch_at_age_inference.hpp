@@ -6,6 +6,7 @@
 #include "../../core/inference/delta_method.hpp"
 #include "../../core/inference/ad_delta_method.hpp"
 #include "../../core/inference/ad_delta_method_vector.hpp"
+#include "../../core/laplace/laplace_profiled_derived_gradient.hpp"
 #include "catch_at_age_derived.hpp"
 
 #include <Eigen/Dense>
@@ -205,6 +206,102 @@ inline void run_big_catch_at_age_inference(
         std::cout << "Derived quantity Jacobian" << std::endl;
         std::cout << joint_dm.jacobian_m << std::endl;
     }
+
+    if (du_dtheta_available)
+    {
+        std::cout << std::endl;
+        std::cout << "Profiled derived quantity uncertainty" << std::endl;
+
+        auto print_profiled =
+            [&](const std::string& name,
+                double estimate,
+                const Eigen::VectorXd& g_theta,
+                const Eigen::VectorXd& g_u)
+        {
+            const auto profiled =
+                quadra::compute_laplace_profiled_derived_gradient(
+                    g_theta,
+                    g_u,
+                    du_dtheta);
+
+            if (!profiled.success_m)
+            {
+                std::cout << "  " << name
+                          << ": FAILED: "
+                          << profiled.message_m
+                          << std::endl;
+                return;
+            }
+
+            const double variance =
+                quadra::delta_variance_from_gradient(
+                    profiled.gradient_m,
+                    covariance.covariance_m);
+
+            const double se =
+                variance > 0.0
+                    ? std::sqrt(variance)
+                    : std::numeric_limits<double>::quiet_NaN();
+
+            const double cv =
+                std::abs(estimate) > 1.0e-12
+                    ? se / std::abs(estimate)
+                    : std::numeric_limits<double>::quiet_NaN();
+
+            std::cout
+                << "  " << name
+                << ": estimate=" << estimate
+                << " se=" << se
+                << " cv=" << cv
+                << std::endl;
+        };
+
+        {
+            Eigen::VectorXd g_theta =
+                depletion_dm.gradient_m;
+
+            Eigen::VectorXd g_u =
+                Eigen::VectorXd::Zero(
+                    du_dtheta.rows());
+
+            print_profiled(
+                "terminal depletion",
+                depletion_dm.estimate_m,
+                g_theta,
+                g_u);
+        }
+
+        {
+            Eigen::VectorXd g_theta =
+                ssb_dm.gradient_m;
+
+            Eigen::VectorXd g_u =
+                Eigen::VectorXd::Zero(
+                    du_dtheta.rows());
+
+            print_profiled(
+                "terminal ssb proxy",
+                ssb_dm.estimate_m,
+                g_theta,
+                g_u);
+        }
+
+        {
+            Eigen::VectorXd g_theta =
+                mean_f_dm.gradient_m;
+
+            Eigen::VectorXd g_u =
+                Eigen::VectorXd::Zero(
+                    du_dtheta.rows());
+
+            print_profiled(
+                "mean fishing mortality",
+                mean_f_dm.estimate_m,
+                g_theta,
+                g_u);
+        }
+    }
+
 
     std::cout << std::endl;
     std::cout << "Laplace mode sensitivity availability" << std::endl;
