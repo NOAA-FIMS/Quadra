@@ -586,3 +586,9 @@ test-laplace-profiled-derived-gradient: tests/test_laplace_profiled_derived_grad
 tests/test_laplace_profiled_derived_gradient: tests/test_laplace_profiled_derived_gradient.cpp core/laplace/laplace_profiled_derived_gradient.hpp
 	$(CXX) $(CXXFLAGS) -I. -I./external/eigen -I./external/had -I./external/LBFGSpp/include -o $@ tests/test_laplace_profiled_derived_gradient.cpp
 
+test-laplace-profiled-ad-gradient: tests/test_laplace_profiled_ad_gradient
+	./tests/test_laplace_profiled_ad_gradient
+
+tests/test_laplace_profiled_ad_gradient: tests/test_laplace_profiled_ad_gradient.cpp core/laplace/laplace_profiled_ad_gradient.hpp
+	$(CXX) $(CXXFLAGS) -I. -I./external/eigen -I./external/had -I./external/LBFGSpp/include -o $@ tests/test_laplace_profiled_ad_gradient.cpp
+
