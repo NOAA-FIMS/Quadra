@@ -11,6 +11,7 @@
 
 #include "random_effect_hessian.hpp"
 #include "laplace_objective.hpp"
+#include "sparse_factorization_cache.hpp"
 
 namespace quadra {
 
@@ -200,19 +201,25 @@ evaluate_laplace_implicit_derivatives(
             partition
         );
 
-    Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> solver;
-    solver.compute(laplace.hessian_random_m);
+    SparseLDLTFactorizationCache factorization;
 
-    if (solver.info() != Eigen::Success) {
-        result.message_m = "Failed sparse LDLT factorization for implicit derivatives.";
-        return result;
+    try {
+        factorization.analyze_pattern(
+            laplace.hessian_random_m);
+
+        factorization.factorize(
+            laplace.hessian_random_m);
+
+        result.du_dtheta_m =
+            -factorization.solve(
+                result.H_u_theta_m);
     }
+    catch (const std::exception& e) {
+        result.message_m =
+            std::string(
+                "Cached sparse LDLT implicit derivative solve failed: ")
+            + e.what();
 
-    result.du_dtheta_m =
-        -solver.solve(result.H_u_theta_m);
-
-    if (solver.info() != Eigen::Success) {
-        result.message_m = "Failed sparse LDLT solve for implicit derivatives.";
         return result;
     }
 
