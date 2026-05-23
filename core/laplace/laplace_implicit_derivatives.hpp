@@ -37,6 +37,84 @@ struct LaplaceImplicitDerivativeResult {
 // Dense finite-difference mixed Hessian wrt:
 // rows: random effects u
 // cols: fixed effects theta
+
+template <class Model>
+inline Eigen::MatrixXd ad_mixed_hessian(
+    Model& model,
+    const std::vector<double>& fixed,
+    const std::vector<double>& random,
+    const ParameterPartition& partition
+) {
+    const size_t n_fixed = fixed.size();
+    const size_t n_random = random.size();
+
+    if (partition.fixed_indices_m.size() != n_fixed) {
+        throw std::invalid_argument(
+            "ad_mixed_hessian: fixed vector has incorrect length");
+    }
+
+    if (partition.random_indices_m.size() != n_random) {
+        throw std::invalid_argument(
+            "ad_mixed_hessian: random vector has incorrect length");
+    }
+
+    const size_t n_total = n_fixed + n_random;
+
+    std::vector<double> full(n_total, 0.0);
+
+    for (size_t i = 0; i < n_fixed; ++i) {
+        full[static_cast<size_t>(partition.fixed_indices_m[i])] = fixed[i];
+    }
+
+    for (size_t i = 0; i < n_random; ++i) {
+        full[static_cast<size_t>(partition.random_indices_m[i])] = random[i];
+    }
+
+    had::ADGraph graph;
+    had::g_ADGraph = &graph;
+
+    ModelReportContext ctx;
+    model.initialize(ctx);
+
+    std::vector<AD> full_ad;
+    full_ad.reserve(full.size());
+
+    for (double x : full) {
+        full_ad.emplace_back(x);
+    }
+
+    AD objective =
+        model.template evaluate<AD>(full_ad, ctx);
+
+    had::ZeroAdjoints(graph);
+    had::SetAdjoint(objective, 1.0);
+    had::PropagateAdjointDirectional();
+
+    Eigen::MatrixXd H =
+        Eigen::MatrixXd::Zero(
+            static_cast<Eigen::Index>(n_random),
+            static_cast<Eigen::Index>(n_fixed));
+
+    for (size_t i = 0; i < n_random; ++i) {
+        const int random_full_index =
+            partition.random_indices_m[i];
+
+        for (size_t j = 0; j < n_fixed; ++j) {
+            const int fixed_full_index =
+                partition.fixed_indices_m[j];
+
+            H(static_cast<Eigen::Index>(i),
+              static_cast<Eigen::Index>(j)) =
+                had::GetAdjoint(
+                    full_ad[static_cast<size_t>(random_full_index)],
+                    full_ad[static_cast<size_t>(fixed_full_index)]);
+        }
+    }
+
+    return H;
+}
+
+
 template <class Model>
 inline Eigen::MatrixXd finite_difference_mixed_hessian(
     Model& model,
@@ -115,7 +193,7 @@ evaluate_laplace_implicit_derivatives(
     }
 
     result.H_u_theta_m =
-        finite_difference_mixed_hessian(
+        ad_mixed_hessian(
             model,
             fixed,
             laplace.u_hat_m,
