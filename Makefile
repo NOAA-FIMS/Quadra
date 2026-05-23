@@ -598,3 +598,9 @@ test-ad-mixed-hessian-matches-fd: tests/test_ad_mixed_hessian_matches_fd
 tests/test_ad_mixed_hessian_matches_fd: tests/test_ad_mixed_hessian_matches_fd.cpp examples/big/catch_at_age_shared.hpp core/laplace/laplace_implicit_derivatives.hpp
 	$(CXX) $(CXXFLAGS) -I. -I./external/eigen -I./external/had -I./external/LBFGSpp/include -o $@ tests/test_ad_mixed_hessian_matches_fd.cpp
 
+test-sparse-ldlt-factorization-cache: tests/test_sparse_ldlt_factorization_cache
+	./tests/test_sparse_ldlt_factorization_cache
+
+tests/test_sparse_ldlt_factorization_cache: tests/test_sparse_ldlt_factorization_cache.cpp core/laplace/sparse_factorization_cache.hpp
+	$(CXX) $(CXXFLAGS) -I. -I./external/eigen -I./external/had -I./external/LBFGSpp/include -o $@ tests/test_sparse_ldlt_factorization_cache.cpp
+

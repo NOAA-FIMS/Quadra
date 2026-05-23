@@ -162,6 +162,132 @@ private:
     int pattern_nnz_m = 0;
 };
 
+
+class SparseLDLTFactorizationCache {
+public:
+    using SparseMatrix = Eigen::SparseMatrix<double>;
+    using Vector = Eigen::VectorXd;
+    using Matrix = Eigen::MatrixXd;
+
+    SparseLDLTFactorizationCache() = default;
+
+    void analyze_pattern(const SparseMatrix& H) {
+        solver_m.analyzePattern(H);
+
+        if (solver_m.info() != Eigen::Success) {
+            analyzed_m = false;
+            throw std::runtime_error(
+                "SparseLDLTFactorizationCache::analyze_pattern failed."
+            );
+        }
+
+        analyzed_m = true;
+        pattern_rows_m = H.rows();
+        pattern_cols_m = H.cols();
+        pattern_nnz_m = H.nonZeros();
+    }
+
+    void factorize(const SparseMatrix& H) {
+        if (!analyzed_m) {
+            analyze_pattern(H);
+        }
+
+        if (H.rows() != pattern_rows_m || H.cols() != pattern_cols_m) {
+            throw std::invalid_argument(
+                "SparseLDLTFactorizationCache::factorize matrix dimension changed."
+            );
+        }
+
+        if (H.nonZeros() != pattern_nnz_m) {
+            throw std::invalid_argument(
+                "SparseLDLTFactorizationCache::factorize matrix nnz changed."
+            );
+        }
+
+        solver_m.factorize(H);
+
+        if (solver_m.info() != Eigen::Success) {
+            factorized_m = false;
+            throw std::runtime_error(
+                "SparseLDLTFactorizationCache::factorize numeric factorization failed."
+            );
+        }
+
+        factorized_m = true;
+    }
+
+    void compute(const SparseMatrix& H) {
+        solver_m.compute(H);
+
+        if (solver_m.info() != Eigen::Success) {
+            analyzed_m = false;
+            factorized_m = false;
+            throw std::runtime_error(
+                "SparseLDLTFactorizationCache::compute failed."
+            );
+        }
+
+        analyzed_m = true;
+        factorized_m = true;
+        pattern_rows_m = H.rows();
+        pattern_cols_m = H.cols();
+        pattern_nnz_m = H.nonZeros();
+    }
+
+    Vector solve(const Vector& b) const {
+        if (!factorized_m) {
+            throw std::runtime_error(
+                "SparseLDLTFactorizationCache::solve called before factorize."
+            );
+        }
+
+        Vector x = solver_m.solve(b);
+
+        if (solver_m.info() != Eigen::Success) {
+            throw std::runtime_error(
+                "SparseLDLTFactorizationCache::solve failed."
+            );
+        }
+
+        return x;
+    }
+
+    Matrix solve(const Matrix& B) const {
+        if (!factorized_m) {
+            throw std::runtime_error(
+                "SparseLDLTFactorizationCache::solve matrix called before factorize."
+            );
+        }
+
+        Matrix X = solver_m.solve(B);
+
+        if (solver_m.info() != Eigen::Success) {
+            throw std::runtime_error(
+                "SparseLDLTFactorizationCache::solve matrix failed."
+            );
+        }
+
+        return X;
+    }
+
+    bool analyzed() const { return analyzed_m; }
+    bool factorized() const { return factorized_m; }
+    int rows() const { return pattern_rows_m; }
+    int cols() const { return pattern_cols_m; }
+    int nonzeros() const { return pattern_nnz_m; }
+
+private:
+    Eigen::SimplicialLDLT<SparseMatrix> solver_m;
+
+    bool analyzed_m = false;
+    bool factorized_m = false;
+
+    int pattern_rows_m = 0;
+    int pattern_cols_m = 0;
+    int pattern_nnz_m = 0;
+};
+
+
 inline double sparse_logdet_compute(
     const Eigen::SparseMatrix<double>& H
 ) {
