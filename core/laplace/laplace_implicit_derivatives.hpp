@@ -200,17 +200,21 @@ evaluate_laplace_implicit_derivatives(
             partition
         );
 
-    Eigen::MatrixXd H_dense(laplace.hessian_random_m);
-
-    Eigen::LDLT<Eigen::MatrixXd> solver(H_dense);
+    Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> solver;
+    solver.compute(laplace.hessian_random_m);
 
     if (solver.info() != Eigen::Success) {
-        result.message_m = "Failed LDLT solve for implicit derivatives.";
+        result.message_m = "Failed sparse LDLT factorization for implicit derivatives.";
         return result;
     }
 
     result.du_dtheta_m =
         -solver.solve(result.H_u_theta_m);
+
+    if (solver.info() != Eigen::Success) {
+        result.message_m = "Failed sparse LDLT solve for implicit derivatives.";
+        return result;
+    }
 
     result.success_m = true;
     result.message_m = "Implicit derivatives computed.";
