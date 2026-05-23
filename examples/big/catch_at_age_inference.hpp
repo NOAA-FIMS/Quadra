@@ -8,6 +8,7 @@
 #include "../../core/inference/ad_delta_method_vector.hpp"
 #include "../../core/laplace/laplace_profiled_derived_gradient.hpp"
 #include "../../core/laplace/laplace_profiled_ad_gradient.hpp"
+#include "../../core/laplace/laplace_profiled_delta_method.hpp"
 #include "catch_at_age_derived.hpp"
 
 #include <Eigen/Dense>
@@ -220,10 +221,12 @@ inline void run_big_catch_at_age_inference(
                 const Eigen::VectorXd& g_u)
         {
             const auto profiled =
-                quadra::compute_laplace_profiled_derived_gradient(
+                quadra::compute_laplace_profiled_delta_method(
+                    estimate,
                     g_theta,
                     g_u,
-                    du_dtheta);
+                    du_dtheta,
+                    covariance.covariance_m);
 
             if (!profiled.success_m)
             {
@@ -234,26 +237,36 @@ inline void run_big_catch_at_age_inference(
                 return;
             }
 
-            const double variance =
+            const double fixed_u_variance =
                 quadra::delta_variance_from_gradient(
-                    profiled.gradient_m,
+                    g_theta,
                     covariance.covariance_m);
 
-            const double se =
-                variance > 0.0
-                    ? std::sqrt(variance)
+            const double fixed_u_se =
+                fixed_u_variance > 0.0
+                    ? std::sqrt(fixed_u_variance)
                     : std::numeric_limits<double>::quiet_NaN();
 
-            const double cv =
-                std::abs(estimate) > 1.0e-12
-                    ? se / std::abs(estimate)
+            const double se_abs_diff =
+                profiled.std_error_m - fixed_u_se;
+
+            const double se_rel_diff =
+                std::abs(fixed_u_se) > 1.0e-12
+                    ? se_abs_diff / fixed_u_se
                     : std::numeric_limits<double>::quiet_NaN();
+
+            const double correction_norm =
+                (profiled.gradient_m - g_theta).norm();
 
             std::cout
                 << "  " << name
-                << ": estimate=" << estimate
-                << " se=" << se
-                << " cv=" << cv
+                << ": estimate=" << profiled.estimate_m
+                << " fixed_u_se=" << fixed_u_se
+                << " profiled_se=" << profiled.std_error_m
+                << " profiled_cv=" << profiled.cv_m
+                << " se_abs_diff=" << se_abs_diff
+                << " se_rel_diff=" << se_rel_diff
+                << " correction_norm=" << correction_norm
                 << std::endl;
         };
 
