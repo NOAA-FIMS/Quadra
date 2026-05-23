@@ -592,3 +592,9 @@ test-laplace-profiled-ad-gradient: tests/test_laplace_profiled_ad_gradient
 tests/test_laplace_profiled_ad_gradient: tests/test_laplace_profiled_ad_gradient.cpp core/laplace/laplace_profiled_ad_gradient.hpp
 	$(CXX) $(CXXFLAGS) -I. -I./external/eigen -I./external/had -I./external/LBFGSpp/include -o $@ tests/test_laplace_profiled_ad_gradient.cpp
 
+test-ad-mixed-hessian-matches-fd: tests/test_ad_mixed_hessian_matches_fd
+	./tests/test_ad_mixed_hessian_matches_fd
+
+tests/test_ad_mixed_hessian_matches_fd: tests/test_ad_mixed_hessian_matches_fd.cpp examples/big/catch_at_age_shared.hpp core/laplace/laplace_implicit_derivatives.hpp
+	$(CXX) $(CXXFLAGS) -I. -I./external/eigen -I./external/had -I./external/LBFGSpp/include -o $@ tests/test_ad_mixed_hessian_matches_fd.cpp
+
