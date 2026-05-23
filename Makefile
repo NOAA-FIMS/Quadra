@@ -604,3 +604,9 @@ test-sparse-ldlt-factorization-cache: tests/test_sparse_ldlt_factorization_cache
 tests/test_sparse_ldlt_factorization_cache: tests/test_sparse_ldlt_factorization_cache.cpp core/laplace/sparse_factorization_cache.hpp
 	$(CXX) $(CXXFLAGS) -I. -I./external/eigen -I./external/had -I./external/LBFGSpp/include -o $@ tests/test_sparse_ldlt_factorization_cache.cpp
 
+test-laplace-profiled-delta-method: tests/test_laplace_profiled_delta_method
+	./tests/test_laplace_profiled_delta_method
+
+tests/test_laplace_profiled_delta_method: tests/test_laplace_profiled_delta_method.cpp core/laplace/laplace_profiled_delta_method.hpp core/laplace/laplace_profiled_derived_gradient.hpp
+	$(CXX) $(CXXFLAGS) -I. -I./external/eigen -I./external/had -I./external/LBFGSpp/include -o $@ tests/test_laplace_profiled_delta_method.cpp
+
