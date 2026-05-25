@@ -472,6 +472,18 @@ inline void run_big_catch_at_age_inference(
         std::cout << "  du_dtheta max abs: "
                   << du_dtheta.cwiseAbs().maxCoeff()
                   << std::endl;
+
+        std::cout << "  implicit derivatives ms: "
+                  << implicit_workspace.implicit_derivatives_ms_m
+                  << std::endl;
+
+        std::cout << "  factorization ms: "
+                  << implicit_workspace.factorization_ms_m
+                  << std::endl;
+
+        std::cout << "  workspace total ms: "
+                  << implicit_workspace.total_ms_m
+                  << std::endl;
     }
 }
 

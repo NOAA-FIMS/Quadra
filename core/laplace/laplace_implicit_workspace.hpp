@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <chrono>
 
 namespace quadra {
 
@@ -25,6 +26,10 @@ struct LaplaceImplicitWorkspace {
     std::vector<double> fixed_m;
     std::vector<double> u_hat_m;
     std::vector<double> full_m;
+
+    double implicit_derivatives_ms_m = 0.0;
+    double factorization_ms_m = 0.0;
+    double total_ms_m = 0.0;
 
     bool converged_m = false;
     bool success_m = false;
@@ -44,6 +49,14 @@ build_laplace_implicit_workspace(
 {
     LaplaceImplicitWorkspace result;
 
+    using clock = std::chrono::steady_clock;
+
+    const auto total_start =
+        clock::now();
+
+    const auto implicit_start =
+        clock::now();
+
     auto implicit =
         evaluate_laplace_implicit_derivatives(
             model,
@@ -51,6 +64,13 @@ build_laplace_implicit_workspace(
             random_initial,
             partition,
             options);
+
+    const auto implicit_end =
+        clock::now();
+
+    result.implicit_derivatives_ms_m =
+        std::chrono::duration<double, std::milli>(
+            implicit_end - implicit_start).count();
 
     result.H_u_theta_m = implicit.H_u_theta_m;
     result.du_dtheta_m = implicit.du_dtheta_m;
@@ -71,11 +91,21 @@ build_laplace_implicit_workspace(
 
     try
     {
+        const auto factorization_start =
+            clock::now();
+
         result.factorization_m->analyze_pattern(
             result.H_uu_m);
 
         result.factorization_m->factorize(
             result.H_uu_m);
+
+        const auto factorization_end =
+            clock::now();
+
+        result.factorization_ms_m =
+            std::chrono::duration<double, std::milli>(
+                factorization_end - factorization_start).count();
     }
     catch (const std::exception& e)
     {
@@ -87,6 +117,13 @@ build_laplace_implicit_workspace(
 
         return result;
     }
+
+    const auto total_end =
+        clock::now();
+
+    result.total_ms_m =
+        std::chrono::duration<double, std::milli>(
+            total_end - total_start).count();
 
     result.success_m = true;
     result.message_m =
