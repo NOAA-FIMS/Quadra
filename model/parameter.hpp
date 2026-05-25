@@ -2,6 +2,8 @@
 #define PARAMETER_HPP
 #pragma once
 
+#include "../core/model/parameter_transform.hpp"
+
 #include <vector>
 #include <map>
 #include <string>

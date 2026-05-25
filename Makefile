@@ -634,3 +634,9 @@ test-report-serialization: tests/test_report_serialization
 tests/test_report_serialization: tests/test_report_serialization.cpp core/inference/report_serialization.hpp core/laplace/laplace_profiled_derived_report.hpp
 	$(CXX) $(CXXFLAGS) -I. -I./external/eigen -I./external/had -I./external/LBFGSpp/include -o $@ tests/test_report_serialization.cpp
 
+run-simple-random-intercept-example: examples/simple/random_intercept_model
+	./examples/simple/random_intercept_model
+
+examples/simple/random_intercept_model: examples/simple/random_intercept_model.cpp
+	$(CXX) $(CXXFLAGS) -I. -I./external/eigen -I./external/had -I./external/LBFGSpp/include -o $@ examples/simple/random_intercept_model.cpp
+
