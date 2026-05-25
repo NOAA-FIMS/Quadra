@@ -1,6 +1,7 @@
 #include "../../../include/quadra/quadra.hpp"
 
 #include <chrono>
+#include <Eigen/SparseCholesky>
 #include <cmath>
 #include <fstream>
 #include <iostream>
@@ -84,7 +85,7 @@ int main()
         return 1;
     }
 
-    csv << "engine,model,n_state,n_random,objective_eval_ms,objective_reps,workspace_ms,implicit_derivatives_ms,factorization_ms,total_wall_ms,hessian_nnz,success\n";
+    csv << "engine,model,n_state,n_random,objective_eval_ms,objective_reps,workspace_ms,implicit_derivatives_ms,factorization_ms,total_wall_ms,hessian_nnz,hessian_density,factor_nnz,fill_ratio,success\n";
 
     for (int n_state : {25, 50, 100, 250})
     {
@@ -151,6 +152,38 @@ int main()
                         parameters);
             });
 
+        const double hessian_density =
+            workspace.H_uu_m.rows() > 0
+                ? static_cast<double>(workspace.H_uu_m.nonZeros()) /
+                      static_cast<double>(
+                          workspace.H_uu_m.rows() *
+                          workspace.H_uu_m.cols())
+                : std::numeric_limits<double>::quiet_NaN();
+
+        int factor_nnz = 0;
+        double fill_ratio =
+            std::numeric_limits<double>::quiet_NaN();
+
+        if (workspace.success_m)
+        {
+            Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> ldlt;
+            ldlt.compute(workspace.H_uu_m);
+
+            if (ldlt.info() == Eigen::Success)
+            {
+                const Eigen::SparseMatrix<double> L =
+                    ldlt.matrixL();
+
+                factor_nnz = L.nonZeros();
+
+                fill_ratio =
+                    workspace.H_uu_m.nonZeros() > 0
+                        ? static_cast<double>(factor_nnz) /
+                              static_cast<double>(workspace.H_uu_m.nonZeros())
+                        : std::numeric_limits<double>::quiet_NaN();
+            }
+        }
+
         csv
             << "quadra,state_space,"
             << n_state << ","
@@ -162,6 +195,9 @@ int main()
             << workspace.factorization_ms_m << ","
             << wall_ms << ","
             << workspace.H_uu_m.nonZeros() << ","
+            << hessian_density << ","
+            << factor_nnz << ","
+            << fill_ratio << ","
             << (workspace.success_m ? 1 : 0)
             << "\n";
 
@@ -170,6 +206,9 @@ int main()
             << " objective_eval_ms=" << objective_eval_ms
             << " workspace_ms=" << workspace.total_ms_m
             << " nnz=" << workspace.H_uu_m.nonZeros()
+            << " density=" << hessian_density
+            << " factor_nnz=" << factor_nnz
+            << " fill_ratio=" << fill_ratio
             << " success=" << workspace.success_m
             << "\n";
 
