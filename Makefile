@@ -714,3 +714,9 @@ benchmark-exact-gradient-reuse: benchmarks/exact_laplace_gradient/exact_gradient
 benchmarks/exact_laplace_gradient/exact_gradient_reuse_benchmark: benchmarks/exact_laplace_gradient/exact_gradient_reuse_benchmark.cpp include/quadra/quadra.hpp core/laplace/laplace_exact_objective_gradient.hpp
 	$(CXX) $(CXXFLAGS) -I. -I./external/eigen -I./external/had -I./external/LBFGSpp/include -o $@ benchmarks/exact_laplace_gradient/exact_gradient_reuse_benchmark.cpp
 
+benchmark-analyze-exact-gradient-reuse:
+	python3 benchmarks/analysis/analyze_exact_gradient_reuse.py
+
+benchmark-plot-exact-gradient-reuse:
+	Rscript benchmarks/analysis/plot_exact_gradient_reuse.R
+
