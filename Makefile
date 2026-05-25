@@ -678,3 +678,12 @@ benchmark-normalize-rss:
 
 benchmark-normalize-all: benchmark-normalize-random-intercept benchmark-normalize-rss
 
+benchmark-quadra-tmb-state-space-quadra: benchmarks/comparisons/tmb_state_space/quadra_state_space_compare
+	./benchmarks/comparisons/tmb_state_space/quadra_state_space_compare
+
+benchmarks/comparisons/tmb_state_space/quadra_state_space_compare: benchmarks/comparisons/tmb_state_space/quadra_state_space_compare.cpp include/quadra/quadra.hpp
+	$(CXX) $(CXXFLAGS) -I. -I./external/eigen -I./external/had -I./external/LBFGSpp/include -o $@ benchmarks/comparisons/tmb_state_space/quadra_state_space_compare.cpp
+
+benchmark-quadra-tmb-state-space-tmb:
+	./benchmarks/comparisons/tmb_state_space/run_tmb_state_space.R
+

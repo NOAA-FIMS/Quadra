@@ -1,0 +1,5 @@
+engine,model,n_state,n_random,objective_eval_ms,objective_reps,workspace_ms,implicit_derivatives_ms,factorization_ms,total_wall_ms,hessian_nnz,success
+quadra,state_space,25,25,0.000303708,1000,0.484584,0.478125,0.00575,0.488625,73,1
+quadra,state_space,50,50,0.000685542,1000,0.721958,0.712083,0.009125,0.724292,148,1
+quadra,state_space,100,100,0.00147625,200,1.63917,1.62167,0.016375,1.64183,298,1
+quadra,state_space,250,250,0.00379313,200,6.08167,6.04988,0.03025,6.08642,748,1
