@@ -61,6 +61,21 @@ jobs:
           test -f benchmarks/outputs/random_intercept_time.log
           test -f benchmarks/outputs/state_space_time.log
 
+      - name: Install TMB
+        continue-on-error: true
+        run: |
+          Rscript -e 'install.packages("TMB", repos="https://cloud.r-project.org")'
+
+      - name: Run TMB random intercept benchmark
+        continue-on-error: true
+        run: |
+          make benchmark-quadra-tmb-random-intercept-tmb
+
+      - name: Run TMB state-space benchmark
+        continue-on-error: true
+        run: |
+          make benchmark-quadra-tmb-state-space-tmb
+
       - name: Normalize benchmark outputs
         run: |
           make benchmark-normalize-all
