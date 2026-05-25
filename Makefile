@@ -667,3 +667,9 @@ benchmarks/comparisons/tmb_random_intercept/quadra_random_intercept_compare: ben
 benchmark-quadra-tmb-random-intercept-tmb:
 	./benchmarks/comparisons/tmb_random_intercept/run_tmb_random_intercept.R
 
+benchmark-normalize-random-intercept:
+	python3 benchmarks/analysis/normalize_random_intercept_results.py
+
+benchmark-plot-random-intercept:
+	Rscript benchmarks/analysis/plot_random_intercept_scaling.R
+
