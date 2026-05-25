@@ -79,6 +79,7 @@ jobs:
       - name: Normalize benchmark outputs
         run: |
           make benchmark-normalize-all
+          make benchmark-summarize
           cp benchmarks/normalized/*.csv benchmarks/outputs/ || true
 
       - name: Generate scaling plots
@@ -109,6 +110,11 @@ jobs:
         run: |
           echo "## Quadra Benchmark Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ -f benchmarks/outputs/benchmark_summary.md ]; then
+            cat benchmarks/outputs/benchmark_summary.md >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
 
           echo "### Random Intercept Benchmark" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY

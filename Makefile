@@ -699,3 +699,6 @@ benchmark-normalize-state-space:
 benchmark-plot-state-space-comparison:
 	Rscript benchmarks/analysis/plot_state_space_comparison.R
 
+benchmark-summarize:
+	python3 benchmarks/analysis/summarize_benchmarks.py
+
