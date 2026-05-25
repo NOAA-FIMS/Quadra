@@ -76,6 +76,12 @@ jobs:
         run: |
           make benchmark-quadra-tmb-state-space-tmb
 
+      - name: Run exact-gradient benchmarks
+        run: |
+          make benchmark-exact-laplace-gradient-state-space
+          make benchmark-exact-gradient-reuse
+          make benchmark-factorization-reuse
+
       - name: Normalize benchmark outputs
         run: |
           make benchmark-normalize-all

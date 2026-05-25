@@ -2,44 +2,130 @@
 
 out <- "benchmarks/analysis/quadra_benchmark_plots.pdf"
 
-plots <- c(
-  "benchmarks/analysis/random_intercept_scaling.png",
-  "benchmarks/analysis/random_intercept_objective_eval_comparison.png",
-  "benchmarks/analysis/random_intercept_gradient_eval_comparison.png",
-  "benchmarks/analysis/random_intercept_workspace_setup_comparison.png",
-  "benchmarks/analysis/random_intercept_total_wall_comparison.png",
-  "benchmarks/analysis/state_space_total_wall_comparison.png",
-  "benchmarks/analysis/state_space_workspace_setup_comparison.png",
-  "benchmarks/analysis/state_space_factorization_comparison.png",
-  "benchmarks/analysis/state_space_hessian_nnz_comparison.png",
-  "benchmarks/analysis/state_space_factor_nnz_comparison.png",
-  "benchmarks/analysis/state_space_fill_ratio_comparison.png",
-  "benchmarks/analysis/exact_gradient_total_scaling.png",
-  "benchmarks/analysis/exact_gradient_component_scaling.png",
-  "benchmarks/analysis/exact_gradient_stacked_scaling.png",
-  "benchmarks/analysis/exact_gradient_reverse_vs_structure.png",
-  "benchmarks/analysis/exact_gradient_reuse_total_ms.png",
-  "benchmarks/analysis/exact_gradient_reuse_components.png",
-  "benchmarks/analysis/factorization_reuse_ratio.png",
-  "benchmarks/analysis/factorization_reuse_times.png",
-  "benchmarks/analysis/factorization_reuse_vs_fill.png"
-)
-
-plots <- plots[file.exists(plots)]
-
-if (length(plots) == 0) {
-  stop("No benchmark plots found.")
+safe_read <- function(path) {
+  if (!file.exists(path)) return(NULL)
+  read.csv(path)
 }
+
+plot_metric <- function(df, x, y, title, xlab, ylab) {
+  if (is.null(df) || !(x %in% names(df)) || !(y %in% names(df))) {
+    plot.new()
+    title(main = title)
+    text(0.5, 0.5, "No data available")
+    return()
+  }
+
+  yy <- suppressWarnings(as.numeric(df[[y]]))
+  xx <- suppressWarnings(as.numeric(df[[x]]))
+  ok <- is.finite(xx) & is.finite(yy)
+
+  if (!any(ok)) {
+    plot.new()
+    title(main = title)
+    text(0.5, 0.5, "No finite data available")
+    return()
+  }
+
+  plot(
+    xx[ok],
+    yy[ok],
+    type = "b",
+    pch = 1,
+    lty = 1,
+    xlab = xlab,
+    ylab = ylab,
+    main = title
+  )
+}
+
+random <- safe_read("benchmarks/normalized/random_intercept_normalized.csv")
+state <- safe_read("benchmarks/normalized/state_space_normalized.csv")
+exact <- safe_read("benchmarks/exact_laplace_gradient/state_space_exact_gradient_benchmark.csv")
+reuse <- safe_read("benchmarks/exact_laplace_gradient/exact_gradient_reuse_benchmark.csv")
+factor <- safe_read("benchmarks/exact_laplace_gradient/factorization_reuse_benchmark.csv")
 
 pdf(out, width = 11, height = 8.5)
 
-for (plot_path in plots) {
-  img <- png::readPNG(plot_path)
+plot_metric(
+  random,
+  "n_obs",
+  "total_wall_ms",
+  "Random Intercept Total Wall Time",
+  "Number of observations",
+  "Total wall time (ms)"
+)
 
-  plot.new()
-  rasterImage(img, 0, 0, 1, 1)
-  title(main = basename(plot_path), line = -1)
-}
+plot_metric(
+  random,
+  "n_obs",
+  "objective_eval_ms",
+  "Random Intercept Objective Evaluation",
+  "Number of observations",
+  "Objective eval time (ms)"
+)
+
+plot_metric(
+  state,
+  "n_state",
+  "total_wall_ms",
+  "State-Space Total Wall Time",
+  "Number of latent states",
+  "Total wall time (ms)"
+)
+
+plot_metric(
+  state,
+  "n_state",
+  "hessian_nnz",
+  "State-Space Hessian Nonzeros",
+  "Number of latent states",
+  "nnz(H_uu)"
+)
+
+plot_metric(
+  state,
+  "n_state",
+  "fill_ratio",
+  "State-Space Fill Ratio",
+  "Number of latent states",
+  "factor nnz / Hessian nnz"
+)
+
+plot_metric(
+  exact,
+  "n_state",
+  "total_ms",
+  "Exact Laplace Gradient Scaling",
+  "Number of latent states",
+  "Total exact-gradient time (ms)"
+)
+
+plot_metric(
+  exact,
+  "hessian_nnz",
+  "reverse_pass_ms",
+  "Exact Gradient Reverse Pass vs Hessian Structure",
+  "nnz(H_uu)",
+  "Reverse pass time (ms)"
+)
+
+plot_metric(
+  reuse,
+  "iteration",
+  "total_ms",
+  "Exact Gradient Reuse Timing",
+  "Iteration",
+  "Total exact-gradient time (ms)"
+)
+
+plot_metric(
+  factor,
+  "n_state",
+  "reuse_ratio",
+  "Sparse Factorization Reuse Ratio",
+  "Number of latent states",
+  "reuse_ms / fresh_ms"
+)
 
 dev.off()
 
