@@ -65,6 +65,15 @@ jobs:
           make benchmark-normalize-all
           cp benchmarks/normalized/*.csv benchmarks/outputs/ || true
 
+      - name: Generate scaling plots
+        run: |
+          Rscript benchmarks/analysis/plot_random_intercept_scaling.R
+
+      - name: Verify plot outputs
+        run: |
+          test -f benchmarks/analysis/random_intercept_scaling.png
+
+
       - name: Benchmark summary
         run: |
           echo "## Quadra Benchmark Summary" >> $GITHUB_STEP_SUMMARY
@@ -89,6 +98,12 @@ jobs:
           echo '```' >> $GITHUB_STEP_SUMMARY
 
           echo "" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Scaling Plot Artifact" >> $GITHUB_STEP_SUMMARY
+          echo "Generated:" >> $GITHUB_STEP_SUMMARY
+          echo "- benchmarks/analysis/random_intercept_scaling.png" >> $GITHUB_STEP_SUMMARY
+
+
           echo "### Peak RSS Logs" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
           grep "Maximum resident set size" benchmarks/outputs/*_time.log >> $GITHUB_STEP_SUMMARY || true

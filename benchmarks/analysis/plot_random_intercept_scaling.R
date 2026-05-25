@@ -8,10 +8,14 @@ if (!file.exists(csv_path)) {
 
 df <- read.csv(csv_path)
 
+if (nrow(df) == 0) {
+  stop("Normalized benchmark CSV is empty.")
+}
+
 png(
   filename = "benchmarks/analysis/random_intercept_scaling.png",
-  width = 900,
-  height = 600
+  width = 1000,
+  height = 700
 )
 
 plot(
@@ -20,7 +24,7 @@ plot(
   type = "n",
   xlab = "Number of observations",
   ylab = "Total wall time (ms)",
-  main = "Random Intercept Scaling"
+  main = "Quadra vs TMB Random Intercept Scaling"
 )
 
 engines <- unique(df$engine)
@@ -44,4 +48,4 @@ legend(
 
 dev.off()
 
-cat("Wrote scaling plot.\n")
+cat("Wrote scaling plot PNG.\n")
