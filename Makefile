@@ -741,3 +741,6 @@ benchmark-analyze-factorization-reuse:
 benchmark-plot-factorization-reuse:
 	Rscript benchmarks/analysis/plot_factorization_reuse.R
 
+benchmark-plot-report:
+	Rscript benchmarks/analysis/build_benchmark_plot_report.R
+

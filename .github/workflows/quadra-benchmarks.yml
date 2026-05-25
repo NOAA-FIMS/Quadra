@@ -87,6 +87,10 @@ jobs:
           Rscript benchmarks/analysis/plot_random_intercept_scaling.R
           Rscript benchmarks/analysis/plot_random_intercept_comparison.R
           Rscript benchmarks/analysis/plot_state_space_comparison.R
+          Rscript benchmarks/analysis/plot_exact_gradient_scaling.R || true
+          Rscript benchmarks/analysis/plot_exact_gradient_reuse.R || true
+          Rscript benchmarks/analysis/plot_factorization_reuse.R || true
+          Rscript benchmarks/analysis/build_benchmark_plot_report.R
 
       - name: Verify plot outputs
         run: |
@@ -167,4 +171,5 @@ jobs:
             benchmarks/analysis/state_space_hessian_nnz_comparison.png
             benchmarks/analysis/state_space_factor_nnz_comparison.png
             benchmarks/analysis/state_space_fill_ratio_comparison.png
+            benchmarks/analysis/quadra_benchmark_plots.pdf
           if-no-files-found: error
