@@ -11,7 +11,10 @@ dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 
 template <- "benchmarks/comparisons/tmb_random_intercept/random_intercept_tmb.cpp"
 
-TMB::compile(template)
+TMB::compile(
+  template,
+  flags = "-O3 -w -DTMB_EIGEN_DISABLE_WARNINGS"
+)
 dyn.load(TMB::dynlib(sub("\\.cpp$", "", template)))
 
 elapsed_ms <- function(expr) {
