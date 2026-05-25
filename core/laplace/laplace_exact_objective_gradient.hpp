@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cmath>
+#include <chrono>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -33,6 +34,12 @@ inline double exact_objective_gradient_norm2(
 
 struct LaplaceExactObjectiveGradientResult {
     std::vector<double> fixed_m;
+
+    double objective_ms_m = 0.0;
+    double tape_setup_ms_m = 0.0;
+    double reverse_pass_ms_m = 0.0;
+    double gradient_extract_ms_m = 0.0;
+    double total_gradient_ms_m = 0.0;
     std::vector<double> u_hat_m;
     std::vector<double> full_m;
 
@@ -98,6 +105,9 @@ evaluate_laplace_exact_objective_gradient(
         );
     }
 
+    const auto objective_start =
+        std::chrono::steady_clock::now();
+
     LaplaceObjectiveResult objective =
         evaluate_laplace_objective(
             model,
@@ -106,6 +116,9 @@ evaluate_laplace_exact_objective_gradient(
             partition,
             options.objective_m
         );
+
+    const auto objective_end =
+        std::chrono::steady_clock::now();
 
     LaplaceExactObjectiveGradientResult result;
     result.fixed_m = fixed;
@@ -122,12 +135,19 @@ evaluate_laplace_exact_objective_gradient(
     result.reports_m = objective.reports_m;
     result.includes_logdet_derivative_m = false;
 
+    result.objective_ms_m =
+        std::chrono::duration<double, std::milli>(
+            objective_end - objective_start).count();
+
     if (!objective.converged_m || !objective.logdet_ok_m) {
         result.gradient_fixed_m.assign(fixed.size(), std::nan(""));
         result.gradient_full_m.assign(objective.full_m.size(), std::nan(""));
         result.gradient_norm_m = std::nan("");
         return result;
     }
+
+    const auto tape_start =
+        std::chrono::steady_clock::now();
 
     TapeContext tape;
     ADScope scope(tape.graph);
@@ -138,8 +158,24 @@ evaluate_laplace_exact_objective_gradient(
     std::vector<AD> full_ad = to_ad(objective.full_m);
     AD joint = model.template evaluate<AD>(full_ad, ctx);
 
+    const auto tape_end =
+        std::chrono::steady_clock::now();
+
+    const auto reverse_start =
+        std::chrono::steady_clock::now();
+
     scope.backward(joint);
+
+    const auto reverse_end =
+        std::chrono::steady_clock::now();
+
+    const auto extract_start =
+        std::chrono::steady_clock::now();
+
     Eigen::VectorXd g_full = extract_gradient(full_ad);
+
+    const auto extract_end =
+        std::chrono::steady_clock::now();
 
     result.gradient_full_m.resize(static_cast<size_t>(g_full.size()));
     for (int i = 0; i < g_full.size(); ++i) {
@@ -152,7 +188,25 @@ evaluate_laplace_exact_objective_gradient(
             partition
         );
 
-    result.gradient_norm_m = exact_objective_gradient_norm2(result.gradient_fixed_m);
+    result.gradient_norm_m =
+        exact_objective_gradient_norm2(result.gradient_fixed_m);
+
+    result.tape_setup_ms_m =
+        std::chrono::duration<double, std::milli>(
+            tape_end - tape_start).count();
+
+    result.reverse_pass_ms_m =
+        std::chrono::duration<double, std::milli>(
+            reverse_end - reverse_start).count();
+
+    result.gradient_extract_ms_m =
+        std::chrono::duration<double, std::milli>(
+            extract_end - extract_start).count();
+
+    result.total_gradient_ms_m =
+        result.tape_setup_ms_m +
+        result.reverse_pass_ms_m +
+        result.gradient_extract_ms_m;
 
     return result;
 }

@@ -88,7 +88,9 @@ int main()
     }
 
     csv
-        << "n_state,n_random,total_ms,laplace_objective,gradient_norm,"
+        << "n_state,n_random,total_ms,objective_ms,"
+        << "tape_setup_ms,reverse_pass_ms,gradient_extract_ms,"
+        << "total_gradient_ms,laplace_objective,gradient_norm,"
         << "hessian_nnz,hessian_density,factor_nnz,fill_ratio,"
         << "converged,logdet_ok,success\n";
 
@@ -174,6 +176,11 @@ int main()
             << n_state << ","
             << n_state << ","
             << total_ms << ","
+            << result.objective_ms_m << ","
+            << result.tape_setup_ms_m << ","
+            << result.reverse_pass_ms_m << ","
+            << result.gradient_extract_ms_m << ","
+            << result.total_gradient_ms_m << ","
             << result.laplace_objective_m << ","
             << result.gradient_norm_m << ","
             << H.nonZeros() << ","
@@ -188,6 +195,9 @@ int main()
         std::cout
             << "n_state=" << n_state
             << " total_ms=" << total_ms
+            << " objective_ms=" << result.objective_ms_m
+            << " reverse_ms=" << result.reverse_pass_ms_m
+            << " extract_ms=" << result.gradient_extract_ms_m
             << " gradient_norm=" << result.gradient_norm_m
             << " hessian_nnz=" << H.nonZeros()
             << " fill_ratio=" << fill_ratio
