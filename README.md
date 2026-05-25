@@ -1,265 +1,204 @@
 # Quadra
 
-A lightweight mixed-effects inference framework for modern scientific computing.
+Quadra is an experimental mixed-effects inference framework focused on:
 
-Quadra is an experimental C++ framework for sparse mixed-effects optimization and Laplace approximation, designed as a clean, modular alternative to heavier AD-based systems.
+- reverse-mode automatic differentiation
+- Laplace approximation
+- sparse Hessian methods
+- implicit differentiation
+- scalable scientific inference workflows
 
-The project began as an extension of Bachi Li's `had.h` reverse-mode automatic differentiation library and has since evolved into a broader framework for:
+The project is oriented toward computational statistics, state-space models,
+and large-scale scientific modeling applications such as fisheries stock
+assessment.
 
-* sparse mixed-effects inference,
-* Laplace approximation,
-* exact directional Hessian propagation,
-* graph-aware Hessian sparsity discovery,
-* implicit differentiation,
-* scalable random-effect optimization,
-* and fisheries-oriented statistical modeling workflows.
+Current development emphasizes:
 
-Quadra is being developed with long-term goals of supporting large-scale stock assessment workflows and eventually providing a lightweight alternative to Template Model Builder (TMB) for systems such as FIMS.
-
----
-
-# Current Features
-
-## Automatic Differentiation
-
-Quadra extends the original `had.h` reverse-mode AD framework with additional capabilities used for mixed-effects inference:
-
-* reverse-mode automatic differentiation,
-* Hessian extraction,
-* directional Hessian propagation,
-* sparse graph-aware derivative workflows,
-* and experimental third-order derivative infrastructure.
-
-## Sparse Mixed-Effects Inference
-
-Current mixed-effects features include:
-
-* Laplace approximation,
-* sparse random-effect Hessian extraction,
-* graph-based Hessian sparsity discovery,
-* exact directional Hessian propagation (`Hdot`),
-* implicit differentiation for `du*/dtheta`,
-* adaptive sparse factorization stabilization,
-* Hutchinson trace estimation,
-* sparse LDLT factorization,
-* and scalable random-effect optimization.
-
-## Optimization
-
-Quadra currently uses:
-
-* LBFGS++ for outer optimization,
-* sparse Newton solves for random effects,
-* adaptive line-search recovery near convergence,
-* and sparse factorization reuse.
-
-## Fisheries-Oriented Modeling
-
-The framework is being developed with fisheries stock assessment workflows in mind.
-
-Current examples include:
-
-* CPUE/index models,
-* latent abundance process models,
-* random year effects,
-* selectivity random walks,
-* Gaussian random walks,
-* Poisson random effects,
-* and curvature-dependent validation models.
+- transparent numerical workflows
+- reproducible benchmarking
+- sparse linear algebra performance
+- modular inference architecture
+- computational profiling and scaling analysis
 
 ---
 
-# Project Structure
+# Core Capabilities
+
+Current implemented capabilities include:
+
+- reverse-mode automatic differentiation
+- exact and approximate gradients
+- Laplace approximation
+- random effects optimization
+- sparse Hessian construction
+- sparse factorization reuse
+- implicit derivative calculations
+- profiled derived quantity uncertainty
+- delta-method utilities
+- benchmark and scaling infrastructure
+- benchmark normalization and plotting
+- CI benchmark workflows
+
+---
+
+# Repository Structure
 
 ```text
-quadra/
-├── core/
-│   ├── autodiff/
-│   ├── laplace/
-│   ├── optimizer/
-│   ├── sparse/
-│   └── utilities/
-│
-├── tests/
-│   ├── test_curvature_depends_on_theta.cpp
-│   ├── test_poisson_random_effect.cpp
-│   ├── test_ar1_random_walk.cpp
-│   └── test_hdot_validation.cpp
-│
-├── examples/
-│   ├── fisheries_random_year_effects.cpp
-│   ├── fisheries_age_selectivity_random_walk.cpp
-│   └── fisheries_index_cpue_laplace.cpp
-│
-├── docs/
-└── README.md
+core/
+    autodiff/
+    laplace/
+    inference/
+    model/
+    optimizer/
+
+examples/
+    simple/
+    big/
+
+benchmarks/
+    analysis/
+    comparisons/
+    outputs/
+    normalized/
+
+tests/
 ```
 
 ---
 
-# Build Requirements
+# Building
 
-## Dependencies
+## Requirements
 
-Quadra currently depends on:
+Recommended:
 
-* C++17 or newer,
-* Eigen,
-* LBFGS++,
-* and the modified `had.h` implementation.
+- C++17 compiler
+- Eigen
+- LBFGSpp
+- GNU Make
 
-## Example Build
+Optional:
 
-```bash
-clang++ -std=c++17 -O3 -flto \
-  $(QUADRA_INCLUDE_FLAGS) \
-  -o examples/fisheries_random_year_effects \
-  examples/fisheries_random_year_effects.cpp \
-  core/adgraph.cpp
-```
+- R
+- TMB
 
----
-
-# AD Graph Definition
-
-Quadra uses a single global/thread-local AD graph definition.
-
-Create:
-
-```cpp
-// core/adgraph.cpp
-#include "autodiff.hpp"
-
-DECLARE_ADGRAPH()
-```
-
-This source file should be linked into all tests/examples/executables.
-
-Avoid placing `DECLARE_ADGRAPH()` directly inside headers.
-
----
-
-# LaplaceOptions
-
-Quadra exposes configurable Laplace approximation settings through:
-
-```cpp
-quadra::LaplaceOptions
-```
-
-Example:
-
-```cpp
-quadra::LaplaceOptions opts;
-
-opts.use_hutchinson_trace = true;
-opts.hutchinson_probes = 16;
-opts.jitter_initial = 1e-12;
-opts.jitter_max_attempts = 12;
-opts.hessian_drop_tol = 0.0;
-
-auto fit = quadra::optimize_lbfgs(model, params, opts);
-```
-
-## Available Options
-
-| Option                 | Description                                |
-| ---------------------- | ------------------------------------------ |
-| `use_hutchinson_trace` | Use stochastic Hutchinson trace estimation |
-| `hutchinson_probes`    | Number of Hutchinson probes                |
-| `hutchinson_seed`      | RNG seed for stochastic trace estimation   |
-| `jitter_initial`       | Initial diagonal stabilization jitter      |
-| `jitter_max_attempts`  | Maximum adaptive jitter attempts           |
-| `validate_hdot`        | Enable exact-vs-FD Hdot validation         |
-| `hessian_drop_tol`     | Sparse Hessian entry dropping threshold    |
-
----
-
-# Exact Directional Hessian Propagation
-
-One of the major architectural features of Quadra is exact directional Hessian propagation:
-
-```text
-Hdot = D H_uu [e_i, du*/dtheta_i]
-```
-
-This replaces older finite-difference Hessian rebuild workflows and significantly improves scalability for large random-effect systems.
-
-The current implementation supports:
-
-* exact directional derivative propagation,
-* sparse Hessian extraction,
-* and stochastic or deterministic trace evaluation.
-
----
-
-# Testing
-
-## Build All Tests
+## Build benchmarks and examples
 
 ```bash
 make
 ```
 
-## Run Tests
+---
+
+# Running Tests
+
+Run all tests:
 
 ```bash
-make run-tests
+make test
 ```
 
-## Validate Exact Hdot
+Run selected tests:
 
 ```bash
-make validate-hdot
+make test-laplace-implicit-workspace
+make test-laplace-profiled-derived-report
+make test-random-intercept
 ```
-
-This enables:
-
-```bash
--DQUADRA_VALIDATE_HDOT
-```
-
-which compares exact directional Hessian propagation against the finite-difference validation path on small systems.
 
 ---
 
-# Current Development Goals
+# Running Examples
 
-Short-term development goals include:
+## Simple random intercept example
 
-* exact deterministic sparse trace evaluation,
-* selected inverse methods,
-* sparse Cholesky reuse,
-* covariance estimation (`sdreport`-like functionality),
-* report quantities,
-* parallel Hessian extraction,
-* sparse higher-order derivatives,
-* and fisheries-specific modeling workflows.
+```bash
+./examples/simple/random_intercept_model
+```
 
-Long-term goals include:
+## Catch-at-age Laplace example
 
-* scalable stock assessment inference,
-* integration with fisheries modeling systems,
-* improved sparse mixed-effects infrastructure,
-* and a lightweight alternative to TMB-style workflows.
+```bash
+./examples/big/catch_at_age_laplace
+```
 
 ---
 
-# Status
+# Benchmarking
 
-Quadra is currently experimental research software.
+## Random intercept scaling
 
-The framework is under active development and APIs may change frequently.
+```bash
+make benchmark-random-intercept
+```
+
+## State-space scaling
+
+```bash
+make benchmark-state-space
+```
+
+## Quadra vs TMB comparison scaffold
+
+Quadra benchmark:
+
+```bash
+make benchmark-quadra-tmb-random-intercept-quadra
+```
+
+TMB benchmark:
+
+```bash
+make benchmark-quadra-tmb-random-intercept-tmb
+```
 
 ---
 
-# Acknowledgements
+# Benchmark Analysis
 
-Quadra builds upon and extends concepts from:
+Normalize benchmark outputs:
 
-* Bachi Li's `had.h` automatic differentiation framework,
-* sparse mixed-effects inference methods,
-* Laplace approximation techniques,
-* and scientific computing workflows used in fisheries stock assessment systems.
+```bash
+make benchmark-normalize-all
+```
 
-The current implementation includes substantial extensions and modifications developed specifically to support the Quadra framework and sparse mixed-effects inference workflows.
+Generate scaling plots:
+
+```bash
+make benchmark-plot-random-intercept
+```
+
+---
+
+# Continuous Integration
+
+GitHub Actions workflows currently provide:
+
+- contract compilation checks
+- benchmark execution
+- RSS logging
+- benchmark normalization
+- benchmark artifact uploads
+- scaling plot generation
+
+---
+
+# Current V1 Focus
+
+The current V1 effort is focused on:
+
+- stable mixed-effects workflows
+- reusable sparse factorization infrastructure
+- implicit differentiation utilities
+- scalable state-space inference
+- reproducible benchmark infrastructure
+- comparative inference benchmarking
+
+---
+
+# Project Status
+
+Quadra is currently experimental and under active development.
+
+Interfaces, APIs, benchmark structure, and numerical methods may evolve rapidly
+during the V1 development cycle.
