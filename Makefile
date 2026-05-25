@@ -702,3 +702,9 @@ benchmark-plot-state-space-comparison:
 benchmark-summarize:
 	python3 benchmarks/analysis/summarize_benchmarks.py
 
+benchmark-exact-laplace-gradient-state-space: benchmarks/exact_laplace_gradient/state_space_exact_gradient_benchmark
+	./benchmarks/exact_laplace_gradient/state_space_exact_gradient_benchmark
+
+benchmarks/exact_laplace_gradient/state_space_exact_gradient_benchmark: benchmarks/exact_laplace_gradient/state_space_exact_gradient_benchmark.cpp include/quadra/quadra.hpp core/laplace/laplace_exact_objective_gradient.hpp
+	$(CXX) $(CXXFLAGS) -I. -I./external/eigen -I./external/had -I./external/LBFGSpp/include -o $@ benchmarks/exact_laplace_gradient/state_space_exact_gradient_benchmark.cpp
+
