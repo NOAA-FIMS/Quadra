@@ -43,22 +43,29 @@ plot_metric <- function(metric, ylab, title, output) {
 
   engines <- unique(sub$engine)
 
-  for (eng in engines) {
+  pch_values <- c(1, 2, 3, 4, 5, 6)
+  lty_values <- c(1, 2, 3, 4, 5, 6)
+
+  for (i in seq_along(engines)) {
+    eng <- engines[i]
+
     idx <- sub$engine == eng
     ord <- order(sub$n_obs[idx])
 
     lines(
       sub$n_obs[idx][ord],
       sub[[metric]][idx][ord],
-      type = "b"
+      type = "b",
+      pch = pch_values[i],
+      lty = lty_values[i]
     )
   }
 
   legend(
     "topleft",
     legend = engines,
-    lty = 1,
-    pch = 1
+    lty = lty_values[seq_along(engines)],
+    pch = pch_values[seq_along(engines)]
   )
 
   dev.off()
