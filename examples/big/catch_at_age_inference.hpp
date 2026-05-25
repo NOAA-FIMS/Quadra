@@ -9,6 +9,7 @@
 #include "../../core/laplace/laplace_profiled_derived_gradient.hpp"
 #include "../../core/laplace/laplace_profiled_ad_gradient.hpp"
 #include "../../core/laplace/laplace_profiled_delta_method.hpp"
+#include "../../core/laplace/laplace_profiled_delta_method_vector.hpp"
 #include "catch_at_age_derived.hpp"
 
 #include <Eigen/Dense>
@@ -352,6 +353,131 @@ inline void run_big_catch_at_age_inference(
         }
     }
 
+
+
+    if (du_dtheta_available)
+    {
+        std::cout << std::endl;
+        std::cout << "Joint profiled derived quantity uncertainty" << std::endl;
+
+        const std::vector<std::string> profiled_names{
+            "terminal_depletion",
+            "terminal_ssb_proxy",
+            "mean_fishing_mortality"
+        };
+
+        std::vector<quadra::ProfiledADGradientResult> blocks;
+        blocks.reserve(3);
+
+        blocks.push_back(
+            quadra::evaluate_profiled_ad_gradient_blocks(
+                [&model](const auto& theta, const auto& u) {
+                    return evaluate_terminal_depletion_ad(
+                        model,
+                        theta,
+                        std::vector<double>{});
+                },
+                theta_hat,
+                final_random_effects));
+
+        blocks.push_back(
+            quadra::evaluate_profiled_ad_gradient_blocks(
+                [&model](const auto& theta, const auto& u) {
+                    return evaluate_terminal_ssb_proxy_ad(
+                        model,
+                        theta,
+                        std::vector<double>{});
+                },
+                theta_hat,
+                final_random_effects));
+
+        blocks.push_back(
+            quadra::evaluate_profiled_ad_gradient_blocks(
+                [&model](const auto& theta, const auto& u) {
+                    return evaluate_mean_f_ad(
+                        model,
+                        theta,
+                        std::vector<double>{});
+                },
+                theta_hat,
+                final_random_effects));
+
+        bool all_blocks_ok = true;
+
+        for (std::size_t i = 0; i < blocks.size(); ++i)
+        {
+            if (!blocks[i].success_m)
+            {
+                all_blocks_ok = false;
+                std::cout << "  " << profiled_names[i]
+                          << ": FAILED gradient blocks: "
+                          << blocks[i].message_m
+                          << std::endl;
+            }
+        }
+
+        if (all_blocks_ok)
+        {
+            Eigen::VectorXd estimates(3);
+            Eigen::MatrixXd G_theta(3, theta_hat.size());
+            Eigen::MatrixXd G_u(3, final_random_effects.size());
+
+            for (int i = 0; i < 3; ++i)
+            {
+                estimates[i] = blocks[static_cast<std::size_t>(i)].estimate_m;
+                G_theta.row(i) =
+                    blocks[static_cast<std::size_t>(i)].gradient_fixed_m.transpose();
+                G_u.row(i) =
+                    blocks[static_cast<std::size_t>(i)].gradient_random_m.transpose();
+            }
+
+            const auto joint_profiled =
+                quadra::compute_laplace_profiled_delta_method_vector(
+                    estimates,
+                    G_theta,
+                    G_u,
+                    du_dtheta,
+                    covariance.covariance_m);
+
+            if (!joint_profiled.success_m)
+            {
+                std::cout << "  joint profiled derived uncertainty failed: "
+                          << joint_profiled.message_m
+                          << std::endl;
+            }
+            else
+            {
+                std::cout
+                    << std::setw(28) << "quantity"
+                    << std::setw(18) << "estimate"
+                    << std::setw(18) << "std.error"
+                    << std::setw(18) << "cv"
+                    << std::endl;
+
+                for (int i = 0; i < 3; ++i)
+                {
+                    std::cout
+                        << std::setw(28) << profiled_names[static_cast<std::size_t>(i)]
+                        << std::setw(18) << joint_profiled.estimate_m[i]
+                        << std::setw(18) << joint_profiled.std_error_m[i]
+                        << std::setw(18) << joint_profiled.cv_m[i]
+                        << std::endl;
+                }
+
+                std::cout << std::endl;
+                std::cout << "Profiled derived covariance matrix" << std::endl;
+                std::cout << joint_profiled.covariance_m << std::endl;
+
+                std::cout << std::endl;
+                std::cout << "Profiled derived correlation matrix" << std::endl;
+                std::cout << joint_profiled.correlation_m << std::endl;
+
+                std::cout << std::endl;
+                std::cout << "Profiled derived Jacobian" << std::endl;
+                std::cout << joint_profiled.jacobian_m << std::endl;
+            }
+        }
+    }
 
     std::cout << std::endl;
     std::cout << "Laplace mode sensitivity availability" << std::endl;
