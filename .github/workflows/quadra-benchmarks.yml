@@ -34,13 +34,17 @@ jobs:
         run: |
           make benchmark-state-space
 
-      - name: Run random intercept benchmark
+      - name: Run random intercept benchmark with memory log
         run: |
-          ./benchmarks/random_intercept/benchmark_random_intercept
+          mkdir -p benchmarks/outputs
+          /usr/bin/time -v ./benchmarks/random_intercept/benchmark_random_intercept \
+            2> benchmarks/outputs/random_intercept_time.log
 
-      - name: Run state-space benchmark
+      - name: Run state-space benchmark with memory log
         run: |
-          ./benchmarks/state_space/benchmark_state_space
+          mkdir -p benchmarks/outputs
+          /usr/bin/time -v ./benchmarks/state_space/benchmark_state_space \
+            2> benchmarks/outputs/state_space_time.log
 
       - name: Collect benchmark outputs
         run: |
@@ -51,6 +55,10 @@ jobs:
 
           cp benchmarks/state_space/state_space_benchmark.csv \
              benchmarks/outputs/state_space_benchmark.csv
+
+          # Keep raw /usr/bin/time -v logs for peak RSS and system metrics.
+          test -f benchmarks/outputs/random_intercept_time.log
+          test -f benchmarks/outputs/state_space_time.log
 
       - name: Benchmark summary
         run: |
@@ -67,6 +75,12 @@ jobs:
           echo "### State Space Benchmark" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
           cat benchmarks/outputs/state_space_benchmark.csv >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Peak RSS Logs" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          grep "Maximum resident set size" benchmarks/outputs/*_time.log >> $GITHUB_STEP_SUMMARY || true
           echo '```' >> $GITHUB_STEP_SUMMARY
 
       - name: Upload benchmark artifacts
