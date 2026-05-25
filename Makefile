@@ -729,3 +729,9 @@ benchmark-normalize-exact-gradient-comparison:
 benchmark-plot-exact-gradient-tmb-comparison:
 	Rscript benchmarks/analysis/plot_exact_gradient_tmb_comparison.R
 
+benchmark-factorization-reuse: benchmarks/exact_laplace_gradient/factorization_reuse_benchmark
+	./benchmarks/exact_laplace_gradient/factorization_reuse_benchmark
+
+benchmarks/exact_laplace_gradient/factorization_reuse_benchmark: benchmarks/exact_laplace_gradient/factorization_reuse_benchmark.cpp include/quadra/quadra.hpp core/laplace/sparse_factorization_cache.hpp
+	$(CXX) $(CXXFLAGS) -I. -I./external/eigen -I./external/had -I./external/LBFGSpp/include -o $@ benchmarks/exact_laplace_gradient/factorization_reuse_benchmark.cpp
+
