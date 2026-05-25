@@ -113,5 +113,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: quadra-benchmark-results
-          path: benchmarks/outputs
+          path: |
+            benchmarks/outputs
+            benchmarks/analysis/random_intercept_scaling.png
           if-no-files-found: error
