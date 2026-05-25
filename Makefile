@@ -735,3 +735,9 @@ benchmark-factorization-reuse: benchmarks/exact_laplace_gradient/factorization_r
 benchmarks/exact_laplace_gradient/factorization_reuse_benchmark: benchmarks/exact_laplace_gradient/factorization_reuse_benchmark.cpp include/quadra/quadra.hpp core/laplace/sparse_factorization_cache.hpp
 	$(CXX) $(CXXFLAGS) -I. -I./external/eigen -I./external/had -I./external/LBFGSpp/include -o $@ benchmarks/exact_laplace_gradient/factorization_reuse_benchmark.cpp
 
+benchmark-analyze-factorization-reuse:
+	python3 benchmarks/analysis/analyze_factorization_reuse.py
+
+benchmark-plot-factorization-reuse:
+	Rscript benchmarks/analysis/plot_factorization_reuse.R
+
