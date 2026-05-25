@@ -690,3 +690,6 @@ benchmark-quadra-tmb-state-space-tmb:
 benchmark-plot-state-space-structure:
 	Rscript benchmarks/analysis/plot_state_space_structure.R
 
+benchmark-plot-random-intercept-comparison:
+	Rscript benchmarks/analysis/plot_random_intercept_comparison.R
+

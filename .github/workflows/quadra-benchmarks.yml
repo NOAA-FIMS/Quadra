@@ -84,10 +84,13 @@ jobs:
       - name: Generate scaling plots
         run: |
           Rscript benchmarks/analysis/plot_random_intercept_scaling.R
+          Rscript benchmarks/analysis/plot_random_intercept_comparison.R
 
       - name: Verify plot outputs
         run: |
           test -f benchmarks/analysis/random_intercept_scaling.png
+          test -f benchmarks/analysis/random_intercept_objective_eval_comparison.png
+          test -f benchmarks/analysis/random_intercept_total_wall_comparison.png
 
       - name: Embed scaling plot in summary
         run: |
@@ -145,4 +148,8 @@ jobs:
           path: |
             benchmarks/outputs
             benchmarks/analysis/random_intercept_scaling.png
+            benchmarks/analysis/random_intercept_objective_eval_comparison.png
+            benchmarks/analysis/random_intercept_gradient_eval_comparison.png
+            benchmarks/analysis/random_intercept_workspace_setup_comparison.png
+            benchmarks/analysis/random_intercept_total_wall_comparison.png
           if-no-files-found: error
