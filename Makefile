@@ -622,3 +622,15 @@ test-laplace-implicit-workspace: tests/test_laplace_implicit_workspace
 tests/test_laplace_implicit_workspace: tests/test_laplace_implicit_workspace.cpp core/laplace/laplace_implicit_workspace.hpp
 	$(CXX) $(CXXFLAGS) -I. -I./external/eigen -I./external/had -I./external/LBFGSpp/include -o $@ tests/test_laplace_implicit_workspace.cpp
 
+test-laplace-profiled-derived-report: tests/test_laplace_profiled_derived_report
+	./tests/test_laplace_profiled_derived_report
+
+tests/test_laplace_profiled_derived_report: tests/test_laplace_profiled_derived_report.cpp core/laplace/laplace_profiled_derived_report.hpp
+	$(CXX) $(CXXFLAGS) -I. -I./external/eigen -I./external/had -I./external/LBFGSpp/include -o $@ tests/test_laplace_profiled_derived_report.cpp
+
+test-report-serialization: tests/test_report_serialization
+	./tests/test_report_serialization
+
+tests/test_report_serialization: tests/test_report_serialization.cpp core/inference/report_serialization.hpp core/laplace/laplace_profiled_derived_report.hpp
+	$(CXX) $(CXXFLAGS) -I. -I./external/eigen -I./external/had -I./external/LBFGSpp/include -o $@ tests/test_report_serialization.cpp
+
