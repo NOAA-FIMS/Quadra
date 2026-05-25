@@ -720,3 +720,6 @@ benchmark-analyze-exact-gradient-reuse:
 benchmark-plot-exact-gradient-reuse:
 	Rscript benchmarks/analysis/plot_exact_gradient_reuse.R
 
+benchmark-plot-exact-gradient-scaling:
+	Rscript benchmarks/analysis/plot_exact_gradient_scaling.R
+
