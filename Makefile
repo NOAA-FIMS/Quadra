@@ -687,3 +687,6 @@ benchmarks/comparisons/tmb_state_space/quadra_state_space_compare: benchmarks/co
 benchmark-quadra-tmb-state-space-tmb:
 	./benchmarks/comparisons/tmb_state_space/run_tmb_state_space.R
 
+benchmark-plot-state-space-structure:
+	Rscript benchmarks/analysis/plot_state_space_structure.R
+
