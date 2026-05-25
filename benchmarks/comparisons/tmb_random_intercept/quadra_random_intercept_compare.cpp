@@ -64,7 +64,7 @@ int main()
         return 1;
     }
 
-    csv << "engine,n_obs,workspace_ms,implicit_derivatives_ms,factorization_ms,total_wall_ms,hessian_nnz,success\n";
+    csv << "engine,n_obs,n_random,objective_eval_ms,objective_reps,workspace_ms,implicit_derivatives_ms,factorization_ms,total_wall_ms,hessian_nnz,success\n";
 
     for (int n_obs : {100, 1000, 5000, 10000})
     {
@@ -78,6 +78,29 @@ int main()
 
         std::vector<double> theta{0.0, std::log(0.5)};
         std::vector<double> random_initial{0.0};
+
+        const int objective_reps = 1000;
+
+        std::vector<double> full{
+            theta[0],
+            theta[1],
+            random_initial[0]
+        };
+
+        volatile double objective_sink = 0.0;
+
+        const double objective_eval_total_ms =
+            elapsed_ms([&]() {
+                for (int rep = 0; rep < objective_reps; ++rep)
+                {
+                    quadra::ModelReportContext ctx;
+                    objective_sink += model.evaluate<double>(full, ctx);
+                }
+            });
+
+        const double objective_eval_ms =
+            objective_eval_total_ms /
+            static_cast<double>(objective_reps);
 
         quadra::LaplaceImplicitWorkspace workspace;
 
@@ -94,6 +117,9 @@ int main()
         csv
             << "quadra,"
             << n_obs << ","
+            << 1 << ","
+            << objective_eval_ms << ","
+            << objective_reps << ","
             << workspace.total_ms_m << ","
             << workspace.implicit_derivatives_ms_m << ","
             << workspace.factorization_ms_m << ","
@@ -104,6 +130,7 @@ int main()
 
         std::cout
             << "quadra n_obs=" << n_obs
+            << " objective_eval_ms=" << objective_eval_ms
             << " wall_ms=" << wall_ms
             << " workspace_ms=" << workspace.total_ms_m
             << " success=" << workspace.success_m
