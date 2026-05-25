@@ -646,3 +646,9 @@ test-public-api-headers: tests/test_public_api_headers
 tests/test_public_api_headers: tests/test_public_api_headers.cpp include/quadra/quadra.hpp include/quadra/laplace.hpp include/quadra/inference.hpp include/quadra/io.hpp include/quadra/model.hpp
 	$(CXX) $(CXXFLAGS) -I. -I./external/eigen -I./external/had -I./external/LBFGSpp/include -o $@ tests/test_public_api_headers.cpp
 
+benchmark-random-intercept: benchmarks/random_intercept/benchmark_random_intercept
+	./benchmarks/random_intercept/benchmark_random_intercept
+
+benchmarks/random_intercept/benchmark_random_intercept: benchmarks/random_intercept/benchmark_random_intercept.cpp include/quadra/quadra.hpp
+	$(CXX) $(CXXFLAGS) -I. -I./external/eigen -I./external/had -I./external/LBFGSpp/include -o $@ benchmarks/random_intercept/benchmark_random_intercept.cpp
+
