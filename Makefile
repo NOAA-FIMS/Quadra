@@ -658,3 +658,12 @@ benchmark-state-space: benchmarks/state_space/benchmark_state_space
 benchmarks/state_space/benchmark_state_space: benchmarks/state_space/benchmark_state_space.cpp include/quadra/quadra.hpp
 	$(CXX) $(CXXFLAGS) -I. -I./external/eigen -I./external/had -I./external/LBFGSpp/include -o $@ benchmarks/state_space/benchmark_state_space.cpp
 
+benchmark-quadra-tmb-random-intercept-quadra: benchmarks/comparisons/tmb_random_intercept/quadra_random_intercept_compare
+	./benchmarks/comparisons/tmb_random_intercept/quadra_random_intercept_compare
+
+benchmarks/comparisons/tmb_random_intercept/quadra_random_intercept_compare: benchmarks/comparisons/tmb_random_intercept/quadra_random_intercept_compare.cpp include/quadra/quadra.hpp
+	$(CXX) $(CXXFLAGS) -I. -I./external/eigen -I./external/had -I./external/LBFGSpp/include -o $@ benchmarks/comparisons/tmb_random_intercept/quadra_random_intercept_compare.cpp
+
+benchmark-quadra-tmb-random-intercept-tmb:
+	./benchmarks/comparisons/tmb_random_intercept/run_tmb_random_intercept.R
+
