@@ -118,9 +118,13 @@ jobs:
 
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Normalized Benchmark Outputs" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          cat benchmarks/outputs/*normalized*.csv >> $GITHUB_STEP_SUMMARY || true
-          echo '```' >> $GITHUB_STEP_SUMMARY
+          for csv in benchmarks/outputs/*normalized*.csv; do
+            if [ -f "$csv" ]; then
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "#### $(basename "$csv")" >> $GITHUB_STEP_SUMMARY
+              python3 benchmarks/analysis/csv_to_markdown.py "$csv" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
 
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
