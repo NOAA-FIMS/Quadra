@@ -74,6 +74,15 @@ jobs:
         run: |
           test -f benchmarks/analysis/random_intercept_scaling.png
 
+      - name: Embed scaling plot in summary
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Random Intercept Scaling Plot" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "The PNG is uploaded as a workflow artifact. GitHub may not render local images inline from summaries." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Artifact path: \`benchmarks/analysis/random_intercept_scaling.png\`" >> $GITHUB_STEP_SUMMARY
+
 
       - name: Benchmark summary
         run: |
