@@ -14,6 +14,13 @@ template <- "benchmarks/comparisons/tmb_random_intercept/random_intercept_tmb.cp
 TMB::compile(template)
 dyn.load(TMB::dynlib(sub("\\.cpp$", "", template)))
 
+elapsed_ms <- function(expr) {
+  start <- proc.time()[["elapsed"]]
+  value <- force(expr)
+  end <- proc.time()[["elapsed"]]
+  list(value = value, ms = 1000.0 * (end - start))
+}
+
 run_one <- function(n_obs) {
   data <- list(n_obs = as.integer(n_obs))
 
@@ -23,31 +30,57 @@ run_one <- function(n_obs) {
     u = 0.0
   )
 
-  random <- "u"
+  setup <- elapsed_ms({
+    TMB::MakeADFun(
+      data = data,
+      parameters = parameters,
+      random = "u",
+      DLL = "random_intercept_tmb",
+      silent = TRUE
+    )
+  })
 
-  start <- proc.time()[["elapsed"]]
-  obj <- TMB::MakeADFun(
-    data = data,
-    parameters = parameters,
-    random = random,
-    DLL = "random_intercept_tmb",
-    silent = TRUE
-  )
+  obj <- setup$value
+  objective_reps <- 1000L
 
-  opt <- stats::nlminb(
-    start = obj$par,
-    objective = obj$fn,
-    gradient = obj$gr
-  )
+  objective_time <- elapsed_ms({
+    sink <- 0.0
+    for (i in seq_len(objective_reps)) {
+      sink <- sink + obj$fn(obj$par)
+    }
+    sink
+  })
 
-  elapsed_ms <- 1000.0 * (proc.time()[["elapsed"]] - start)
+  gradient_time <- elapsed_ms({
+    sink <- 0.0
+    for (i in seq_len(objective_reps)) {
+      sink <- sink + sum(obj$gr(obj$par))
+    }
+    sink
+  })
+
+  opt_time <- elapsed_ms({
+    stats::nlminb(
+      start = obj$par,
+      objective = obj$fn,
+      gradient = obj$gr
+    )
+  })
+
+  opt <- opt_time$value
 
   data.frame(
     engine = "tmb",
     n_obs = n_obs,
-    elapsed_ms = elapsed_ms,
+    n_random = 1L,
+    setup_ms = setup$ms,
+    objective_eval_ms = objective_time$ms / objective_reps,
+    gradient_eval_ms = gradient_time$ms / objective_reps,
+    objective_reps = objective_reps,
+    optimization_ms = opt_time$ms,
+    total_wall_ms = setup$ms + objective_time$ms + gradient_time$ms + opt_time$ms,
     objective = opt$objective,
-    convergence = opt$convergence
+    success = as.integer(opt$convergence == 0L)
   )
 }
 

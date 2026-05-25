@@ -56,13 +56,13 @@ if tmb_csv.exists():
                 "engine": "tmb",
                 "model": "random_intercept",
                 "n_obs": r.get("n_obs", ""),
-                "n_random": 1,
-                "workspace_ms": "",
-                "implicit_derivatives_ms": "",
+                "n_random": r.get("n_random", 1),
+                "workspace_ms": r.get("setup_ms", ""),
+                "implicit_derivatives_ms": r.get("gradient_eval_ms", ""),
                 "factorization_ms": "",
-                "total_wall_ms": r.get("elapsed_ms", ""),
+                "total_wall_ms": r.get("total_wall_ms", r.get("elapsed_ms", "")),
                 "peak_rss_kb": "",
-                "success": r.get("convergence", "")
+                "success": r.get("success", r.get("convergence", ""))
             })
 
 fieldnames = [
