@@ -616,3 +616,9 @@ test-laplace-profiled-delta-method-vector: tests/test_laplace_profiled_delta_met
 tests/test_laplace_profiled_delta_method_vector: tests/test_laplace_profiled_delta_method_vector.cpp core/laplace/laplace_profiled_delta_method_vector.hpp
 	$(CXX) $(CXXFLAGS) -I. -I./external/eigen -I./external/had -I./external/LBFGSpp/include -o $@ tests/test_laplace_profiled_delta_method_vector.cpp
 
+test-laplace-implicit-workspace: tests/test_laplace_implicit_workspace
+	./tests/test_laplace_implicit_workspace
+
+tests/test_laplace_implicit_workspace: tests/test_laplace_implicit_workspace.cpp core/laplace/laplace_implicit_workspace.hpp
+	$(CXX) $(CXXFLAGS) -I. -I./external/eigen -I./external/had -I./external/LBFGSpp/include -o $@ tests/test_laplace_implicit_workspace.cpp
+
