@@ -1,0 +1,77 @@
+name: quadra-benchmarks
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+
+    env:
+      TZ: UTC
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential ninja-build time
+
+      - name: Build random intercept benchmark
+        run: |
+          make benchmark-random-intercept
+
+      - name: Build state-space benchmark
+        run: |
+          make benchmark-state-space
+
+      - name: Run random intercept benchmark
+        run: |
+          ./benchmarks/random_intercept/benchmark_random_intercept
+
+      - name: Run state-space benchmark
+        run: |
+          ./benchmarks/state_space/benchmark_state_space
+
+      - name: Collect benchmark outputs
+        run: |
+          mkdir -p benchmarks/outputs
+
+          cp benchmarks/random_intercept/random_intercept_benchmark.csv \
+             benchmarks/outputs/random_intercept_benchmark.csv
+
+          cp benchmarks/state_space/state_space_benchmark.csv \
+             benchmarks/outputs/state_space_benchmark.csv
+
+      - name: Benchmark summary
+        run: |
+          echo "## Quadra Benchmark Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          echo "### Random Intercept Benchmark" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cat benchmarks/outputs/random_intercept_benchmark.csv >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          echo "### State Space Benchmark" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cat benchmarks/outputs/state_space_benchmark.csv >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload benchmark artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: quadra-benchmark-results
+          path: benchmarks/outputs
+          if-no-files-found: error
