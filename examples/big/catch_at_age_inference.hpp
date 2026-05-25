@@ -10,6 +10,7 @@
 #include "../../core/laplace/laplace_profiled_ad_gradient.hpp"
 #include "../../core/laplace/laplace_profiled_delta_method.hpp"
 #include "../../core/laplace/laplace_profiled_delta_method_vector.hpp"
+#include "../../core/laplace/laplace_implicit_workspace.hpp"
 #include "catch_at_age_derived.hpp"
 
 #include <Eigen/Dense>
@@ -29,14 +30,19 @@ inline void run_big_catch_at_age_inference(
     const std::vector<double>& final_random_effects,
     const std::vector<std::string>& parameter_names,
     const std::vector<double>& theta_hat,
-    const Eigen::MatrixXd& du_dtheta,
-    bool du_dtheta_available)
+    const quadra::LaplaceImplicitWorkspace& implicit_workspace)
 {
     using namespace quadra;
 
     std::cout << "\n========================================\n";
     std::cout << "Quadra inference layer\n";
     std::cout << "========================================\n";
+
+    const bool du_dtheta_available =
+        implicit_workspace.success_m;
+
+    const Eigen::MatrixXd& du_dtheta =
+        implicit_workspace.du_dtheta_m;
 
     auto covariance =
         estimate_fixed_effect_covariance(
@@ -483,7 +489,9 @@ inline void run_big_catch_at_age_inference(
     std::cout << "Laplace mode sensitivity availability" << std::endl;
     if (!du_dtheta_available)
     {
-        std::cout << "  unavailable: implicit derivative solve failed" << std::endl;
+        std::cout << "  unavailable: "
+                  << implicit_workspace.message_m
+                  << std::endl;
     }
     else
     {
