@@ -723,3 +723,9 @@ benchmark-plot-exact-gradient-reuse:
 benchmark-plot-exact-gradient-scaling:
 	Rscript benchmarks/analysis/plot_exact_gradient_scaling.R
 
+benchmark-normalize-exact-gradient-comparison:
+	python3 benchmarks/analysis/normalize_exact_gradient_comparison.py
+
+benchmark-plot-exact-gradient-tmb-comparison:
+	Rscript benchmarks/analysis/plot_exact_gradient_tmb_comparison.R
+

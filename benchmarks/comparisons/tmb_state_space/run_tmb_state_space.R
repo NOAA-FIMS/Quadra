@@ -65,6 +65,14 @@ run_one <- function(n_state) {
     sink
   })
 
+  fn_gr_time <- elapsed_ms({
+    sink <- 0.0
+    for (i in seq_len(objective_reps)) {
+      sink <- sink + obj$fn(obj$par) + sum(obj$gr(obj$par))
+    }
+    sink
+  })
+
   opt_time <- elapsed_ms({
     stats::nlminb(
       start = obj$par,
@@ -131,6 +139,7 @@ run_one <- function(n_state) {
     setup_ms = setup$ms,
     objective_eval_ms = objective_time$ms / objective_reps,
     gradient_eval_ms = gradient_time$ms / objective_reps,
+    fn_gr_eval_ms = fn_gr_time$ms / objective_reps,
     objective_reps = objective_reps,
     optimization_ms = opt_time$ms,
     structure_ms = structure_time$ms,
