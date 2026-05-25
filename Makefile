@@ -652,3 +652,9 @@ benchmark-random-intercept: benchmarks/random_intercept/benchmark_random_interce
 benchmarks/random_intercept/benchmark_random_intercept: benchmarks/random_intercept/benchmark_random_intercept.cpp include/quadra/quadra.hpp
 	$(CXX) $(CXXFLAGS) -I. -I./external/eigen -I./external/had -I./external/LBFGSpp/include -o $@ benchmarks/random_intercept/benchmark_random_intercept.cpp
 
+benchmark-state-space: benchmarks/state_space/benchmark_state_space
+	./benchmarks/state_space/benchmark_state_space
+
+benchmarks/state_space/benchmark_state_space: benchmarks/state_space/benchmark_state_space.cpp include/quadra/quadra.hpp
+	$(CXX) $(CXXFLAGS) -I. -I./external/eigen -I./external/had -I./external/LBFGSpp/include -o $@ benchmarks/state_space/benchmark_state_space.cpp
+
