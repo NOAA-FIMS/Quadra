@@ -60,6 +60,11 @@ jobs:
           test -f benchmarks/outputs/random_intercept_time.log
           test -f benchmarks/outputs/state_space_time.log
 
+      - name: Normalize benchmark outputs
+        run: |
+          make benchmark-normalize-all
+          cp benchmarks/normalized/*.csv benchmarks/outputs/ || true
+
       - name: Benchmark summary
         run: |
           echo "## Quadra Benchmark Summary" >> $GITHUB_STEP_SUMMARY
@@ -75,6 +80,12 @@ jobs:
           echo "### State Space Benchmark" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
           cat benchmarks/outputs/state_space_benchmark.csv >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Normalized Benchmark Outputs" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cat benchmarks/outputs/*normalized*.csv >> $GITHUB_STEP_SUMMARY || true
           echo '```' >> $GITHUB_STEP_SUMMARY
 
           echo "" >> $GITHUB_STEP_SUMMARY

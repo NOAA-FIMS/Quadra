@@ -673,3 +673,8 @@ benchmark-normalize-random-intercept:
 benchmark-plot-random-intercept:
 	Rscript benchmarks/analysis/plot_random_intercept_scaling.R
 
+benchmark-normalize-rss:
+	python3 benchmarks/analysis/parse_rss_logs.py
+
+benchmark-normalize-all: benchmark-normalize-random-intercept benchmark-normalize-rss
+
