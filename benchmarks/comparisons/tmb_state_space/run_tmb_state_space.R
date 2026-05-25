@@ -73,6 +73,14 @@ run_one <- function(n_state) {
     sink
   })
 
+  fn_gr_time <- elapsed_ms({
+    sink <- 0.0
+    for (i in seq_len(objective_reps)) {
+      sink <- sink + obj$fn(obj$par) + sum(obj$gr(obj$par))
+    }
+    sink
+  })
+
   opt_time <- elapsed_ms({
     stats::nlminb(
       start = obj$par,
