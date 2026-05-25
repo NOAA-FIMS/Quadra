@@ -5,6 +5,7 @@ if (!requireNamespace("TMB", quietly = TRUE)) {
 }
 
 library(TMB)
+library(Matrix)
 
 out_dir <- "benchmarks/comparisons/tmb_state_space/comparison_outputs"
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
@@ -71,6 +72,54 @@ run_one <- function(n_state) {
 
   opt <- opt_time$value
 
+  hessian_nnz <- NA_integer_
+  hessian_density <- NA_real_
+  factor_nnz <- NA_integer_
+  fill_ratio <- NA_real_
+
+  structure_time <- elapsed_ms({
+    H <- NULL
+
+    if (!is.null(obj$env$spHess)) {
+      H <- tryCatch(
+        obj$env$spHess(random = TRUE),
+        error = function(e) NULL
+      )
+    }
+
+    if (is.null(H) && !is.null(obj$env$hessian)) {
+      H <- tryCatch(
+        obj$env$hessian(random = TRUE),
+        error = function(e) NULL
+      )
+    }
+
+    if (!is.null(H)) {
+      hessian_nnz <<- length(H@x)
+      hessian_density <<- hessian_nnz / (n_state * n_state)
+
+      chol_H <- tryCatch(
+        Matrix::Cholesky(H, LDL = TRUE, perm = TRUE),
+        error = function(e) NULL
+      )
+
+      if (!is.null(chol_H)) {
+        L <- tryCatch(
+          Matrix::expand(chol_H)$L,
+          error = function(e) NULL
+        )
+
+        if (!is.null(L)) {
+          factor_nnz <<- length(L@x)
+
+          if (!is.na(hessian_nnz) && hessian_nnz > 0) {
+            fill_ratio <<- factor_nnz / hessian_nnz
+          }
+        }
+      }
+    }
+  })
+
   data.frame(
     engine = "tmb",
     model = "state_space",
@@ -81,7 +130,12 @@ run_one <- function(n_state) {
     gradient_eval_ms = gradient_time$ms / objective_reps,
     objective_reps = objective_reps,
     optimization_ms = opt_time$ms,
-    total_wall_ms = setup$ms + objective_time$ms + gradient_time$ms + opt_time$ms,
+    structure_ms = structure_time$ms,
+    total_wall_ms = setup$ms + objective_time$ms + gradient_time$ms + opt_time$ms + structure_time$ms,
+    hessian_nnz = hessian_nnz,
+    hessian_density = hessian_density,
+    factor_nnz = factor_nnz,
+    fill_ratio = fill_ratio,
     objective = opt$objective,
     success = as.integer(opt$convergence == 0L)
   )
