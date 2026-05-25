@@ -85,12 +85,15 @@ jobs:
         run: |
           Rscript benchmarks/analysis/plot_random_intercept_scaling.R
           Rscript benchmarks/analysis/plot_random_intercept_comparison.R
+          Rscript benchmarks/analysis/plot_state_space_comparison.R
 
       - name: Verify plot outputs
         run: |
           test -f benchmarks/analysis/random_intercept_scaling.png
           test -f benchmarks/analysis/random_intercept_objective_eval_comparison.png
           test -f benchmarks/analysis/random_intercept_total_wall_comparison.png
+          test -f benchmarks/analysis/state_space_total_wall_comparison.png
+          test -f benchmarks/analysis/state_space_fill_ratio_comparison.png
 
       - name: Embed scaling plot in summary
         run: |
@@ -152,4 +155,10 @@ jobs:
             benchmarks/analysis/random_intercept_gradient_eval_comparison.png
             benchmarks/analysis/random_intercept_workspace_setup_comparison.png
             benchmarks/analysis/random_intercept_total_wall_comparison.png
+            benchmarks/analysis/state_space_total_wall_comparison.png
+            benchmarks/analysis/state_space_workspace_setup_comparison.png
+            benchmarks/analysis/state_space_factorization_comparison.png
+            benchmarks/analysis/state_space_hessian_nnz_comparison.png
+            benchmarks/analysis/state_space_factor_nnz_comparison.png
+            benchmarks/analysis/state_space_fill_ratio_comparison.png
           if-no-files-found: error

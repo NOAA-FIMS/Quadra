@@ -676,7 +676,7 @@ benchmark-plot-random-intercept:
 benchmark-normalize-rss:
 	python3 benchmarks/analysis/parse_rss_logs.py
 
-benchmark-normalize-all: benchmark-normalize-random-intercept benchmark-normalize-rss
+benchmark-normalize-all: benchmark-normalize-random-intercept benchmark-normalize-state-space benchmark-normalize-rss
 
 benchmark-quadra-tmb-state-space-quadra: benchmarks/comparisons/tmb_state_space/quadra_state_space_compare
 	./benchmarks/comparisons/tmb_state_space/quadra_state_space_compare
@@ -692,4 +692,10 @@ benchmark-plot-state-space-structure:
 
 benchmark-plot-random-intercept-comparison:
 	Rscript benchmarks/analysis/plot_random_intercept_comparison.R
+
+benchmark-normalize-state-space:
+	python3 benchmarks/analysis/normalize_state_space_results.py
+
+benchmark-plot-state-space-comparison:
+	Rscript benchmarks/analysis/plot_state_space_comparison.R
 
