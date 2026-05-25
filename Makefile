@@ -610,3 +610,9 @@ test-laplace-profiled-delta-method: tests/test_laplace_profiled_delta_method
 tests/test_laplace_profiled_delta_method: tests/test_laplace_profiled_delta_method.cpp core/laplace/laplace_profiled_delta_method.hpp core/laplace/laplace_profiled_derived_gradient.hpp
 	$(CXX) $(CXXFLAGS) -I. -I./external/eigen -I./external/had -I./external/LBFGSpp/include -o $@ tests/test_laplace_profiled_delta_method.cpp
 
+test-laplace-profiled-delta-method-vector: tests/test_laplace_profiled_delta_method_vector
+	./tests/test_laplace_profiled_delta_method_vector
+
+tests/test_laplace_profiled_delta_method_vector: tests/test_laplace_profiled_delta_method_vector.cpp core/laplace/laplace_profiled_delta_method_vector.hpp
+	$(CXX) $(CXXFLAGS) -I. -I./external/eigen -I./external/had -I./external/LBFGSpp/include -o $@ tests/test_laplace_profiled_delta_method_vector.cpp
+
