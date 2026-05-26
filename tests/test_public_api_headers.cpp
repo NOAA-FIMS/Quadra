@@ -2,17 +2,16 @@
 
 #include <iostream>
 
-int main()
-{
-    quadra::LaplaceImplicitWorkspace workspace;
-    quadra::LaplaceProfiledDerivedReport report;
-    quadra::FixedEffectCovarianceResult covariance;
+int main() {
+  quadra::LaplaceImplicitWorkspace workspace;
+  quadra::LaplaceProfiledDerivedReport report;
+  quadra::FixedEffectCovarianceResult covariance;
 
-    (void)workspace;
-    (void)report;
-    (void)covariance;
+  (void)workspace;
+  (void)report;
+  (void)covariance;
 
-    std::cout << "PASS: public Quadra API headers compile\n";
+  std::cout << "PASS: public Quadra API headers compile\n";
 
-    return 0;
+  return 0;
 }

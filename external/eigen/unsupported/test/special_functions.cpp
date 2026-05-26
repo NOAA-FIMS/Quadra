@@ -7,37 +7,37 @@
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-#include <limits.h>
-#include "main.h"
 #include "../Eigen/SpecialFunctions"
+#include "main.h"
+#include <limits.h>
 
-// Hack to allow "implicit" conversions from double to Scalar via comma-initialization.
-template<typename Derived>
-Eigen::CommaInitializer<Derived> operator<<(Eigen::DenseBase<Derived>& dense, double v) {
+// Hack to allow "implicit" conversions from double to Scalar via
+// comma-initialization.
+template <typename Derived>
+Eigen::CommaInitializer<Derived> operator<<(Eigen::DenseBase<Derived> &dense,
+                                            double v) {
   return (dense << static_cast<typename Derived::Scalar>(v));
 }
 
-template<typename XprType>
-Eigen::CommaInitializer<XprType>& operator,(Eigen::CommaInitializer<XprType>& ci, double v) {
+template <typename XprType>
+Eigen::CommaInitializer<XprType> &operator,(
+    Eigen::CommaInitializer<XprType> &ci, double v) {
   return (ci, static_cast<typename XprType::Scalar>(v));
 }
 
-template<typename X, typename Y>
-void verify_component_wise(const X& x, const Y& y)
-{
-  for(Index i=0; i<x.size(); ++i)
-  {
-    if((numext::isfinite)(y(i)))
-      VERIFY_IS_APPROX( x(i), y(i) );
-    else if((numext::isnan)(y(i)))
+template <typename X, typename Y>
+void verify_component_wise(const X &x, const Y &y) {
+  for (Index i = 0; i < x.size(); ++i) {
+    if ((numext::isfinite)(y(i)))
+      VERIFY_IS_APPROX(x(i), y(i));
+    else if ((numext::isnan)(y(i)))
       VERIFY((numext::isnan)(x(i)));
     else
-      VERIFY_IS_EQUAL( x(i), y(i) );
+      VERIFY_IS_EQUAL(x(i), y(i));
   }
 }
 
-template<typename ArrayType> void array_special_functions()
-{
+template <typename ArrayType> void array_special_functions() {
   using std::abs;
   using std::sqrt;
   typedef typename ArrayType::Scalar Scalar;
@@ -46,29 +46,27 @@ template<typename ArrayType> void array_special_functions()
   Scalar plusinf = std::numeric_limits<Scalar>::infinity();
   Scalar nan = std::numeric_limits<Scalar>::quiet_NaN();
 
-  Index rows = internal::random<Index>(1,30);
+  Index rows = internal::random<Index>(1, 30);
   Index cols = 1;
 
   // API
   {
-    ArrayType m1 = ArrayType::Random(rows,cols);
+    ArrayType m1 = ArrayType::Random(rows, cols);
 #if EIGEN_HAS_C99_MATH
     VERIFY_IS_APPROX(m1.lgamma(), lgamma(m1));
     VERIFY_IS_APPROX(m1.digamma(), digamma(m1));
     VERIFY_IS_APPROX(m1.erf(), erf(m1));
     VERIFY_IS_APPROX(m1.erfc(), erfc(m1));
-#endif  // EIGEN_HAS_C99_MATH
+#endif // EIGEN_HAS_C99_MATH
   }
-
 
 #if EIGEN_HAS_C99_MATH
   // check special functions (comparing against numpy implementation)
-  if (!NumTraits<Scalar>::IsComplex)
-  {
+  if (!NumTraits<Scalar>::IsComplex) {
 
     {
-      ArrayType m1 = ArrayType::Random(rows,cols);
-      ArrayType m2 = ArrayType::Random(rows,cols);
+      ArrayType m1 = ArrayType::Random(rows, cols);
+      ArrayType m2 = ArrayType::Random(rows, cols);
 
       // Test various propreties of igamma & igammac.  These are normalized
       // gamma integrals where
@@ -86,7 +84,6 @@ template<typename ArrayType> void array_special_functions()
       ArrayType gamma_a_x = Eigen::igamma(a, x) * a.lgamma().exp();
       ArrayType gamma_a_m1_x = Eigen::igamma(a_m1, x) * a_m1.lgamma().exp();
 
-
       // Gamma(a, 0) == Gamma(a)
       VERIFY_IS_APPROX(Eigen::igammac(a, zero), one);
 
@@ -94,18 +91,20 @@ template<typename ArrayType> void array_special_functions()
       VERIFY_IS_APPROX(Gamma_a_x + gamma_a_x, a.lgamma().exp());
 
       // Gamma(a, x) == (a - 1) * Gamma(a-1, x) + x^(a-1) * exp(-x)
-      VERIFY_IS_APPROX(Gamma_a_x, (a - Scalar(1)) * Gamma_a_m1_x + x.pow(a-Scalar(1)) * (-x).exp());
+      VERIFY_IS_APPROX(Gamma_a_x, (a - Scalar(1)) * Gamma_a_m1_x +
+                                      x.pow(a - Scalar(1)) * (-x).exp());
 
       // gamma(a, x) == (a - 1) * gamma(a-1, x) - x^(a-1) * exp(-x)
-      VERIFY_IS_APPROX(gamma_a_x, (a - Scalar(1)) * gamma_a_m1_x - x.pow(a-Scalar(1)) * (-x).exp());
+      VERIFY_IS_APPROX(gamma_a_x, (a - Scalar(1)) * gamma_a_m1_x -
+                                      x.pow(a - Scalar(1)) * (-x).exp());
     }
     {
       // Verify for large a and x that values are between 0 and 1.
-      ArrayType m1 = ArrayType::Random(rows,cols);
-      ArrayType m2 = ArrayType::Random(rows,cols);
+      ArrayType m1 = ArrayType::Random(rows, cols);
+      ArrayType m2 = ArrayType::Random(rows, cols);
       int max_exponent = std::numeric_limits<Scalar>::max_exponent10;
-      ArrayType a = m1.abs() *  Scalar(pow(10., max_exponent - 1));
-      ArrayType x = m2.abs() *  Scalar(pow(10., max_exponent - 1));
+      ArrayType a = m1.abs() * Scalar(pow(10., max_exponent - 1));
+      ArrayType x = m2.abs() * Scalar(pow(10., max_exponent - 1));
       for (int i = 0; i < a.size(); ++i) {
         Scalar igam = numext::igamma(a(i), x(i));
         VERIFY(0 <= igam);
@@ -114,9 +113,12 @@ template<typename ArrayType> void array_special_functions()
     }
 
     {
-      // Check exact values of igamma and igammac against a third party calculation.
-      Scalar a_s[] = {Scalar(0), Scalar(1), Scalar(1.5), Scalar(4), Scalar(0.0001), Scalar(1000.5)};
-      Scalar x_s[] = {Scalar(0), Scalar(1), Scalar(1.5), Scalar(4), Scalar(0.0001), Scalar(1000.5)};
+      // Check exact values of igamma and igammac against a third party
+      // calculation.
+      Scalar a_s[] = {Scalar(0), Scalar(1),      Scalar(1.5),
+                      Scalar(4), Scalar(0.0001), Scalar(1000.5)};
+      Scalar x_s[] = {Scalar(0), Scalar(1),      Scalar(1.5),
+                      Scalar(4), Scalar(0.0001), Scalar(1000.5)};
 
       // location i*6+j corresponds to a_s[i], x_s[j].
       Scalar igamma_s[][6] = {
@@ -167,66 +169,72 @@ template<typename ArrayType> void array_special_functions()
       }
     }
   }
-#endif  // EIGEN_HAS_C99_MATH
+#endif // EIGEN_HAS_C99_MATH
 
   // Check the ndtri function against scipy.special.ndtri
   {
     ArrayType x(7), res(7), ref(7);
     x << 0.5, 0.2, 0.8, 0.9, 0.1, 0.99, 0.01;
-    ref << 0., -0.8416212335729142, 0.8416212335729142, 1.2815515655446004, -1.2815515655446004, 2.3263478740408408, -2.3263478740408408;
-    CALL_SUBTEST( verify_component_wise(ref, ref); );
-    CALL_SUBTEST( res = x.ndtri(); verify_component_wise(res, ref); );
-    CALL_SUBTEST( res = ndtri(x); verify_component_wise(res, ref); );
+    ref << 0., -0.8416212335729142, 0.8416212335729142, 1.2815515655446004,
+        -1.2815515655446004, 2.3263478740408408, -2.3263478740408408;
+    CALL_SUBTEST(verify_component_wise(ref, ref););
+    CALL_SUBTEST(res = x.ndtri(); verify_component_wise(res, ref););
+    CALL_SUBTEST(res = ndtri(x); verify_component_wise(res, ref););
 
     // ndtri(normal_cdf(x)) ~= x
-    CALL_SUBTEST(
-        ArrayType m1 = ArrayType::Random(32);
-        using std::sqrt;
+    CALL_SUBTEST(ArrayType m1 = ArrayType::Random(32); using std::sqrt;
 
-        ArrayType cdf_val = (m1 / Scalar(sqrt(2.))).erf();
-        cdf_val = (cdf_val + Scalar(1)) / Scalar(2);
-        verify_component_wise(cdf_val.ndtri(), m1););
-
+                 ArrayType cdf_val = (m1 / Scalar(sqrt(2.))).erf();
+                 cdf_val = (cdf_val + Scalar(1)) / Scalar(2);
+                 verify_component_wise(cdf_val.ndtri(), m1););
   }
 
   // Check the zeta function against scipy.special.zeta
   {
     ArrayType x(10), q(10), res(10), ref(10);
-    x << 1.5,   4, 10.5, 10000.5,    3,      1,    0.9,  2,  3,  4;
-    q <<   2, 1.5,    3,  1.0001, -2.5, 1.2345, 1.2345, -1, -2, -3;
-    ref << 1.61237534869, 0.234848505667, 1.03086757337e-5, 0.367879440865, 0.054102025820864097, plusinf, nan, plusinf, nan, plusinf;
-    CALL_SUBTEST( verify_component_wise(ref, ref); );
-    CALL_SUBTEST( res = x.zeta(q); verify_component_wise(res, ref); );
-    CALL_SUBTEST( res = zeta(x,q); verify_component_wise(res, ref); );
+    x << 1.5, 4, 10.5, 10000.5, 3, 1, 0.9, 2, 3, 4;
+    q << 2, 1.5, 3, 1.0001, -2.5, 1.2345, 1.2345, -1, -2, -3;
+    ref << 1.61237534869, 0.234848505667, 1.03086757337e-5, 0.367879440865,
+        0.054102025820864097, plusinf, nan, plusinf, nan, plusinf;
+    CALL_SUBTEST(verify_component_wise(ref, ref););
+    CALL_SUBTEST(res = x.zeta(q); verify_component_wise(res, ref););
+    CALL_SUBTEST(res = zeta(x, q); verify_component_wise(res, ref););
   }
 
   // digamma
   {
     ArrayType x(9), res(9), ref(9);
     x << 1, 1.5, 4, -10.5, 10000.5, 0, -1, -2, -3;
-    ref << -0.5772156649015329, 0.03648997397857645, 1.2561176684318, 2.398239129535781, 9.210340372392849, nan, nan, nan, nan;
-    CALL_SUBTEST( verify_component_wise(ref, ref); );
+    ref << -0.5772156649015329, 0.03648997397857645, 1.2561176684318,
+        2.398239129535781, 9.210340372392849, nan, nan, nan, nan;
+    CALL_SUBTEST(verify_component_wise(ref, ref););
 
-    CALL_SUBTEST( res = x.digamma(); verify_component_wise(res, ref); );
-    CALL_SUBTEST( res = digamma(x);  verify_component_wise(res, ref); );
+    CALL_SUBTEST(res = x.digamma(); verify_component_wise(res, ref););
+    CALL_SUBTEST(res = digamma(x); verify_component_wise(res, ref););
   }
 
 #if EIGEN_HAS_C99_MATH
   {
     ArrayType n(16), x(16), res(16), ref(16);
-    n << 1, 1,    1, 1.5,   17,   31,   28,    8,   42,  147, 170, -1,  0,  1,  2,  3;
-    x << 2, 3, 25.5, 1.5,  4.7, 11.8, 17.7, 30.2, 15.8, 54.1,  64, -1, -2, -3, -4, -5;
-    ref << 0.644934066848, 0.394934066848, 0.0399946696496, nan, 293.334565435, 0.445487887616, -2.47810300902e-07, -8.29668781082e-09, -0.434562276666, 0.567742190178, -0.0108615497927, nan, nan, plusinf, nan, plusinf;
-    CALL_SUBTEST( verify_component_wise(ref, ref); );
+    n << 1, 1, 1, 1.5, 17, 31, 28, 8, 42, 147, 170, -1, 0, 1, 2, 3;
+    x << 2, 3, 25.5, 1.5, 4.7, 11.8, 17.7, 30.2, 15.8, 54.1, 64, -1, -2, -3, -4,
+        -5;
+    ref << 0.644934066848, 0.394934066848, 0.0399946696496, nan, 293.334565435,
+        0.445487887616, -2.47810300902e-07, -8.29668781082e-09, -0.434562276666,
+        0.567742190178, -0.0108615497927, nan, nan, plusinf, nan, plusinf;
+    CALL_SUBTEST(verify_component_wise(ref, ref););
 
-    if(sizeof(RealScalar)>=8) {  // double
-      // Reason for commented line: http://eigen.tuxfamily.org/bz/show_bug.cgi?id=1232
-      //       CALL_SUBTEST( res = x.polygamma(n); verify_component_wise(res, ref); );
-      CALL_SUBTEST( res = polygamma(n,x);  verify_component_wise(res, ref); );
-    }
-    else {
-      //       CALL_SUBTEST( res = x.polygamma(n); verify_component_wise(res.head(8), ref.head(8)); );
-      CALL_SUBTEST( res = polygamma(n,x); verify_component_wise(res.head(8), ref.head(8)); );
+    if (sizeof(RealScalar) >= 8) { // double
+      // Reason for commented line:
+      // http://eigen.tuxfamily.org/bz/show_bug.cgi?id=1232
+      //       CALL_SUBTEST( res = x.polygamma(n); verify_component_wise(res,
+      //       ref); );
+      CALL_SUBTEST(res = polygamma(n, x); verify_component_wise(res, ref););
+    } else {
+      //       CALL_SUBTEST( res = x.polygamma(n);
+      //       verify_component_wise(res.head(8), ref.head(8)); );
+      CALL_SUBTEST(res = polygamma(n, x);
+                   verify_component_wise(res.head(8), ref.head(8)););
     }
   }
 #endif
@@ -237,9 +245,10 @@ template<typename ArrayType> void array_special_functions()
     //   a = np.logspace(-3, 3, 5) - 1e-3
     //   b = np.logspace(-3, 3, 5) - 1e-3
     //   x = np.linspace(-0.1, 1.1, 5)
-    //   (full_a, full_b, full_x) = np.vectorize(lambda a, b, x: (a, b, x))(*np.ix_(a, b, x))
-    //   full_a = full_a.flatten().tolist()  # same for full_b, full_x
-    //   v = scipy.special.betainc(full_a, full_b, full_x).flatten().tolist()
+    //   (full_a, full_b, full_x) = np.vectorize(lambda a, b, x: (a, b,
+    //   x))(*np.ix_(a, b, x)) full_a = full_a.flatten().tolist()  # same for
+    //   full_b, full_x v = scipy.special.betainc(full_a, full_b,
+    //   full_x).flatten().tolist()
     //
     // Note in Eigen, we call betainc with arguments in the order (x, a, b).
     ArrayType a(125);
@@ -308,8 +317,7 @@ template<typename ArrayType> void array_special_functions()
         1.1, -0.1, 0.2, 0.5, 0.8, 1.1, -0.1, 0.2, 0.5, 0.8, 1.1, -0.1, 0.2, 0.5,
         0.8, 1.1, -0.1, 0.2, 0.5, 0.8, 1.1, -0.1, 0.2, 0.5, 0.8, 1.1, -0.1, 0.2,
         0.5, 0.8, 1.1, -0.1, 0.2, 0.5, 0.8, 1.1, -0.1, 0.2, 0.5, 0.8, 1.1, -0.1,
-        0.2, 0.5, 0.8, 1.1, -0.1, 0.2, 0.5, 0.8, 1.1, -0.1, 0.2, 0.5,
-        0.8, 1.1;
+        0.2, 0.5, 0.8, 1.1, -0.1, 0.2, 0.5, 0.8, 1.1, -0.1, 0.2, 0.5, 0.8, 1.1;
 
     v << nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan,
         nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan,
@@ -332,8 +340,7 @@ template<typename ArrayType> void array_special_functions()
         3.0891393081932924e-252, 2.9303043666183996e-60, nan, nan,
         2.248913486879199e-196, 0.5000000000004947, 0.9999999999999999, nan;
 
-    CALL_SUBTEST(res = betainc(a, b, x);
-                 verify_component_wise(res, v););
+    CALL_SUBTEST(res = betainc(a, b, x); verify_component_wise(res, v););
   }
 
   // Test various properties of betainc
@@ -348,27 +355,26 @@ template<typename ArrayType> void array_special_functions()
     ArrayType x = m3.abs();
 
     // betainc(a, 1, x) == x**a
-    CALL_SUBTEST(
-        ArrayType test = betainc(a, one, x);
-        ArrayType expected = x.pow(a);
-        verify_component_wise(test, expected););
+    CALL_SUBTEST(ArrayType test = betainc(a, one, x);
+                 ArrayType expected = x.pow(a);
+                 verify_component_wise(test, expected););
 
     // betainc(1, b, x) == 1 - (1 - x)**b
-    CALL_SUBTEST(
-        ArrayType test = betainc(one, b, x);
-        ArrayType expected = one - (one - x).pow(b);
-        verify_component_wise(test, expected););
+    CALL_SUBTEST(ArrayType test = betainc(one, b, x);
+                 ArrayType expected = one - (one - x).pow(b);
+                 verify_component_wise(test, expected););
 
     // betainc(a, b, x) == 1 - betainc(b, a, 1-x)
-    CALL_SUBTEST(
-        ArrayType test = betainc(a, b, x) + betainc(b, a, one - x);
-        ArrayType expected = one;
-        verify_component_wise(test, expected););
+    CALL_SUBTEST(ArrayType test = betainc(a, b, x) + betainc(b, a, one - x);
+                 ArrayType expected = one;
+                 verify_component_wise(test, expected););
 
-    // betainc(a+1, b, x) = betainc(a, b, x) - x**a * (1 - x)**b / (a * beta(a, b))
+    // betainc(a+1, b, x) = betainc(a, b, x) - x**a * (1 - x)**b / (a * beta(a,
+    // b))
     CALL_SUBTEST(
         ArrayType num = x.pow(a) * (one - x).pow(b);
-        ArrayType denom = a * (a.lgamma() + b.lgamma() - (a + b).lgamma()).exp();
+        ArrayType denom =
+            a * (a.lgamma() + b.lgamma() - (a + b).lgamma()).exp();
         // Add eps to rhs and lhs so that component-wise test doesn't result in
         // nans when both outputs are zeros.
         ArrayType expected = betainc(a, b, x) - num / denom + eps;
@@ -376,48 +382,51 @@ template<typename ArrayType> void array_special_functions()
         if (sizeof(Scalar) >= 8) { // double
           verify_component_wise(test, expected);
         } else {
-          // Reason for limited test: http://eigen.tuxfamily.org/bz/show_bug.cgi?id=1232
+          // Reason for limited test:
+          // http://eigen.tuxfamily.org/bz/show_bug.cgi?id=1232
           verify_component_wise(test.head(8), expected.head(8));
         });
 
-    // betainc(a, b+1, x) = betainc(a, b, x) + x**a * (1 - x)**b / (b * beta(a, b))
+    // betainc(a, b+1, x) = betainc(a, b, x) + x**a * (1 - x)**b / (b * beta(a,
+    // b))
     CALL_SUBTEST(
         // Add eps to rhs and lhs so that component-wise test doesn't result in
         // nans when both outputs are zeros.
         ArrayType num = x.pow(a) * (one - x).pow(b);
-        ArrayType denom = b * (a.lgamma() + b.lgamma() - (a + b).lgamma()).exp();
+        ArrayType denom =
+            b * (a.lgamma() + b.lgamma() - (a + b).lgamma()).exp();
         ArrayType expected = betainc(a, b, x) + num / denom + eps;
         ArrayType test = betainc(a, b + one, x) + eps;
         verify_component_wise(test, expected););
   }
-#endif  // EIGEN_HAS_C99_MATH
+#endif // EIGEN_HAS_C99_MATH
 
-    /* Code to generate the data for the following two test cases.
-    N = 5
-    np.random.seed(3)
+  /* Code to generate the data for the following two test cases.
+  N = 5
+  np.random.seed(3)
 
-    a = np.logspace(-2, 3, 6)
-    a = np.ravel(np.tile(np.reshape(a, [-1, 1]), [1, N]))
-    x = np.random.gamma(a, 1.0)
-    x = np.maximum(x, np.finfo(np.float32).tiny)
+  a = np.logspace(-2, 3, 6)
+  a = np.ravel(np.tile(np.reshape(a, [-1, 1]), [1, N]))
+  x = np.random.gamma(a, 1.0)
+  x = np.maximum(x, np.finfo(np.float32).tiny)
 
-    def igamma(a, x):
-      return mpmath.gammainc(a, 0, x, regularized=True)
+  def igamma(a, x):
+    return mpmath.gammainc(a, 0, x, regularized=True)
 
-    def igamma_der_a(a, x):
-      res = mpmath.diff(lambda a_prime: igamma(a_prime, x), a)
-      return np.float64(res)
+  def igamma_der_a(a, x):
+    res = mpmath.diff(lambda a_prime: igamma(a_prime, x), a)
+    return np.float64(res)
 
-    def gamma_sample_der_alpha(a, x):
-      igamma_x = igamma(a, x)
-      def igammainv_of_igamma(a_prime):
-        return mpmath.findroot(lambda x_prime: igamma(a_prime, x_prime) -
-            igamma_x, x, solver='newton')
-      return np.float64(mpmath.diff(igammainv_of_igamma, a))
+  def gamma_sample_der_alpha(a, x):
+    igamma_x = igamma(a, x)
+    def igammainv_of_igamma(a_prime):
+      return mpmath.findroot(lambda x_prime: igamma(a_prime, x_prime) -
+          igamma_x, x, solver='newton')
+    return np.float64(mpmath.diff(igammainv_of_igamma, a))
 
-    v_igamma_der_a = np.vectorize(igamma_der_a)(a, x)
-    v_gamma_sample_der_alpha = np.vectorize(gamma_sample_der_alpha)(a, x)
-  */
+  v_igamma_der_a = np.vectorize(igamma_der_a)(a, x)
+  v_gamma_sample_der_alpha = np.vectorize(gamma_sample_der_alpha)(a, x)
+*/
 
 #if EIGEN_HAS_C99_MATH
   // Test igamma_der_a
@@ -484,14 +493,14 @@ template<typename ArrayType> void array_special_functions()
     CALL_SUBTEST(res = gamma_sample_der_alpha(alpha, sample);
                  verify_component_wise(res, v););
   }
-#endif  // EIGEN_HAS_C99_MATH
+#endif // EIGEN_HAS_C99_MATH
 }
 
-EIGEN_DECLARE_TEST(special_functions)
-{
+EIGEN_DECLARE_TEST(special_functions) {
   CALL_SUBTEST_1(array_special_functions<ArrayXf>());
   CALL_SUBTEST_2(array_special_functions<ArrayXd>());
-  // TODO(cantonios): half/bfloat16 don't have enough precision to reproduce results above.
+  // TODO(cantonios): half/bfloat16 don't have enough precision to reproduce
+  // results above.
   // CALL_SUBTEST_3(array_special_functions<ArrayX<Eigen::half>>());
   // CALL_SUBTEST_4(array_special_functions<ArrayX<Eigen::bfloat16>>());
 }

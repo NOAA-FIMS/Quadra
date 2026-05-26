@@ -28,7 +28,7 @@ private:
     // the function, and the fitted quadratic function is used to
     // estimate the minimum
     static Scalar quad_interp(const Scalar& step_lo, const Scalar& step_hi,
-        const Scalar& fx_lo, const Scalar& fx_hi, const Scalar& dg_lo)
+                              const Scalar& fx_lo, const Scalar& fx_hi, const Scalar& dg_lo)
     {
         using std::abs;
 

@@ -13,9 +13,9 @@
 
 #include <Eigen/CXX11/Tensor>
 
-using Eigen::Tensor;
-using Eigen::RowMajor;
 using Eigen::ColMajor;
+using Eigen::RowMajor;
+using Eigen::Tensor;
 using Eigen::internal::TiledEvaluation;
 
 // A set of tests to verify that different TensorExecutor strategies yields the
@@ -24,7 +24,7 @@ using Eigen::internal::TiledEvaluation;
 // Default assignment that does no use block evaluation or vectorization.
 // We assume that default coefficient evaluation is well tested and correct.
 template <typename Dst, typename Expr>
-static void DefaultAssign(Dst& dst, Expr expr) {
+static void DefaultAssign(Dst &dst, Expr expr) {
   using Assign = Eigen::TensorAssignOp<Dst, const Expr>;
   using Executor =
       Eigen::internal::TensorExecutor<const Assign, DefaultDevice,
@@ -37,7 +37,7 @@ static void DefaultAssign(Dst& dst, Expr expr) {
 // Assignment with specified device and tiling strategy.
 template <bool Vectorizable, TiledEvaluation Tiling, typename Device,
           typename Dst, typename Expr>
-static void DeviceAssign(Device& d, Dst& dst, Expr expr) {
+static void DeviceAssign(Device &d, Dst &dst, Expr expr) {
   using Assign = Eigen::TensorAssignOp<Dst, const Expr>;
   using Executor = Eigen::internal::TensorExecutor<const Assign, Device,
                                                    Vectorizable, Tiling>;
@@ -56,8 +56,7 @@ static array<Index, NumDims> RandomDims(int min_dim = 1, int max_dim = 20) {
 
 template <typename T, int NumDims, typename Device, bool Vectorizable,
           TiledEvaluation Tiling, int Layout>
-static void test_execute_unary_expr(Device d)
-{
+static void test_execute_unary_expr(Device d) {
   static constexpr int Options = 0 | Layout;
 
   // Pick a large enough tensor size to bypass small tensor block evaluation
@@ -84,8 +83,7 @@ static void test_execute_unary_expr(Device d)
 
 template <typename T, int NumDims, typename Device, bool Vectorizable,
           TiledEvaluation Tiling, int Layout>
-static void test_execute_binary_expr(Device d)
-{
+static void test_execute_binary_expr(Device d) {
   static constexpr int Options = 0 | Layout;
 
   // Pick a large enough tensor size to bypass small tensor block evaluation
@@ -115,8 +113,7 @@ static void test_execute_binary_expr(Device d)
 
 template <typename T, int NumDims, typename Device, bool Vectorizable,
           TiledEvaluation Tiling, int Layout>
-static void test_execute_broadcasting(Device d)
-{
+static void test_execute_broadcasting(Device d) {
   static constexpr int Options = 0 | Layout;
 
   auto dims = RandomDims<NumDims>(1, 10);
@@ -147,83 +144,30 @@ static void test_execute_broadcasting(Device d)
 
 template <typename T, int NumDims, typename Device, bool Vectorizable,
           TiledEvaluation Tiling, int Layout>
-static void test_execute_chipping_rvalue(Device d)
-{
+static void test_execute_chipping_rvalue(Device d) {
   auto dims = RandomDims<NumDims>(1, 10);
   Tensor<T, NumDims, Layout, Index> src(dims);
   src.setRandom();
 
-#define TEST_CHIPPING(CHIP_DIM)                                           \
-  if (NumDims > (CHIP_DIM)) {                                             \
-    const auto offset = internal::random<Index>(0, dims[(CHIP_DIM)] - 1); \
-    const auto expr = src.template chip<(CHIP_DIM)>(offset);              \
-                                                                          \
-    Tensor<T, NumDims - 1, Layout, Index> golden;                         \
-    golden = expr;                                                        \
-                                                                          \
-    Tensor<T, NumDims - 1, Layout, Index> dst(golden.dimensions());       \
-                                                                          \
-    using Assign = TensorAssignOp<decltype(dst), const decltype(expr)>;   \
-    using Executor = internal::TensorExecutor<const Assign, Device,       \
-                                              Vectorizable, Tiling>;      \
-                                                                          \
-    Executor::run(Assign(dst, expr), d);                                  \
-                                                                          \
-    for (Index i = 0; i < dst.dimensions().TotalSize(); ++i) {            \
-      VERIFY_IS_EQUAL(dst.coeff(i), golden.coeff(i));                     \
-    }                                                                     \
-  }
-
-  TEST_CHIPPING(0)
-  TEST_CHIPPING(1)
-  TEST_CHIPPING(2)
-  TEST_CHIPPING(3)
-  TEST_CHIPPING(4)
-  TEST_CHIPPING(5)
-
-#undef TEST_CHIPPING
-}
-
-template <typename T, int NumDims, typename Device, bool Vectorizable,
-    TiledEvaluation Tiling, int Layout>
-static void test_execute_chipping_lvalue(Device d)
-{
-  auto dims = RandomDims<NumDims>(1, 10);
-
-#define TEST_CHIPPING(CHIP_DIM)                                             \
-  if (NumDims > (CHIP_DIM)) {                                               \
-    /* Generate random data that we'll assign to the chipped tensor dim. */ \
-    array<Index, NumDims - 1> src_dims;                                     \
-    for (int i = 0; i < NumDims - 1; ++i) {                                 \
-      int dim = i < (CHIP_DIM) ? i : i + 1;                                 \
-      src_dims[i] = dims[dim];                                              \
-    }                                                                       \
-                                                                            \
-    Tensor<T, NumDims - 1, Layout, Index> src(src_dims);                    \
-    src.setRandom();                                                        \
-                                                                            \
-    const auto offset = internal::random<Index>(0, dims[(CHIP_DIM)] - 1);   \
-                                                                            \
-    Tensor<T, NumDims, Layout, Index> random(dims);                         \
-    random.setZero();                                                       \
-                                                                            \
-    Tensor<T, NumDims, Layout, Index> golden(dims);                         \
-    golden = random;                                                        \
-    golden.template chip<(CHIP_DIM)>(offset) = src;                         \
-                                                                            \
-    Tensor<T, NumDims, Layout, Index> dst(dims);                            \
-    dst = random;                                                           \
-    auto expr = dst.template chip<(CHIP_DIM)>(offset);                      \
-                                                                            \
-    using Assign = TensorAssignOp<decltype(expr), const decltype(src)>;     \
-    using Executor = internal::TensorExecutor<const Assign, Device,         \
-                                              Vectorizable, Tiling>;        \
-                                                                            \
-    Executor::run(Assign(expr, src), d);                                    \
-                                                                            \
-    for (Index i = 0; i < dst.dimensions().TotalSize(); ++i) {              \
-      VERIFY_IS_EQUAL(dst.coeff(i), golden.coeff(i));                       \
-    }                                                                       \
+#define TEST_CHIPPING(CHIP_DIM)                                                \
+  if (NumDims > (CHIP_DIM)) {                                                  \
+    const auto offset = internal::random<Index>(0, dims[(CHIP_DIM)] - 1);      \
+    const auto expr = src.template chip<(CHIP_DIM)>(offset);                   \
+                                                                               \
+    Tensor<T, NumDims - 1, Layout, Index> golden;                              \
+    golden = expr;                                                             \
+                                                                               \
+    Tensor<T, NumDims - 1, Layout, Index> dst(golden.dimensions());            \
+                                                                               \
+    using Assign = TensorAssignOp<decltype(dst), const decltype(expr)>;        \
+    using Executor =                                                           \
+        internal::TensorExecutor<const Assign, Device, Vectorizable, Tiling>;  \
+                                                                               \
+    Executor::run(Assign(dst, expr), d);                                       \
+                                                                               \
+    for (Index i = 0; i < dst.dimensions().TotalSize(); ++i) {                 \
+      VERIFY_IS_EQUAL(dst.coeff(i), golden.coeff(i));                          \
+    }                                                                          \
   }
 
   TEST_CHIPPING(0)
@@ -238,8 +182,58 @@ static void test_execute_chipping_lvalue(Device d)
 
 template <typename T, int NumDims, typename Device, bool Vectorizable,
           TiledEvaluation Tiling, int Layout>
-static void test_execute_shuffle_rvalue(Device d)
-{
+static void test_execute_chipping_lvalue(Device d) {
+  auto dims = RandomDims<NumDims>(1, 10);
+
+#define TEST_CHIPPING(CHIP_DIM)                                                \
+  if (NumDims > (CHIP_DIM)) {                                                  \
+    /* Generate random data that we'll assign to the chipped tensor dim. */    \
+    array<Index, NumDims - 1> src_dims;                                        \
+    for (int i = 0; i < NumDims - 1; ++i) {                                    \
+      int dim = i < (CHIP_DIM) ? i : i + 1;                                    \
+      src_dims[i] = dims[dim];                                                 \
+    }                                                                          \
+                                                                               \
+    Tensor<T, NumDims - 1, Layout, Index> src(src_dims);                       \
+    src.setRandom();                                                           \
+                                                                               \
+    const auto offset = internal::random<Index>(0, dims[(CHIP_DIM)] - 1);      \
+                                                                               \
+    Tensor<T, NumDims, Layout, Index> random(dims);                            \
+    random.setZero();                                                          \
+                                                                               \
+    Tensor<T, NumDims, Layout, Index> golden(dims);                            \
+    golden = random;                                                           \
+    golden.template chip<(CHIP_DIM)>(offset) = src;                            \
+                                                                               \
+    Tensor<T, NumDims, Layout, Index> dst(dims);                               \
+    dst = random;                                                              \
+    auto expr = dst.template chip<(CHIP_DIM)>(offset);                         \
+                                                                               \
+    using Assign = TensorAssignOp<decltype(expr), const decltype(src)>;        \
+    using Executor =                                                           \
+        internal::TensorExecutor<const Assign, Device, Vectorizable, Tiling>;  \
+                                                                               \
+    Executor::run(Assign(expr, src), d);                                       \
+                                                                               \
+    for (Index i = 0; i < dst.dimensions().TotalSize(); ++i) {                 \
+      VERIFY_IS_EQUAL(dst.coeff(i), golden.coeff(i));                          \
+    }                                                                          \
+  }
+
+  TEST_CHIPPING(0)
+  TEST_CHIPPING(1)
+  TEST_CHIPPING(2)
+  TEST_CHIPPING(3)
+  TEST_CHIPPING(4)
+  TEST_CHIPPING(5)
+
+#undef TEST_CHIPPING
+}
+
+template <typename T, int NumDims, typename Device, bool Vectorizable,
+          TiledEvaluation Tiling, int Layout>
+static void test_execute_shuffle_rvalue(Device d) {
   static constexpr int Options = 0 | Layout;
 
   auto dims = RandomDims<NumDims>(1, 10);
@@ -247,7 +241,8 @@ static void test_execute_shuffle_rvalue(Device d)
   src.setRandom();
 
   DSizes<Index, NumDims> shuffle;
-  for (int i = 0; i < NumDims; ++i) shuffle[i] = i;
+  for (int i = 0; i < NumDims; ++i)
+    shuffle[i] = i;
 
   // Test all possible shuffle permutations.
   do {
@@ -276,8 +271,7 @@ static void test_execute_shuffle_rvalue(Device d)
 
 template <typename T, int NumDims, typename Device, bool Vectorizable,
           TiledEvaluation Tiling, int Layout>
-static void test_execute_shuffle_lvalue(Device d)
-{
+static void test_execute_shuffle_lvalue(Device d) {
   static constexpr int Options = 0 | Layout;
 
   auto dims = RandomDims<NumDims>(5, 10);
@@ -285,12 +279,14 @@ static void test_execute_shuffle_lvalue(Device d)
   src.setRandom();
 
   DSizes<Index, NumDims> shuffle;
-  for (int i = 0; i < NumDims; ++i) shuffle[i] = i;
+  for (int i = 0; i < NumDims; ++i)
+    shuffle[i] = i;
 
   // Test all possible shuffle permutations.
   do {
     DSizes<Index, NumDims> shuffled_dims;
-    for (int i = 0; i < NumDims; ++i) shuffled_dims[shuffle[i]] = dims[i];
+    for (int i = 0; i < NumDims; ++i)
+      shuffled_dims[shuffle[i]] = dims[i];
 
     // We assume that shuffling on a default device is tested and correct, so
     // we can rely on it to verify correctness of tensor executor and tiling.
@@ -311,9 +307,8 @@ static void test_execute_shuffle_lvalue(Device d)
 }
 
 template <typename T, int NumDims, typename Device, bool Vectorizable,
-    TiledEvaluation Tiling, int Layout>
-static void test_execute_reshape(Device d)
-{
+          TiledEvaluation Tiling, int Layout>
+static void test_execute_reshape(Device d) {
   static_assert(NumDims >= 2, "NumDims must be greater or equal than 2");
 
   static constexpr int ReshapedDims = NumDims - 1;
@@ -325,12 +320,14 @@ static void test_execute_reshape(Device d)
 
   // Multiple 0th dimension and then shuffle.
   std::vector<Index> shuffle;
-  for (int i = 0; i < ReshapedDims; ++i) shuffle.push_back(i);
+  for (int i = 0; i < ReshapedDims; ++i)
+    shuffle.push_back(i);
   std::shuffle(shuffle.begin(), shuffle.end(), std::mt19937());
 
   DSizes<Index, ReshapedDims> reshaped_dims;
   reshaped_dims[shuffle[0]] = dims[0] * dims[1];
-  for (int i = 1; i < ReshapedDims; ++i) reshaped_dims[shuffle[i]] = dims[i + 1];
+  for (int i = 1; i < ReshapedDims; ++i)
+    reshaped_dims[shuffle[i]] = dims[i + 1];
 
   Tensor<T, ReshapedDims, Options, Index> golden = src.reshape(reshaped_dims);
 
@@ -352,8 +349,7 @@ static void test_execute_reshape(Device d)
 
 template <typename T, int NumDims, typename Device, bool Vectorizable,
           TiledEvaluation Tiling, int Layout>
-static void test_execute_slice_rvalue(Device d)
-{
+static void test_execute_slice_rvalue(Device d) {
   static_assert(NumDims >= 2, "NumDims must be greater or equal than 2");
   static constexpr int Options = 0 | Layout;
 
@@ -391,9 +387,8 @@ static void test_execute_slice_rvalue(Device d)
 }
 
 template <typename T, int NumDims, typename Device, bool Vectorizable,
-    TiledEvaluation Tiling, int Layout>
-static void test_execute_slice_lvalue(Device d)
-{
+          TiledEvaluation Tiling, int Layout>
+static void test_execute_slice_lvalue(Device d) {
   static_assert(NumDims >= 2, "NumDims must be greater or equal than 2");
   static constexpr int Options = 0 | Layout;
 
@@ -434,9 +429,8 @@ static void test_execute_slice_lvalue(Device d)
 }
 
 template <typename T, int NumDims, typename Device, bool Vectorizable,
-    TiledEvaluation Tiling, int Layout>
-static void test_execute_broadcasting_of_forced_eval(Device d)
-{
+          TiledEvaluation Tiling, int Layout>
+static void test_execute_broadcasting_of_forced_eval(Device d) {
   static constexpr int Options = 0 | Layout;
 
   auto dims = RandomDims<NumDims>(1, 10);
@@ -465,10 +459,9 @@ static void test_execute_broadcasting_of_forced_eval(Device d)
   }
 }
 
-template<typename T, int NumDims>
-struct DummyGenerator {
-  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
-  T operator()(const array <Index, NumDims>& dims) const {
+template <typename T, int NumDims> struct DummyGenerator {
+  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE T
+  operator()(const array<Index, NumDims> &dims) const {
     T result = static_cast<T>(0);
     for (int i = 0; i < NumDims; ++i) {
       result += static_cast<T>((i + 1) * dims[i]);
@@ -478,9 +471,8 @@ struct DummyGenerator {
 };
 
 template <typename T, int NumDims, typename Device, bool Vectorizable,
-    TiledEvaluation Tiling, int Layout>
-static void test_execute_generator_op(Device d)
-{
+          TiledEvaluation Tiling, int Layout>
+static void test_execute_generator_op(Device d) {
   static constexpr int Options = 0 | Layout;
 
   auto dims = RandomDims<NumDims>(20, 30);
@@ -499,42 +491,7 @@ static void test_execute_generator_op(Device d)
 
   using Assign = TensorAssignOp<decltype(dst), const decltype(expr)>;
   using Executor =
-    internal::TensorExecutor<const Assign, Device, Vectorizable, Tiling>;
-
-  Executor::run(Assign(dst, expr), d);
-
-  for (Index i = 0; i < dst.dimensions().TotalSize(); ++i) {
-    VERIFY_IS_EQUAL(dst.coeff(i), golden.coeff(i));
-  }
-}
-
-template <typename T, int NumDims, typename Device, bool Vectorizable,
-    TiledEvaluation Tiling, int Layout>
-static void test_execute_reverse_rvalue(Device d)
-{
-  static constexpr int Options = 0 | Layout;
-
-  auto dims = RandomDims<NumDims>(1, numext::pow(1000000.0, 1.0 / NumDims));
-  Tensor <T, NumDims, Options, Index> src(dims);
-  src.setRandom();
-
-  // Reverse half of the dimensions.
-  Eigen::array<bool, NumDims> reverse;
-  for (int i = 0; i < NumDims; ++i) reverse[i] = internal::random<bool>();
-
-  const auto expr = src.reverse(reverse);
-
-  // We assume that reversing on a default device is tested and correct, so
-  // we can rely on it to verify correctness of tensor executor and tiling.
-  Tensor <T, NumDims, Options, Index> golden;
-  golden = expr;
-
-  // Now do the reversing using configured tensor executor.
-  Tensor <T, NumDims, Options, Index> dst(golden.dimensions());
-
-  using Assign = TensorAssignOp<decltype(dst), const decltype(expr)>;
-  using Executor =
-    internal::TensorExecutor<const Assign, Device, Vectorizable, Tiling>;
+      internal::TensorExecutor<const Assign, Device, Vectorizable, Tiling>;
 
   Executor::run(Assign(dst, expr), d);
 
@@ -545,8 +502,42 @@ static void test_execute_reverse_rvalue(Device d)
 
 template <typename T, int NumDims, typename Device, bool Vectorizable,
           TiledEvaluation Tiling, int Layout>
-static void test_async_execute_unary_expr(Device d)
-{
+static void test_execute_reverse_rvalue(Device d) {
+  static constexpr int Options = 0 | Layout;
+
+  auto dims = RandomDims<NumDims>(1, numext::pow(1000000.0, 1.0 / NumDims));
+  Tensor<T, NumDims, Options, Index> src(dims);
+  src.setRandom();
+
+  // Reverse half of the dimensions.
+  Eigen::array<bool, NumDims> reverse;
+  for (int i = 0; i < NumDims; ++i)
+    reverse[i] = internal::random<bool>();
+
+  const auto expr = src.reverse(reverse);
+
+  // We assume that reversing on a default device is tested and correct, so
+  // we can rely on it to verify correctness of tensor executor and tiling.
+  Tensor<T, NumDims, Options, Index> golden;
+  golden = expr;
+
+  // Now do the reversing using configured tensor executor.
+  Tensor<T, NumDims, Options, Index> dst(golden.dimensions());
+
+  using Assign = TensorAssignOp<decltype(dst), const decltype(expr)>;
+  using Executor =
+      internal::TensorExecutor<const Assign, Device, Vectorizable, Tiling>;
+
+  Executor::run(Assign(dst, expr), d);
+
+  for (Index i = 0; i < dst.dimensions().TotalSize(); ++i) {
+    VERIFY_IS_EQUAL(dst.coeff(i), golden.coeff(i));
+  }
+}
+
+template <typename T, int NumDims, typename Device, bool Vectorizable,
+          TiledEvaluation Tiling, int Layout>
+static void test_async_execute_unary_expr(Device d) {
   static constexpr int Options = 0 | Layout;
 
   // Pick a large enough tensor size to bypass small tensor block evaluation
@@ -564,8 +555,9 @@ static void test_async_execute_unary_expr(Device d)
 
   using Assign = TensorAssignOp<decltype(dst), const decltype(expr)>;
   using DoneCallback = decltype(on_done);
-  using Executor = internal::TensorAsyncExecutor<const Assign, Device, DoneCallback,
-                                                 Vectorizable, Tiling>;
+  using Executor =
+      internal::TensorAsyncExecutor<const Assign, Device, DoneCallback,
+                                    Vectorizable, Tiling>;
 
   Executor::runAsync(Assign(dst, expr), d, on_done);
   done.Wait();
@@ -578,8 +570,7 @@ static void test_async_execute_unary_expr(Device d)
 
 template <typename T, int NumDims, typename Device, bool Vectorizable,
           TiledEvaluation Tiling, int Layout>
-static void test_async_execute_binary_expr(Device d)
-{
+static void test_async_execute_binary_expr(Device d) {
   static constexpr int Options = 0 | Layout;
 
   // Pick a large enough tensor size to bypass small tensor block evaluation
@@ -600,8 +591,9 @@ static void test_async_execute_binary_expr(Device d)
 
   using Assign = TensorAssignOp<decltype(dst), const decltype(expr)>;
   using DoneCallback = decltype(on_done);
-  using Executor = internal::TensorAsyncExecutor<const Assign, Device, DoneCallback,
-                                                 Vectorizable, Tiling>;
+  using Executor =
+      internal::TensorAsyncExecutor<const Assign, Device, DoneCallback,
+                                    Vectorizable, Tiling>;
 
   Executor::runAsync(Assign(dst, expr), d, on_done);
   done.Wait();
@@ -613,42 +605,89 @@ static void test_async_execute_binary_expr(Device d)
 }
 
 #ifdef EIGEN_DONT_VECTORIZE
-#define VECTORIZABLE(VAL) !EIGEN_DONT_VECTORIZE && VAL
+#define VECTORIZABLE(VAL) !EIGEN_DONT_VECTORIZE &&VAL
 #else
 #define VECTORIZABLE(VAL) VAL
 #endif
 
-#define CALL_SUBTEST_PART(PART) \
-  CALL_SUBTEST_##PART
+#define CALL_SUBTEST_PART(PART) CALL_SUBTEST_##PART
 
-#define CALL_SUBTEST_COMBINATIONS(PART, NAME, T, NUM_DIMS)                                                                                 \
-  CALL_SUBTEST_PART(PART)((NAME<T, NUM_DIMS, DefaultDevice,    false,               TiledEvaluation::Off,     ColMajor>(default_device))); \
-  CALL_SUBTEST_PART(PART)((NAME<T, NUM_DIMS, DefaultDevice,    false,               TiledEvaluation::On,  ColMajor>(default_device)));     \
-  CALL_SUBTEST_PART(PART)((NAME<T, NUM_DIMS, DefaultDevice,    VECTORIZABLE(true),  TiledEvaluation::Off,     ColMajor>(default_device))); \
-  CALL_SUBTEST_PART(PART)((NAME<T, NUM_DIMS, DefaultDevice,    VECTORIZABLE(true),  TiledEvaluation::On,  ColMajor>(default_device)));     \
-  CALL_SUBTEST_PART(PART)((NAME<T, NUM_DIMS, DefaultDevice,    false,               TiledEvaluation::Off,     RowMajor>(default_device))); \
-  CALL_SUBTEST_PART(PART)((NAME<T, NUM_DIMS, DefaultDevice,    false,               TiledEvaluation::On,  RowMajor>(default_device)));     \
-  CALL_SUBTEST_PART(PART)((NAME<T, NUM_DIMS, DefaultDevice,    VECTORIZABLE(true),  TiledEvaluation::Off,     RowMajor>(default_device))); \
-  CALL_SUBTEST_PART(PART)((NAME<T, NUM_DIMS, DefaultDevice,    VECTORIZABLE(true),  TiledEvaluation::On,  RowMajor>(default_device)));     \
-  CALL_SUBTEST_PART(PART)((NAME<T, NUM_DIMS, ThreadPoolDevice, false,               TiledEvaluation::Off,     ColMajor>(tp_device)));      \
-  CALL_SUBTEST_PART(PART)((NAME<T, NUM_DIMS, ThreadPoolDevice, false,               TiledEvaluation::On,  ColMajor>(tp_device)));          \
-  CALL_SUBTEST_PART(PART)((NAME<T, NUM_DIMS, ThreadPoolDevice, VECTORIZABLE(true),  TiledEvaluation::Off,     ColMajor>(tp_device)));      \
-  CALL_SUBTEST_PART(PART)((NAME<T, NUM_DIMS, ThreadPoolDevice, VECTORIZABLE(true),  TiledEvaluation::On,  ColMajor>(tp_device)));          \
-  CALL_SUBTEST_PART(PART)((NAME<T, NUM_DIMS, ThreadPoolDevice, false,               TiledEvaluation::Off,     RowMajor>(tp_device)));      \
-  CALL_SUBTEST_PART(PART)((NAME<T, NUM_DIMS, ThreadPoolDevice, false,               TiledEvaluation::On,  RowMajor>(tp_device)));          \
-  CALL_SUBTEST_PART(PART)((NAME<T, NUM_DIMS, ThreadPoolDevice, VECTORIZABLE(true),  TiledEvaluation::Off,     RowMajor>(tp_device)));      \
-  CALL_SUBTEST_PART(PART)((NAME<T, NUM_DIMS, ThreadPoolDevice, VECTORIZABLE(true),  TiledEvaluation::On,  RowMajor>(tp_device)))
+#define CALL_SUBTEST_COMBINATIONS(PART, NAME, T, NUM_DIMS)                     \
+  CALL_SUBTEST_PART(PART)                                                      \
+  ((NAME<T, NUM_DIMS, DefaultDevice, false, TiledEvaluation::Off, ColMajor>(   \
+      default_device)));                                                       \
+  CALL_SUBTEST_PART(PART)                                                      \
+  ((NAME<T, NUM_DIMS, DefaultDevice, false, TiledEvaluation::On, ColMajor>(    \
+      default_device)));                                                       \
+  CALL_SUBTEST_PART(PART)                                                      \
+  ((NAME<T, NUM_DIMS, DefaultDevice, VECTORIZABLE(true), TiledEvaluation::Off, \
+         ColMajor>(default_device)));                                          \
+  CALL_SUBTEST_PART(PART)                                                      \
+  ((NAME<T, NUM_DIMS, DefaultDevice, VECTORIZABLE(true), TiledEvaluation::On,  \
+         ColMajor>(default_device)));                                          \
+  CALL_SUBTEST_PART(PART)                                                      \
+  ((NAME<T, NUM_DIMS, DefaultDevice, false, TiledEvaluation::Off, RowMajor>(   \
+      default_device)));                                                       \
+  CALL_SUBTEST_PART(PART)                                                      \
+  ((NAME<T, NUM_DIMS, DefaultDevice, false, TiledEvaluation::On, RowMajor>(    \
+      default_device)));                                                       \
+  CALL_SUBTEST_PART(PART)                                                      \
+  ((NAME<T, NUM_DIMS, DefaultDevice, VECTORIZABLE(true), TiledEvaluation::Off, \
+         RowMajor>(default_device)));                                          \
+  CALL_SUBTEST_PART(PART)                                                      \
+  ((NAME<T, NUM_DIMS, DefaultDevice, VECTORIZABLE(true), TiledEvaluation::On,  \
+         RowMajor>(default_device)));                                          \
+  CALL_SUBTEST_PART(PART)                                                      \
+  ((NAME<T, NUM_DIMS, ThreadPoolDevice, false, TiledEvaluation::Off,           \
+         ColMajor>(tp_device)));                                               \
+  CALL_SUBTEST_PART(PART)                                                      \
+  ((NAME<T, NUM_DIMS, ThreadPoolDevice, false, TiledEvaluation::On, ColMajor>( \
+      tp_device)));                                                            \
+  CALL_SUBTEST_PART(PART)                                                      \
+  ((NAME<T, NUM_DIMS, ThreadPoolDevice, VECTORIZABLE(true),                    \
+         TiledEvaluation::Off, ColMajor>(tp_device)));                         \
+  CALL_SUBTEST_PART(PART)                                                      \
+  ((NAME<T, NUM_DIMS, ThreadPoolDevice, VECTORIZABLE(true),                    \
+         TiledEvaluation::On, ColMajor>(tp_device)));                          \
+  CALL_SUBTEST_PART(PART)                                                      \
+  ((NAME<T, NUM_DIMS, ThreadPoolDevice, false, TiledEvaluation::Off,           \
+         RowMajor>(tp_device)));                                               \
+  CALL_SUBTEST_PART(PART)                                                      \
+  ((NAME<T, NUM_DIMS, ThreadPoolDevice, false, TiledEvaluation::On, RowMajor>( \
+      tp_device)));                                                            \
+  CALL_SUBTEST_PART(PART)                                                      \
+  ((NAME<T, NUM_DIMS, ThreadPoolDevice, VECTORIZABLE(true),                    \
+         TiledEvaluation::Off, RowMajor>(tp_device)));                         \
+  CALL_SUBTEST_PART(PART)                                                      \
+  ((NAME<T, NUM_DIMS, ThreadPoolDevice, VECTORIZABLE(true),                    \
+         TiledEvaluation::On, RowMajor>(tp_device)))
 
 // NOTE: Currently only ThreadPoolDevice supports async expression evaluation.
-#define CALL_ASYNC_SUBTEST_COMBINATIONS(PART, NAME, T, NUM_DIMS)                                                                      \
-  CALL_SUBTEST_PART(PART)((NAME<T, NUM_DIMS, ThreadPoolDevice, false,               TiledEvaluation::Off,     ColMajor>(tp_device))); \
-  CALL_SUBTEST_PART(PART)((NAME<T, NUM_DIMS, ThreadPoolDevice, false,               TiledEvaluation::On,  ColMajor>(tp_device)));     \
-  CALL_SUBTEST_PART(PART)((NAME<T, NUM_DIMS, ThreadPoolDevice, VECTORIZABLE(true),  TiledEvaluation::Off,     ColMajor>(tp_device))); \
-  CALL_SUBTEST_PART(PART)((NAME<T, NUM_DIMS, ThreadPoolDevice, VECTORIZABLE(true),  TiledEvaluation::On,  ColMajor>(tp_device)));     \
-  CALL_SUBTEST_PART(PART)((NAME<T, NUM_DIMS, ThreadPoolDevice, false,               TiledEvaluation::Off,     RowMajor>(tp_device))); \
-  CALL_SUBTEST_PART(PART)((NAME<T, NUM_DIMS, ThreadPoolDevice, false,               TiledEvaluation::On,  RowMajor>(tp_device)));     \
-  CALL_SUBTEST_PART(PART)((NAME<T, NUM_DIMS, ThreadPoolDevice, VECTORIZABLE(true),  TiledEvaluation::Off,     RowMajor>(tp_device))); \
-  CALL_SUBTEST_PART(PART)((NAME<T, NUM_DIMS, ThreadPoolDevice, VECTORIZABLE(true),  TiledEvaluation::On,  RowMajor>(tp_device)))
+#define CALL_ASYNC_SUBTEST_COMBINATIONS(PART, NAME, T, NUM_DIMS)               \
+  CALL_SUBTEST_PART(PART)                                                      \
+  ((NAME<T, NUM_DIMS, ThreadPoolDevice, false, TiledEvaluation::Off,           \
+         ColMajor>(tp_device)));                                               \
+  CALL_SUBTEST_PART(PART)                                                      \
+  ((NAME<T, NUM_DIMS, ThreadPoolDevice, false, TiledEvaluation::On, ColMajor>( \
+      tp_device)));                                                            \
+  CALL_SUBTEST_PART(PART)                                                      \
+  ((NAME<T, NUM_DIMS, ThreadPoolDevice, VECTORIZABLE(true),                    \
+         TiledEvaluation::Off, ColMajor>(tp_device)));                         \
+  CALL_SUBTEST_PART(PART)                                                      \
+  ((NAME<T, NUM_DIMS, ThreadPoolDevice, VECTORIZABLE(true),                    \
+         TiledEvaluation::On, ColMajor>(tp_device)));                          \
+  CALL_SUBTEST_PART(PART)                                                      \
+  ((NAME<T, NUM_DIMS, ThreadPoolDevice, false, TiledEvaluation::Off,           \
+         RowMajor>(tp_device)));                                               \
+  CALL_SUBTEST_PART(PART)                                                      \
+  ((NAME<T, NUM_DIMS, ThreadPoolDevice, false, TiledEvaluation::On, RowMajor>( \
+      tp_device)));                                                            \
+  CALL_SUBTEST_PART(PART)                                                      \
+  ((NAME<T, NUM_DIMS, ThreadPoolDevice, VECTORIZABLE(true),                    \
+         TiledEvaluation::Off, RowMajor>(tp_device)));                         \
+  CALL_SUBTEST_PART(PART)                                                      \
+  ((NAME<T, NUM_DIMS, ThreadPoolDevice, VECTORIZABLE(true),                    \
+         TiledEvaluation::On, RowMajor>(tp_device)))
 
 EIGEN_DECLARE_TEST(cxx11_tensor_executor) {
   Eigen::DefaultDevice default_device;
@@ -702,10 +741,14 @@ EIGEN_DECLARE_TEST(cxx11_tensor_executor) {
   CALL_SUBTEST_COMBINATIONS(11, test_execute_slice_lvalue, float, 4);
   CALL_SUBTEST_COMBINATIONS(11, test_execute_slice_lvalue, float, 5);
 
-  CALL_SUBTEST_COMBINATIONS(12, test_execute_broadcasting_of_forced_eval, float, 2);
-  CALL_SUBTEST_COMBINATIONS(12, test_execute_broadcasting_of_forced_eval, float, 3);
-  CALL_SUBTEST_COMBINATIONS(12, test_execute_broadcasting_of_forced_eval, float, 4);
-  CALL_SUBTEST_COMBINATIONS(12, test_execute_broadcasting_of_forced_eval, float, 5);
+  CALL_SUBTEST_COMBINATIONS(12, test_execute_broadcasting_of_forced_eval, float,
+                            2);
+  CALL_SUBTEST_COMBINATIONS(12, test_execute_broadcasting_of_forced_eval, float,
+                            3);
+  CALL_SUBTEST_COMBINATIONS(12, test_execute_broadcasting_of_forced_eval, float,
+                            4);
+  CALL_SUBTEST_COMBINATIONS(12, test_execute_broadcasting_of_forced_eval, float,
+                            5);
 
   CALL_SUBTEST_COMBINATIONS(13, test_execute_generator_op, float, 2);
   CALL_SUBTEST_COMBINATIONS(13, test_execute_generator_op, float, 3);

@@ -27,7 +27,7 @@ using Eigen::Tensor;
 using Eigen::TensorMap;
 
 template <typename DataType, int DataLayout, typename IndexType>
-static void test_simple_shuffling_sycl(const Eigen::SyclDevice& sycl_device) {
+static void test_simple_shuffling_sycl(const Eigen::SyclDevice &sycl_device) {
   IndexType sizeDim1 = 2;
   IndexType sizeDim2 = 3;
   IndexType sizeDim3 = 5;
@@ -43,8 +43,8 @@ static void test_simple_shuffling_sycl(const Eigen::SyclDevice& sycl_device) {
   shuffles[1] = 1;
   shuffles[2] = 2;
   shuffles[3] = 3;
-  DataType* gpu_data1 = static_cast<DataType*>(sycl_device.allocate(buffSize));
-  DataType* gpu_data2 = static_cast<DataType*>(sycl_device.allocate(buffSize));
+  DataType *gpu_data1 = static_cast<DataType *>(sycl_device.allocate(buffSize));
+  DataType *gpu_data2 = static_cast<DataType *>(sycl_device.allocate(buffSize));
 
   TensorMap<Tensor<DataType, 4, DataLayout, IndexType>> gpu1(gpu_data1,
                                                              tensorRange);
@@ -79,7 +79,7 @@ static void test_simple_shuffling_sycl(const Eigen::SyclDevice& sycl_device) {
   array<IndexType, 4> tensorrangeShuffle = {
       {sizeDim3, sizeDim4, sizeDim2, sizeDim1}};
   Tensor<DataType, 4, DataLayout, IndexType> shuffle(tensorrangeShuffle);
-  DataType* gpu_data3 = static_cast<DataType*>(sycl_device.allocate(buffSize));
+  DataType *gpu_data3 = static_cast<DataType *>(sycl_device.allocate(buffSize));
   TensorMap<Tensor<DataType, 4, DataLayout, IndexType>> gpu3(
       gpu_data3, tensorrangeShuffle);
 
@@ -111,7 +111,7 @@ void sycl_shuffling_test_per_device(dev_Selector s) {
   test_simple_shuffling_sycl<DataType, ColMajor, int64_t>(sycl_device);
 }
 EIGEN_DECLARE_TEST(cxx11_tensor_shuffling_sycl) {
-  for (const auto& device : Eigen::get_sycl_supported_devices()) {
+  for (const auto &device : Eigen::get_sycl_supported_devices()) {
     CALL_SUBTEST(sycl_shuffling_test_per_device<float>(device));
   }
 }

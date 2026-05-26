@@ -16,7 +16,8 @@ private:
     int n;
 
 public:
-    Rosenbrock(int n_) : n(n_) {}
+    Rosenbrock(int n_) :
+        n(n_) {}
     Scalar operator()(const Vector& x, Vector& grad)
     {
         Scalar fx = 0.0;
@@ -25,7 +26,7 @@ public:
             Scalar t1 = 1.0 - x[i];
             Scalar t2 = 10 * (x[i + 1] - x[i] * x[i]);
             grad[i + 1] = 20 * t2;
-            grad[i]     = -2.0 * (x[i] * grad[i + 1] + t1);
+            grad[i] = -2.0 * (x[i] * grad[i + 1] + t1);
             fx += t1 * t1 + t2 * t2;
         }
         if (!std::isfinite(fx))
@@ -57,7 +58,8 @@ int main()
                 throw std::runtime_error("Error is larger than 1e-4");
             }
         }
-        std::cout << "Test passed!" << std::endl << std::endl;
+        std::cout << "Test passed!" << std::endl
+                  << std::endl;
     }
 
     return 0;

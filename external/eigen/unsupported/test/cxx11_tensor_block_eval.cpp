@@ -27,8 +27,7 @@ static DSizes<Index, NumDims> RandomDims(Index min, Index max) {
 
 // Block offsets and extents allows to construct a TensorSlicingOp corresponding
 // to a TensorBlockDescriptor.
-template <int NumDims>
-struct TensorBlockParams {
+template <int NumDims> struct TensorBlockParams {
   DSizes<Index, NumDims> offsets;
   DSizes<Index, NumDims> sizes;
   TensorBlockDescriptor<NumDims, Index> desc;
@@ -59,8 +58,8 @@ static TensorBlockParams<NumDims> RandomBlock(DSizes<Index, NumDims> dims,
 // Generate block with block sizes skewed towards inner dimensions. This type of
 // block is required for evaluating broadcast expressions.
 template <int Layout, int NumDims>
-static TensorBlockParams<NumDims> SkewedInnerBlock(
-    DSizes<Index, NumDims> dims) {
+static TensorBlockParams<NumDims>
+SkewedInnerBlock(DSizes<Index, NumDims> dims) {
   using BlockMapper = internal::TensorBlockMapper<NumDims, Layout, Index>;
   BlockMapper block_mapper(dims,
                            {internal::TensorBlockShapeType::kSkewedInnerDims,
@@ -83,14 +82,16 @@ static TensorBlockParams<NumDims> SkewedInnerBlock(
       index -= idx * strides[i];
       offsets[i] = idx;
     }
-    if (NumDims > 0) offsets[0] = index;
+    if (NumDims > 0)
+      offsets[0] = index;
   } else {
     for (int i = 0; i < NumDims - 1; ++i) {
       const Index idx = index / strides[i];
       index -= idx * strides[i];
       offsets[i] = idx;
     }
-    if (NumDims > 0) offsets[NumDims - 1] = index;
+    if (NumDims > 0)
+      offsets[NumDims - 1] = index;
   }
 
   return {offsets, sizes, block};
@@ -99,7 +100,8 @@ static TensorBlockParams<NumDims> SkewedInnerBlock(
 template <int NumDims>
 static TensorBlockParams<NumDims> FixedSizeBlock(DSizes<Index, NumDims> dims) {
   DSizes<Index, NumDims> offsets;
-  for (int i = 0; i < NumDims; ++i) offsets[i] = 0;
+  for (int i = 0; i < NumDims; ++i)
+    offsets[i] = 0;
 
   return {offsets, dims, TensorBlockDescriptor<NumDims, Index>(0, dims)};
 }
@@ -167,7 +169,8 @@ static void VerifyBlockEvaluator(Expression expr, GenBlockParams gen_block) {
       block = dst;
     } else {
       DSizes<Index, NumDims> offsets;
-      for (int i = 0; i < NumDims; ++i) offsets[i] = 0;
+      for (int i = 0; i < NumDims; ++i)
+        offsets[i] = 0;
       block = dst.slice(offsets, block.dimensions());
     }
 
@@ -175,8 +178,9 @@ static void VerifyBlockEvaluator(Expression expr, GenBlockParams gen_block) {
     // Assign to block from expression.
     auto b_expr = tensor_block.expr();
 
-    // We explicitly disable vectorization and tiling, to run a simple coefficient
-    // wise assignment loop, because it's very simple and should be correct.
+    // We explicitly disable vectorization and tiling, to run a simple
+    // coefficient wise assignment loop, because it's very simple and should be
+    // correct.
     using BlockAssign = TensorAssignOp<decltype(block), const decltype(b_expr)>;
     using BlockExecutor = TensorExecutor<const BlockAssign, Device, false,
                                          internal::TiledEvaluation::Off>;
@@ -257,7 +261,8 @@ static void test_eval_tensor_broadcast() {
   DSizes<Index, NumDims> bcast = RandomDims<NumDims>(1, 5);
 
   DSizes<Index, NumDims> bcasted_dims;
-  for (int i = 0; i < NumDims; ++i) bcasted_dims[i] = dims[i] * bcast[i];
+  for (int i = 0; i < NumDims; ++i)
+    bcasted_dims[i] = dims[i] * bcast[i];
 
   VerifyBlockEvaluator<T, NumDims, Layout>(
       input.broadcast(bcast),
@@ -399,10 +404,8 @@ static void test_eval_tensor_chipping() {
       [&chipped_dims]() { return RandomBlock<Layout>(chipped_dims, 1, 10); });
 }
 
-
-template<typename T, int NumDims>
-struct SimpleTensorGenerator {
-  T operator()(const array<Index, NumDims>& coords) const {
+template <typename T, int NumDims> struct SimpleTensorGenerator {
+  T operator()(const array<Index, NumDims> &coords) const {
     T result = static_cast<T>(0);
     for (int i = 0; i < NumDims; ++i) {
       result += static_cast<T>((i + 1) * coords[i]);
@@ -412,9 +415,8 @@ struct SimpleTensorGenerator {
 };
 
 // Boolean specialization to avoid -Wint-in-bool-context warnings on GCC.
-template<int NumDims>
-struct SimpleTensorGenerator<bool, NumDims> {
-  bool operator()(const array<Index, NumDims>& coords) const {
+template <int NumDims> struct SimpleTensorGenerator<bool, NumDims> {
+  bool operator()(const array<Index, NumDims> &coords) const {
     bool result = false;
     for (int i = 0; i < NumDims; ++i) {
       result ^= coords[i];
@@ -422,7 +424,6 @@ struct SimpleTensorGenerator<bool, NumDims> {
     return result;
   }
 };
-
 
 template <typename T, int NumDims, int Layout>
 static void test_eval_tensor_generator() {
@@ -448,7 +449,8 @@ static void test_eval_tensor_reverse() {
 
   // Randomly reverse dimensions.
   Eigen::DSizes<bool, NumDims> reverse;
-  for (int i = 0; i < NumDims; ++i) reverse[i] = internal::random<bool>();
+  for (int i = 0; i < NumDims; ++i)
+    reverse[i] = internal::random<bool>();
 
   VerifyBlockEvaluator<T, NumDims, Layout>(
       input.reverse(reverse), [&dims]() { return FixedSizeBlock(dims); });
@@ -490,11 +492,13 @@ static void test_eval_tensor_shuffle() {
   input.setRandom();
 
   DSizes<Index, NumDims> shuffle;
-  for (int i = 0; i < NumDims; ++i) shuffle[i] = i;
+  for (int i = 0; i < NumDims; ++i)
+    shuffle[i] = i;
 
   do {
     DSizes<Index, NumDims> shuffled_dims;
-    for (int i = 0; i < NumDims; ++i) shuffled_dims[i] = dims[shuffle[i]];
+    for (int i = 0; i < NumDims; ++i)
+      shuffled_dims[i] = dims[shuffle[i]];
 
     VerifyBlockEvaluator<T, NumDims, Layout>(
         input.shuffle(shuffle),
@@ -533,8 +537,7 @@ static void test_eval_tensor_reshape_with_bcast() {
       [dims]() { return SkewedInnerBlock<Layout, 2>(dims); });
 }
 
-template <typename T, int Layout>
-static void test_eval_tensor_forced_eval() {
+template <typename T, int Layout> static void test_eval_tensor_forced_eval() {
   Index dim = internal::random<Index>(1, 100);
 
   Tensor<T, 2, Layout> lhs(dim, 1);
@@ -558,7 +561,8 @@ static void test_eval_tensor_forced_eval() {
 
 template <typename T, int Layout>
 static void test_eval_tensor_chipping_of_bcast() {
-  if (Layout != static_cast<int>(RowMajor)) return;
+  if (Layout != static_cast<int>(RowMajor))
+    return;
 
   Index dim0 = internal::random<Index>(1, 10);
   Index dim1 = internal::random<Index>(1, 10);
@@ -590,7 +594,7 @@ static void test_eval_tensor_chipping_of_bcast() {
 
 template <typename T, int NumDims, int Layout, int NumExprDims = NumDims,
           typename Expression, typename GenBlockParams>
-static void VerifyBlockAssignment(Tensor<T, NumDims, Layout>& tensor,
+static void VerifyBlockAssignment(Tensor<T, NumDims, Layout> &tensor,
                                   Expression expr, GenBlockParams gen_block) {
   using Device = DefaultDevice;
   auto d = Device();
@@ -749,13 +753,15 @@ static void test_assign_to_tensor_shuffle() {
   Tensor<T, NumDims, Layout> tensor(dims);
 
   DSizes<Index, NumDims> shuffle;
-  for (int i = 0; i < NumDims; ++i) shuffle[i] = i;
+  for (int i = 0; i < NumDims; ++i)
+    shuffle[i] = i;
 
   TensorMap<Tensor<T, NumDims, Layout>> map(tensor.data(), dims);
 
   do {
     DSizes<Index, NumDims> shuffled_dims;
-    for (int i = 0; i < NumDims; ++i) shuffled_dims[i] = dims[shuffle[i]];
+    for (int i = 0; i < NumDims; ++i)
+      shuffled_dims[i] = dims[shuffle[i]];
 
     VerifyBlockAssignment<T, NumDims, Layout>(
         tensor, map.shuffle(shuffle),
@@ -771,57 +777,56 @@ static void test_assign_to_tensor_shuffle() {
 
 // -------------------------------------------------------------------------- //
 
-#define CALL_SUBTEST_PART(PART) \
-  CALL_SUBTEST_##PART
+#define CALL_SUBTEST_PART(PART) CALL_SUBTEST_##PART
 
-#define CALL_SUBTESTS_DIMS_LAYOUTS_TYPES(PART, NAME)           \
-  CALL_SUBTEST_PART(PART)((NAME<float, 1, RowMajor>())); \
-  CALL_SUBTEST_PART(PART)((NAME<float, 2, RowMajor>())); \
-  CALL_SUBTEST_PART(PART)((NAME<float, 3, RowMajor>())); \
-  CALL_SUBTEST_PART(PART)((NAME<float, 4, RowMajor>())); \
-  CALL_SUBTEST_PART(PART)((NAME<float, 5, RowMajor>())); \
-  CALL_SUBTEST_PART(PART)((NAME<float, 1, ColMajor>())); \
-  CALL_SUBTEST_PART(PART)((NAME<float, 2, ColMajor>())); \
-  CALL_SUBTEST_PART(PART)((NAME<float, 4, ColMajor>())); \
-  CALL_SUBTEST_PART(PART)((NAME<float, 4, ColMajor>())); \
-  CALL_SUBTEST_PART(PART)((NAME<float, 5, ColMajor>())); \
-  CALL_SUBTEST_PART(PART)((NAME<int, 1, RowMajor>())); \
-  CALL_SUBTEST_PART(PART)((NAME<int, 2, RowMajor>())); \
-  CALL_SUBTEST_PART(PART)((NAME<int, 3, RowMajor>())); \
-  CALL_SUBTEST_PART(PART)((NAME<int, 4, RowMajor>())); \
-  CALL_SUBTEST_PART(PART)((NAME<int, 5, RowMajor>())); \
-  CALL_SUBTEST_PART(PART)((NAME<int, 1, ColMajor>())); \
-  CALL_SUBTEST_PART(PART)((NAME<int, 2, ColMajor>())); \
-  CALL_SUBTEST_PART(PART)((NAME<int, 4, ColMajor>())); \
-  CALL_SUBTEST_PART(PART)((NAME<int, 4, ColMajor>())); \
-  CALL_SUBTEST_PART(PART)((NAME<int, 5, ColMajor>())); \
-  CALL_SUBTEST_PART(PART)((NAME<bool, 1, RowMajor>())); \
-  CALL_SUBTEST_PART(PART)((NAME<bool, 2, RowMajor>())); \
-  CALL_SUBTEST_PART(PART)((NAME<bool, 3, RowMajor>())); \
-  CALL_SUBTEST_PART(PART)((NAME<bool, 4, RowMajor>())); \
-  CALL_SUBTEST_PART(PART)((NAME<bool, 5, RowMajor>())); \
-  CALL_SUBTEST_PART(PART)((NAME<bool, 1, ColMajor>())); \
-  CALL_SUBTEST_PART(PART)((NAME<bool, 2, ColMajor>())); \
-  CALL_SUBTEST_PART(PART)((NAME<bool, 4, ColMajor>())); \
-  CALL_SUBTEST_PART(PART)((NAME<bool, 4, ColMajor>())); \
+#define CALL_SUBTESTS_DIMS_LAYOUTS_TYPES(PART, NAME)                           \
+  CALL_SUBTEST_PART(PART)((NAME<float, 1, RowMajor>()));                       \
+  CALL_SUBTEST_PART(PART)((NAME<float, 2, RowMajor>()));                       \
+  CALL_SUBTEST_PART(PART)((NAME<float, 3, RowMajor>()));                       \
+  CALL_SUBTEST_PART(PART)((NAME<float, 4, RowMajor>()));                       \
+  CALL_SUBTEST_PART(PART)((NAME<float, 5, RowMajor>()));                       \
+  CALL_SUBTEST_PART(PART)((NAME<float, 1, ColMajor>()));                       \
+  CALL_SUBTEST_PART(PART)((NAME<float, 2, ColMajor>()));                       \
+  CALL_SUBTEST_PART(PART)((NAME<float, 4, ColMajor>()));                       \
+  CALL_SUBTEST_PART(PART)((NAME<float, 4, ColMajor>()));                       \
+  CALL_SUBTEST_PART(PART)((NAME<float, 5, ColMajor>()));                       \
+  CALL_SUBTEST_PART(PART)((NAME<int, 1, RowMajor>()));                         \
+  CALL_SUBTEST_PART(PART)((NAME<int, 2, RowMajor>()));                         \
+  CALL_SUBTEST_PART(PART)((NAME<int, 3, RowMajor>()));                         \
+  CALL_SUBTEST_PART(PART)((NAME<int, 4, RowMajor>()));                         \
+  CALL_SUBTEST_PART(PART)((NAME<int, 5, RowMajor>()));                         \
+  CALL_SUBTEST_PART(PART)((NAME<int, 1, ColMajor>()));                         \
+  CALL_SUBTEST_PART(PART)((NAME<int, 2, ColMajor>()));                         \
+  CALL_SUBTEST_PART(PART)((NAME<int, 4, ColMajor>()));                         \
+  CALL_SUBTEST_PART(PART)((NAME<int, 4, ColMajor>()));                         \
+  CALL_SUBTEST_PART(PART)((NAME<int, 5, ColMajor>()));                         \
+  CALL_SUBTEST_PART(PART)((NAME<bool, 1, RowMajor>()));                        \
+  CALL_SUBTEST_PART(PART)((NAME<bool, 2, RowMajor>()));                        \
+  CALL_SUBTEST_PART(PART)((NAME<bool, 3, RowMajor>()));                        \
+  CALL_SUBTEST_PART(PART)((NAME<bool, 4, RowMajor>()));                        \
+  CALL_SUBTEST_PART(PART)((NAME<bool, 5, RowMajor>()));                        \
+  CALL_SUBTEST_PART(PART)((NAME<bool, 1, ColMajor>()));                        \
+  CALL_SUBTEST_PART(PART)((NAME<bool, 2, ColMajor>()));                        \
+  CALL_SUBTEST_PART(PART)((NAME<bool, 4, ColMajor>()));                        \
+  CALL_SUBTEST_PART(PART)((NAME<bool, 4, ColMajor>()));                        \
   CALL_SUBTEST_PART(PART)((NAME<bool, 5, ColMajor>()))
 
-#define CALL_SUBTESTS_DIMS_LAYOUTS(PART, NAME)     \
-  CALL_SUBTEST_PART(PART)((NAME<float, 1, RowMajor>())); \
-  CALL_SUBTEST_PART(PART)((NAME<float, 2, RowMajor>())); \
-  CALL_SUBTEST_PART(PART)((NAME<float, 3, RowMajor>())); \
-  CALL_SUBTEST_PART(PART)((NAME<float, 4, RowMajor>())); \
-  CALL_SUBTEST_PART(PART)((NAME<float, 5, RowMajor>())); \
-  CALL_SUBTEST_PART(PART)((NAME<float, 1, ColMajor>())); \
-  CALL_SUBTEST_PART(PART)((NAME<float, 2, ColMajor>())); \
-  CALL_SUBTEST_PART(PART)((NAME<float, 4, ColMajor>())); \
-  CALL_SUBTEST_PART(PART)((NAME<float, 4, ColMajor>())); \
+#define CALL_SUBTESTS_DIMS_LAYOUTS(PART, NAME)                                 \
+  CALL_SUBTEST_PART(PART)((NAME<float, 1, RowMajor>()));                       \
+  CALL_SUBTEST_PART(PART)((NAME<float, 2, RowMajor>()));                       \
+  CALL_SUBTEST_PART(PART)((NAME<float, 3, RowMajor>()));                       \
+  CALL_SUBTEST_PART(PART)((NAME<float, 4, RowMajor>()));                       \
+  CALL_SUBTEST_PART(PART)((NAME<float, 5, RowMajor>()));                       \
+  CALL_SUBTEST_PART(PART)((NAME<float, 1, ColMajor>()));                       \
+  CALL_SUBTEST_PART(PART)((NAME<float, 2, ColMajor>()));                       \
+  CALL_SUBTEST_PART(PART)((NAME<float, 4, ColMajor>()));                       \
+  CALL_SUBTEST_PART(PART)((NAME<float, 4, ColMajor>()));                       \
   CALL_SUBTEST_PART(PART)((NAME<float, 5, ColMajor>()))
 
-#define CALL_SUBTESTS_LAYOUTS_TYPES(PART, NAME)       \
-  CALL_SUBTEST_PART(PART)((NAME<float, RowMajor>())); \
-  CALL_SUBTEST_PART(PART)((NAME<float, ColMajor>()));  \
-  CALL_SUBTEST_PART(PART)((NAME<bool, RowMajor>())); \
+#define CALL_SUBTESTS_LAYOUTS_TYPES(PART, NAME)                                \
+  CALL_SUBTEST_PART(PART)((NAME<float, RowMajor>()));                          \
+  CALL_SUBTEST_PART(PART)((NAME<float, ColMajor>()));                          \
+  CALL_SUBTEST_PART(PART)((NAME<bool, RowMajor>()));                           \
   CALL_SUBTEST_PART(PART)((NAME<bool, ColMajor>()))
 
 EIGEN_DECLARE_TEST(cxx11_tensor_block_eval) {

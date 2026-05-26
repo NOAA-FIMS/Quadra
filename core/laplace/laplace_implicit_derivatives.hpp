@@ -9,30 +9,30 @@
 #include <Eigen/Sparse>
 #include <Eigen/SparseCholesky>
 
-#include "random_effect_hessian.hpp"
 #include "laplace_objective.hpp"
+#include "random_effect_hessian.hpp"
 #include "sparse_factorization_cache.hpp"
 
 namespace quadra {
 
 struct LaplaceImplicitDerivativeOptions {
-    double hessian_drop_tol_m = 0.0;
+  double hessian_drop_tol_m = 0.0;
 };
 
 struct LaplaceImplicitDerivativeResult {
-    Eigen::MatrixXd H_u_theta_m;
-    Eigen::MatrixXd du_dtheta_m;
+  Eigen::MatrixXd H_u_theta_m;
+  Eigen::MatrixXd du_dtheta_m;
 
-    Eigen::SparseMatrix<double> H_uu_m;
+  Eigen::SparseMatrix<double> H_uu_m;
 
-    std::vector<double> fixed_m;
-    std::vector<double> u_hat_m;
-    std::vector<double> full_m;
+  std::vector<double> fixed_m;
+  std::vector<double> u_hat_m;
+  std::vector<double> full_m;
 
-    bool converged_m = false;
-    bool success_m = false;
+  bool converged_m = false;
+  bool success_m = false;
 
-    std::string message_m;
+  std::string message_m;
 };
 
 // Dense finite-difference mixed Hessian wrt:
@@ -40,212 +40,162 @@ struct LaplaceImplicitDerivativeResult {
 // cols: fixed effects theta
 
 template <class Model>
-inline Eigen::MatrixXd ad_mixed_hessian(
-    Model& model,
-    const std::vector<double>& fixed,
-    const std::vector<double>& random,
-    const ParameterPartition& partition
-) {
-    const size_t n_fixed = fixed.size();
-    const size_t n_random = random.size();
+inline Eigen::MatrixXd ad_mixed_hessian(Model &model,
+                                        const std::vector<double> &fixed,
+                                        const std::vector<double> &random,
+                                        const ParameterPartition &partition) {
+  const size_t n_fixed = fixed.size();
+  const size_t n_random = random.size();
 
-    if (partition.fixed_indices_m.size() != n_fixed) {
-        throw std::invalid_argument(
-            "ad_mixed_hessian: fixed vector has incorrect length");
-    }
+  if (partition.fixed_indices_m.size() != n_fixed) {
+    throw std::invalid_argument(
+        "ad_mixed_hessian: fixed vector has incorrect length");
+  }
 
-    if (partition.random_indices_m.size() != n_random) {
-        throw std::invalid_argument(
-            "ad_mixed_hessian: random vector has incorrect length");
-    }
+  if (partition.random_indices_m.size() != n_random) {
+    throw std::invalid_argument(
+        "ad_mixed_hessian: random vector has incorrect length");
+  }
 
-    const size_t n_total = n_fixed + n_random;
+  const size_t n_total = n_fixed + n_random;
 
-    std::vector<double> full(n_total, 0.0);
+  std::vector<double> full(n_total, 0.0);
 
-    for (size_t i = 0; i < n_fixed; ++i) {
-        full[static_cast<size_t>(partition.fixed_indices_m[i])] = fixed[i];
-    }
+  for (size_t i = 0; i < n_fixed; ++i) {
+    full[static_cast<size_t>(partition.fixed_indices_m[i])] = fixed[i];
+  }
 
-    for (size_t i = 0; i < n_random; ++i) {
-        full[static_cast<size_t>(partition.random_indices_m[i])] = random[i];
-    }
+  for (size_t i = 0; i < n_random; ++i) {
+    full[static_cast<size_t>(partition.random_indices_m[i])] = random[i];
+  }
 
-    had::ADGraph graph;
-    had::g_ADGraph = &graph;
+  had::ADGraph graph;
+  had::g_ADGraph = &graph;
 
-    ModelReportContext ctx;
-    model.initialize(ctx);
+  ModelReportContext ctx;
+  model.initialize(ctx);
 
-    std::vector<AD> full_ad;
-    full_ad.reserve(full.size());
+  std::vector<AD> full_ad;
+  full_ad.reserve(full.size());
 
-    for (double x : full) {
-        full_ad.emplace_back(x);
-    }
+  for (double x : full) {
+    full_ad.emplace_back(x);
+  }
 
-    AD objective =
-        model.template evaluate<AD>(full_ad, ctx);
+  AD objective = model.template evaluate<AD>(full_ad, ctx);
 
-    had::ZeroAdjoints(graph);
-    had::SetAdjoint(objective, 1.0);
-    had::PropagateAdjointDirectional();
+  had::ZeroAdjoints(graph);
+  had::SetAdjoint(objective, 1.0);
+  had::PropagateAdjointDirectional();
 
-    Eigen::MatrixXd H =
-        Eigen::MatrixXd::Zero(
-            static_cast<Eigen::Index>(n_random),
-            static_cast<Eigen::Index>(n_fixed));
+  Eigen::MatrixXd H = Eigen::MatrixXd::Zero(static_cast<Eigen::Index>(n_random),
+                                            static_cast<Eigen::Index>(n_fixed));
 
-    for (size_t i = 0; i < n_random; ++i) {
-        const int random_full_index =
-            partition.random_indices_m[i];
-
-        for (size_t j = 0; j < n_fixed; ++j) {
-            const int fixed_full_index =
-                partition.fixed_indices_m[j];
-
-            H(static_cast<Eigen::Index>(i),
-              static_cast<Eigen::Index>(j)) =
-                had::GetAdjoint(
-                    full_ad[static_cast<size_t>(random_full_index)],
-                    full_ad[static_cast<size_t>(fixed_full_index)]);
-        }
-    }
-
-    return H;
-}
-
-
-template <class Model>
-inline Eigen::MatrixXd finite_difference_mixed_hessian(
-    Model& model,
-    const std::vector<double>& fixed,
-    const std::vector<double>& random,
-    const ParameterPartition& partition,
-    double eps = 1e-6
-) {
-    const size_t n_random = random.size();
-    const size_t n_fixed = fixed.size();
-
-    Eigen::MatrixXd H(n_random, n_fixed);
+  for (size_t i = 0; i < n_random; ++i) {
+    const int random_full_index = partition.random_indices_m[i];
 
     for (size_t j = 0; j < n_fixed; ++j) {
-        std::vector<double> theta_plus = fixed;
-        std::vector<double> theta_minus = fixed;
+      const int fixed_full_index = partition.fixed_indices_m[j];
 
-        theta_plus[j] += eps;
-        theta_minus[j] -= eps;
-
-        auto g_plus =
-            evaluate_random_effect_hessian(
-                model,
-                theta_plus,
-                random,
-                partition
-            );
-
-        auto g_minus =
-            evaluate_random_effect_hessian(
-                model,
-                theta_minus,
-                random,
-                partition
-            );
-
-        for (size_t i = 0; i < n_random; ++i) {
-            H(static_cast<int>(i), static_cast<int>(j)) =
-                (g_plus.gradient_random_m[i] -
-                 g_minus.gradient_random_m[i]) / (2.0 * eps);
-        }
+      H(static_cast<Eigen::Index>(i), static_cast<Eigen::Index>(j)) =
+          had::GetAdjoint(full_ad[static_cast<size_t>(random_full_index)],
+                          full_ad[static_cast<size_t>(fixed_full_index)]);
     }
+  }
 
-    return H;
+  return H;
 }
 
 template <class Model>
-inline LaplaceImplicitDerivativeResult
-evaluate_laplace_implicit_derivatives(
-    Model& model,
-    const std::vector<double>& fixed,
-    const std::vector<double>& random_initial,
-    const ParameterPartition& partition,
-    const LaplaceImplicitDerivativeOptions& options =
-        LaplaceImplicitDerivativeOptions()
-) {
-    LaplaceImplicitDerivativeResult result;
+inline Eigen::MatrixXd
+finite_difference_mixed_hessian(Model &model, const std::vector<double> &fixed,
+                                const std::vector<double> &random,
+                                const ParameterPartition &partition,
+                                double eps = 1e-6) {
+  const size_t n_random = random.size();
+  const size_t n_fixed = fixed.size();
 
-    auto laplace =
-        evaluate_laplace_objective(
-            model,
-            fixed,
-            random_initial,
-            partition
-        );
+  Eigen::MatrixXd H(n_random, n_fixed);
 
-    result.fixed_m = fixed;
-    result.u_hat_m = laplace.u_hat_m;
-    result.full_m = laplace.full_m;
-    result.H_uu_m = laplace.hessian_random_m;
-    result.converged_m = laplace.converged_m;
+  for (size_t j = 0; j < n_fixed; ++j) {
+    std::vector<double> theta_plus = fixed;
+    std::vector<double> theta_minus = fixed;
 
-    if (!laplace.converged_m) {
-        result.message_m = "Laplace objective failed.";
-        return result;
+    theta_plus[j] += eps;
+    theta_minus[j] -= eps;
+
+    auto g_plus =
+        evaluate_random_effect_hessian(model, theta_plus, random, partition);
+
+    auto g_minus =
+        evaluate_random_effect_hessian(model, theta_minus, random, partition);
+
+    for (size_t i = 0; i < n_random; ++i) {
+      H(static_cast<int>(i), static_cast<int>(j)) =
+          (g_plus.gradient_random_m[i] - g_minus.gradient_random_m[i]) /
+          (2.0 * eps);
     }
+  }
 
-    result.H_u_theta_m =
-        ad_mixed_hessian(
-            model,
-            fixed,
-            laplace.u_hat_m,
-            partition
-        );
+  return H;
+}
 
-    SparseLDLTFactorizationCache factorization;
+template <class Model>
+inline LaplaceImplicitDerivativeResult evaluate_laplace_implicit_derivatives(
+    Model &model, const std::vector<double> &fixed,
+    const std::vector<double> &random_initial,
+    const ParameterPartition &partition,
+    const LaplaceImplicitDerivativeOptions &options =
+        LaplaceImplicitDerivativeOptions()) {
+  LaplaceImplicitDerivativeResult result;
 
-    try {
-        factorization.analyze_pattern(
-            laplace.hessian_random_m);
+  auto laplace =
+      evaluate_laplace_objective(model, fixed, random_initial, partition);
 
-        factorization.factorize(
-            laplace.hessian_random_m);
+  result.fixed_m = fixed;
+  result.u_hat_m = laplace.u_hat_m;
+  result.full_m = laplace.full_m;
+  result.H_uu_m = laplace.hessian_random_m;
+  result.converged_m = laplace.converged_m;
 
-        result.du_dtheta_m =
-            -factorization.solve(
-                result.H_u_theta_m);
-    }
-    catch (const std::exception& e) {
-        result.message_m =
-            std::string(
-                "Cached sparse LDLT implicit derivative solve failed: ")
-            + e.what();
+  if (!laplace.converged_m) {
+    result.message_m = "Laplace objective failed.";
+    return result;
+  }
 
-        return result;
-    }
+  result.H_u_theta_m =
+      ad_mixed_hessian(model, fixed, laplace.u_hat_m, partition);
 
-    result.success_m = true;
-    result.message_m = "Implicit derivatives computed.";
+  SparseLDLTFactorizationCache factorization;
+
+  try {
+    factorization.analyze_pattern(laplace.hessian_random_m);
+
+    factorization.factorize(laplace.hessian_random_m);
+
+    result.du_dtheta_m = -factorization.solve(result.H_u_theta_m);
+  } catch (const std::exception &e) {
+    result.message_m =
+        std::string("Cached sparse LDLT implicit derivative solve failed: ") +
+        e.what();
 
     return result;
+  }
+
+  result.success_m = true;
+  result.message_m = "Implicit derivatives computed.";
+
+  return result;
 }
 
 template <class Model>
-inline LaplaceImplicitDerivativeResult
-evaluate_laplace_implicit_derivatives(
-    Model& model,
-    const std::vector<double>& fixed,
-    const std::vector<double>& random_initial,
-    const ParameterSet& parameters,
-    const LaplaceImplicitDerivativeOptions& options =
-        LaplaceImplicitDerivativeOptions()
-) {
-    return evaluate_laplace_implicit_derivatives(
-        model,
-        fixed,
-        random_initial,
-        partition_parameters(parameters),
-        options
-    );
+inline LaplaceImplicitDerivativeResult evaluate_laplace_implicit_derivatives(
+    Model &model, const std::vector<double> &fixed,
+    const std::vector<double> &random_initial, const ParameterSet &parameters,
+    const LaplaceImplicitDerivativeOptions &options =
+        LaplaceImplicitDerivativeOptions()) {
+  return evaluate_laplace_implicit_derivatives(
+      model, fixed, random_initial, partition_parameters(parameters), options);
 }
 
 } // namespace quadra

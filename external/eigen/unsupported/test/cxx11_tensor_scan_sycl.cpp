@@ -23,7 +23,7 @@ using Eigen::Tensor;
 typedef Tensor<float, 1>::DimensionPair DimPair;
 
 template <typename DataType, int DataLayout, typename IndexType>
-void test_sycl_cumsum(const Eigen::SyclDevice& sycl_device, IndexType m_size,
+void test_sycl_cumsum(const Eigen::SyclDevice &sycl_device, IndexType m_size,
                       IndexType k_size, IndexType n_size, int consume_dim,
                       bool exclusive) {
   static const DataType error_threshold = 1e-4f;
@@ -38,10 +38,10 @@ void test_sycl_cumsum(const Eigen::SyclDevice& sycl_device, IndexType m_size,
   std::size_t t_input_bytes = t_input.size() * sizeof(DataType);
   std::size_t t_result_bytes = t_result.size() * sizeof(DataType);
 
-  DataType* gpu_data_in =
-      static_cast<DataType*>(sycl_device.allocate(t_input_bytes));
-  DataType* gpu_data_out =
-      static_cast<DataType*>(sycl_device.allocate(t_result_bytes));
+  DataType *gpu_data_in =
+      static_cast<DataType *>(sycl_device.allocate(t_input_bytes));
+  DataType *gpu_data_out =
+      static_cast<DataType *>(sycl_device.allocate(t_result_bytes));
 
   array<IndexType, 3> tensorRange = {{m_size, k_size, n_size}};
   TensorMap<Tensor<DataType, 3, DataLayout, IndexType>> gpu_t_input(
@@ -77,49 +77,49 @@ void test_sycl_cumsum(const Eigen::SyclDevice& sycl_device, IndexType m_size,
 }
 
 template <typename DataType, typename Dev>
-void sycl_scan_test_exclusive_dim0_per_device(const Dev& sycl_device) {
+void sycl_scan_test_exclusive_dim0_per_device(const Dev &sycl_device) {
   test_sycl_cumsum<DataType, ColMajor, int64_t>(sycl_device, 2049, 1023, 127, 0,
                                                 true);
   test_sycl_cumsum<DataType, RowMajor, int64_t>(sycl_device, 2049, 1023, 127, 0,
                                                 true);
 }
 template <typename DataType, typename Dev>
-void sycl_scan_test_exclusive_dim1_per_device(const Dev& sycl_device) {
+void sycl_scan_test_exclusive_dim1_per_device(const Dev &sycl_device) {
   test_sycl_cumsum<DataType, ColMajor, int64_t>(sycl_device, 1023, 2049, 127, 1,
                                                 true);
   test_sycl_cumsum<DataType, RowMajor, int64_t>(sycl_device, 1023, 2049, 127, 1,
                                                 true);
 }
 template <typename DataType, typename Dev>
-void sycl_scan_test_exclusive_dim2_per_device(const Dev& sycl_device) {
+void sycl_scan_test_exclusive_dim2_per_device(const Dev &sycl_device) {
   test_sycl_cumsum<DataType, ColMajor, int64_t>(sycl_device, 1023, 127, 2049, 2,
                                                 true);
   test_sycl_cumsum<DataType, RowMajor, int64_t>(sycl_device, 1023, 127, 2049, 2,
                                                 true);
 }
 template <typename DataType, typename Dev>
-void sycl_scan_test_inclusive_dim0_per_device(const Dev& sycl_device) {
+void sycl_scan_test_inclusive_dim0_per_device(const Dev &sycl_device) {
   test_sycl_cumsum<DataType, ColMajor, int64_t>(sycl_device, 2049, 1023, 127, 0,
                                                 false);
   test_sycl_cumsum<DataType, RowMajor, int64_t>(sycl_device, 2049, 1023, 127, 0,
                                                 false);
 }
 template <typename DataType, typename Dev>
-void sycl_scan_test_inclusive_dim1_per_device(const Dev& sycl_device) {
+void sycl_scan_test_inclusive_dim1_per_device(const Dev &sycl_device) {
   test_sycl_cumsum<DataType, ColMajor, int64_t>(sycl_device, 1023, 2049, 127, 1,
                                                 false);
   test_sycl_cumsum<DataType, RowMajor, int64_t>(sycl_device, 1023, 2049, 127, 1,
                                                 false);
 }
 template <typename DataType, typename Dev>
-void sycl_scan_test_inclusive_dim2_per_device(const Dev& sycl_device) {
+void sycl_scan_test_inclusive_dim2_per_device(const Dev &sycl_device) {
   test_sycl_cumsum<DataType, ColMajor, int64_t>(sycl_device, 1023, 127, 2049, 2,
                                                 false);
   test_sycl_cumsum<DataType, RowMajor, int64_t>(sycl_device, 1023, 127, 2049, 2,
                                                 false);
 }
 EIGEN_DECLARE_TEST(cxx11_tensor_scan_sycl) {
-  for (const auto& device : Eigen::get_sycl_supported_devices()) {
+  for (const auto &device : Eigen::get_sycl_supported_devices()) {
     std::cout << "Running on "
               << device.template get_info<cl::sycl::info::device::name>()
               << std::endl;

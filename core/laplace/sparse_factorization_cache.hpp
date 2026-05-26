@@ -12,288 +12,252 @@ namespace quadra {
 
 class SparseFactorizationCache {
 public:
-    using SparseMatrix = Eigen::SparseMatrix<double>;
-    using Vector = Eigen::VectorXd;
+  using SparseMatrix = Eigen::SparseMatrix<double>;
+  using Vector = Eigen::VectorXd;
 
-    SparseFactorizationCache() = default;
+  SparseFactorizationCache() = default;
 
-    void analyze_pattern(const SparseMatrix& H) {
-        solver_m.analyzePattern(H);
+  void analyze_pattern(const SparseMatrix &H) {
+    solver_m.analyzePattern(H);
 
-        if (solver_m.info() != Eigen::Success) {
-            analyzed_m = false;
+    if (solver_m.info() != Eigen::Success) {
+      analyzed_m = false;
+      throw std::runtime_error(
+          "SparseFactorizationCache::analyze_pattern failed.");
+    }
+
+    analyzed_m = true;
+    pattern_rows_m = H.rows();
+    pattern_cols_m = H.cols();
+    pattern_nnz_m = H.nonZeros();
+  }
+
+  void factorize(const SparseMatrix &H) {
+    if (!analyzed_m) {
+      analyze_pattern(H);
+    }
+
+    if (H.rows() != pattern_rows_m || H.cols() != pattern_cols_m) {
+      throw std::invalid_argument(
+          "SparseFactorizationCache::factorize matrix dimension changed.");
+    }
+
+    // This is a soft check. The sparsity count can remain the same even if
+    // the pattern changes, so this is not a complete structural guarantee.
+    // It is still useful for catching common accidental pattern changes.
+    if (H.nonZeros() != pattern_nnz_m) {
+      throw std::invalid_argument(
+          "SparseFactorizationCache::factorize matrix nnz changed.");
+    }
+
+    solver_m.factorize(H);
+
+    if (solver_m.info() != Eigen::Success) {
+      factorized_m = false;
+      throw std::runtime_error(
+          "SparseFactorizationCache::factorize numeric factorization failed.");
+    }
+
+    factorized_m = true;
+  }
+
+  void compute(const SparseMatrix &H) {
+    solver_m.compute(H);
+
+    if (solver_m.info() != Eigen::Success) {
+      analyzed_m = false;
+      factorized_m = false;
+      throw std::runtime_error("SparseFactorizationCache::compute failed.");
+    }
+
+    analyzed_m = true;
+    factorized_m = true;
+    pattern_rows_m = H.rows();
+    pattern_cols_m = H.cols();
+    pattern_nnz_m = H.nonZeros();
+  }
+
+  Vector solve(const Vector &b) const {
+    if (!factorized_m) {
+      throw std::runtime_error(
+          "SparseFactorizationCache::solve called before factorize.");
+    }
+
+    Vector x = solver_m.solve(b);
+
+    if (solver_m.info() != Eigen::Success) {
+      throw std::runtime_error("SparseFactorizationCache::solve failed.");
+    }
+
+    return x;
+  }
+
+  double logdet() const {
+    if (!factorized_m) {
+      throw std::runtime_error(
+          "SparseFactorizationCache::logdet called before factorize.");
+    }
+
+    const SparseMatrix L = solver_m.matrixL();
+
+    double out = 0.0;
+
+    for (int k = 0; k < L.outerSize(); ++k) {
+      for (SparseMatrix::InnerIterator it(L, k); it; ++it) {
+        if (it.row() == it.col()) {
+          const double d = it.value();
+
+          if (!(d > 0.0) || !std::isfinite(d)) {
             throw std::runtime_error(
-                "SparseFactorizationCache::analyze_pattern failed."
-            );
-        }
+                "SparseFactorizationCache::logdet nonpositive diagonal.");
+          }
 
-        analyzed_m = true;
-        pattern_rows_m = H.rows();
-        pattern_cols_m = H.cols();
-        pattern_nnz_m = H.nonZeros();
+          out += 2.0 * std::log(d);
+        }
+      }
     }
 
-    void factorize(const SparseMatrix& H) {
-        if (!analyzed_m) {
-            analyze_pattern(H);
-        }
+    return out;
+  }
 
-        if (H.rows() != pattern_rows_m || H.cols() != pattern_cols_m) {
-            throw std::invalid_argument(
-                "SparseFactorizationCache::factorize matrix dimension changed."
-            );
-        }
+  bool analyzed() const { return analyzed_m; }
 
-        // This is a soft check. The sparsity count can remain the same even if
-        // the pattern changes, so this is not a complete structural guarantee.
-        // It is still useful for catching common accidental pattern changes.
-        if (H.nonZeros() != pattern_nnz_m) {
-            throw std::invalid_argument(
-                "SparseFactorizationCache::factorize matrix nnz changed."
-            );
-        }
+  bool factorized() const { return factorized_m; }
 
-        solver_m.factorize(H);
+  int rows() const { return pattern_rows_m; }
 
-        if (solver_m.info() != Eigen::Success) {
-            factorized_m = false;
-            throw std::runtime_error(
-                "SparseFactorizationCache::factorize numeric factorization failed."
-            );
-        }
+  int cols() const { return pattern_cols_m; }
 
-        factorized_m = true;
-    }
-
-    void compute(const SparseMatrix& H) {
-        solver_m.compute(H);
-
-        if (solver_m.info() != Eigen::Success) {
-            analyzed_m = false;
-            factorized_m = false;
-            throw std::runtime_error(
-                "SparseFactorizationCache::compute failed."
-            );
-        }
-
-        analyzed_m = true;
-        factorized_m = true;
-        pattern_rows_m = H.rows();
-        pattern_cols_m = H.cols();
-        pattern_nnz_m = H.nonZeros();
-    }
-
-    Vector solve(const Vector& b) const {
-        if (!factorized_m) {
-            throw std::runtime_error(
-                "SparseFactorizationCache::solve called before factorize."
-            );
-        }
-
-        Vector x = solver_m.solve(b);
-
-        if (solver_m.info() != Eigen::Success) {
-            throw std::runtime_error(
-                "SparseFactorizationCache::solve failed."
-            );
-        }
-
-        return x;
-    }
-
-    double logdet() const {
-        if (!factorized_m) {
-            throw std::runtime_error(
-                "SparseFactorizationCache::logdet called before factorize."
-            );
-        }
-
-        const SparseMatrix L = solver_m.matrixL();
-
-        double out = 0.0;
-
-        for (int k = 0; k < L.outerSize(); ++k) {
-            for (SparseMatrix::InnerIterator it(L, k); it; ++it) {
-                if (it.row() == it.col()) {
-                    const double d = it.value();
-
-                    if (!(d > 0.0) || !std::isfinite(d)) {
-                        throw std::runtime_error(
-                            "SparseFactorizationCache::logdet nonpositive diagonal."
-                        );
-                    }
-
-                    out += 2.0 * std::log(d);
-                }
-            }
-        }
-
-        return out;
-    }
-
-    bool analyzed() const {
-        return analyzed_m;
-    }
-
-    bool factorized() const {
-        return factorized_m;
-    }
-
-    int rows() const {
-        return pattern_rows_m;
-    }
-
-    int cols() const {
-        return pattern_cols_m;
-    }
-
-    int nonzeros() const {
-        return pattern_nnz_m;
-    }
+  int nonzeros() const { return pattern_nnz_m; }
 
 private:
-    Eigen::SimplicialLLT<SparseMatrix> solver_m;
+  Eigen::SimplicialLLT<SparseMatrix> solver_m;
 
-    bool analyzed_m = false;
-    bool factorized_m = false;
+  bool analyzed_m = false;
+  bool factorized_m = false;
 
-    int pattern_rows_m = 0;
-    int pattern_cols_m = 0;
-    int pattern_nnz_m = 0;
+  int pattern_rows_m = 0;
+  int pattern_cols_m = 0;
+  int pattern_nnz_m = 0;
 };
-
 
 class SparseLDLTFactorizationCache {
 public:
-    using SparseMatrix = Eigen::SparseMatrix<double>;
-    using Vector = Eigen::VectorXd;
-    using Matrix = Eigen::MatrixXd;
+  using SparseMatrix = Eigen::SparseMatrix<double>;
+  using Vector = Eigen::VectorXd;
+  using Matrix = Eigen::MatrixXd;
 
-    SparseLDLTFactorizationCache() = default;
+  SparseLDLTFactorizationCache() = default;
 
-    void analyze_pattern(const SparseMatrix& H) {
-        solver_m.analyzePattern(H);
+  void analyze_pattern(const SparseMatrix &H) {
+    solver_m.analyzePattern(H);
 
-        if (solver_m.info() != Eigen::Success) {
-            analyzed_m = false;
-            throw std::runtime_error(
-                "SparseLDLTFactorizationCache::analyze_pattern failed."
-            );
-        }
-
-        analyzed_m = true;
-        pattern_rows_m = H.rows();
-        pattern_cols_m = H.cols();
-        pattern_nnz_m = H.nonZeros();
+    if (solver_m.info() != Eigen::Success) {
+      analyzed_m = false;
+      throw std::runtime_error(
+          "SparseLDLTFactorizationCache::analyze_pattern failed.");
     }
 
-    void factorize(const SparseMatrix& H) {
-        if (!analyzed_m) {
-            analyze_pattern(H);
-        }
+    analyzed_m = true;
+    pattern_rows_m = H.rows();
+    pattern_cols_m = H.cols();
+    pattern_nnz_m = H.nonZeros();
+  }
 
-        if (H.rows() != pattern_rows_m || H.cols() != pattern_cols_m) {
-            throw std::invalid_argument(
-                "SparseLDLTFactorizationCache::factorize matrix dimension changed."
-            );
-        }
-
-        if (H.nonZeros() != pattern_nnz_m) {
-            throw std::invalid_argument(
-                "SparseLDLTFactorizationCache::factorize matrix nnz changed."
-            );
-        }
-
-        solver_m.factorize(H);
-
-        if (solver_m.info() != Eigen::Success) {
-            factorized_m = false;
-            throw std::runtime_error(
-                "SparseLDLTFactorizationCache::factorize numeric factorization failed."
-            );
-        }
-
-        factorized_m = true;
+  void factorize(const SparseMatrix &H) {
+    if (!analyzed_m) {
+      analyze_pattern(H);
     }
 
-    void compute(const SparseMatrix& H) {
-        solver_m.compute(H);
-
-        if (solver_m.info() != Eigen::Success) {
-            analyzed_m = false;
-            factorized_m = false;
-            throw std::runtime_error(
-                "SparseLDLTFactorizationCache::compute failed."
-            );
-        }
-
-        analyzed_m = true;
-        factorized_m = true;
-        pattern_rows_m = H.rows();
-        pattern_cols_m = H.cols();
-        pattern_nnz_m = H.nonZeros();
+    if (H.rows() != pattern_rows_m || H.cols() != pattern_cols_m) {
+      throw std::invalid_argument(
+          "SparseLDLTFactorizationCache::factorize matrix dimension changed.");
     }
 
-    Vector solve(const Vector& b) const {
-        if (!factorized_m) {
-            throw std::runtime_error(
-                "SparseLDLTFactorizationCache::solve called before factorize."
-            );
-        }
-
-        Vector x = solver_m.solve(b);
-
-        if (solver_m.info() != Eigen::Success) {
-            throw std::runtime_error(
-                "SparseLDLTFactorizationCache::solve failed."
-            );
-        }
-
-        return x;
+    if (H.nonZeros() != pattern_nnz_m) {
+      throw std::invalid_argument(
+          "SparseLDLTFactorizationCache::factorize matrix nnz changed.");
     }
 
-    Matrix solve(const Matrix& B) const {
-        if (!factorized_m) {
-            throw std::runtime_error(
-                "SparseLDLTFactorizationCache::solve matrix called before factorize."
-            );
-        }
+    solver_m.factorize(H);
 
-        Matrix X = solver_m.solve(B);
-
-        if (solver_m.info() != Eigen::Success) {
-            throw std::runtime_error(
-                "SparseLDLTFactorizationCache::solve matrix failed."
-            );
-        }
-
-        return X;
+    if (solver_m.info() != Eigen::Success) {
+      factorized_m = false;
+      throw std::runtime_error("SparseLDLTFactorizationCache::factorize "
+                               "numeric factorization failed.");
     }
 
-    bool analyzed() const { return analyzed_m; }
-    bool factorized() const { return factorized_m; }
-    int rows() const { return pattern_rows_m; }
-    int cols() const { return pattern_cols_m; }
-    int nonzeros() const { return pattern_nnz_m; }
+    factorized_m = true;
+  }
+
+  void compute(const SparseMatrix &H) {
+    solver_m.compute(H);
+
+    if (solver_m.info() != Eigen::Success) {
+      analyzed_m = false;
+      factorized_m = false;
+      throw std::runtime_error("SparseLDLTFactorizationCache::compute failed.");
+    }
+
+    analyzed_m = true;
+    factorized_m = true;
+    pattern_rows_m = H.rows();
+    pattern_cols_m = H.cols();
+    pattern_nnz_m = H.nonZeros();
+  }
+
+  Vector solve(const Vector &b) const {
+    if (!factorized_m) {
+      throw std::runtime_error(
+          "SparseLDLTFactorizationCache::solve called before factorize.");
+    }
+
+    Vector x = solver_m.solve(b);
+
+    if (solver_m.info() != Eigen::Success) {
+      throw std::runtime_error("SparseLDLTFactorizationCache::solve failed.");
+    }
+
+    return x;
+  }
+
+  Matrix solve(const Matrix &B) const {
+    if (!factorized_m) {
+      throw std::runtime_error("SparseLDLTFactorizationCache::solve matrix "
+                               "called before factorize.");
+    }
+
+    Matrix X = solver_m.solve(B);
+
+    if (solver_m.info() != Eigen::Success) {
+      throw std::runtime_error(
+          "SparseLDLTFactorizationCache::solve matrix failed.");
+    }
+
+    return X;
+  }
+
+  bool analyzed() const { return analyzed_m; }
+  bool factorized() const { return factorized_m; }
+  int rows() const { return pattern_rows_m; }
+  int cols() const { return pattern_cols_m; }
+  int nonzeros() const { return pattern_nnz_m; }
 
 private:
-    Eigen::SimplicialLDLT<SparseMatrix> solver_m;
+  Eigen::SimplicialLDLT<SparseMatrix> solver_m;
 
-    bool analyzed_m = false;
-    bool factorized_m = false;
+  bool analyzed_m = false;
+  bool factorized_m = false;
 
-    int pattern_rows_m = 0;
-    int pattern_cols_m = 0;
-    int pattern_nnz_m = 0;
+  int pattern_rows_m = 0;
+  int pattern_cols_m = 0;
+  int pattern_nnz_m = 0;
 };
 
-
-inline double sparse_logdet_compute(
-    const Eigen::SparseMatrix<double>& H
-) {
-    SparseFactorizationCache cache;
-    cache.compute(H);
-    return cache.logdet();
+inline double sparse_logdet_compute(const Eigen::SparseMatrix<double> &H) {
+  SparseFactorizationCache cache;
+  cache.compute(H);
+  return cache.logdet();
 }
 
 } // namespace quadra

@@ -11,9 +11,7 @@
 
 #include "main.h"
 
-template <typename Scalar>
-void assertionTest()
-{
+template <typename Scalar> void assertionTest() {
   typedef DiagonalMatrix<Scalar, 5> DiagMatrix5;
   typedef DiagonalMatrix<Scalar, 7> DiagMatrix7;
   typedef DiagonalMatrix<Scalar, Dynamic> DiagMatrixX;
@@ -27,68 +25,68 @@ void assertionTest()
   VERIFY_RAISES_ASSERT((DiagMatrix5{raw[0], raw[1], raw[3]}));
   VERIFY_RAISES_ASSERT((DiagMatrix7{raw[0], raw[1], raw[2], raw[3]}));
 
-  VERIFY_RAISES_ASSERT((DiagMatrixX {
-    {raw[0], raw[1], raw[2]},
-    {raw[3], raw[4], raw[5]}
-  }));
+  VERIFY_RAISES_ASSERT(
+      (DiagMatrixX{{raw[0], raw[1], raw[2]}, {raw[3], raw[4], raw[5]}}));
 }
 
-#define VERIFY_IMPLICIT_CONVERSION_3(DIAGTYPE, V0, V1, V2) \
-  DIAGTYPE d(V0, V1, V2);                                  \
-  DIAGTYPE::DenseMatrixType Dense = d.toDenseMatrix();     \
-  VERIFY_IS_APPROX(Dense(0, 0), (Scalar)V0);               \
-  VERIFY_IS_APPROX(Dense(1, 1), (Scalar)V1);               \
+#define VERIFY_IMPLICIT_CONVERSION_3(DIAGTYPE, V0, V1, V2)                     \
+  DIAGTYPE d(V0, V1, V2);                                                      \
+  DIAGTYPE::DenseMatrixType Dense = d.toDenseMatrix();                         \
+  VERIFY_IS_APPROX(Dense(0, 0), (Scalar)V0);                                   \
+  VERIFY_IS_APPROX(Dense(1, 1), (Scalar)V1);                                   \
   VERIFY_IS_APPROX(Dense(2, 2), (Scalar)V2);
 
-#define VERIFY_IMPLICIT_CONVERSION_4(DIAGTYPE, V0, V1, V2, V3) \
-  DIAGTYPE d(V0, V1, V2, V3);                                  \
-  DIAGTYPE::DenseMatrixType Dense = d.toDenseMatrix();         \
-  VERIFY_IS_APPROX(Dense(0, 0), (Scalar)V0);                   \
-  VERIFY_IS_APPROX(Dense(1, 1), (Scalar)V1);                   \
-  VERIFY_IS_APPROX(Dense(2, 2), (Scalar)V2);                   \
+#define VERIFY_IMPLICIT_CONVERSION_4(DIAGTYPE, V0, V1, V2, V3)                 \
+  DIAGTYPE d(V0, V1, V2, V3);                                                  \
+  DIAGTYPE::DenseMatrixType Dense = d.toDenseMatrix();                         \
+  VERIFY_IS_APPROX(Dense(0, 0), (Scalar)V0);                                   \
+  VERIFY_IS_APPROX(Dense(1, 1), (Scalar)V1);                                   \
+  VERIFY_IS_APPROX(Dense(2, 2), (Scalar)V2);                                   \
   VERIFY_IS_APPROX(Dense(3, 3), (Scalar)V3);
 
-#define VERIFY_IMPLICIT_CONVERSION_5(DIAGTYPE, V0, V1, V2, V3, V4) \
-  DIAGTYPE d(V0, V1, V2, V3, V4);                                  \
-  DIAGTYPE::DenseMatrixType Dense = d.toDenseMatrix();             \
-  VERIFY_IS_APPROX(Dense(0, 0), (Scalar)V0);                       \
-  VERIFY_IS_APPROX(Dense(1, 1), (Scalar)V1);                       \
-  VERIFY_IS_APPROX(Dense(2, 2), (Scalar)V2);                       \
-  VERIFY_IS_APPROX(Dense(3, 3), (Scalar)V3);                       \
+#define VERIFY_IMPLICIT_CONVERSION_5(DIAGTYPE, V0, V1, V2, V3, V4)             \
+  DIAGTYPE d(V0, V1, V2, V3, V4);                                              \
+  DIAGTYPE::DenseMatrixType Dense = d.toDenseMatrix();                         \
+  VERIFY_IS_APPROX(Dense(0, 0), (Scalar)V0);                                   \
+  VERIFY_IS_APPROX(Dense(1, 1), (Scalar)V1);                                   \
+  VERIFY_IS_APPROX(Dense(2, 2), (Scalar)V2);                                   \
+  VERIFY_IS_APPROX(Dense(3, 3), (Scalar)V3);                                   \
   VERIFY_IS_APPROX(Dense(4, 4), (Scalar)V4);
 
-template<typename Scalar>
-void constructorTest()
-{
+template <typename Scalar> void constructorTest() {
   typedef DiagonalMatrix<Scalar, 0> DiagonalMatrix0;
   typedef DiagonalMatrix<Scalar, 3> DiagonalMatrix3;
   typedef DiagonalMatrix<Scalar, 4> DiagonalMatrix4;
   typedef DiagonalMatrix<Scalar, Dynamic> DiagonalMatrixX;
 
   Scalar raw[7];
-  for (int k = 0; k < 7; ++k) raw[k] = internal::random<Scalar>();
+  for (int k = 0; k < 7; ++k)
+    raw[k] = internal::random<Scalar>();
 
   // Fixed-sized matrices
   {
-    DiagonalMatrix0 a {{}};
+    DiagonalMatrix0 a{{}};
     VERIFY(a.rows() == 0);
     VERIFY(a.cols() == 0);
     typename DiagonalMatrix0::DenseMatrixType m = a.toDenseMatrix();
-    for (Index k = 0; k < a.rows(); ++k) VERIFY(m(k, k) == raw[k]);
+    for (Index k = 0; k < a.rows(); ++k)
+      VERIFY(m(k, k) == raw[k]);
   }
   {
-    DiagonalMatrix3 a {{raw[0], raw[1], raw[2]}};
+    DiagonalMatrix3 a{{raw[0], raw[1], raw[2]}};
     VERIFY(a.rows() == 3);
     VERIFY(a.cols() == 3);
     typename DiagonalMatrix3::DenseMatrixType m = a.toDenseMatrix();
-    for (Index k = 0; k < a.rows(); ++k) VERIFY(m(k, k) == raw[k]);
+    for (Index k = 0; k < a.rows(); ++k)
+      VERIFY(m(k, k) == raw[k]);
   }
   {
-    DiagonalMatrix4 a {{raw[0], raw[1], raw[2], raw[3]}};
+    DiagonalMatrix4 a{{raw[0], raw[1], raw[2], raw[3]}};
     VERIFY(a.rows() == 4);
     VERIFY(a.cols() == 4);
     typename DiagonalMatrix4::DenseMatrixType m = a.toDenseMatrix();
-    for (Index k = 0; k < a.rows(); ++k) VERIFY(m(k, k) == raw[k]);
+    for (Index k = 0; k < a.rows(); ++k)
+      VERIFY(m(k, k) == raw[k]);
   }
 
   // dynamically sized matrices
@@ -97,20 +95,20 @@ void constructorTest()
     VERIFY(a.rows() == 0);
     VERIFY(a.rows() == 0);
     typename DiagonalMatrixX::DenseMatrixType m = a.toDenseMatrix();
-    for (Index k = 0; k < a.rows(); ++k) VERIFY(m(k, k) == raw[k]);
+    for (Index k = 0; k < a.rows(); ++k)
+      VERIFY(m(k, k) == raw[k]);
   }
   {
     DiagonalMatrixX a{{raw[0], raw[1], raw[2], raw[3], raw[4], raw[5], raw[6]}};
     VERIFY(a.rows() == 7);
     VERIFY(a.rows() == 7);
     typename DiagonalMatrixX::DenseMatrixType m = a.toDenseMatrix();
-    for (Index k = 0; k < a.rows(); ++k) VERIFY(m(k, k) == raw[k]);
+    for (Index k = 0; k < a.rows(); ++k)
+      VERIFY(m(k, k) == raw[k]);
   }
 }
 
-template<>
-void constructorTest<float>()
-{
+template <> void constructorTest<float>() {
   typedef float Scalar;
 
   typedef DiagonalMatrix<Scalar, 0> DiagonalMatrix0;
@@ -120,29 +118,33 @@ void constructorTest<float>()
   typedef DiagonalMatrix<Scalar, Dynamic> DiagonalMatrixX;
 
   Scalar raw[7];
-  for (int k = 0; k < 7; ++k) raw[k] = internal::random<Scalar>();
+  for (int k = 0; k < 7; ++k)
+    raw[k] = internal::random<Scalar>();
 
   // Fixed-sized matrices
   {
-    DiagonalMatrix0 a {{}};
+    DiagonalMatrix0 a{{}};
     VERIFY(a.rows() == 0);
     VERIFY(a.cols() == 0);
     typename DiagonalMatrix0::DenseMatrixType m = a.toDenseMatrix();
-    for (Index k = 0; k < a.rows(); ++k) VERIFY(m(k, k) == raw[k]);
+    for (Index k = 0; k < a.rows(); ++k)
+      VERIFY(m(k, k) == raw[k]);
   }
   {
-    DiagonalMatrix3 a {{raw[0], raw[1], raw[2]}};
+    DiagonalMatrix3 a{{raw[0], raw[1], raw[2]}};
     VERIFY(a.rows() == 3);
     VERIFY(a.cols() == 3);
     typename DiagonalMatrix3::DenseMatrixType m = a.toDenseMatrix();
-    for (Index k = 0; k < a.rows(); ++k) VERIFY(m(k, k) == raw[k]);
+    for (Index k = 0; k < a.rows(); ++k)
+      VERIFY(m(k, k) == raw[k]);
   }
   {
-    DiagonalMatrix4 a {{raw[0], raw[1], raw[2], raw[3]}};
+    DiagonalMatrix4 a{{raw[0], raw[1], raw[2], raw[3]}};
     VERIFY(a.rows() == 4);
     VERIFY(a.cols() == 4);
     typename DiagonalMatrix4::DenseMatrixType m = a.toDenseMatrix();
-    for (Index k = 0; k < a.rows(); ++k) VERIFY(m(k, k) == raw[k]);
+    for (Index k = 0; k < a.rows(); ++k)
+      VERIFY(m(k, k) == raw[k]);
   }
 
   // dynamically sized matrices
@@ -151,22 +153,25 @@ void constructorTest<float>()
     VERIFY(a.rows() == 0);
     VERIFY(a.rows() == 0);
     typename DiagonalMatrixX::DenseMatrixType m = a.toDenseMatrix();
-    for (Index k = 0; k < a.rows(); ++k) VERIFY(m(k, k) == raw[k]);
+    for (Index k = 0; k < a.rows(); ++k)
+      VERIFY(m(k, k) == raw[k]);
   }
   {
     DiagonalMatrixX a{{raw[0], raw[1], raw[2], raw[3], raw[4], raw[5], raw[6]}};
     VERIFY(a.rows() == 7);
     VERIFY(a.rows() == 7);
     typename DiagonalMatrixX::DenseMatrixType m = a.toDenseMatrix();
-    for (Index k = 0; k < a.rows(); ++k) VERIFY(m(k, k) == raw[k]);
+    for (Index k = 0; k < a.rows(); ++k)
+      VERIFY(m(k, k) == raw[k]);
   }
   { VERIFY_IMPLICIT_CONVERSION_3(DiagonalMatrix3, 1.2647, 2.56f, -3); }
   { VERIFY_IMPLICIT_CONVERSION_4(DiagonalMatrix4, 1.2647, 2.56f, -3, 3.23f); }
-  { VERIFY_IMPLICIT_CONVERSION_5(DiagonalMatrix5, 1.2647, 2.56f, -3, 3.23f, 2); }
+  {
+    VERIFY_IMPLICIT_CONVERSION_5(DiagonalMatrix5, 1.2647, 2.56f, -3, 3.23f, 2);
+  }
 }
 
-EIGEN_DECLARE_TEST(diagonal_matrix_variadic_ctor)
-{
+EIGEN_DECLARE_TEST(diagonal_matrix_variadic_ctor) {
   CALL_SUBTEST_1(assertionTest<unsigned char>());
   CALL_SUBTEST_1(assertionTest<float>());
   CALL_SUBTEST_1(assertionTest<Index>());

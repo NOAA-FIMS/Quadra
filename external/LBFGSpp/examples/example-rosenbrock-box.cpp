@@ -15,18 +15,21 @@ private:
     int n;
 
 public:
-    Rosenbrock(int n_) : n(n_) {}
+    Rosenbrock(int n_) :
+        n(n_) {}
     Scalar operator()(const Vector& x, Vector& grad)
     {
         Scalar fx = (x[0] - 1.0) * (x[0] - 1.0);
         grad[0] = 2 * (x[0] - 1) + 16 * (x[0] * x[0] - x[1]) * x[0];
-        for(int i = 1; i < n; i++)
+        for (int i = 1; i < n; i++)
         {
             fx += 4 * std::pow(x[i] - x[i - 1] * x[i - 1], 2);
-            if(i == n - 1)
+            if (i == n - 1)
             {
                 grad[i] = 8 * (x[i] - x[i - 1] * x[i - 1]);
-            } else {
+            }
+            else
+            {
                 grad[i] = 8 * (x[i] - x[i - 1] * x[i - 1]) + 16 * (x[i] * x[i] - x[i + 1]) * x[i];
             }
         }
@@ -57,7 +60,8 @@ int main()
     int niter = solver.minimize(fun, x, fx, lb, ub);
 
     std::cout << niter << " iterations" << std::endl;
-    std::cout << "x = \n" << x.transpose() << std::endl;
+    std::cout << "x = \n"
+              << x.transpose() << std::endl;
     std::cout << "f(x) = " << fx << std::endl;
     std::cout << "grad = " << solver.final_grad().transpose() << std::endl;
     std::cout << "projected grad norm = " << solver.final_grad_norm() << std::endl;

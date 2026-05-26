@@ -13,23 +13,26 @@
 namespace Eigen {
 
 /** \class TensorConcatenationOp
-  * \ingroup CXX11_Tensor_Module
-  *
-  * \brief Tensor concatenation class.
-  *
-  *
-  */
+ * \ingroup CXX11_Tensor_Module
+ *
+ * \brief Tensor concatenation class.
+ *
+ *
+ */
 namespace internal {
-template<typename Axis, typename LhsXprType, typename RhsXprType>
-struct traits<TensorConcatenationOp<Axis, LhsXprType, RhsXprType> >
-{
-  // Type promotion to handle the case where the types of the lhs and the rhs are different.
-  typedef typename promote_storage_type<typename LhsXprType::Scalar,
-                                        typename RhsXprType::Scalar>::ret Scalar;
-  typedef typename promote_storage_type<typename traits<LhsXprType>::StorageKind,
-                                        typename traits<RhsXprType>::StorageKind>::ret StorageKind;
+template <typename Axis, typename LhsXprType, typename RhsXprType>
+struct traits<TensorConcatenationOp<Axis, LhsXprType, RhsXprType>> {
+  // Type promotion to handle the case where the types of the lhs and the rhs
+  // are different.
+  typedef
+      typename promote_storage_type<typename LhsXprType::Scalar,
+                                    typename RhsXprType::Scalar>::ret Scalar;
+  typedef typename promote_storage_type<
+      typename traits<LhsXprType>::StorageKind,
+      typename traits<RhsXprType>::StorageKind>::ret StorageKind;
   typedef typename promote_index_type<typename traits<LhsXprType>::Index,
-                                      typename traits<RhsXprType>::Index>::type Index;
+                                      typename traits<RhsXprType>::Index>::type
+      Index;
   typedef typename LhsXprType::Nested LhsNested;
   typedef typename RhsXprType::Nested RhsNested;
   typedef typename remove_reference<LhsNested>::type _LhsNested;
@@ -37,67 +40,80 @@ struct traits<TensorConcatenationOp<Axis, LhsXprType, RhsXprType> >
   static const int NumDimensions = traits<LhsXprType>::NumDimensions;
   static const int Layout = traits<LhsXprType>::Layout;
   enum { Flags = 0 };
-  typedef typename conditional<Pointer_type_promotion<typename LhsXprType::Scalar, Scalar>::val,
-                               typename traits<LhsXprType>::PointerType, typename traits<RhsXprType>::PointerType>::type PointerType;
+  typedef typename conditional<
+      Pointer_type_promotion<typename LhsXprType::Scalar, Scalar>::val,
+      typename traits<LhsXprType>::PointerType,
+      typename traits<RhsXprType>::PointerType>::type PointerType;
 };
 
-template<typename Axis, typename LhsXprType, typename RhsXprType>
-struct eval<TensorConcatenationOp<Axis, LhsXprType, RhsXprType>, Eigen::Dense>
-{
-  typedef const TensorConcatenationOp<Axis, LhsXprType, RhsXprType>& type;
+template <typename Axis, typename LhsXprType, typename RhsXprType>
+struct eval<TensorConcatenationOp<Axis, LhsXprType, RhsXprType>, Eigen::Dense> {
+  typedef const TensorConcatenationOp<Axis, LhsXprType, RhsXprType> &type;
 };
 
-template<typename Axis, typename LhsXprType, typename RhsXprType>
-struct nested<TensorConcatenationOp<Axis, LhsXprType, RhsXprType>, 1, typename eval<TensorConcatenationOp<Axis, LhsXprType, RhsXprType> >::type>
-{
+template <typename Axis, typename LhsXprType, typename RhsXprType>
+struct nested<
+    TensorConcatenationOp<Axis, LhsXprType, RhsXprType>, 1,
+    typename eval<TensorConcatenationOp<Axis, LhsXprType, RhsXprType>>::type> {
   typedef TensorConcatenationOp<Axis, LhsXprType, RhsXprType> type;
 };
 
-}  // end namespace internal
+} // end namespace internal
 
+template <typename Axis, typename LhsXprType, typename RhsXprType>
+class TensorConcatenationOp
+    : public TensorBase<TensorConcatenationOp<Axis, LhsXprType, RhsXprType>,
+                        WriteAccessors> {
+public:
+  typedef TensorBase<TensorConcatenationOp<Axis, LhsXprType, RhsXprType>,
+                     WriteAccessors>
+      Base;
+  typedef typename internal::traits<TensorConcatenationOp>::Scalar Scalar;
+  typedef
+      typename internal::traits<TensorConcatenationOp>::StorageKind StorageKind;
+  typedef typename internal::traits<TensorConcatenationOp>::Index Index;
+  typedef typename internal::nested<TensorConcatenationOp>::type Nested;
+  typedef typename internal::promote_storage_type<
+      typename LhsXprType::CoeffReturnType,
+      typename RhsXprType::CoeffReturnType>::ret CoeffReturnType;
+  typedef typename NumTraits<Scalar>::Real RealScalar;
 
-template<typename Axis, typename LhsXprType, typename RhsXprType>
-class TensorConcatenationOp : public TensorBase<TensorConcatenationOp<Axis, LhsXprType, RhsXprType>, WriteAccessors>
-{
-  public:
-    typedef TensorBase<TensorConcatenationOp<Axis, LhsXprType, RhsXprType>, WriteAccessors> Base;
-    typedef typename internal::traits<TensorConcatenationOp>::Scalar Scalar;
-    typedef typename internal::traits<TensorConcatenationOp>::StorageKind StorageKind;
-    typedef typename internal::traits<TensorConcatenationOp>::Index Index;
-    typedef typename internal::nested<TensorConcatenationOp>::type Nested;
-    typedef typename internal::promote_storage_type<typename LhsXprType::CoeffReturnType,
-                                                    typename RhsXprType::CoeffReturnType>::ret CoeffReturnType;
-    typedef typename NumTraits<Scalar>::Real RealScalar;
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+  TensorConcatenationOp(const LhsXprType &lhs, const RhsXprType &rhs, Axis axis)
+      : m_lhs_xpr(lhs), m_rhs_xpr(rhs), m_axis(axis) {}
 
-    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE TensorConcatenationOp(const LhsXprType& lhs, const RhsXprType& rhs, Axis axis)
-        : m_lhs_xpr(lhs), m_rhs_xpr(rhs), m_axis(axis) {}
+  EIGEN_DEVICE_FUNC
+  const typename internal::remove_all<typename LhsXprType::Nested>::type &
+  lhsExpression() const {
+    return m_lhs_xpr;
+  }
 
-    EIGEN_DEVICE_FUNC
-    const typename internal::remove_all<typename LhsXprType::Nested>::type&
-    lhsExpression() const { return m_lhs_xpr; }
+  EIGEN_DEVICE_FUNC
+  const typename internal::remove_all<typename RhsXprType::Nested>::type &
+  rhsExpression() const {
+    return m_rhs_xpr;
+  }
 
-    EIGEN_DEVICE_FUNC
-    const typename internal::remove_all<typename RhsXprType::Nested>::type&
-    rhsExpression() const { return m_rhs_xpr; }
+  EIGEN_DEVICE_FUNC const Axis &axis() const { return m_axis; }
 
-    EIGEN_DEVICE_FUNC const Axis& axis() const { return m_axis; }
-
-    EIGEN_TENSOR_INHERIT_ASSIGNMENT_OPERATORS(TensorConcatenationOp)
-  protected:
-    typename LhsXprType::Nested m_lhs_xpr;
-    typename RhsXprType::Nested m_rhs_xpr;
-    const Axis m_axis;
+  EIGEN_TENSOR_INHERIT_ASSIGNMENT_OPERATORS(TensorConcatenationOp)
+protected:
+  typename LhsXprType::Nested m_lhs_xpr;
+  typename RhsXprType::Nested m_rhs_xpr;
+  const Axis m_axis;
 };
 
-
 // Eval as rvalue
-template<typename Axis, typename LeftArgType, typename RightArgType, typename Device>
-struct TensorEvaluator<const TensorConcatenationOp<Axis, LeftArgType, RightArgType>, Device>
-{
+template <typename Axis, typename LeftArgType, typename RightArgType,
+          typename Device>
+struct TensorEvaluator<
+    const TensorConcatenationOp<Axis, LeftArgType, RightArgType>, Device> {
   typedef TensorConcatenationOp<Axis, LeftArgType, RightArgType> XprType;
   typedef typename XprType::Index Index;
-  static const int NumDims = internal::array_size<typename TensorEvaluator<LeftArgType, Device>::Dimensions>::value;
-  static const int RightNumDims = internal::array_size<typename TensorEvaluator<RightArgType, Device>::Dimensions>::value;
+  static const int NumDims = internal::array_size<
+      typename TensorEvaluator<LeftArgType, Device>::Dimensions>::value;
+  static const int RightNumDims = internal::array_size<
+      typename TensorEvaluator<RightArgType, Device>::Dimensions>::value;
   typedef DSizes<Index, NumDims> Dimensions;
   typedef typename XprType::Scalar Scalar;
   typedef typename XprType::CoeffReturnType CoeffReturnType;
@@ -105,30 +121,36 @@ struct TensorEvaluator<const TensorConcatenationOp<Axis, LeftArgType, RightArgTy
   typedef StorageMemory<CoeffReturnType, Device> Storage;
   typedef typename Storage::Type EvaluatorPointerType;
   enum {
-    IsAligned         = false,
-    PacketAccess      = TensorEvaluator<LeftArgType, Device>::PacketAccess &&
-                        TensorEvaluator<RightArgType, Device>::PacketAccess,
-    BlockAccess       = false,
-    PreferBlockAccess = TensorEvaluator<LeftArgType, Device>::PreferBlockAccess ||
-                        TensorEvaluator<RightArgType, Device>::PreferBlockAccess,
-    Layout            = TensorEvaluator<LeftArgType, Device>::Layout,
-    RawAccess         = false
+    IsAligned = false,
+    PacketAccess = TensorEvaluator<LeftArgType, Device>::PacketAccess &&
+                   TensorEvaluator<RightArgType, Device>::PacketAccess,
+    BlockAccess = false,
+    PreferBlockAccess =
+        TensorEvaluator<LeftArgType, Device>::PreferBlockAccess ||
+        TensorEvaluator<RightArgType, Device>::PreferBlockAccess,
+    Layout = TensorEvaluator<LeftArgType, Device>::Layout,
+    RawAccess = false
   };
 
   //===- Tensor block evaluation strategy (see TensorBlock.h) -------------===//
   typedef internal::TensorBlockNotImplemented TensorBlock;
   //===--------------------------------------------------------------------===//
 
-  EIGEN_STRONG_INLINE TensorEvaluator(const XprType& op, const Device& device)
-    : m_leftImpl(op.lhsExpression(), device), m_rightImpl(op.rhsExpression(), device), m_axis(op.axis())
-  {
-    EIGEN_STATIC_ASSERT((static_cast<int>(TensorEvaluator<LeftArgType, Device>::Layout) == static_cast<int>(TensorEvaluator<RightArgType, Device>::Layout) || NumDims == 1), YOU_MADE_A_PROGRAMMING_MISTAKE);
-    EIGEN_STATIC_ASSERT((NumDims == RightNumDims), YOU_MADE_A_PROGRAMMING_MISTAKE);
+  EIGEN_STRONG_INLINE TensorEvaluator(const XprType &op, const Device &device)
+      : m_leftImpl(op.lhsExpression(), device),
+        m_rightImpl(op.rhsExpression(), device), m_axis(op.axis()) {
+    EIGEN_STATIC_ASSERT(
+        (static_cast<int>(TensorEvaluator<LeftArgType, Device>::Layout) ==
+             static_cast<int>(TensorEvaluator<RightArgType, Device>::Layout) ||
+         NumDims == 1),
+        YOU_MADE_A_PROGRAMMING_MISTAKE);
+    EIGEN_STATIC_ASSERT((NumDims == RightNumDims),
+                        YOU_MADE_A_PROGRAMMING_MISTAKE);
     EIGEN_STATIC_ASSERT((NumDims > 0), YOU_MADE_A_PROGRAMMING_MISTAKE);
 
     eigen_assert(0 <= m_axis && m_axis < NumDims);
-    const Dimensions& lhs_dims = m_leftImpl.dimensions();
-    const Dimensions& rhs_dims = m_rightImpl.dimensions();
+    const Dimensions &lhs_dims = m_leftImpl.dimensions();
+    const Dimensions &rhs_dims = m_rightImpl.dimensions();
     {
       int i = 0;
       for (; i < m_axis; ++i) {
@@ -136,7 +158,7 @@ struct TensorEvaluator<const TensorConcatenationOp<Axis, LeftArgType, RightArgTy
         eigen_assert(lhs_dims[i] == rhs_dims[i]);
         m_dimensions[i] = lhs_dims[i];
       }
-      eigen_assert(lhs_dims[i] > 0);  // Now i == m_axis.
+      eigen_assert(lhs_dims[i] > 0); // Now i == m_axis.
       eigen_assert(rhs_dims[i] > 0);
       m_dimensions[i] = lhs_dims[i] + rhs_dims[i];
       for (++i; i < NumDims; ++i) {
@@ -152,9 +174,9 @@ struct TensorEvaluator<const TensorConcatenationOp<Axis, LeftArgType, RightArgTy
       m_outputStrides[0] = 1;
 
       for (int j = 1; j < NumDims; ++j) {
-        m_leftStrides[j] = m_leftStrides[j-1] * lhs_dims[j-1];
-        m_rightStrides[j] = m_rightStrides[j-1] * rhs_dims[j-1];
-        m_outputStrides[j] = m_outputStrides[j-1] * m_dimensions[j-1];
+        m_leftStrides[j] = m_leftStrides[j - 1] * lhs_dims[j - 1];
+        m_rightStrides[j] = m_rightStrides[j - 1] * rhs_dims[j - 1];
+        m_outputStrides[j] = m_outputStrides[j - 1] * m_dimensions[j - 1];
       }
     } else {
       m_leftStrides[NumDims - 1] = 1;
@@ -162,33 +184,34 @@ struct TensorEvaluator<const TensorConcatenationOp<Axis, LeftArgType, RightArgTy
       m_outputStrides[NumDims - 1] = 1;
 
       for (int j = NumDims - 2; j >= 0; --j) {
-        m_leftStrides[j] = m_leftStrides[j+1] * lhs_dims[j+1];
-        m_rightStrides[j] = m_rightStrides[j+1] * rhs_dims[j+1];
-        m_outputStrides[j] = m_outputStrides[j+1] * m_dimensions[j+1];
+        m_leftStrides[j] = m_leftStrides[j + 1] * lhs_dims[j + 1];
+        m_rightStrides[j] = m_rightStrides[j + 1] * rhs_dims[j + 1];
+        m_outputStrides[j] = m_outputStrides[j + 1] * m_dimensions[j + 1];
       }
     }
   }
 
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Dimensions& dimensions() const { return m_dimensions; }
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Dimensions &dimensions() const {
+    return m_dimensions;
+  }
 
-  // TODO(phli): Add short-circuit memcpy evaluation if underlying data are linear?
-  EIGEN_STRONG_INLINE bool evalSubExprsIfNeeded(EvaluatorPointerType)
-  {
+  // TODO(phli): Add short-circuit memcpy evaluation if underlying data are
+  // linear?
+  EIGEN_STRONG_INLINE bool evalSubExprsIfNeeded(EvaluatorPointerType) {
     m_leftImpl.evalSubExprsIfNeeded(NULL);
     m_rightImpl.evalSubExprsIfNeeded(NULL);
     return true;
   }
 
-  EIGEN_STRONG_INLINE void cleanup()
-  {
+  EIGEN_STRONG_INLINE void cleanup() {
     m_leftImpl.cleanup();
     m_rightImpl.cleanup();
   }
 
-  // TODO(phli): attempt to speed this up. The integer divisions and modulo are slow.
-  // See CL/76180724 comments for more ideas.
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE CoeffReturnType coeff(Index index) const
-  {
+  // TODO(phli): attempt to speed this up. The integer divisions and modulo are
+  // slow. See CL/76180724 comments for more ideas.
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE CoeffReturnType
+  coeff(Index index) const {
     // Collect dimension-wise indices (subs).
     array<Index, NumDims> subs;
     if (static_cast<int>(Layout) == static_cast<int>(ColMajor)) {
@@ -205,7 +228,7 @@ struct TensorEvaluator<const TensorConcatenationOp<Axis, LeftArgType, RightArgTy
       subs[NumDims - 1] = index;
     }
 
-    const Dimensions& left_dims = m_leftImpl.dimensions();
+    const Dimensions &left_dims = m_leftImpl.dimensions();
     if (subs[m_axis] < left_dims[m_axis]) {
       Index left_index;
       if (static_cast<int>(Layout) == static_cast<int>(ColMajor)) {
@@ -224,7 +247,7 @@ struct TensorEvaluator<const TensorConcatenationOp<Axis, LeftArgType, RightArgTy
       return m_leftImpl.coeff(left_index);
     } else {
       subs[m_axis] -= left_dims[m_axis];
-      const Dimensions& right_dims = m_rightImpl.dimensions();
+      const Dimensions &right_dims = m_rightImpl.dimensions();
       Index right_index;
       if (static_cast<int>(Layout) == static_cast<int>(ColMajor)) {
         right_index = subs[0];
@@ -244,9 +267,9 @@ struct TensorEvaluator<const TensorConcatenationOp<Axis, LeftArgType, RightArgTy
   }
 
   // TODO(phli): Add a real vectorization.
-  template<int LoadMode>
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE PacketReturnType packet(Index index) const
-  {
+  template <int LoadMode>
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE PacketReturnType
+  packet(Index index) const {
     const int packetSize = PacketType<CoeffReturnType, Device>::size;
     EIGEN_STATIC_ASSERT((packetSize > 1), YOU_MADE_A_PROGRAMMING_MISTAKE)
     eigen_assert(index + packetSize - 1 < dimensions().TotalSize());
@@ -254,7 +277,7 @@ struct TensorEvaluator<const TensorConcatenationOp<Axis, LeftArgType, RightArgTy
     EIGEN_ALIGN_MAX CoeffReturnType values[packetSize];
     EIGEN_UNROLL_LOOP
     for (int i = 0; i < packetSize; ++i) {
-      values[i] = coeff(index+i);
+      values[i] = coeff(index + i);
     }
     PacketReturnType rslt = internal::pload<PacketReturnType>(values);
     return rslt;
@@ -277,51 +300,59 @@ struct TensorEvaluator<const TensorConcatenationOp<Axis, LeftArgType, RightArgTy
 
   EIGEN_DEVICE_FUNC EvaluatorPointerType data() const { return NULL; }
 
-  #ifdef EIGEN_USE_SYCL
+#ifdef EIGEN_USE_SYCL
   // binding placeholder accessors to a command group handler for SYCL
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void bind(cl::sycl::handler &cgh) const {
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void
+  bind(cl::sycl::handler &cgh) const {
     m_leftImpl.bind(cgh);
     m_rightImpl.bind(cgh);
   }
-  #endif
+#endif
 
-  protected:
-    Dimensions m_dimensions;
-    array<Index, NumDims> m_outputStrides;
-    array<Index, NumDims> m_leftStrides;
-    array<Index, NumDims> m_rightStrides;
-    TensorEvaluator<LeftArgType, Device> m_leftImpl;
-    TensorEvaluator<RightArgType, Device> m_rightImpl;
-    const Axis m_axis;
+protected:
+  Dimensions m_dimensions;
+  array<Index, NumDims> m_outputStrides;
+  array<Index, NumDims> m_leftStrides;
+  array<Index, NumDims> m_rightStrides;
+  TensorEvaluator<LeftArgType, Device> m_leftImpl;
+  TensorEvaluator<RightArgType, Device> m_rightImpl;
+  const Axis m_axis;
 };
 
 // Eval as lvalue
-template<typename Axis, typename LeftArgType, typename RightArgType, typename Device>
-  struct TensorEvaluator<TensorConcatenationOp<Axis, LeftArgType, RightArgType>, Device>
-  : public TensorEvaluator<const TensorConcatenationOp<Axis, LeftArgType, RightArgType>, Device>
-{
-  typedef TensorEvaluator<const TensorConcatenationOp<Axis, LeftArgType, RightArgType>, Device> Base;
+template <typename Axis, typename LeftArgType, typename RightArgType,
+          typename Device>
+struct TensorEvaluator<TensorConcatenationOp<Axis, LeftArgType, RightArgType>,
+                       Device>
+    : public TensorEvaluator<
+          const TensorConcatenationOp<Axis, LeftArgType, RightArgType>,
+          Device> {
+  typedef TensorEvaluator<
+      const TensorConcatenationOp<Axis, LeftArgType, RightArgType>, Device>
+      Base;
   typedef TensorConcatenationOp<Axis, LeftArgType, RightArgType> XprType;
   typedef typename Base::Dimensions Dimensions;
   enum {
-    IsAligned         = false,
-    PacketAccess      = TensorEvaluator<LeftArgType, Device>::PacketAccess &&
-                        TensorEvaluator<RightArgType, Device>::PacketAccess,
-    BlockAccess       = false,
-    PreferBlockAccess = TensorEvaluator<LeftArgType, Device>::PreferBlockAccess ||
-                        TensorEvaluator<RightArgType, Device>::PreferBlockAccess,
-    Layout            = TensorEvaluator<LeftArgType, Device>::Layout,
-    RawAccess         = false
+    IsAligned = false,
+    PacketAccess = TensorEvaluator<LeftArgType, Device>::PacketAccess &&
+                   TensorEvaluator<RightArgType, Device>::PacketAccess,
+    BlockAccess = false,
+    PreferBlockAccess =
+        TensorEvaluator<LeftArgType, Device>::PreferBlockAccess ||
+        TensorEvaluator<RightArgType, Device>::PreferBlockAccess,
+    Layout = TensorEvaluator<LeftArgType, Device>::Layout,
+    RawAccess = false
   };
 
   //===- Tensor block evaluation strategy (see TensorBlock.h) -------------===//
   typedef internal::TensorBlockNotImplemented TensorBlock;
   //===--------------------------------------------------------------------===//
 
-  EIGEN_STRONG_INLINE TensorEvaluator(XprType& op, const Device& device)
-    : Base(op, device)
-  {
-    EIGEN_STATIC_ASSERT((static_cast<int>(Layout) == static_cast<int>(ColMajor)), YOU_MADE_A_PROGRAMMING_MISTAKE);
+  EIGEN_STRONG_INLINE TensorEvaluator(XprType &op, const Device &device)
+      : Base(op, device) {
+    EIGEN_STATIC_ASSERT(
+        (static_cast<int>(Layout) == static_cast<int>(ColMajor)),
+        YOU_MADE_A_PROGRAMMING_MISTAKE);
   }
 
   typedef typename XprType::Index Index;
@@ -329,8 +360,7 @@ template<typename Axis, typename LeftArgType, typename RightArgType, typename De
   typedef typename XprType::CoeffReturnType CoeffReturnType;
   typedef typename PacketType<CoeffReturnType, Device>::type PacketReturnType;
 
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE CoeffReturnType& coeffRef(Index index)
-  {
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE CoeffReturnType &coeffRef(Index index) {
     // Collect dimension-wise indices (subs).
     array<Index, Base::NumDims> subs;
     for (int i = Base::NumDims - 1; i > 0; --i) {
@@ -339,7 +369,7 @@ template<typename Axis, typename LeftArgType, typename RightArgType, typename De
     }
     subs[0] = index;
 
-    const Dimensions& left_dims = this->m_leftImpl.dimensions();
+    const Dimensions &left_dims = this->m_leftImpl.dimensions();
     if (subs[this->m_axis] < left_dims[this->m_axis]) {
       Index left_index = subs[0];
       for (int i = 1; i < Base::NumDims; ++i) {
@@ -348,7 +378,7 @@ template<typename Axis, typename LeftArgType, typename RightArgType, typename De
       return this->m_leftImpl.coeffRef(left_index);
     } else {
       subs[this->m_axis] -= left_dims[this->m_axis];
-      const Dimensions& right_dims = this->m_rightImpl.dimensions();
+      const Dimensions &right_dims = this->m_rightImpl.dimensions();
       Index right_index = subs[0];
       for (int i = 1; i < Base::NumDims; ++i) {
         right_index += (subs[i] % right_dims[i]) * this->m_rightStrides[i];
@@ -357,9 +387,9 @@ template<typename Axis, typename LeftArgType, typename RightArgType, typename De
     }
   }
 
-  template <int StoreMode> EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
-  void writePacket(Index index, const PacketReturnType& x)
-  {
+  template <int StoreMode>
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void
+  writePacket(Index index, const PacketReturnType &x) {
     const int packetSize = PacketType<CoeffReturnType, Device>::size;
     EIGEN_STATIC_ASSERT((packetSize > 1), YOU_MADE_A_PROGRAMMING_MISTAKE)
     eigen_assert(index + packetSize - 1 < this->dimensions().TotalSize());
@@ -367,7 +397,7 @@ template<typename Axis, typename LeftArgType, typename RightArgType, typename De
     EIGEN_ALIGN_MAX CoeffReturnType values[packetSize];
     internal::pstore<CoeffReturnType, PacketReturnType>(values, x);
     for (int i = 0; i < packetSize; ++i) {
-      coeffRef(index+i) = values[i];
+      coeffRef(index + i) = values[i];
     }
   }
 };

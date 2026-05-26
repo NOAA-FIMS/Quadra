@@ -7,13 +7,13 @@
 
 cl::sycl::gpu_selector selector;
 Eigen::QueueInterface queue(selector);
-#define BM_FuncWithInput2DimsGPU(FUNC, D1, D2)                      \
-  static void BM_##FUNC##_##D1##x##D2(int iters, int N) {           \
-    StopBenchmarkTiming();                                          \
-    Eigen::SyclDevice device(&queue);                               \
-    BenchmarkSuite<Eigen::SyclDevice, float> suite(device, D1, D2); \
-    suite.FUNC(iters);                                              \
-  }                                                                 \
+#define BM_FuncWithInput2DimsGPU(FUNC, D1, D2)                                 \
+  static void BM_##FUNC##_##D1##x##D2(int iters, int N) {                      \
+    StopBenchmarkTiming();                                                     \
+    Eigen::SyclDevice device(&queue);                                          \
+    BenchmarkSuite<Eigen::SyclDevice, float> suite(device, D1, D2);            \
+    suite.FUNC(iters);                                                         \
+  }                                                                            \
   BENCHMARK_RANGE(BM_##FUNC##_##D1##x##D2, 10, 10);
 
 BM_FuncWithInput2DimsGPU(rowReduction, 256, 100352);
@@ -59,13 +59,13 @@ BM_FuncWithInput2DimsGPU(fullReduction, 32768, 1);
 BM_FuncWithInput2DimsGPU(fullReduction, 128, 1);
 BM_FuncWithInput2DimsGPU(fullReduction, 147456, 1);
 BM_FuncWithInput2DimsGPU(fullReduction, 65536, 1);
-#define BM_FuncGPU(FUNC)                                       \
-  static void BM_##FUNC(int iters, int N) {                    \
-    StopBenchmarkTiming();                                     \
-    Eigen::SyclDevice device(&queue);                          \
-    BenchmarkSuite<Eigen::SyclDevice, float> suite(device, N); \
-    suite.FUNC(iters);                                         \
-  }                                                            \
+#define BM_FuncGPU(FUNC)                                                       \
+  static void BM_##FUNC(int iters, int N) {                                    \
+    StopBenchmarkTiming();                                                     \
+    Eigen::SyclDevice device(&queue);                                          \
+    BenchmarkSuite<Eigen::SyclDevice, float> suite(device, N);                 \
+    suite.FUNC(iters);                                                         \
+  }                                                                            \
   BENCHMARK_RANGE(BM_##FUNC, 10, 5000);
 
 BM_FuncGPU(rowReduction);
@@ -86,13 +86,13 @@ BM_FuncGPU(coeffWiseOp);
 BM_FuncGPU(algebraicFunc);
 BM_FuncGPU(transcendentalFunc);
 // Contractions
-#define BM_FuncWithInputDimsGPU(FUNC, D1, D2, D3)                       \
-  static void BM_##FUNC##_##D1##x##D2##x##D3(int iters, int N) {        \
-    StopBenchmarkTiming();                                              \
-    Eigen::SyclDevice device(&queue);                                   \
-    BenchmarkSuite<Eigen::SyclDevice, float> suite(device, D1, D2, D3); \
-    suite.FUNC(iters);                                                  \
-  }                                                                     \
+#define BM_FuncWithInputDimsGPU(FUNC, D1, D2, D3)                              \
+  static void BM_##FUNC##_##D1##x##D2##x##D3(int iters, int N) {               \
+    StopBenchmarkTiming();                                                     \
+    Eigen::SyclDevice device(&queue);                                          \
+    BenchmarkSuite<Eigen::SyclDevice, float> suite(device, D1, D2, D3);        \
+    suite.FUNC(iters);                                                         \
+  }                                                                            \
   BENCHMARK_RANGE(BM_##FUNC##_##D1##x##D2##x##D3, 10, 5000);
 
 BM_FuncWithInputDimsGPU(contraction, N, N, N);
@@ -115,20 +115,19 @@ BM_FuncWithInputDimsGPU(contractionRowMajorBT, 64, N, N);
 BM_FuncWithInputDimsGPU(contractionRowMajorBT, N, 64, N);
 BM_FuncWithInputDimsGPU(contractionRowMajorBT, N, N, 64);
 
-
 BM_FuncWithInputDimsGPU(contractionRowMajorABT, N, N, N);
 BM_FuncWithInputDimsGPU(contractionRowMajorABT, 64, N, N);
 BM_FuncWithInputDimsGPU(contractionRowMajorABT, N, 64, N);
 BM_FuncWithInputDimsGPU(contractionRowMajorABT, N, N, 64);
 
 // Convolutions
-#define BM_FuncWithKernelDimsGPU(FUNC, DIM1, DIM2)             \
-  static void BM_##FUNC##_##DIM1##x##DIM2(int iters, int N) {  \
-    StopBenchmarkTiming();                                     \
-    Eigen::SyclDevice device(&queue);                          \
-    BenchmarkSuite<Eigen::SyclDevice, float> suite(device, N); \
-    suite.FUNC(iters, DIM1, DIM2);                             \
-  }                                                            \
+#define BM_FuncWithKernelDimsGPU(FUNC, DIM1, DIM2)                             \
+  static void BM_##FUNC##_##DIM1##x##DIM2(int iters, int N) {                  \
+    StopBenchmarkTiming();                                                     \
+    Eigen::SyclDevice device(&queue);                                          \
+    BenchmarkSuite<Eigen::SyclDevice, float> suite(device, N);                 \
+    suite.FUNC(iters, DIM1, DIM2);                                             \
+  }                                                                            \
   BENCHMARK_RANGE(BM_##FUNC##_##DIM1##x##DIM2, 128, 5000);
 
 BM_FuncWithKernelDimsGPU(convolution, 7, 1);

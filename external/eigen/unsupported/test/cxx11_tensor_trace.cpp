@@ -11,11 +11,10 @@
 
 #include <Eigen/CXX11/Tensor>
 
-using Eigen::Tensor;
 using Eigen::array;
+using Eigen::Tensor;
 
-template <int DataLayout>
-static void test_0D_trace() {
+template <int DataLayout> static void test_0D_trace() {
   Tensor<float, 0, DataLayout> tensor;
   tensor.setRandom();
   array<ptrdiff_t, 0> dims;
@@ -23,9 +22,7 @@ static void test_0D_trace() {
   VERIFY_IS_EQUAL(result(), tensor());
 }
 
-
-template <int DataLayout>
-static void test_all_dimensions_trace() {
+template <int DataLayout> static void test_all_dimensions_trace() {
   Tensor<float, 3, DataLayout> tensor1(5, 5, 5);
   tensor1.setRandom();
   Tensor<float, 0, DataLayout> result1 = tensor1.trace();
@@ -38,7 +35,7 @@ static void test_all_dimensions_trace() {
 
   Tensor<float, 5, DataLayout> tensor2(7, 7, 7, 7, 7);
   tensor2.setRandom();
-  array<ptrdiff_t, 5> dims = { { 2, 1, 0, 3, 4 } };
+  array<ptrdiff_t, 5> dims = {{2, 1, 0, 3, 4}};
   Tensor<float, 0, DataLayout> result2 = tensor2.trace(dims);
   VERIFY_IS_EQUAL(result2.rank(), 0);
   sum = 0.0f;
@@ -48,12 +45,10 @@ static void test_all_dimensions_trace() {
   VERIFY_IS_EQUAL(result2(), sum);
 }
 
-
-template <int DataLayout>
-static void test_simple_trace() {
+template <int DataLayout> static void test_simple_trace() {
   Tensor<float, 3, DataLayout> tensor1(3, 5, 3);
   tensor1.setRandom();
-  array<ptrdiff_t, 2> dims1 = { { 0, 2 } };
+  array<ptrdiff_t, 2> dims1 = {{0, 2}};
   Tensor<float, 1, DataLayout> result1 = tensor1.trace(dims1);
   VERIFY_IS_EQUAL(result1.rank(), 1);
   VERIFY_IS_EQUAL(result1.dimension(0), 5);
@@ -68,7 +63,7 @@ static void test_simple_trace() {
 
   Tensor<float, 4, DataLayout> tensor2(5, 5, 7, 7);
   tensor2.setRandom();
-  array<ptrdiff_t, 2> dims2 = { { 2, 3 } };
+  array<ptrdiff_t, 2> dims2 = {{2, 3}};
   Tensor<float, 2, DataLayout> result2 = tensor2.trace(dims2);
   VERIFY_IS_EQUAL(result2.rank(), 2);
   VERIFY_IS_EQUAL(result2.dimension(0), 5);
@@ -83,7 +78,7 @@ static void test_simple_trace() {
     }
   }
 
-  array<ptrdiff_t, 2> dims3 = { { 1, 0 } };
+  array<ptrdiff_t, 2> dims3 = {{1, 0}};
   Tensor<float, 2, DataLayout> result3 = tensor2.trace(dims3);
   VERIFY_IS_EQUAL(result3.rank(), 2);
   VERIFY_IS_EQUAL(result3.dimension(0), 7);
@@ -100,7 +95,7 @@ static void test_simple_trace() {
 
   Tensor<float, 5, DataLayout> tensor3(3, 7, 3, 7, 3);
   tensor3.setRandom();
-  array<ptrdiff_t, 3> dims4 = { { 0, 2, 4 } };
+  array<ptrdiff_t, 3> dims4 = {{0, 2, 4}};
   Tensor<float, 2, DataLayout> result4 = tensor3.trace(dims4);
   VERIFY_IS_EQUAL(result4.rank(), 2);
   VERIFY_IS_EQUAL(result4.dimension(0), 7);
@@ -117,7 +112,7 @@ static void test_simple_trace() {
 
   Tensor<float, 5, DataLayout> tensor4(3, 7, 4, 7, 5);
   tensor4.setRandom();
-  array<ptrdiff_t, 2> dims5 = { { 1, 3 } };
+  array<ptrdiff_t, 2> dims5 = {{1, 3}};
   Tensor<float, 3, DataLayout> result5 = tensor4.trace(dims5);
   VERIFY_IS_EQUAL(result5.rank(), 3);
   VERIFY_IS_EQUAL(result5.dimension(0), 3);
@@ -136,12 +131,10 @@ static void test_simple_trace() {
   }
 }
 
-
-template<int DataLayout>
-static void test_trace_in_expr() {
+template <int DataLayout> static void test_trace_in_expr() {
   Tensor<float, 4, DataLayout> tensor(2, 3, 5, 3);
   tensor.setRandom();
-  array<ptrdiff_t, 2> dims = { { 1, 3 } };
+  array<ptrdiff_t, 2> dims = {{1, 3}};
   Tensor<float, 2, DataLayout> result(2, 5);
   result = result.constant(1.0f) - tensor.trace(dims);
   VERIFY_IS_EQUAL(result.rank(), 2);
@@ -158,7 +151,6 @@ static void test_trace_in_expr() {
     }
   }
 }
-
 
 EIGEN_DECLARE_TEST(cxx11_tensor_trace) {
   CALL_SUBTEST(test_0D_trace<ColMajor>());

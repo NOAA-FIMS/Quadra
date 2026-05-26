@@ -13,16 +13,15 @@
 namespace Eigen {
 
 /** \class TensorGeneratorOp
-  * \ingroup CXX11_Tensor_Module
-  *
-  * \brief Tensor generator class.
-  *
-  *
-  */
+ * \ingroup CXX11_Tensor_Module
+ *
+ * \brief Tensor generator class.
+ *
+ *
+ */
 namespace internal {
-template<typename Generator, typename XprType>
-struct traits<TensorGeneratorOp<Generator, XprType> > : public traits<XprType>
-{
+template <typename Generator, typename XprType>
+struct traits<TensorGeneratorOp<Generator, XprType>> : public traits<XprType> {
   typedef typename XprType::Scalar Scalar;
   typedef traits<XprType> XprTraits;
   typedef typename XprTraits::StorageKind StorageKind;
@@ -34,53 +33,53 @@ struct traits<TensorGeneratorOp<Generator, XprType> > : public traits<XprType>
   typedef typename XprTraits::PointerType PointerType;
 };
 
-template<typename Generator, typename XprType>
-struct eval<TensorGeneratorOp<Generator, XprType>, Eigen::Dense>
-{
-  typedef const TensorGeneratorOp<Generator, XprType>& type;
+template <typename Generator, typename XprType>
+struct eval<TensorGeneratorOp<Generator, XprType>, Eigen::Dense> {
+  typedef const TensorGeneratorOp<Generator, XprType> &type;
 };
 
-template<typename Generator, typename XprType>
-struct nested<TensorGeneratorOp<Generator, XprType>, 1, typename eval<TensorGeneratorOp<Generator, XprType> >::type>
-{
+template <typename Generator, typename XprType>
+struct nested<TensorGeneratorOp<Generator, XprType>, 1,
+              typename eval<TensorGeneratorOp<Generator, XprType>>::type> {
   typedef TensorGeneratorOp<Generator, XprType> type;
 };
 
-}  // end namespace internal
+} // end namespace internal
 
-
-
-template<typename Generator, typename XprType>
-class TensorGeneratorOp : public TensorBase<TensorGeneratorOp<Generator, XprType>, ReadOnlyAccessors>
-{
-  public:
+template <typename Generator, typename XprType>
+class TensorGeneratorOp
+    : public TensorBase<TensorGeneratorOp<Generator, XprType>,
+                        ReadOnlyAccessors> {
+public:
   typedef typename Eigen::internal::traits<TensorGeneratorOp>::Scalar Scalar;
   typedef typename Eigen::NumTraits<Scalar>::Real RealScalar;
   typedef typename XprType::CoeffReturnType CoeffReturnType;
   typedef typename Eigen::internal::nested<TensorGeneratorOp>::type Nested;
-  typedef typename Eigen::internal::traits<TensorGeneratorOp>::StorageKind StorageKind;
+  typedef typename Eigen::internal::traits<TensorGeneratorOp>::StorageKind
+      StorageKind;
   typedef typename Eigen::internal::traits<TensorGeneratorOp>::Index Index;
 
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE TensorGeneratorOp(const XprType& expr, const Generator& generator)
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+  TensorGeneratorOp(const XprType &expr, const Generator &generator)
       : m_xpr(expr), m_generator(generator) {}
 
-    EIGEN_DEVICE_FUNC
-    const Generator& generator() const { return m_generator; }
+  EIGEN_DEVICE_FUNC
+  const Generator &generator() const { return m_generator; }
 
-    EIGEN_DEVICE_FUNC
-    const typename internal::remove_all<typename XprType::Nested>::type&
-    expression() const { return m_xpr; }
+  EIGEN_DEVICE_FUNC
+  const typename internal::remove_all<typename XprType::Nested>::type &
+  expression() const {
+    return m_xpr;
+  }
 
-  protected:
-    typename XprType::Nested m_xpr;
-    const Generator m_generator;
+protected:
+  typename XprType::Nested m_xpr;
+  const Generator m_generator;
 };
 
-
 // Eval as rvalue
-template<typename Generator, typename ArgType, typename Device>
-struct TensorEvaluator<const TensorGeneratorOp<Generator, ArgType>, Device>
-{
+template <typename Generator, typename ArgType, typename Device>
+struct TensorEvaluator<const TensorGeneratorOp<Generator, ArgType>, Device> {
   typedef TensorGeneratorOp<Generator, ArgType> XprType;
   typedef typename XprType::Index Index;
   typedef typename TensorEvaluator<ArgType, Device>::Dimensions Dimensions;
@@ -91,13 +90,13 @@ struct TensorEvaluator<const TensorGeneratorOp<Generator, ArgType>, Device>
   typedef StorageMemory<CoeffReturnType, Device> Storage;
   typedef typename Storage::Type EvaluatorPointerType;
   enum {
-    IsAligned         = false,
-    PacketAccess      = (PacketType<CoeffReturnType, Device>::size > 1),
-    BlockAccess       = true,
+    IsAligned = false,
+    PacketAccess = (PacketType<CoeffReturnType, Device>::size > 1),
+    BlockAccess = true,
     PreferBlockAccess = true,
-    Layout            = TensorEvaluator<ArgType, Device>::Layout,
-    CoordAccess       = false,  // to be implemented
-    RawAccess         = false
+    Layout = TensorEvaluator<ArgType, Device>::Layout,
+    CoordAccess = false, // to be implemented
+    RawAccess = false
   };
 
   typedef internal::TensorIntDivisor<Index> IndexDivisor;
@@ -111,9 +110,8 @@ struct TensorEvaluator<const TensorGeneratorOp<Generator, ArgType>, Device>
       TensorBlock;
   //===--------------------------------------------------------------------===//
 
-  EIGEN_STRONG_INLINE TensorEvaluator(const XprType& op, const Device& device)
-      :  m_device(device), m_generator(op.generator())
-  {
+  EIGEN_STRONG_INLINE TensorEvaluator(const XprType &op, const Device &device)
+      : m_device(device), m_generator(op.generator()) {
     TensorEvaluator<ArgType, Device> argImpl(op.expression(), device);
     m_dimensions = argImpl.dimensions();
 
@@ -122,50 +120,55 @@ struct TensorEvaluator<const TensorGeneratorOp<Generator, ArgType>, Device>
       EIGEN_UNROLL_LOOP
       for (int i = 1; i < NumDims; ++i) {
         m_strides[i] = m_strides[i - 1] * m_dimensions[i - 1];
-        if (m_strides[i] != 0) m_fast_strides[i] = IndexDivisor(m_strides[i]);
+        if (m_strides[i] != 0)
+          m_fast_strides[i] = IndexDivisor(m_strides[i]);
       }
     } else {
       m_strides[NumDims - 1] = 1;
       EIGEN_UNROLL_LOOP
       for (int i = NumDims - 2; i >= 0; --i) {
         m_strides[i] = m_strides[i + 1] * m_dimensions[i + 1];
-        if (m_strides[i] != 0) m_fast_strides[i] = IndexDivisor(m_strides[i]);
+        if (m_strides[i] != 0)
+          m_fast_strides[i] = IndexDivisor(m_strides[i]);
       }
     }
   }
 
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Dimensions& dimensions() const { return m_dimensions; }
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Dimensions &dimensions() const {
+    return m_dimensions;
+  }
 
   EIGEN_STRONG_INLINE bool evalSubExprsIfNeeded(EvaluatorPointerType /*data*/) {
     return true;
   }
-  EIGEN_STRONG_INLINE void cleanup() {
-  }
+  EIGEN_STRONG_INLINE void cleanup() {}
 
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE CoeffReturnType coeff(Index index) const
-  {
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE CoeffReturnType
+  coeff(Index index) const {
     array<Index, NumDims> coords;
     extract_coordinates(index, coords);
     return m_generator(coords);
   }
 
-  template<int LoadMode>
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE PacketReturnType packet(Index index) const
-  {
+  template <int LoadMode>
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE PacketReturnType
+  packet(Index index) const {
     const int packetSize = PacketType<CoeffReturnType, Device>::size;
     EIGEN_STATIC_ASSERT((packetSize > 1), YOU_MADE_A_PROGRAMMING_MISTAKE)
-    eigen_assert(index+packetSize-1 < dimensions().TotalSize());
+    eigen_assert(index + packetSize - 1 < dimensions().TotalSize());
 
-    EIGEN_ALIGN_MAX typename internal::remove_const<CoeffReturnType>::type values[packetSize];
+    EIGEN_ALIGN_MAX typename internal::remove_const<CoeffReturnType>::type
+        values[packetSize];
     for (int i = 0; i < packetSize; ++i) {
-      values[i] = coeff(index+i);
+      values[i] = coeff(index + i);
     }
     PacketReturnType rslt = internal::pload<PacketReturnType>(values);
     return rslt;
   }
 
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
-  internal::TensorBlockResourceRequirements getResourceRequirements() const {
+  EIGEN_DEVICE_FUNC
+      EIGEN_STRONG_INLINE internal::TensorBlockResourceRequirements
+      getResourceRequirements() const {
     const size_t target_size = m_device.firstLevelCacheSize();
     // TODO(ezhulenev): Generator should have a cost.
     return internal::TensorBlockResourceRequirements::skewed<Scalar>(
@@ -180,8 +183,8 @@ struct TensorEvaluator<const TensorGeneratorOp<Generator, ArgType>, Device>
   };
 
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE TensorBlock
-  block(TensorBlockDesc& desc, TensorBlockScratch& scratch,
-          bool /*root_of_expr_ast*/ = false) const {
+  block(TensorBlockDesc &desc, TensorBlockScratch &scratch,
+        bool /*root_of_expr_ast*/ = false) const {
     static const bool is_col_major =
         static_cast<int>(Layout) == static_cast<int>(ColMajor);
 
@@ -209,7 +212,7 @@ struct TensorEvaluator<const TensorGeneratorOp<Generator, ArgType>, Device>
     const typename TensorBlock::Storage block_storage =
         TensorBlock::prepareStorage(desc, scratch);
 
-    CoeffReturnType* block_buffer = block_storage.data();
+    CoeffReturnType *block_buffer = block_storage.data();
 
     static const int packet_size = PacketType<CoeffReturnType, Device>::size;
 
@@ -222,7 +225,7 @@ struct TensorEvaluator<const TensorGeneratorOp<Generator, ArgType>, Device>
       // Generate data for the vectorized part of the inner-most dimension.
       for (; i <= inner_dim_vectorized; i += packet_size) {
         for (Index j = 0; j < packet_size; ++j) {
-          array<Index, NumDims> j_coords = coords;  // Break loop dependence.
+          array<Index, NumDims> j_coords = coords; // Break loop dependence.
           j_coords[inner_dim] += j;
           *(block_buffer + offset + i + j) = m_generator(j_coords);
         }
@@ -236,7 +239,8 @@ struct TensorEvaluator<const TensorGeneratorOp<Generator, ArgType>, Device>
       coords[inner_dim] = initial_coords[inner_dim];
 
       // For the 1d tensor we need to generate only one inner-most dimension.
-      if (NumDims == 1) break;
+      if (NumDims == 1)
+        break;
 
       // Update offset.
       for (i = 1; i < NumDims; ++i) {
@@ -245,7 +249,8 @@ struct TensorEvaluator<const TensorGeneratorOp<Generator, ArgType>, Device>
           coords[is_col_major ? i : NumDims - 1 - i]++;
           break;
         }
-        if (i != NumDims - 1) it[i].count = 0;
+        if (i != NumDims - 1)
+          it[i].count = 0;
         coords[is_col_major ? i : NumDims - 1 - i] =
             initial_coords[is_col_major ? i : NumDims - 1 - i];
         offset -= it[i].span;
@@ -255,24 +260,24 @@ struct TensorEvaluator<const TensorGeneratorOp<Generator, ArgType>, Device>
     return block_storage.AsTensorMaterializedBlock();
   }
 
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE TensorOpCost
-  costPerCoeff(bool) const {
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE TensorOpCost costPerCoeff(bool) const {
     // TODO(rmlarsen): This is just a placeholder. Define interface to make
     // generators return their cost.
-    return TensorOpCost(0, 0, TensorOpCost::AddCost<Scalar>() +
-                                  TensorOpCost::MulCost<Scalar>());
+    return TensorOpCost(0, 0,
+                        TensorOpCost::AddCost<Scalar>() +
+                            TensorOpCost::MulCost<Scalar>());
   }
 
-  EIGEN_DEVICE_FUNC EvaluatorPointerType  data() const { return NULL; }
+  EIGEN_DEVICE_FUNC EvaluatorPointerType data() const { return NULL; }
 
 #ifdef EIGEN_USE_SYCL
   // binding placeholder accessors to a command group handler for SYCL
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void bind(cl::sycl::handler&) const {}
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void bind(cl::sycl::handler &) const {}
 #endif
 
- protected:
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
-  void extract_coordinates(Index index, array<Index, NumDims>& coords) const {
+protected:
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void
+  extract_coordinates(Index index, array<Index, NumDims> &coords) const {
     if (static_cast<int>(Layout) == static_cast<int>(ColMajor)) {
       for (int i = NumDims - 1; i > 0; --i) {
         const Index idx = index / m_fast_strides[i];
@@ -286,7 +291,7 @@ struct TensorEvaluator<const TensorGeneratorOp<Generator, ArgType>, Device>
         index -= idx * m_strides[i];
         coords[i] = idx;
       }
-      coords[NumDims-1] = index;
+      coords[NumDims - 1] = index;
     }
   }
 
