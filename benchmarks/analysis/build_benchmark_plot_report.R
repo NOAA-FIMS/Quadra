@@ -252,6 +252,21 @@ page_text(
 
 summary_table_page(random, state, exact, factor)
 
+
+page_text(
+  "Benchmark Fairness and Limitations",
+  c(
+    "These benchmarks are best interpreted as architectural and scaling diagnostics rather than definitive framework rankings.",
+    "Several comparisons are phase-level comparisons rather than mathematically identical end-to-end workloads.",
+    "Quadra benchmarks are native C++ executables, while current TMB benchmarks include R/TMB evaluation pathways.",
+    "Exact-gradient implementations are not yet mathematically identical because the derivative of 0.5 * logdet(H_uu) is not currently included in Quadra's exact-gradient path.",
+    "Sparse ordering strategies, factorization reuse behavior, compiler flags, and backend libraries may differ between engines.",
+    "Quadra currently exposes more internal decomposition metrics than TMB through this benchmark harness.",
+    "Some reuse-oriented workloads have not yet been implemented equivalently for both frameworks.",
+    "The strongest conclusions currently come from scaling shape, decomposition behavior, sparse structure diagnostics, and reuse experiments."
+  )
+)
+
 page_text(
   "Benchmark Method Notes",
   c(
