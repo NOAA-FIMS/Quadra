@@ -1,0 +1,5 @@
+engine,n_obs,workspace_ms,implicit_derivatives_ms,factorization_ms,total_wall_ms,hessian_nnz,success
+quadra,100,0.694458,0.693041,0.001125,0.695708,1,1
+quadra,1000,8.63304,8.63192,0.000917,8.63387,1,1
+quadra,5000,53.5447,53.5435,0.000958,53.5457,1,1
+quadra,10000,91.1622,91.1612,0.000875,91.1633,1,1

@@ -1,0 +1,181 @@
+name: quadra-benchmarks
+
+on:
+  workflow_dispatch:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+
+    env:
+      TZ: UTC
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential ninja-build time
+
+      - uses: r-lib/actions/setup-r@v2
+
+
+      - name: Build random intercept benchmark
+        run: |
+          make benchmark-random-intercept
+
+      - name: Build state-space benchmark
+        run: |
+          make benchmark-state-space
+
+      - name: Run random intercept benchmark with memory log
+        run: |
+          mkdir -p benchmarks/outputs
+          /usr/bin/time -v ./benchmarks/random_intercept/benchmark_random_intercept \
+            2> benchmarks/outputs/random_intercept_time.log
+
+      - name: Run state-space benchmark with memory log
+        run: |
+          mkdir -p benchmarks/outputs
+          /usr/bin/time -v ./benchmarks/state_space/benchmark_state_space \
+            2> benchmarks/outputs/state_space_time.log
+
+      - name: Collect benchmark outputs
+        run: |
+          mkdir -p benchmarks/outputs
+
+          cp benchmarks/random_intercept/random_intercept_benchmark.csv \
+             benchmarks/outputs/random_intercept_benchmark.csv
+
+          cp benchmarks/state_space/state_space_benchmark.csv \
+             benchmarks/outputs/state_space_benchmark.csv
+
+          # Keep raw /usr/bin/time -v logs for peak RSS and system metrics.
+          test -f benchmarks/outputs/random_intercept_time.log
+          test -f benchmarks/outputs/state_space_time.log
+
+      - name: Install TMB
+        continue-on-error: true
+        run: |
+          Rscript -e 'install.packages("TMB", repos="https://cloud.r-project.org")'
+
+      - name: Run TMB random intercept benchmark
+        continue-on-error: true
+        run: |
+          make benchmark-quadra-tmb-random-intercept-tmb
+
+      - name: Run TMB state-space benchmark
+        continue-on-error: true
+        run: |
+          make benchmark-quadra-tmb-state-space-tmb
+
+      - name: Run exact-gradient benchmarks
+        run: |
+          make benchmark-exact-laplace-gradient-state-space
+          make benchmark-exact-gradient-reuse
+          make benchmark-factorization-reuse
+
+      - name: Normalize benchmark outputs
+        run: |
+          make benchmark-normalize-all
+          make benchmark-summarize
+          cp benchmarks/normalized/*.csv benchmarks/outputs/ || true
+
+      - name: Generate scaling plots
+        run: |
+          Rscript benchmarks/analysis/plot_random_intercept_scaling.R
+          Rscript benchmarks/analysis/plot_random_intercept_comparison.R
+          Rscript benchmarks/analysis/plot_state_space_comparison.R
+          Rscript benchmarks/analysis/plot_exact_gradient_scaling.R || true
+          Rscript benchmarks/analysis/plot_exact_gradient_reuse.R || true
+          Rscript benchmarks/analysis/plot_factorization_reuse.R || true
+          Rscript benchmarks/analysis/build_benchmark_plot_report.R
+
+      - name: Verify plot outputs
+        run: |
+          test -f benchmarks/analysis/random_intercept_scaling.png
+          test -f benchmarks/analysis/random_intercept_objective_eval_comparison.png
+          test -f benchmarks/analysis/random_intercept_total_wall_comparison.png
+          test -f benchmarks/analysis/state_space_total_wall_comparison.png
+          test -f benchmarks/analysis/state_space_fill_ratio_comparison.png
+
+      - name: Embed scaling plot in summary
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Random Intercept Scaling Plot" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "The PNG is uploaded as a workflow artifact. GitHub may not render local images inline from summaries." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Artifact path: \`benchmarks/analysis/random_intercept_scaling.png\`" >> $GITHUB_STEP_SUMMARY
+
+
+      - name: Benchmark summary
+        run: |
+          echo "## Quadra Benchmark Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ -f benchmarks/outputs/benchmark_summary.md ]; then
+            cat benchmarks/outputs/benchmark_summary.md >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "### Random Intercept Benchmark" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cat benchmarks/outputs/random_intercept_benchmark.csv >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          echo "### State Space Benchmark" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cat benchmarks/outputs/state_space_benchmark.csv >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Normalized Benchmark Outputs" >> $GITHUB_STEP_SUMMARY
+          for csv in benchmarks/outputs/*normalized*.csv; do
+            if [ -f "$csv" ]; then
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "#### $(basename "$csv")" >> $GITHUB_STEP_SUMMARY
+              python3 benchmarks/analysis/csv_to_markdown.py "$csv" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Scaling Plot Artifact" >> $GITHUB_STEP_SUMMARY
+          echo "Generated:" >> $GITHUB_STEP_SUMMARY
+          echo "- benchmarks/analysis/random_intercept_scaling.png" >> $GITHUB_STEP_SUMMARY
+
+
+          echo "### Peak RSS Logs" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          grep "Maximum resident set size" benchmarks/outputs/*_time.log >> $GITHUB_STEP_SUMMARY || true
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload benchmark artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: quadra-benchmark-results
+          path: |
+            benchmarks/outputs
+            benchmarks/analysis/random_intercept_scaling.png
+            benchmarks/analysis/random_intercept_objective_eval_comparison.png
+            benchmarks/analysis/random_intercept_gradient_eval_comparison.png
+            benchmarks/analysis/random_intercept_workspace_setup_comparison.png
+            benchmarks/analysis/random_intercept_total_wall_comparison.png
+            benchmarks/analysis/state_space_total_wall_comparison.png
+            benchmarks/analysis/state_space_workspace_setup_comparison.png
+            benchmarks/analysis/state_space_factorization_comparison.png
+            benchmarks/analysis/state_space_hessian_nnz_comparison.png
+            benchmarks/analysis/state_space_factor_nnz_comparison.png
+            benchmarks/analysis/state_space_fill_ratio_comparison.png
+            benchmarks/analysis/quadra_benchmark_plots.pdf
+          if-no-files-found: error

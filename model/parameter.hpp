@@ -2,6 +2,8 @@
 #define PARAMETER_HPP
 #pragma once
 
+#include "../core/model/parameter_transform.hpp"
+
 #include <vector>
 #include <map>
 #include <string>
@@ -15,7 +17,7 @@ namespace quadra
     //==============================
     // Transform types
     //==============================
-    // enum class Transform {
+    // enum class ParameterTransform {
     //     Identity,
     //     Log,
     //     Logit
@@ -27,7 +29,7 @@ namespace quadra
     // template <typename T>
     // T apply_transform(T x, Transform t) {
     //     switch (t) {
-    //         case Transform::Identity:
+    //         case ParameterTransform::Identity:
     //             return x;
 
     //         case Transform::Log:
@@ -48,13 +50,13 @@ namespace quadra
     {
         std::string name;
         double value;
-        Transform transform;
+        ParameterTransform transform;
         bool is_random;
         int block_id;
 
         Parameter(std::string name,
                   double value,
-                  Transform transform = Transform::Identity,
+                  ParameterTransform transform = ParameterTransform::Identity,
                   bool is_random = false,
                   int block_id = -1)
             : name(name),

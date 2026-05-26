@@ -84,6 +84,12 @@ namespace quadra
 
     inline double value_of(const had::AReal &x)
     {
+#ifndef QUADRA_USE_ORIGINAL_HAD
+        if (had::g_ADGraph)
+        {
+            return had::g_ADGraph->vertices[x.varId].primal;
+        }
+#endif
         return x.val;
     }
 
@@ -124,6 +130,19 @@ namespace quadra
             had::g_ADGraph = &graph;
             graph.Clear();
         }
+
+
+        void forward()
+        {
+            had::g_ADGraph = &graph;
+            had::Forward(graph);
+        }
+
+        void zero_adjoints()
+        {
+            had::g_ADGraph = &graph;
+            had::ZeroAdjoints(graph);
+        }
     };
 
     struct ADScope
@@ -140,6 +159,19 @@ namespace quadra
         double value(const T &loss) const
         {
             return value_of_arithmetic_or_ad(loss);
+        }
+
+
+        void forward() const
+        {
+            had::g_ADGraph = &graph;
+            had::Forward(graph);
+        }
+
+        void zero_adjoints() const
+        {
+            had::g_ADGraph = &graph;
+            had::ZeroAdjoints(graph);
         }
 
         void backward(const had::AReal &loss)
@@ -165,6 +197,31 @@ namespace quadra
     };
 
     //--------------------------------------------------
+    // Reset accumulated AD adjoints without clearing graph structure
+    //--------------------------------------------------
+
+    inline void forward(TapeContext &tape)
+    {
+        tape.forward();
+    }
+
+    inline void zero_adjoints(had::ADGraph &graph)
+    {
+        had::ZeroAdjoints(graph);
+    }
+
+    inline void zero_adjoints(TapeContext &tape)
+    {
+        tape.zero_adjoints();
+    }
+
+    //--------------------------------------------------
+    // Reusable tape value update and forward replay helpers
+    //--------------------------------------------------
+    inline void set_value(had::AReal &x, const double value)
+    {
+        had::SetValue(x, value);
+    }//--------------------------------------------------
     // Convert Eigen/std vectors to scalar vectors
     //--------------------------------------------------
     template <typename Scalar = AD>

@@ -63,12 +63,12 @@ int main() {
     };
 
     ParameterVector params;
-    params.add({"log_q", std::log(0.01), Transform::Identity, false});
-    params.add({"log_sigma_obs", std::log(0.2), Transform::Identity, false});
-    params.add({"log_sigma_re", std::log(0.1), Transform::Identity, false});
+    params.add({"log_q", std::log(0.01), ParameterTransform::Identity, false});
+    params.add({"log_sigma_obs", std::log(0.2), ParameterTransform::Identity, false});
+    params.add({"log_sigma_re", std::log(0.1), ParameterTransform::Identity, false});
 
     for (int t = 0; t < static_cast<int>(log_index.size()); ++t) {
-        params.add({"u_year_" + std::to_string(t), 0.0, Transform::Identity, true});
+        params.add({"u_year_" + std::to_string(t), 0.0, ParameterTransform::Identity, true});
     }
 
     FisheriesRandomYearEffects model{log_index, log_biomass};

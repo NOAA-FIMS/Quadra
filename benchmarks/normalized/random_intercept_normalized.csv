@@ -1,0 +1,5 @@
+engine,model,n_obs,n_random,workspace_ms,implicit_derivatives_ms,factorization_ms,total_wall_ms,peak_rss_kb,success
+quadra,random_intercept,100,1,0.694458,0.693041,0.001125,0.695708,,1
+quadra,random_intercept,1000,1,8.63304,8.63192,0.000917,8.63387,,1
+quadra,random_intercept,5000,1,53.5447,53.5435,0.000958,53.5457,,1
+quadra,random_intercept,10000,1,91.1622,91.1612,0.000875,91.1633,,1

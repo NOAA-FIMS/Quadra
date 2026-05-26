@@ -51,12 +51,12 @@ int main() {
     std::vector<double> y = {1.0, 1.2, 0.9, 1.5, 1.8, 1.7, 2.0, 2.2};
 
     ParameterVector params;
-    params.add({"mu", 1.0, Transform::Identity, false});
-    params.add({"log_sigma_obs", std::log(0.4), Transform::Identity, false});
-    params.add({"log_sigma_rw", std::log(0.3), Transform::Identity, false});
+    params.add({"mu", 1.0, ParameterTransform::Identity, false});
+    params.add({"log_sigma_obs", std::log(0.4), ParameterTransform::Identity, false});
+    params.add({"log_sigma_rw", std::log(0.3), ParameterTransform::Identity, false});
 
     for (int t = 0; t < static_cast<int>(y.size()); ++t) {
-        params.add({"x_" + std::to_string(t), 0.0, Transform::Identity, true});
+        params.add({"x_" + std::to_string(t), 0.0, ParameterTransform::Identity, true});
     }
 
     GaussianRandomWalk model{y};
