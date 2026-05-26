@@ -168,7 +168,6 @@ int main()
     example::print_index_catch_diagnostics(model, fit.par, result, final_random_effects);
     example::print_age_composition_diagnostics(model, fit.par, result, final_random_effects);
     example::print_derived_quantity_report(model, fit.par, result, final_random_effects);
-    return 0;
-}
+    return 0;}
 
 
