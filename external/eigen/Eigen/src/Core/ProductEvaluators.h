@@ -109,7 +109,7 @@ struct product_evaluator<Product<Lhs, Rhs, Options>, ProductTag, LhsShape,
   enum { Flags = Base::Flags | EvalBeforeNestingBit };
 
   EIGEN_DEVICE_FUNC
-      EIGEN_STRONG_INLINE explicit product_evaluator(const XprType &xpr)
+  EIGEN_STRONG_INLINE explicit product_evaluator(const XprType &xpr)
       : m_result(xpr.rows(), xpr.cols()) {
     ::new (static_cast<Base *>(this)) Base(m_result);
 
@@ -597,7 +597,7 @@ struct product_evaluator<Product<Lhs, Rhs, LazyProduct>, ProductTag, DenseShape,
   typedef typename XprType::CoeffReturnType CoeffReturnType;
 
   EIGEN_DEVICE_FUNC
-      EIGEN_STRONG_INLINE explicit product_evaluator(const XprType &xpr)
+  EIGEN_STRONG_INLINE explicit product_evaluator(const XprType &xpr)
       : m_lhs(xpr.lhs()), m_rhs(xpr.rhs()),
         m_lhsImpl(m_lhs), // FIXME the creation of the evaluator objects should
                           // result in a no-op, but check that!
@@ -801,7 +801,7 @@ struct product_evaluator<Product<Lhs, Rhs, DefaultProduct>,
       Base;
   enum { Flags = Base::Flags | EvalBeforeNestingBit };
   EIGEN_DEVICE_FUNC
-      EIGEN_STRONG_INLINE explicit product_evaluator(const XprType &xpr)
+  EIGEN_STRONG_INLINE explicit product_evaluator(const XprType &xpr)
       : Base(BaseProduct(xpr.lhs(), xpr.rhs())) {}
 };
 
@@ -1028,7 +1028,7 @@ public:
     // should be the one
     //_Vectorizable = bool(int(MatrixFlags)&PacketAccessBit) &&
     //((!_PacketOnDiag) || (_SameTypes &&
-    //bool(int(DiagFlags)&PacketAccessBit))),
+    // bool(int(DiagFlags)&PacketAccessBit))),
     _Vectorizable =
         bool(int(MatrixFlags) & PacketAccessBit) && _SameTypes &&
         (_SameStorageOrder ||

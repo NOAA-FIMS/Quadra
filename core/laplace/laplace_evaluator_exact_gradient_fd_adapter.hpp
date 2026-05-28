@@ -32,41 +32,38 @@ namespace laplace {
 template <class JointEnvelopeGradientFn, class HessianUUAtFixedUhatFn>
 class LaplaceEvaluatorExactGradientFDAdapter {
 public:
-    LaplaceEvaluatorExactGradientFDAdapter(
-        JointEnvelopeGradientFn joint_envelope_gradient,
-        HessianUUAtFixedUhatFn hessian_uu_at_fixed_uhat,
-        FullExactLaplaceGradientFDOptions options =
-            FullExactLaplaceGradientFDOptions{})
-        : joint_envelope_gradient_(std::move(joint_envelope_gradient)),
-          hessian_uu_at_fixed_uhat_(std::move(hessian_uu_at_fixed_uhat)),
-          options_(options) {}
+  LaplaceEvaluatorExactGradientFDAdapter(
+      JointEnvelopeGradientFn joint_envelope_gradient,
+      HessianUUAtFixedUhatFn hessian_uu_at_fixed_uhat,
+      FullExactLaplaceGradientFDOptions options =
+          FullExactLaplaceGradientFDOptions{})
+      : joint_envelope_gradient_(std::move(joint_envelope_gradient)),
+        hessian_uu_at_fixed_uhat_(std::move(hessian_uu_at_fixed_uhat)),
+        options_(options) {}
 
-    Eigen::VectorXd operator()(const Eigen::VectorXd& theta,
-                               const Eigen::VectorXd& uhat) const {
-        const Eigen::VectorXd grad_joint =
-            joint_envelope_gradient_(theta, uhat);
+  Eigen::VectorXd operator()(const Eigen::VectorXd &theta,
+                             const Eigen::VectorXd &uhat) const {
+    const Eigen::VectorXd grad_joint = joint_envelope_gradient_(theta, uhat);
 
-        if (grad_joint.size() != theta.size()) {
-            throw std::invalid_argument(
-                "joint envelope gradient length must match theta length.");
-        }
-
-        auto hessian_theta_only = [&](const Eigen::VectorXd& theta_perturbed) {
-            return hessian_uu_at_fixed_uhat_(theta_perturbed, uhat);
-        };
-
-        return full_exact_laplace_gradient_fd(
-            grad_joint, hessian_theta_only, theta, options_);
+    if (grad_joint.size() != theta.size()) {
+      throw std::invalid_argument(
+          "joint envelope gradient length must match theta length.");
     }
 
-    const FullExactLaplaceGradientFDOptions& options() const {
-        return options_;
-    }
+    auto hessian_theta_only = [&](const Eigen::VectorXd &theta_perturbed) {
+      return hessian_uu_at_fixed_uhat_(theta_perturbed, uhat);
+    };
+
+    return full_exact_laplace_gradient_fd(grad_joint, hessian_theta_only, theta,
+                                          options_);
+  }
+
+  const FullExactLaplaceGradientFDOptions &options() const { return options_; }
 
 private:
-    JointEnvelopeGradientFn joint_envelope_gradient_;
-    HessianUUAtFixedUhatFn hessian_uu_at_fixed_uhat_;
-    FullExactLaplaceGradientFDOptions options_;
+  JointEnvelopeGradientFn joint_envelope_gradient_;
+  HessianUUAtFixedUhatFn hessian_uu_at_fixed_uhat_;
+  FullExactLaplaceGradientFDOptions options_;
 };
 
 template <class JointEnvelopeGradientFn, class HessianUUAtFixedUhatFn>
@@ -75,13 +72,11 @@ auto make_laplace_evaluator_exact_gradient_fd_adapter(
     HessianUUAtFixedUhatFn hessian_uu_at_fixed_uhat,
     FullExactLaplaceGradientFDOptions options =
         FullExactLaplaceGradientFDOptions{}) {
-    return LaplaceEvaluatorExactGradientFDAdapter<
-        JointEnvelopeGradientFn,
-        HessianUUAtFixedUhatFn>(
-            std::move(joint_envelope_gradient),
-            std::move(hessian_uu_at_fixed_uhat),
-            options);
+  return LaplaceEvaluatorExactGradientFDAdapter<JointEnvelopeGradientFn,
+                                                HessianUUAtFixedUhatFn>(
+      std::move(joint_envelope_gradient), std::move(hessian_uu_at_fixed_uhat),
+      options);
 }
 
-}  // namespace laplace
-}  // namespace quadra
+} // namespace laplace
+} // namespace quadra

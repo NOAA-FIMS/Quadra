@@ -281,8 +281,8 @@ struct TensorEvaluator<const TensorChippingOp<DimId, ArgType>, Device> {
   }
 
   EIGEN_DEVICE_FUNC
-      EIGEN_STRONG_INLINE internal::TensorBlockResourceRequirements
-      getResourceRequirements() const {
+  EIGEN_STRONG_INLINE internal::TensorBlockResourceRequirements
+  getResourceRequirements() const {
     const size_t target_size = m_device.lastLevelCacheSize();
     return internal::TensorBlockResourceRequirements::merge(
         internal::TensorBlockResourceRequirements::skewed<Scalar>(target_size),

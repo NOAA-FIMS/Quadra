@@ -203,8 +203,8 @@ struct TensorEvaluator<const TensorForcedEvalOp<ArgType_>, Device> {
   }
 
   EIGEN_DEVICE_FUNC
-      EIGEN_STRONG_INLINE internal::TensorBlockResourceRequirements
-      getResourceRequirements() const {
+  EIGEN_STRONG_INLINE internal::TensorBlockResourceRequirements
+  getResourceRequirements() const {
     return internal::TensorBlockResourceRequirements::any();
   }
 

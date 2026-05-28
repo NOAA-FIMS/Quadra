@@ -64,8 +64,8 @@ public:
   typedef typename internal::remove_all<XprType>::type NestedExpression;
 
   EIGEN_DEVICE_FUNC
-      EIGEN_STRONG_INLINE explicit CwiseUnaryOp(const XprType &xpr,
-                                                const UnaryOp &func = UnaryOp())
+  EIGEN_STRONG_INLINE explicit CwiseUnaryOp(const XprType &xpr,
+                                            const UnaryOp &func = UnaryOp())
       : m_xpr(xpr), m_functor(func) {}
 
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE EIGEN_CONSTEXPR Index

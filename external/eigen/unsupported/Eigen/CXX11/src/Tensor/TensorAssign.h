@@ -209,8 +209,8 @@ struct TensorEvaluator<const TensorAssignOp<LeftArgType, RightArgType>,
   }
 
   EIGEN_DEVICE_FUNC
-      EIGEN_STRONG_INLINE internal::TensorBlockResourceRequirements
-      getResourceRequirements() const {
+  EIGEN_STRONG_INLINE internal::TensorBlockResourceRequirements
+  getResourceRequirements() const {
     return internal::TensorBlockResourceRequirements::merge(
         m_leftImpl.getResourceRequirements(),
         m_rightImpl.getResourceRequirements());

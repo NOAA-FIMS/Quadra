@@ -26,67 +26,58 @@ namespace laplace {
 //
 // and MUST NOT re-optimize uhat.
 //
-template <class HessianUUFn>
-class FiniteDifferenceHdotProvider {
+template <class HessianUUFn> class FiniteDifferenceHdotProvider {
 public:
-    explicit FiniteDifferenceHdotProvider(
-        HessianUUFn hessian_uu_at_fixed_uhat,
-        double step = 1.0e-6,
-        bool relative_step = true)
-        : hessian_uu_at_fixed_uhat_(std::move(hessian_uu_at_fixed_uhat)),
-          step_(step),
-          relative_step_(relative_step) {
-        if (!(step_ > 0.0) || !std::isfinite(step_)) {
-            throw std::invalid_argument(
-                "FiniteDifferenceHdotProvider step must be positive and finite.");
-        }
+  explicit FiniteDifferenceHdotProvider(HessianUUFn hessian_uu_at_fixed_uhat,
+                                        double step = 1.0e-6,
+                                        bool relative_step = true)
+      : hessian_uu_at_fixed_uhat_(std::move(hessian_uu_at_fixed_uhat)),
+        step_(step), relative_step_(relative_step) {
+    if (!(step_ > 0.0) || !std::isfinite(step_)) {
+      throw std::invalid_argument(
+          "FiniteDifferenceHdotProvider step must be positive and finite.");
+    }
+  }
+
+  Eigen::MatrixXd operator()(const Eigen::VectorXd &theta,
+                             const Eigen::VectorXd &uhat,
+                             int theta_index) const {
+    if (theta_index < 0 || theta_index >= theta.size()) {
+      throw std::out_of_range("theta_index out of range.");
     }
 
-    Eigen::MatrixXd operator()(const Eigen::VectorXd& theta,
-                               const Eigen::VectorXd& uhat,
-                               int theta_index) const {
-        if (theta_index < 0 || theta_index >= theta.size()) {
-            throw std::out_of_range("theta_index out of range.");
-        }
+    const double h = relative_step_
+                         ? step_ * std::max(1.0, std::abs(theta[theta_index]))
+                         : step_;
 
-        const double h = relative_step_
-            ? step_ * std::max(1.0, std::abs(theta[theta_index]))
-            : step_;
+    Eigen::VectorXd plus = theta;
+    Eigen::VectorXd minus = theta;
+    plus[theta_index] += h;
+    minus[theta_index] -= h;
 
-        Eigen::VectorXd plus = theta;
-        Eigen::VectorXd minus = theta;
-        plus[theta_index] += h;
-        minus[theta_index] -= h;
+    const Eigen::MatrixXd H_plus = hessian_uu_at_fixed_uhat_(plus, uhat);
+    const Eigen::MatrixXd H_minus = hessian_uu_at_fixed_uhat_(minus, uhat);
 
-        const Eigen::MatrixXd H_plus =
-            hessian_uu_at_fixed_uhat_(plus, uhat);
-        const Eigen::MatrixXd H_minus =
-            hessian_uu_at_fixed_uhat_(minus, uhat);
-
-        if (H_plus.rows() != H_minus.rows() ||
-            H_plus.cols() != H_minus.cols()) {
-            throw std::invalid_argument(
-                "H_plus and H_minus must have matching dimensions.");
-        }
-
-        return (H_plus - H_minus) / (2.0 * h);
+    if (H_plus.rows() != H_minus.rows() || H_plus.cols() != H_minus.cols()) {
+      throw std::invalid_argument(
+          "H_plus and H_minus must have matching dimensions.");
     }
+
+    return (H_plus - H_minus) / (2.0 * h);
+  }
 
 private:
-    HessianUUFn hessian_uu_at_fixed_uhat_;
-    double step_;
-    bool relative_step_;
+  HessianUUFn hessian_uu_at_fixed_uhat_;
+  double step_;
+  bool relative_step_;
 };
 
 template <class HessianUUFn>
-auto make_finite_difference_hdot_provider(
-    HessianUUFn hessian_uu_at_fixed_uhat,
-    double step = 1.0e-6,
-    bool relative_step = true) {
-    return FiniteDifferenceHdotProvider<HessianUUFn>(
-        std::move(hessian_uu_at_fixed_uhat),
-        step,
-        relative_step);
+auto make_finite_difference_hdot_provider(HessianUUFn hessian_uu_at_fixed_uhat,
+                                          double step = 1.0e-6,
+                                          bool relative_step = true) {
+  return FiniteDifferenceHdotProvider<HessianUUFn>(
+      std::move(hessian_uu_at_fixed_uhat), step, relative_step);
 }
 
 // -----------------------------------------------------------------------------
@@ -122,41 +113,39 @@ auto make_finite_difference_hdot_provider(
 //   5. Later replace dense assembly with sparse pattern-aware contractions.
 //
 // Keeping this as a class lets the exact Laplace gradient layer remain stable.
-template <class JointObjectiveFn>
-class HadQuadraHdotProvider {
+template <class JointObjectiveFn> class HadQuadraHdotProvider {
 public:
-    explicit HadQuadraHdotProvider(JointObjectiveFn joint_objective)
-        : joint_objective_(std::move(joint_objective)) {}
+  explicit HadQuadraHdotProvider(JointObjectiveFn joint_objective)
+      : joint_objective_(std::move(joint_objective)) {}
 
-    Eigen::MatrixXd operator()(const Eigen::VectorXd& theta,
-                               const Eigen::VectorXd& uhat,
-                               int theta_index) const {
-        return compute_hdot(theta, uhat, theta_index);
-    }
+  Eigen::MatrixXd operator()(const Eigen::VectorXd &theta,
+                             const Eigen::VectorXd &uhat,
+                             int theta_index) const {
+    return compute_hdot(theta, uhat, theta_index);
+  }
 
 private:
-    JointObjectiveFn joint_objective_;
+  JointObjectiveFn joint_objective_;
 
-    Eigen::MatrixXd compute_hdot(const Eigen::VectorXd& theta,
-                                 const Eigen::VectorXd& uhat,
-                                 int theta_index) const {
-        (void)theta;
-        (void)uhat;
-        (void)theta_index;
-        (void)joint_objective_;
+  Eigen::MatrixXd compute_hdot(const Eigen::VectorXd &theta,
+                               const Eigen::VectorXd &uhat,
+                               int theta_index) const {
+    (void)theta;
+    (void)uhat;
+    (void)theta_index;
+    (void)joint_objective_;
 
-        throw std::logic_error(
-            "HadQuadraHdotProvider::compute_hdot is a scaffold. "
-            "Bind this method to core/autodiff/had_quadra.hpp third-directional "
-            "derivative support.");
-    }
+    throw std::logic_error(
+        "HadQuadraHdotProvider::compute_hdot is a scaffold. "
+        "Bind this method to core/autodiff/had_quadra.hpp third-directional "
+        "derivative support.");
+  }
 };
 
 template <class JointObjectiveFn>
 auto make_had_quadra_hdot_provider(JointObjectiveFn joint_objective) {
-    return HadQuadraHdotProvider<JointObjectiveFn>(
-        std::move(joint_objective));
+  return HadQuadraHdotProvider<JointObjectiveFn>(std::move(joint_objective));
 }
 
-}  // namespace laplace
-}  // namespace quadra
+} // namespace laplace
+} // namespace quadra

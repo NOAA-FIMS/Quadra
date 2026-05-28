@@ -169,8 +169,8 @@ struct TensorEvaluator<const TensorEvalToOp<ArgType, MakePointer_>, Device> {
   }
 
   EIGEN_DEVICE_FUNC
-      EIGEN_STRONG_INLINE internal::TensorBlockResourceRequirements
-      getResourceRequirements() const {
+  EIGEN_STRONG_INLINE internal::TensorBlockResourceRequirements
+  getResourceRequirements() const {
     return m_impl.getResourceRequirements();
   }
 

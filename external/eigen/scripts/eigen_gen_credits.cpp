@@ -194,7 +194,8 @@ int main() {
     contributor c;
     c.name = it->first;
     c.changedlines = it->second;
-    c.changesets = 0; // contributors_map_for_changesets.find(it->first)->second;
+    c.changesets =
+        0; // contributors_map_for_changesets.find(it->first)->second;
     contributors_list.push_back(c);
   }
 

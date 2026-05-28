@@ -284,7 +284,7 @@ struct PacketConv {
   run(const TensorEvaluator<ArgType, Device> &impl, Index index) {
     internal::scalar_cast_op<SrcType, TargetType> converter;
     EIGEN_ALIGN_MAX
-        typename internal::remove_const<TargetType>::type values[PacketSize];
+    typename internal::remove_const<TargetType>::type values[PacketSize];
     EIGEN_UNROLL_LOOP
     for (int i = 0; i < PacketSize; ++i) {
       values[i] = converter(impl.coeff(index + i));
@@ -323,7 +323,7 @@ struct PacketConv<SrcPacket, TargetPacket, LoadMode,
   static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE TargetPacket
   run(const TensorEvaluator<ArgType, Device> &impl, Index index) {
     EIGEN_ALIGN_MAX
-        typename internal::remove_const<TargetType>::type values[PacketSize];
+    typename internal::remove_const<TargetType>::type values[PacketSize];
     for (int i = 0; i < PacketSize; ++i)
       values[i] = impl.coeff(index + i);
     return internal::pload<TargetPacket>(values);
@@ -463,8 +463,8 @@ struct TensorEvaluator<const TensorConversionOp<TargetType, ArgType>, Device> {
   }
 
   EIGEN_DEVICE_FUNC
-      EIGEN_STRONG_INLINE internal::TensorBlockResourceRequirements
-      getResourceRequirements() const {
+  EIGEN_STRONG_INLINE internal::TensorBlockResourceRequirements
+  getResourceRequirements() const {
     return m_impl.getResourceRequirements();
   }
 

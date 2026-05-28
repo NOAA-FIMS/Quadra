@@ -375,12 +375,11 @@ public:
   Constant(const Scalar &value);
 
   EIGEN_DEPRECATED
-      EIGEN_DEVICE_FUNC static const RandomAccessLinSpacedReturnType
-      LinSpaced(Sequential_t, Index size, const Scalar &low,
-                const Scalar &high);
+  EIGEN_DEVICE_FUNC static const RandomAccessLinSpacedReturnType
+  LinSpaced(Sequential_t, Index size, const Scalar &low, const Scalar &high);
   EIGEN_DEPRECATED
-      EIGEN_DEVICE_FUNC static const RandomAccessLinSpacedReturnType
-      LinSpaced(Sequential_t, const Scalar &low, const Scalar &high);
+  EIGEN_DEVICE_FUNC static const RandomAccessLinSpacedReturnType
+  LinSpaced(Sequential_t, const Scalar &low, const Scalar &high);
 
   EIGEN_DEVICE_FUNC static const RandomAccessLinSpacedReturnType
   LinSpaced(Index size, const Scalar &low, const Scalar &high);

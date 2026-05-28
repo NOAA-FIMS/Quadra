@@ -625,8 +625,8 @@ public:
   }
 
   EIGEN_DEVICE_FUNC
-      EIGEN_STRONG_INLINE internal::TensorBlockResourceRequirements
-      getResourceRequirements() const {
+  EIGEN_STRONG_INLINE internal::TensorBlockResourceRequirements
+  getResourceRequirements() const {
     // TODO(wuke): Targeting L1 size is 30% faster than targeting L{-1} on large
     // tensors. But this might need further tuning.
     const size_t target_size = m_device.firstLevelCacheSize();

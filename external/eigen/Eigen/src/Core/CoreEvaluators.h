@@ -201,7 +201,7 @@ struct evaluator<PlainObjectBase<Derived>> : evaluator_base<Derived> {
   }
 
   EIGEN_DEVICE_FUNC
-      EIGEN_STRONG_INLINE explicit evaluator(const PlainObjectType &m)
+  EIGEN_STRONG_INLINE explicit evaluator(const PlainObjectType &m)
       : m_d(m.data(), IsVectorAtCompileTime ? 0 : m.outerStride()) {
     EIGEN_INTERNAL_CHECK_COST_VALUE(CoeffReadCost);
   }
@@ -306,7 +306,7 @@ struct unary_evaluator<Transpose<ArgType>, IndexBased>
   };
 
   EIGEN_DEVICE_FUNC
-      EIGEN_STRONG_INLINE explicit unary_evaluator(const XprType &t)
+  EIGEN_STRONG_INLINE explicit unary_evaluator(const XprType &t)
       : m_argImpl(t.nestedExpression()) {}
 
   typedef typename XprType::Scalar Scalar;
@@ -587,8 +587,7 @@ struct unary_evaluator<CwiseUnaryOp<UnaryOp, ArgType>, IndexBased>
   };
 
   EIGEN_DEVICE_FUNC
-      EIGEN_STRONG_INLINE explicit unary_evaluator(const XprType &op)
-      : m_d(op) {
+  EIGEN_STRONG_INLINE explicit unary_evaluator(const XprType &op) : m_d(op) {
     EIGEN_INTERNAL_CHECK_COST_VALUE(functor_traits<UnaryOp>::Cost);
     EIGEN_INTERNAL_CHECK_COST_VALUE(CoeffReadCost);
   }
@@ -775,8 +774,7 @@ struct binary_evaluator<CwiseBinaryOp<BinaryOp, Lhs, Rhs>, IndexBased,
   };
 
   EIGEN_DEVICE_FUNC
-      EIGEN_STRONG_INLINE explicit binary_evaluator(const XprType &xpr)
-      : m_d(xpr) {
+  EIGEN_STRONG_INLINE explicit binary_evaluator(const XprType &xpr) : m_d(xpr) {
     EIGEN_INTERNAL_CHECK_COST_VALUE(functor_traits<BinaryOp>::Cost);
     EIGEN_INTERNAL_CHECK_COST_VALUE(CoeffReadCost);
   }
@@ -902,7 +900,7 @@ struct mapbase_evaluator : evaluator_base<Derived> {
   };
 
   EIGEN_DEVICE_FUNC
-      EIGEN_STRONG_INLINE explicit mapbase_evaluator(const XprType &map)
+  EIGEN_STRONG_INLINE explicit mapbase_evaluator(const XprType &map)
       : m_data(const_cast<PointerType>(map.data())),
         m_innerStride(map.innerStride()), m_outerStride(map.outerStride()) {
     EIGEN_STATIC_ASSERT(
@@ -1109,7 +1107,7 @@ struct block_evaluator<ArgType, BlockRows, BlockCols, InnerPanel,
   typedef Block<ArgType, BlockRows, BlockCols, InnerPanel> XprType;
 
   EIGEN_DEVICE_FUNC
-      EIGEN_STRONG_INLINE explicit block_evaluator(const XprType &block)
+  EIGEN_STRONG_INLINE explicit block_evaluator(const XprType &block)
       : unary_evaluator<XprType>(block) {}
 };
 
@@ -1120,7 +1118,7 @@ struct unary_evaluator<Block<ArgType, BlockRows, BlockCols, InnerPanel>,
   typedef Block<ArgType, BlockRows, BlockCols, InnerPanel> XprType;
 
   EIGEN_DEVICE_FUNC
-      EIGEN_STRONG_INLINE explicit unary_evaluator(const XprType &block)
+  EIGEN_STRONG_INLINE explicit unary_evaluator(const XprType &block)
       : m_argImpl(block.nestedExpression()), m_startRow(block.startRow()),
         m_startCol(block.startCol()),
         m_linear_offset(
@@ -1242,7 +1240,7 @@ struct block_evaluator<ArgType, BlockRows, BlockCols, InnerPanel,
   typedef typename XprType::Scalar Scalar;
 
   EIGEN_DEVICE_FUNC
-      EIGEN_STRONG_INLINE explicit block_evaluator(const XprType &block)
+  EIGEN_STRONG_INLINE explicit block_evaluator(const XprType &block)
       : mapbase_evaluator<XprType, typename XprType::PlainObject>(block) {
     // TODO: for the 3.3 release, this should be turned to an internal
     // assertion, but let's keep it as is for the beta lifetime
@@ -1277,7 +1275,7 @@ struct evaluator<Select<ConditionMatrixType, ThenMatrixType, ElseMatrixType>>
   };
 
   EIGEN_DEVICE_FUNC
-      EIGEN_STRONG_INLINE explicit evaluator(const XprType &select)
+  EIGEN_STRONG_INLINE explicit evaluator(const XprType &select)
       : m_conditionImpl(select.conditionMatrix()),
         m_thenImpl(select.thenMatrix()), m_elseImpl(select.elseMatrix()) {
     EIGEN_INTERNAL_CHECK_COST_VALUE(CoeffReadCost);
@@ -1334,7 +1332,7 @@ struct unary_evaluator<Replicate<ArgType, RowFactor, ColFactor>>
   };
 
   EIGEN_DEVICE_FUNC
-      EIGEN_STRONG_INLINE explicit unary_evaluator(const XprType &replicate)
+  EIGEN_STRONG_INLINE explicit unary_evaluator(const XprType &replicate)
       : m_arg(replicate.nestedExpression()), m_argImpl(m_arg),
         m_rows(replicate.nestedExpression().rows()),
         m_cols(replicate.nestedExpression().cols()) {}
@@ -1413,7 +1411,7 @@ struct evaluator_wrapper_base : evaluator_base<XprType> {
   };
 
   EIGEN_DEVICE_FUNC
-      EIGEN_STRONG_INLINE explicit evaluator_wrapper_base(const ArgType &arg)
+  EIGEN_STRONG_INLINE explicit evaluator_wrapper_base(const ArgType &arg)
       : m_argImpl(arg) {}
 
   typedef typename ArgType::Scalar Scalar;
@@ -1468,7 +1466,7 @@ struct unary_evaluator<MatrixWrapper<TArgType>>
   typedef MatrixWrapper<TArgType> XprType;
 
   EIGEN_DEVICE_FUNC
-      EIGEN_STRONG_INLINE explicit unary_evaluator(const XprType &wrapper)
+  EIGEN_STRONG_INLINE explicit unary_evaluator(const XprType &wrapper)
       : evaluator_wrapper_base<MatrixWrapper<TArgType>>(
             wrapper.nestedExpression()) {}
 };
@@ -1479,7 +1477,7 @@ struct unary_evaluator<ArrayWrapper<TArgType>>
   typedef ArrayWrapper<TArgType> XprType;
 
   EIGEN_DEVICE_FUNC
-      EIGEN_STRONG_INLINE explicit unary_evaluator(const XprType &wrapper)
+  EIGEN_STRONG_INLINE explicit unary_evaluator(const XprType &wrapper)
       : evaluator_wrapper_base<ArrayWrapper<TArgType>>(
             wrapper.nestedExpression()) {}
 };
@@ -1525,7 +1523,7 @@ struct unary_evaluator<Reverse<ArgType, Direction>>
   };
 
   EIGEN_DEVICE_FUNC
-      EIGEN_STRONG_INLINE explicit unary_evaluator(const XprType &reverse)
+  EIGEN_STRONG_INLINE explicit unary_evaluator(const XprType &reverse)
       : m_argImpl(reverse.nestedExpression()),
         m_rows(ReverseRow ? reverse.nestedExpression().rows() : 1),
         m_cols(ReverseCol ? reverse.nestedExpression().cols() : 1) {}
@@ -1625,7 +1623,7 @@ struct evaluator<Diagonal<ArgType, DiagIndex>>
   };
 
   EIGEN_DEVICE_FUNC
-      EIGEN_STRONG_INLINE explicit evaluator(const XprType &diagonal)
+  EIGEN_STRONG_INLINE explicit evaluator(const XprType &diagonal)
       : m_argImpl(diagonal.nestedExpression()), m_index(diagonal.index()) {}
 
   typedef typename XprType::Scalar Scalar;

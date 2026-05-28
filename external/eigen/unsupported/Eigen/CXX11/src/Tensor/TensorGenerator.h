@@ -167,8 +167,8 @@ struct TensorEvaluator<const TensorGeneratorOp<Generator, ArgType>, Device> {
   }
 
   EIGEN_DEVICE_FUNC
-      EIGEN_STRONG_INLINE internal::TensorBlockResourceRequirements
-      getResourceRequirements() const {
+  EIGEN_STRONG_INLINE internal::TensorBlockResourceRequirements
+  getResourceRequirements() const {
     const size_t target_size = m_device.firstLevelCacheSize();
     // TODO(ezhulenev): Generator should have a cost.
     return internal::TensorBlockResourceRequirements::skewed<Scalar>(

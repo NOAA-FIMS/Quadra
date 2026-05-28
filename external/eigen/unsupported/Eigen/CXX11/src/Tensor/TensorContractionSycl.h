@@ -587,7 +587,7 @@ public:
       local_ptr;
   typedef OutScalar * /*cl::sycl::multi_ptr<OutScalar,
                          cl::sycl::access::address_space::private_space>*/
-                          private_ptr;
+      private_ptr;
   typedef typename ::Eigen::internal::conditional<
       contraction_tp == contraction_type::local, local_ptr, private_ptr>::type
       tile_ptr;

@@ -195,7 +195,7 @@ template <typename T> class variable_if_dynamicindex<T, DynamicIndex> {
 
 public:
   EIGEN_DEVICE_FUNC
-      EIGEN_STRONG_INLINE explicit variable_if_dynamicindex(T value)
+  EIGEN_STRONG_INLINE explicit variable_if_dynamicindex(T value)
       : m_value(value) {}
   EIGEN_DEVICE_FUNC T EIGEN_STRONG_INLINE value() const { return m_value; }
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void setValue(T value) {

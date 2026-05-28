@@ -161,8 +161,8 @@ template <typename Derived, typename Device> struct TensorEvaluator {
   }
 
   EIGEN_DEVICE_FUNC
-      EIGEN_STRONG_INLINE internal::TensorBlockResourceRequirements
-      getResourceRequirements() const {
+  EIGEN_STRONG_INLINE internal::TensorBlockResourceRequirements
+  getResourceRequirements() const {
     return internal::TensorBlockResourceRequirements::any();
   }
 
@@ -352,8 +352,8 @@ struct TensorEvaluator<const Derived, Device> {
   }
 
   EIGEN_DEVICE_FUNC
-      EIGEN_STRONG_INLINE internal::TensorBlockResourceRequirements
-      getResourceRequirements() const {
+  EIGEN_STRONG_INLINE internal::TensorBlockResourceRequirements
+  getResourceRequirements() const {
     return internal::TensorBlockResourceRequirements::any();
   }
 
@@ -545,8 +545,8 @@ struct TensorEvaluator<const TensorCwiseUnaryOp<UnaryOp, ArgType>, Device> {
   }
 
   EIGEN_DEVICE_FUNC
-      EIGEN_STRONG_INLINE internal::TensorBlockResourceRequirements
-      getResourceRequirements() const {
+  EIGEN_STRONG_INLINE internal::TensorBlockResourceRequirements
+  getResourceRequirements() const {
     static const double functor_cost = internal::functor_traits<UnaryOp>::Cost;
     return m_argImpl.getResourceRequirements().addCostPerCoeff(
         {0, 0, functor_cost / PacketSize});
@@ -685,8 +685,8 @@ struct TensorEvaluator<
   }
 
   EIGEN_DEVICE_FUNC
-      EIGEN_STRONG_INLINE internal::TensorBlockResourceRequirements
-      getResourceRequirements() const {
+  EIGEN_STRONG_INLINE internal::TensorBlockResourceRequirements
+  getResourceRequirements() const {
     static const double functor_cost = internal::functor_traits<BinaryOp>::Cost;
     return internal::TensorBlockResourceRequirements::merge(
                m_leftImpl.getResourceRequirements(),
@@ -995,8 +995,8 @@ struct TensorEvaluator<
   }
 
   EIGEN_DEVICE_FUNC
-      EIGEN_STRONG_INLINE internal::TensorBlockResourceRequirements
-      getResourceRequirements() const {
+  EIGEN_STRONG_INLINE internal::TensorBlockResourceRequirements
+  getResourceRequirements() const {
     auto then_req = m_thenImpl.getResourceRequirements();
     auto else_req = m_elseImpl.getResourceRequirements();
 

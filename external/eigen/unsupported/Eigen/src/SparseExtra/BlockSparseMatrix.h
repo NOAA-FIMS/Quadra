@@ -961,7 +961,7 @@ protected:
                           // m_outerBSize)
   Index m_nonzeros;       // Total nonzeros elements
   Scalar *m_values;       // Values stored block column after block column (size
-                    // m_nonzeros)
+                          // m_nonzeros)
   StorageIndex
       *m_blockPtr; // Pointer to the beginning of each block in m_values, size
                    // m_nonzeroblocks ... null for fixed-size blocks

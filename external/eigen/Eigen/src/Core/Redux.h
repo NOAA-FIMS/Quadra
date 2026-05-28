@@ -384,7 +384,7 @@ class redux_evaluator : public internal::evaluator<_XprType> {
 public:
   typedef _XprType XprType;
   EIGEN_DEVICE_FUNC
-      EIGEN_STRONG_INLINE explicit redux_evaluator(const XprType &xpr)
+  EIGEN_STRONG_INLINE explicit redux_evaluator(const XprType &xpr)
       : Base(xpr) {}
 
   typedef typename XprType::Scalar Scalar;
