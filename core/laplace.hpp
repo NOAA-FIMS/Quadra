@@ -19,6 +19,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include "laplace/laplace_evaluator_exact_gradient_integration.hpp"
 
 namespace quadra {
 
