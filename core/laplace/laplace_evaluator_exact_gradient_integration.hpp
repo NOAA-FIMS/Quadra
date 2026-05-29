@@ -23,11 +23,11 @@ namespace laplace {
 // The cross-derivative callback is held by the bridge because it is normally
 // model/evaluator specific.
 struct LaplaceExactGradientEvaluationInputs {
-    Eigen::VectorXd theta;
-    Eigen::VectorXd uhat;
-    Eigen::MatrixXd Huu;
-    double joint_objective = 0.0;
-    Eigen::VectorXd joint_envelope_gradient;
+  Eigen::VectorXd theta;
+  Eigen::VectorXd uhat;
+  Eigen::MatrixXd Huu;
+  double joint_objective = 0.0;
+  Eigen::VectorXd joint_envelope_gradient;
 };
 
 // Canonical evaluator-facing exact-gradient function.
@@ -37,14 +37,10 @@ struct LaplaceExactGradientEvaluationInputs {
 // call this function to obtain objective, exact gradient, and diagnostics.
 template <class Bridge>
 LaplaceEvaluationResult evaluate_laplace_with_exact_gradient(
-    const Bridge& bridge,
-    const LaplaceExactGradientEvaluationInputs& inputs) {
-    return bridge.evaluate(
-        inputs.theta,
-        inputs.uhat,
-        inputs.Huu,
-        inputs.joint_objective,
-        inputs.joint_envelope_gradient);
+    const Bridge &bridge, const LaplaceExactGradientEvaluationInputs &inputs) {
+  return bridge.evaluate(inputs.theta, inputs.uhat, inputs.Huu,
+                         inputs.joint_objective,
+                         inputs.joint_envelope_gradient);
 }
 
 // Convenience factory + evaluation in one call.
@@ -60,26 +56,19 @@ LaplaceEvaluationResult evaluate_laplace_with_exact_gradient(
 template <class CombinedObjectiveFn, class CrossDerivativeFn>
 LaplaceEvaluationResult evaluate_laplace_with_exact_gradient(
     CombinedObjectiveFn combined_objective,
-    CrossDerivativeFn cross_derivative_fn,
-    int theta_dim,
-    int random_dim,
+    CrossDerivativeFn cross_derivative_fn, int theta_dim, int random_dim,
     RandomHessianPattern random_hessian_pattern,
     std::vector<int> active_directions,
-    const LaplaceExactGradientEvaluationInputs& inputs,
+    const LaplaceExactGradientEvaluationInputs &inputs,
     LaplaceEvaluatorExactGradientBridgeOptions options =
         LaplaceEvaluatorExactGradientBridgeOptions{}) {
-    auto bridge =
-        make_laplace_evaluator_exact_gradient_bridge(
-            std::move(combined_objective),
-            std::move(cross_derivative_fn),
-            theta_dim,
-            random_dim,
-            std::move(random_hessian_pattern),
-            std::move(active_directions),
-            options);
+  auto bridge = make_laplace_evaluator_exact_gradient_bridge(
+      std::move(combined_objective), std::move(cross_derivative_fn), theta_dim,
+      random_dim, std::move(random_hessian_pattern),
+      std::move(active_directions), options);
 
-    return evaluate_laplace_with_exact_gradient(bridge, inputs);
+  return evaluate_laplace_with_exact_gradient(bridge, inputs);
 }
 
-}  // namespace laplace
-}  // namespace quadra
+} // namespace laplace
+} // namespace quadra
