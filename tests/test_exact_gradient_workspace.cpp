@@ -108,6 +108,35 @@ int main() {
         throw std::runtime_error("TraceTerms returned non-finite values");
     }
 
+    const Eigen::VectorXd joint_gradient = Eigen::VectorXd::Zero(2);
+
+    const auto assembled =
+        workspace.AssembleExactGradient(
+            12.5,
+            1.25,
+            joint_gradient,
+            [&](int row, int col) {
+                return Hinv(row, col);
+            },
+            pattern);
+
+    if (std::abs(assembled.objective - 13.125) > 1.0e-12) {
+        throw std::runtime_error(
+            "AssembleExactGradient returned wrong objective");
+    }
+
+    if (assembled.gradient.size() != 2 ||
+        assembled.trace_terms.size() != 2) {
+        throw std::runtime_error(
+            "AssembleExactGradient returned wrong vector sizes");
+    }
+
+    if ((assembled.gradient - 0.5 * traces).cwiseAbs().maxCoeff() >
+        1.0e-12) {
+        throw std::runtime_error(
+            "AssembleExactGradient gradient does not match trace assembly");
+    }
+
     const Eigen::MatrixXd hdot0 = workspace.ExtractHdotDense(0, pattern);
 
     if (hdot0.rows() != 4 || hdot0.cols() != 4) {

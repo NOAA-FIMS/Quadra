@@ -13,6 +13,12 @@
 namespace quadra {
 namespace laplace {
 
+struct ExactGradientEvaluation {
+    double objective = 0.0;
+    Eigen::VectorXd gradient;
+    Eigen::VectorXd trace_terms;
+};
+
 struct SparseHdotPatternEntry {
     int row = 0;
     int col = 0;
@@ -266,6 +272,33 @@ public:
         }
 
         return traces;
+    }
+
+
+    template <class SelectedInverseAccessor>
+    ExactGradientEvaluation AssembleExactGradient(
+        double joint_objective,
+        double logdet_huu,
+        const Eigen::VectorXd& joint_envelope_gradient,
+        SelectedInverseAccessor&& selected_inverse,
+        const std::vector<SparseHdotPatternEntry>& pattern) {
+        RequireBuilt();
+
+        if (joint_envelope_gradient.size() !=
+            static_cast<int>(n_directions_)) {
+            throw std::invalid_argument(
+                "ExactGradientWorkspace::AssembleExactGradient gradient dimension mismatch.");
+        }
+
+        ExactGradientEvaluation out;
+        out.objective = joint_objective + 0.5 * logdet_huu;
+        out.trace_terms =
+            TraceTermsSelectedInverse(
+                std::forward<SelectedInverseAccessor>(selected_inverse),
+                pattern);
+        out.gradient = joint_envelope_gradient + 0.5 * out.trace_terms;
+
+        return out;
     }
 
     HadGraphWorkspace& HadWorkspace() { return had_workspace_; }

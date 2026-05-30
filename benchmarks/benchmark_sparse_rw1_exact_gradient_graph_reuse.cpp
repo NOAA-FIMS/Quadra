@@ -483,12 +483,19 @@ struct ExactGradientWorkspaceRw1Adapter {
         const auto pattern =
             quadra::laplace::MakeTridiagonalHdotPattern(m);
 
-        const Eigen::VectorXd traces =
-            workspace.TraceTerms(Hinv, pattern);
+        const auto assembled =
+            workspace.AssembleExactGradient(
+                joint_objective,
+                logdet,
+                joint_grad,
+                [&](int row, int col) {
+                    return Hinv(row, col);
+                },
+                pattern);
 
         ExactGradientResult out;
-        out.objective = joint_objective + 0.5 * logdet;
-        out.gradient = joint_grad + 0.5 * traces;
+        out.objective = assembled.objective;
+        out.gradient = assembled.gradient;
         return out;
     }
 
