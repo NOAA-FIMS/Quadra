@@ -228,6 +228,46 @@ public:
         return traces;
     }
 
+
+    template <class SelectedInverseAccessor>
+    Eigen::VectorXd TraceTermsSelectedInverse(
+        SelectedInverseAccessor&& selected_inverse,
+        const std::vector<SparseHdotPatternEntry>& pattern) {
+        RequireBuilt();
+
+        Eigen::VectorXd traces =
+            Eigen::VectorXd::Zero(static_cast<int>(n_directions_));
+
+        had_workspace_.Activate();
+
+        for (std::size_t k = 0; k < n_directions_; ++k) {
+            double trace = 0.0;
+
+            for (const auto& entry : pattern) {
+                CheckRandomIndex(entry.row);
+                CheckRandomIndex(entry.col);
+
+                const double hdot =
+                    had::GetAdjointDotBatch(
+                        (*random_effects_)[static_cast<std::size_t>(entry.row)],
+                        (*random_effects_)[static_cast<std::size_t>(entry.col)],
+                        static_cast<int>(k));
+
+                const double hinv = selected_inverse(entry.row, entry.col);
+
+                if (entry.row == entry.col) {
+                    trace += hinv * hdot;
+                } else {
+                    trace += 2.0 * hinv * hdot;
+                }
+            }
+
+            traces[static_cast<int>(k)] = trace;
+        }
+
+        return traces;
+    }
+
     HadGraphWorkspace& HadWorkspace() { return had_workspace_; }
     const HadGraphWorkspace& HadWorkspace() const { return had_workspace_; }
 

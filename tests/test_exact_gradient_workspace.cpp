@@ -83,8 +83,25 @@ int main() {
 
     const Eigen::VectorXd traces = workspace.TraceTerms(Hinv, pattern);
 
+    const Eigen::VectorXd selected_inverse_traces =
+        workspace.TraceTermsSelectedInverse(
+            [&](int row, int col) {
+                return Hinv(row, col);
+            },
+            pattern);
+
     if (traces.size() != 2) {
         throw std::runtime_error("TraceTerms returned wrong number of directions");
+    }
+
+    if (selected_inverse_traces.size() != traces.size()) {
+        throw std::runtime_error(
+            "TraceTermsSelectedInverse returned wrong number of directions");
+    }
+
+    if ((traces - selected_inverse_traces).cwiseAbs().maxCoeff() > 1.0e-12) {
+        throw std::runtime_error(
+            "TraceTermsSelectedInverse does not match dense TraceTerms");
     }
 
     if (!std::isfinite(traces[0]) || !std::isfinite(traces[1])) {
