@@ -4,12 +4,14 @@
 #include <chrono>
 #include <iomanip>
 #include <iostream>
+#include <string>
 #include <vector>
 
 #include "../core/had_quadra.hpp"
 #include "../core/laplace/exact_gradient_workspace.hpp"
 #include "../core/had_graph_workspace.hpp"
 #include "../core/laplace/sparse_huu_factorization.hpp"
+#include "../core/laplace/structure_aware_rw1_hdot.hpp"
 
 DECLARE_ADGRAPH()
 
@@ -581,6 +583,56 @@ SelectedTridiagonalInverse compute_selected_tridiagonal_inverse(
     return selected;
 }
 
+
+struct DenseSlotExactGradientResult {
+    ExactGradientResult result;
+    Eigen::VectorXd trace_terms;
+};
+
+Eigen::VectorXd rw1_total_u_direction(const Eigen::VectorXd& theta,
+                                      const Eigen::VectorXd& uhat,
+                                      int theta_index,
+                                      quadra::laplace::SparseHuuFactorization& factor) {
+    return -factor.solve(f_u_theta_column(theta, uhat, theta_index));
+}
+
+
+DenseSlotExactGradientResult compute_rw1_dense_slot_exact_gradient(
+    int m,
+    int K,
+    const Eigen::VectorXd& theta,
+    const Eigen::VectorXd& uhat,
+    const SelectedTridiagonalInverse& selected_inverse,
+    const Eigen::VectorXd& joint_grad,
+    double joint_objective,
+    double logdet,
+    quadra::laplace::SparseHuuFactorization& factor) {
+
+    const auto structure_aware =
+        quadra::laplace::rw1_structure_aware_exact_gradient(
+            m,
+            K,
+            theta,
+            uhat,
+            selected_inverse,
+            joint_grad,
+            joint_objective,
+            logdet,
+            factor,
+            [](const Eigen::VectorXd& theta_arg,
+               const Eigen::VectorXd& uhat_arg,
+               int theta_index) {
+                return f_u_theta_column(theta_arg, uhat_arg, theta_index);
+            });
+
+    DenseSlotExactGradientResult out;
+    out.trace_terms = structure_aware.trace_terms;
+    out.result.objective = structure_aware.objective;
+    out.result.gradient = structure_aware.gradient;
+    return out;
+}
+
+
 struct Row {
     double rebuild_ms = 0.0;
     double reuse_ms = 0.0;
@@ -597,7 +649,7 @@ struct Row {
     int vertices = 0;
 };
 
-Row run_case(int m, int K, int reps) {
+Row run_case(int m, int K, int reps, bool reuse_only = false) {
     Eigen::VectorXd theta(5);
     theta << 0.55, std::log(0.65), std::log(0.55), std::log(0.90), std::log(0.25);
 
@@ -627,9 +679,16 @@ Row run_case(int m, int K, int reps) {
     ExactGradientResult last_reuse;
 
     const auto t0 = Clock::now();
-    for (int r = 0; r < reps; ++r) {
-        last_rebuild = exact_gradient_rebuild(
-            m, K, theta, uhat, Hinv, joint_grad, joint_obj, logdet, factor);
+    if (!reuse_only) {
+        for (int r = 0; r < reps; ++r) {
+            last_rebuild = exact_gradient_rebuild(
+                m, K, theta, uhat, Hinv, joint_grad, joint_obj, logdet, factor);
+        }
+    } else {
+        // In reuse-only profiling mode, skip the rebuild reference entirely
+        // so xctrace samples are not polluted by exact_gradient_rebuild().
+        last_rebuild.objective = 0.0;
+        last_rebuild.gradient = Eigen::VectorXd::Zero(K);
     }
     const auto t1 = Clock::now();
 
@@ -674,9 +733,12 @@ Row run_case(int m, int K, int reps) {
     }
     const auto t3 = Clock::now();
 
-    out.rebuild_ms = ms_between(t0, t1) / static_cast<double>(reps);
+
+    out.rebuild_ms = reuse_only
+                         ? 0.0
+                         : ms_between(t0, t1) / static_cast<double>(reps);
     out.reuse_ms = ms_between(t2, t3) / static_cast<double>(reps);
-    out.speedup = out.rebuild_ms / out.reuse_ms;
+    out.speedup = reuse_only ? 0.0 : out.rebuild_ms / out.reuse_ms;
     out.reuse_base_ms = reuse_base_sum / static_cast<double>(reps);
     out.reuse_seed_ms = reuse_seed_sum / static_cast<double>(reps);
     out.reuse_reverse_ms = reuse_reverse_sum / static_cast<double>(reps);
@@ -684,8 +746,14 @@ Row run_case(int m, int K, int reps) {
     out.avg_queries = query_sum / static_cast<double>(reps);
     out.avg_pushdots = pushdot_sum / static_cast<double>(reps);
     out.avg_inserts = insert_sum / static_cast<double>(reps);
-    out.grad_diff = (last_rebuild.gradient - last_reuse.gradient).cwiseAbs().maxCoeff();
-    out.obj_diff = std::abs(last_rebuild.objective - last_reuse.objective);
+
+    if (reuse_only) {
+        out.grad_diff = 0.0;
+        out.obj_diff = 0.0;
+    } else {
+        out.grad_diff = (last_rebuild.gradient - last_reuse.gradient).cwiseAbs().maxCoeff();
+        out.obj_diff = std::abs(last_rebuild.objective - last_reuse.objective);
+    }
 
     return out;
 }
@@ -694,14 +762,27 @@ Row run_case(int m, int K, int reps) {
 
 int main(int argc, char** argv) {
     int reps = 10;
+    bool reuse_only = false;
+
     if (argc > 1) reps = std::stoi(argv[1]);
+
+    for (int i = 2; i < argc; ++i) {
+        const std::string arg = argv[i];
+        if (arg == "--reuse-only") {
+            reuse_only = true;
+        }
+    }
 
     const std::vector<int> m_values = {100, 250, 500};
     const int K = 5;
 
     std::cout << "Sparse RW1 exact-gradient graph reuse benchmark\n";
     std::cout << "reps per case = " << reps << "\n";
-    std::cout << "K = " << K << "\n\n";
+    std::cout << "K = " << K << "\n";
+    if (reuse_only) {
+        std::cout << "mode = reuse-only profiling\n";
+    }
+    std::cout << "\n";
 
     std::cout << std::setw(8) << "m"
               << std::setw(12) << "vertices"
@@ -722,7 +803,7 @@ int main(int argc, char** argv) {
     std::cout << std::scientific << std::setprecision(6);
 
     for (int m : m_values) {
-        const Row r = run_case(m, K, reps);
+        const Row r = run_case(m, K, reps, reuse_only);
 
         std::cout << std::setw(8) << m
                   << std::setw(12) << r.vertices

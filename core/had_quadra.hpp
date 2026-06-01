@@ -290,6 +290,20 @@ struct BTree {
     root = 0;
   }
 
+  inline void Reserve(const size_t n) {
+    if (nodes.capacity() < n) {
+      nodes.reserve(n);
+    }
+  }
+
+  inline size_t Capacity() const {
+    return nodes.capacity();
+  }
+
+  inline size_t Size() const {
+    return nodes.size();
+  }
+
   std::vector<BTNode> nodes;
   int root;
 };
@@ -943,6 +957,21 @@ inline bool TryGetBatchDirectionalSlotValue(const size_t direction,
 }
 
 
+
+
+inline void ReserveDirectionalBTreeStorage(const size_t reserve_per_tree) {
+  for (auto &tree : g_ADGraph->soEdges) {
+    tree.Reserve(reserve_per_tree);
+  }
+  for (auto &tree : g_ADGraph->soEdgesDot) {
+    tree.Reserve(reserve_per_tree);
+  }
+  for (auto &trees_for_direction : g_ADGraph->soEdgesDotBatch) {
+    for (auto &tree : trees_for_direction) {
+      tree.Reserve(reserve_per_tree);
+    }
+  }
+}
 
 inline void ResizeDirectionalBatch(const int nDirections)
     {
