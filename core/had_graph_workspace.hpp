@@ -141,7 +141,23 @@ public:
     }
 
     void PropagateAdjointDirectionalBatch() {
+        if (!built_) {
+            throw std::logic_error(
+                "HadGraphWorkspace::PropagateAdjointDirectionalBatch called before Build.");
+        }
+
         Activate();
+
+        if (output_var_id_ >= graph_.vertices.size()) {
+            throw std::out_of_range(
+                "HadGraphWorkspace::PropagateAdjointDirectionalBatch output_var_id out of range.");
+        }
+
+        // PropagateAdjoint() consumes/clears reverse adjoints while building
+        // the base Hessian. The directional reverse sweep needs the output
+        // adjoint seed restored.
+        graph_.vertices[output_var_id_].w = had::Real(1.0);
+
         had::PropagateAdjointDirectionalBatch();
     }
 

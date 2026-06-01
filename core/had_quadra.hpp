@@ -46,6 +46,7 @@ THE SOFTWARE.
 #define HAD_QUADRA_H__
 
 #include <cmath>
+#include <iostream>
 #include <vector>
 #include <cstdint>
 #include <chrono>
@@ -897,7 +898,55 @@ inline Real GetAdjointDot(const AReal &i, const AReal &j) {
         x.dotBatch[static_cast<size_t>(k)] = value;
     }
 
-    inline Real GetAdjointDotBatch(const AReal &i,
+    
+inline void PushEdgeDotBatch(const size_t direction,
+                             const ADEdge &foEdge,
+                             const ADEdge &soEdge,
+                             const Real foEdgeDot,
+                             const Real soEdgeDot) {
+  const Real valDot = foEdgeDot * soEdge.w + foEdge.w * soEdgeDot;
+
+  if (direction >= g_ADGraph->selfSoEdgesDotBatch.size() ||
+      direction >= g_ADGraph->soEdgesDotBatch.size()) {
+    std::cerr << "PushEdgeDotBatch direction out of range: direction="
+              << direction
+              << " self size=" << g_ADGraph->selfSoEdgesDotBatch.size()
+              << " edge size=" << g_ADGraph->soEdgesDotBatch.size()
+              << "\n";
+    std::abort();
+  }
+
+  if (foEdge.to == soEdge.to) {
+    auto &selfDots = g_ADGraph->selfSoEdgesDotBatch[direction];
+    if (foEdge.to >= selfDots.size()) {
+      std::cerr << "PushEdgeDotBatch self index out of range: direction="
+                << direction
+                << " vertex=" << foEdge.to
+                << " size=" << selfDots.size() << "\n";
+      std::abort();
+    }
+    selfDots[foEdge.to] += Real(2.0) * valDot;
+  } else {
+    const VertexId outer = std::max(foEdge.to, soEdge.to);
+    const VertexId inner = std::min(foEdge.to, soEdge.to);
+
+    auto &trees = g_ADGraph->soEdgesDotBatch[direction];
+
+    if (outer >= trees.size()) {
+      std::cerr << "PushEdgeDotBatch tree index out of range: direction="
+                << direction
+                << " outer=" << outer
+                << " trees.size=" << trees.size()
+                << " vertices.size=" << g_ADGraph->vertices.size()
+                << "\n";
+      std::abort();
+    }
+
+    trees[outer].Insert(inner, valDot);
+  }
+}
+
+inline Real GetAdjointDotBatch(const AReal &i,
                                    const AReal &j,
                                    const int k)
     {
@@ -1073,6 +1122,220 @@ inline void ResetBatchWorkspaceTiming() {
   g_batch_total_ms = 0.0;
 }
 
+
+
+inline void PropagateDirectionalBatchForwardReplay() {
+  const int nDirections = g_ADGraph->nBatchDirections;
+  if (nDirections <= 0) {
+    return;
+  }
+
+  const size_t batchSize = static_cast<size_t>(nDirections);
+  const VertexId n_vertices =
+      static_cast<VertexId>(g_ADGraph->vertices.size());
+
+  for (VertexId vid = 0; vid < n_vertices; ++vid) {
+    ADVertex &v = g_ADGraph->vertices[vid];
+
+    if (v.dotBatch.size() != batchSize) {
+      v.dotBatch.assign(batchSize, Real(0.0));
+    }
+    if (v.wDotBatch.size() != batchSize) {
+      v.wDotBatch.assign(batchSize, Real(0.0));
+    }
+    if (v.soWDotBatch.size() != batchSize) {
+      v.soWDotBatch.assign(batchSize, Real(0.0));
+    }
+    if (v.e1.dwBatch.size() != batchSize) {
+      v.e1.dwBatch.assign(batchSize, Real(0.0));
+    }
+    if (v.e2.dwBatch.size() != batchSize) {
+      v.e2.dwBatch.assign(batchSize, Real(0.0));
+    }
+
+    std::fill(v.wDotBatch.begin(), v.wDotBatch.end(), Real(0.0));
+    std::fill(v.soWDotBatch.begin(), v.soWDotBatch.end(), Real(0.0));
+    std::fill(v.e1.dwBatch.begin(), v.e1.dwBatch.end(), Real(0.0));
+    std::fill(v.e2.dwBatch.begin(), v.e2.dwBatch.end(), Real(0.0));
+
+    if (v.op == OpCode::Independent) {
+      continue;
+    }
+
+    std::fill(v.dotBatch.begin(), v.dotBatch.end(), Real(0.0));
+
+    const VertexId left = v.left;
+    const VertexId right = v.right;
+
+    const bool has_left = left < g_ADGraph->vertices.size();
+    const bool has_right = right < g_ADGraph->vertices.size();
+
+    const Real lp = has_left ? g_ADGraph->vertices[left].primal : Real(0.0);
+    const Real rp = has_right ? g_ADGraph->vertices[right].primal : Real(0.0);
+    const Real c = v.constant;
+
+    for (int k = 0; k < nDirections; ++k) {
+      const size_t kk = static_cast<size_t>(k);
+
+      const Real ld =
+          (has_left && kk < g_ADGraph->vertices[left].dotBatch.size())
+              ? g_ADGraph->vertices[left].dotBatch[kk]
+              : Real(0.0);
+
+      const Real rd =
+          (has_right && kk < g_ADGraph->vertices[right].dotBatch.size())
+              ? g_ADGraph->vertices[right].dotBatch[kk]
+              : Real(0.0);
+
+      switch (v.op) {
+      case OpCode::Add:
+        v.dotBatch[kk] = ld + rd;
+        break;
+
+      case OpCode::AddConstant:
+        v.dotBatch[kk] = ld;
+        break;
+
+      case OpCode::Subtract:
+        v.dotBatch[kk] = ld - rd;
+        break;
+
+      case OpCode::SubtractConstant:
+        v.dotBatch[kk] = ld;
+        break;
+
+      case OpCode::ConstantSubtract:
+        v.dotBatch[kk] = -ld;
+        break;
+
+      case OpCode::Multiply:
+        v.dotBatch[kk] = ld * rp + lp * rd;
+        if (v.e1.to != vid) {
+          v.e1.dwBatch[kk] = rd;
+        }
+        if (v.e2.to != vid) {
+          v.e2.dwBatch[kk] = ld;
+        }
+        break;
+
+      case OpCode::MultiplyConstant:
+        v.dotBatch[kk] = c * ld;
+        if (v.e1.to != vid) {
+          v.e1.dwBatch[kk] = Real(0.0);
+        }
+        break;
+
+      case OpCode::Divide:
+        if (rp != Real(0.0)) {
+          const Real inv = Real(1.0) / rp;
+          const Real inv2 = inv * inv;
+          const Real inv3 = inv2 * inv;
+          v.dotBatch[kk] = (ld * rp - lp * rd) * inv2;
+
+          if (v.e1.to != vid) {
+            v.e1.dwBatch[kk] = -rd * inv2;
+          }
+          if (v.e2.to != vid) {
+            v.e2.dwBatch[kk] =
+                (-ld * inv2) + (Real(2.0) * lp * rd * inv3);
+          }
+          v.soWDotBatch[kk] = -rd * inv2;
+        }
+        break;
+
+      case OpCode::DivideConstant:
+        if (c != Real(0.0)) {
+          v.dotBatch[kk] = ld / c;
+        }
+        break;
+
+      case OpCode::ConstantDivide:
+        if (lp != Real(0.0)) {
+          const Real inv = Real(1.0) / lp;
+          const Real inv2 = inv * inv;
+          const Real inv3 = inv2 * inv;
+          v.dotBatch[kk] = -c * ld * inv2;
+          if (v.e1.to != vid) {
+            v.e1.dwBatch[kk] = Real(2.0) * c * ld * inv3;
+          }
+          v.soWDotBatch[kk] = -Real(6.0) * c * ld * inv3 * inv;
+        }
+        break;
+
+      case OpCode::Exp: {
+        const Real ev = std::exp(lp);
+        v.dotBatch[kk] = ev * ld;
+        if (v.e1.to != vid) {
+          v.e1.dwBatch[kk] = ev * ld;
+        }
+        v.soWDotBatch[kk] = ev * ld;
+        break;
+      }
+
+      case OpCode::Log:
+        if (lp != Real(0.0)) {
+          const Real inv = Real(1.0) / lp;
+          const Real inv2 = inv * inv;
+          v.dotBatch[kk] = ld * inv;
+          if (v.e1.to != vid) {
+            v.e1.dwBatch[kk] = -ld * inv2;
+          }
+          v.soWDotBatch[kk] = Real(2.0) * ld * inv2 * inv;
+        }
+        break;
+
+      case OpCode::Sqrt:
+        if (lp > Real(0.0)) {
+          const Real root = std::sqrt(lp);
+          const Real inv_root = Real(1.0) / root;
+          v.dotBatch[kk] = Real(0.5) * inv_root * ld;
+          if (v.e1.to != vid) {
+            v.e1.dwBatch[kk] =
+                -Real(0.25) * inv_root / lp * ld;
+          }
+          v.soWDotBatch[kk] =
+              Real(0.375) * inv_root / (lp * lp) * ld;
+        }
+        break;
+
+      case OpCode::Negate:
+        v.dotBatch[kk] = -ld;
+        break;
+
+      case OpCode::Independent:
+      default:
+        break;
+      }
+    }
+  }
+}
+
+
+
+inline BTree &EnsureBatchDotTreeSlot(const size_t direction,
+                                     const VertexId vertex,
+                                     const char *site) {
+  if (direction >= g_ADGraph->soEdgesDotBatch.size()) {
+    std::cerr << "soEdgesDotBatch direction out of range at "
+              << site << ": direction=" << direction
+              << " size=" << g_ADGraph->soEdgesDotBatch.size() << "\n";
+    std::abort();
+  }
+
+  auto &trees = g_ADGraph->soEdgesDotBatch[direction];
+
+  if (vertex >= trees.size()) {
+    std::cerr << "soEdgesDotBatch vertex out of range at "
+              << site << ": direction=" << direction
+              << " vertex=" << vertex
+              << " trees.size=" << trees.size()
+              << " vertices.size=" << g_ADGraph->vertices.size() << "\n";
+    std::abort();
+  }
+
+  return trees[vertex];
+}
+
 inline void PropagateAdjointDirectionalBatch() {
   const auto batch_total_start = std::chrono::steady_clock::now();
 
@@ -1140,6 +1403,26 @@ inline void PropagateAdjointDirectionalBatch() {
       std::chrono::duration<double, std::milli>(
           batch_workspace_init_end - batch_workspace_init_start).count();
 
+  PropagateDirectionalBatchForwardReplay();
+
+  // Defensive storage normalization before reverse sweep. The directional
+  // reverse pass inserts into soEdgesDotBatch[direction][vertex], so every
+  // direction must own a full vector of BTree slots.
+  g_ADGraph->soEdgesDotBatch.resize(static_cast<size_t>(nDirections));
+  g_ADGraph->selfSoEdgesDotBatch.resize(static_cast<size_t>(nDirections));
+
+  for (int k = 0; k < nDirections; ++k) {
+    auto &edgeDots = g_ADGraph->soEdgesDotBatch[static_cast<size_t>(k)];
+    if (edgeDots.size() < g_ADGraph->vertices.size()) {
+      edgeDots.resize(g_ADGraph->vertices.size());
+    }
+
+    auto &selfDots = g_ADGraph->selfSoEdgesDotBatch[static_cast<size_t>(k)];
+    if (selfDots.size() < g_ADGraph->vertices.size()) {
+      selfDots.resize(g_ADGraph->vertices.size(), Real(0.0));
+    }
+  }
+
   for (VertexId vid = n_vertices - 1; vid > 0; --vid) {
     ADVertex &vertex = g_ADGraph->vertices[vid];
     ADEdge &e1 = vertex.e1;
@@ -1164,19 +1447,22 @@ inline void PropagateAdjointDirectionalBatch() {
         ++g_batch_query_count;
         const Real soDot = btreeDot.Query(it->key);
 
-        // Reuse scalar PushEdgeDot by temporarily assigning dw.
-        const Real oldDw1 = e1.dw;
-        e1.dw = e1.dwBatch[static_cast<size_t>(k)];
         ++g_batch_pushdot_count;
-        PushEdgeDot(e1, soEdge, soDot);
-        e1.dw = oldDw1;
+        PushEdgeDotBatch(
+            static_cast<size_t>(k),
+            e1,
+            soEdge,
+            e1.dwBatch[static_cast<size_t>(k)],
+            soDot);
 
         if (e2.to != vid) {
-          const Real oldDw2 = e2.dw;
-          e2.dw = e2.dwBatch[static_cast<size_t>(k)];
           ++g_batch_pushdot_count;
-          PushEdgeDot(e2, soEdge, soDot);
-          e2.dw = oldDw2;
+          PushEdgeDotBatch(
+              static_cast<size_t>(k),
+              e2,
+              soEdge,
+              e2.dwBatch[static_cast<size_t>(k)],
+              soDot);
         }
       }
     }
@@ -1220,8 +1506,9 @@ inline void PropagateAdjointDirectionalBatch() {
             g_ADGraph->selfSoEdgesDotBatch[kk][e1.to] += Real(2.0) * crossDot;
           } else {
             ++g_batch_insert_count;
-            g_ADGraph->soEdgesDotBatch[kk][std::max(e1.to, e2.to)].Insert(
-                std::min(e1.to, e2.to), crossDot);
+            EnsureBatchDotTreeSlot(
+                kk, std::max(e1.to, e2.to), "crossDot")
+                .Insert(std::min(e1.to, e2.to), crossDot);
           }
         }
       }
@@ -1256,8 +1543,9 @@ inline void PropagateAdjointDirectionalBatch() {
           g_ADGraph->selfSoEdgesDotBatch[kk][e1.to] += Real(2.0) * createDot;
         } else {
           ++g_batch_insert_count;
-            g_ADGraph->soEdgesDotBatch[kk][std::max(e1.to, e2.to)].Insert(
-              std::min(e1.to, e2.to), createDot);
+            EnsureBatchDotTreeSlot(
+              kk, std::max(e1.to, e2.to), "createDot")
+              .Insert(std::min(e1.to, e2.to), createDot);
         }
       }
     }

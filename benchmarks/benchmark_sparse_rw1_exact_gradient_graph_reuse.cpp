@@ -394,6 +394,10 @@ ExactGradientResult exact_gradient_rebuild(
         }
     }
 
+    // PropagateAdjoint() consumes/clears reverse adjoints while building the
+    // base Hessian. Match HadGraphWorkspace behavior by reseeding the output
+    // adjoint before the directional reverse sweep.
+    graph.vertices[f.varId].w = Real(1.0);
     had::PropagateAdjointDirectionalBatch();
 
     return compute_exact_gradient_from_current_graph(
