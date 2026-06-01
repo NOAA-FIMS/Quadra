@@ -1086,6 +1086,57 @@ inline void ResizeDirectionalBatch(const int nDirections)
     }
 
     
+
+inline void PushEdgeDotBatchValue(const size_t direction,
+                                  const VertexId fo_to,
+                                  const VertexId so_to,
+                                  const Real valDot) {
+  if (direction >= g_ADGraph->selfSoEdgesDotBatch.size() ||
+      direction >= g_ADGraph->soEdgesDotBatch.size()) {
+    std::cerr << "PushEdgeDotBatchValue direction out of range: direction="
+              << direction
+              << " self size=" << g_ADGraph->selfSoEdgesDotBatch.size()
+              << " edge size=" << g_ADGraph->soEdgesDotBatch.size()
+              << "\\n";
+    std::abort();
+  }
+
+  if (fo_to == so_to) {
+    auto &selfDots = g_ADGraph->selfSoEdgesDotBatch[direction];
+    if (fo_to >= selfDots.size()) {
+      std::cerr << "PushEdgeDotBatchValue self index out of range: direction="
+                << direction
+                << " vertex=" << fo_to
+                << " size=" << selfDots.size() << "\\n";
+      std::abort();
+    }
+
+    if (!AddBatchDirectionalSlotValue(direction, fo_to, fo_to,
+                                      Real(2.0) * valDot)) {
+      selfDots[fo_to] += Real(2.0) * valDot;
+    }
+  } else {
+    const VertexId outer = std::max(fo_to, so_to);
+    const VertexId inner = std::min(fo_to, so_to);
+
+    auto &trees = g_ADGraph->soEdgesDotBatch[direction];
+
+    if (outer >= trees.size()) {
+      std::cerr << "PushEdgeDotBatchValue tree index out of range: direction="
+                << direction
+                << " outer=" << outer
+                << " trees.size=" << trees.size()
+                << " vertices.size=" << g_ADGraph->vertices.size()
+                << "\\n";
+      std::abort();
+    }
+
+    if (!AddBatchDirectionalSlotValue(direction, outer, inner, valDot)) {
+      trees[outer].Insert(inner, valDot);
+    }
+  }
+}
+
 inline void PushEdgeDotBatch(const size_t direction,
                              const ADEdge &foEdge,
                              const ADEdge &soEdge,
@@ -1718,27 +1769,27 @@ inline void PropagateAdjointDirectionalBatch() {
 
         const Real e1dw_k =
             kk < e1.dwBatch.size() ? e1.dwBatch[kk] : Real(0.0);
-        if (e1dw_k != Real(0.0) || soDot != Real(0.0)) {
+        const Real e1ValDot = e1dw_k * soEdge.w + e1.w * soDot;
+        if (e1ValDot != Real(0.0)) {
           ++g_batch_pushdot_count;
-          PushEdgeDotBatch(
+          PushEdgeDotBatchValue(
               kk,
-              e1,
-              soEdge,
-              e1dw_k,
-              soDot);
+              e1.to,
+              soEdge.to,
+              e1ValDot);
         }
 
         if (e2.to != vid) {
           const Real e2dw_k =
               kk < e2.dwBatch.size() ? e2.dwBatch[kk] : Real(0.0);
-          if (e2dw_k != Real(0.0) || soDot != Real(0.0)) {
+          const Real e2ValDot = e2dw_k * soEdge.w + e2.w * soDot;
+          if (e2ValDot != Real(0.0)) {
             ++g_batch_pushdot_count;
-            PushEdgeDotBatch(
+            PushEdgeDotBatchValue(
                 kk,
-                e2,
-                soEdge,
-                e2dw_k,
-                soDot);
+                e2.to,
+                soEdge.to,
+                e2ValDot);
           }
         }
       }
