@@ -436,6 +436,15 @@ struct ADGraph {
         // Indexed as soEdgesDotBatch[k][vertex] and selfSoEdgesDotBatch[k][vertex].
         std::vector<std::vector<BTree>> soEdgesDotBatch;
         std::vector<std::vector<Real>> selfSoEdgesDotBatch;
+
+        // Optional write-side directional slot workspace.
+        // batchSelfSlot[vertex] gives the direct slot for diagonal Hdot(vertex,vertex).
+        // batchSlotOuterInnerToSlot[outer].Query(inner) gives off-diagonal slot,
+        // or 0 if no slot is mapped. Slot ids are stored as slot+1 so 0 can mean absent.
+        bool useBatchDirectionalSlotWorkspace = false;
+        std::vector<int> batchSelfSlot;
+        std::vector<BTree> batchSlotOuterInnerToSlot;
+        std::vector<std::vector<Real>> batchDirectionalSlotValues;
 };
 
 inline AReal NewAReal(const Real val) {
@@ -770,7 +779,167 @@ inline Real GetAdjointDot(const AReal &i, const AReal &j) {
     // PropagateAdjointDirectional() yet.
     //==================================================
 
-    inline void ResizeDirectionalBatch(const int nDirections)
+    
+inline void DisableBatchDirectionalSlotWorkspace() {
+  g_ADGraph->useBatchDirectionalSlotWorkspace = false;
+  g_ADGraph->batchSelfSlot.clear();
+  g_ADGraph->batchSlotOuterInnerToSlot.clear();
+  g_ADGraph->batchDirectionalSlotValues.clear();
+}
+
+inline void EnableBatchDirectionalSlotWorkspace(const int nSlots) {
+  const int nDirections = g_ADGraph->nBatchDirections;
+  g_ADGraph->useBatchDirectionalSlotWorkspace = true;
+
+  g_ADGraph->batchSelfSlot.assign(g_ADGraph->vertices.size(), -1);
+  g_ADGraph->batchSlotOuterInnerToSlot.clear();
+  g_ADGraph->batchSlotOuterInnerToSlot.resize(g_ADGraph->vertices.size());
+
+  g_ADGraph->batchDirectionalSlotValues.assign(
+      static_cast<size_t>(nDirections),
+      std::vector<Real>(static_cast<size_t>(nSlots), Real(0.0)));
+}
+
+inline void ClearBatchDirectionalSlotValues() {
+  if (!g_ADGraph->useBatchDirectionalSlotWorkspace) {
+    return;
+  }
+  for (auto &values : g_ADGraph->batchDirectionalSlotValues) {
+    std::fill(values.begin(), values.end(), Real(0.0));
+  }
+}
+
+inline void SetBatchDirectionalSelfSlot(const VertexId vertex,
+                                        const int slot) {
+  if (g_ADGraph->batchSelfSlot.size() < g_ADGraph->vertices.size()) {
+    g_ADGraph->batchSelfSlot.assign(g_ADGraph->vertices.size(), -1);
+  }
+  g_ADGraph->batchSelfSlot[vertex] = slot;
+}
+
+inline void SetBatchDirectionalOffdiagSlot(const VertexId i,
+                                           const VertexId j,
+                                           const int slot) {
+  const VertexId outer = std::max(i, j);
+  const VertexId inner = std::min(i, j);
+
+  if (g_ADGraph->batchSlotOuterInnerToSlot.size() < g_ADGraph->vertices.size()) {
+    g_ADGraph->batchSlotOuterInnerToSlot.resize(g_ADGraph->vertices.size());
+  }
+
+  // Store slot+1 so Query()==0 means absent.
+  g_ADGraph->batchSlotOuterInnerToSlot[outer].Insert(inner, Real(slot + 1));
+}
+
+inline bool AddBatchDirectionalSlotValue(const size_t direction,
+                                         const VertexId i,
+                                         const VertexId j,
+                                         const Real value) {
+  if (!g_ADGraph->useBatchDirectionalSlotWorkspace) {
+    return false;
+  }
+  if (direction >= g_ADGraph->batchDirectionalSlotValues.size()) {
+    return false;
+  }
+
+  int slot = -1;
+
+  if (i == j) {
+    if (i < g_ADGraph->batchSelfSlot.size()) {
+      slot = g_ADGraph->batchSelfSlot[i];
+    }
+  } else {
+    const VertexId outer = std::max(i, j);
+    const VertexId inner = std::min(i, j);
+
+    if (outer < g_ADGraph->batchSlotOuterInnerToSlot.size()) {
+      const Real stored =
+          g_ADGraph->batchSlotOuterInnerToSlot[outer].Query(inner);
+      if (stored != Real(0.0)) {
+        slot = static_cast<int>(stored) - 1;
+      }
+    }
+  }
+
+  if (slot < 0) {
+    return false;
+  }
+
+  auto &values = g_ADGraph->batchDirectionalSlotValues[direction];
+  if (slot >= static_cast<int>(values.size())) {
+    return false;
+  }
+
+  values[static_cast<size_t>(slot)] += value;
+  return true;
+}
+
+inline Real GetBatchDirectionalSlotValue(const size_t direction,
+                                         const int slot) {
+  return g_ADGraph->batchDirectionalSlotValues[direction][static_cast<size_t>(slot)];
+}
+
+inline bool TryGetBatchDirectionalSlot(const VertexId i,
+                                       const VertexId j,
+                                       int &slot_out) {
+  slot_out = -1;
+
+  if (!g_ADGraph->useBatchDirectionalSlotWorkspace) {
+    return false;
+  }
+
+  if (i == j) {
+    if (i < g_ADGraph->batchSelfSlot.size()) {
+      slot_out = g_ADGraph->batchSelfSlot[i];
+      return slot_out >= 0;
+    }
+    return false;
+  }
+
+  const VertexId outer = std::max(i, j);
+  const VertexId inner = std::min(i, j);
+
+  if (outer >= g_ADGraph->batchSlotOuterInnerToSlot.size()) {
+    return false;
+  }
+
+  const Real stored =
+      g_ADGraph->batchSlotOuterInnerToSlot[outer].Query(inner);
+
+  if (stored == Real(0.0)) {
+    return false;
+  }
+
+  slot_out = static_cast<int>(stored) - 1;
+  return slot_out >= 0;
+}
+
+inline bool TryGetBatchDirectionalSlotValue(const size_t direction,
+                                            const VertexId i,
+                                            const VertexId j,
+                                            Real &value_out) {
+  int slot = -1;
+  if (!TryGetBatchDirectionalSlot(i, j, slot)) {
+    return false;
+  }
+
+  if (direction >= g_ADGraph->batchDirectionalSlotValues.size()) {
+    return false;
+  }
+
+  const auto &values = g_ADGraph->batchDirectionalSlotValues[direction];
+
+  if (slot < 0 || slot >= static_cast<int>(values.size())) {
+    return false;
+  }
+
+  value_out = values[static_cast<size_t>(slot)];
+  return true;
+}
+
+
+
+inline void ResizeDirectionalBatch(const int nDirections)
     {
         if (nDirections < 0)
         {
@@ -800,6 +969,17 @@ inline Real GetAdjointDot(const AReal &i, const AReal &j) {
             g_ADGraph->selfSoEdgesDotBatch[static_cast<size_t>(k)].assign(
                 g_ADGraph->vertices.size(),
                 Real(0.0));
+        }
+
+        if (g_ADGraph->useBatchDirectionalSlotWorkspace)
+        {
+            const size_t nSlots =
+                g_ADGraph->batchDirectionalSlotValues.empty()
+                    ? 0
+                    : g_ADGraph->batchDirectionalSlotValues.front().size();
+            g_ADGraph->batchDirectionalSlotValues.assign(
+                static_cast<size_t>(nDirections),
+                std::vector<Real>(nSlots, Real(0.0)));
         }
     }
 
@@ -925,7 +1105,10 @@ inline void PushEdgeDotBatch(const size_t direction,
                 << " size=" << selfDots.size() << "\n";
       std::abort();
     }
-    selfDots[foEdge.to] += Real(2.0) * valDot;
+    if (!AddBatchDirectionalSlotValue(direction, foEdge.to, foEdge.to,
+                                      Real(2.0) * valDot)) {
+      selfDots[foEdge.to] += Real(2.0) * valDot;
+    }
   } else {
     const VertexId outer = std::max(foEdge.to, soEdge.to);
     const VertexId inner = std::min(foEdge.to, soEdge.to);
@@ -942,7 +1125,9 @@ inline void PushEdgeDotBatch(const size_t direction,
       std::abort();
     }
 
-    trees[outer].Insert(inner, valDot);
+    if (!AddBatchDirectionalSlotValue(direction, outer, inner, valDot)) {
+      trees[outer].Insert(inner, valDot);
+    }
   }
 }
 
@@ -1063,6 +1248,7 @@ inline void PropagateAdjointDirectional() {
     }
 
     // Create local second-order contribution and its directional derivative.
+
     const Real a = vertex.w;
     const Real aDot = vertex.wDot;
 
@@ -1103,6 +1289,8 @@ inline void PropagateAdjointDirectional() {
 
 
 // Lightweight diagnostics for batched directional propagation.
+
+
 inline std::uint64_t g_batch_query_count = 0;
 inline std::uint64_t g_batch_pushdot_count = 0;
 inline std::uint64_t g_batch_insert_count = 0;
@@ -1336,6 +1524,34 @@ inline BTree &EnsureBatchDotTreeSlot(const size_t direction,
   return trees[vertex];
 }
 
+
+inline bool BatchDirectionHasLocalSignal(const ADVertex &vertex,
+                                         const ADEdge &e1,
+                                         const ADEdge &e2,
+                                         const VertexId vid,
+                                         const size_t kk) {
+  const Real e1dw =
+      kk < e1.dwBatch.size() ? e1.dwBatch[kk] : Real(0.0);
+  const Real e2dw =
+      kk < e2.dwBatch.size() ? e2.dwBatch[kk] : Real(0.0);
+  const Real aDot =
+      kk < vertex.wDotBatch.size() ? vertex.wDotBatch[kk] : Real(0.0);
+  const Real soWDot =
+      kk < vertex.soWDotBatch.size() ? vertex.soWDotBatch[kk] : Real(0.0);
+
+  Real selfDot = Real(0.0);
+  if (kk < g_ADGraph->selfSoEdgesDotBatch.size() &&
+      vid < g_ADGraph->selfSoEdgesDotBatch[kk].size()) {
+    selfDot = g_ADGraph->selfSoEdgesDotBatch[kk][vid];
+  }
+
+  return e1dw != Real(0.0) ||
+         (e2.to != vid && e2dw != Real(0.0)) ||
+         aDot != Real(0.0) ||
+         soWDot != Real(0.0) ||
+         selfDot != Real(0.0);
+}
+
 inline void PropagateAdjointDirectionalBatch() {
   const auto batch_total_start = std::chrono::steady_clock::now();
 
@@ -1404,6 +1620,7 @@ inline void PropagateAdjointDirectionalBatch() {
           batch_workspace_init_end - batch_workspace_init_start).count();
 
   PropagateDirectionalBatchForwardReplay();
+  ClearBatchDirectionalSlotValues();
 
   // Defensive storage normalization before reverse sweep. The directional
   // reverse pass inserts into soEdgesDotBatch[direction][vertex], so every
@@ -1443,26 +1660,39 @@ inline void PropagateAdjointDirectionalBatch() {
       }
 
       for (int k = 0; k < nDirections; ++k) {
-        BTree &btreeDot = g_ADGraph->soEdgesDotBatch[static_cast<size_t>(k)][vid];
-        ++g_batch_query_count;
-        const Real soDot = btreeDot.Query(it->key);
+        const size_t kk = static_cast<size_t>(k);
+        Real soDot = Real(0.0);
 
-        ++g_batch_pushdot_count;
-        PushEdgeDotBatch(
-            static_cast<size_t>(k),
-            e1,
-            soEdge,
-            e1.dwBatch[static_cast<size_t>(k)],
-            soDot);
+        if (!TryGetBatchDirectionalSlotValue(kk, vid, it->key, soDot)) {
+          BTree &btreeDot = g_ADGraph->soEdgesDotBatch[kk][vid];
+          ++g_batch_query_count;
+          soDot = btreeDot.Query(it->key);
+        }
 
-        if (e2.to != vid) {
+        const Real e1dw_k =
+            kk < e1.dwBatch.size() ? e1.dwBatch[kk] : Real(0.0);
+        if (e1dw_k != Real(0.0) || soDot != Real(0.0)) {
           ++g_batch_pushdot_count;
           PushEdgeDotBatch(
-              static_cast<size_t>(k),
-              e2,
+              kk,
+              e1,
               soEdge,
-              e2.dwBatch[static_cast<size_t>(k)],
+              e1dw_k,
               soDot);
+        }
+
+        if (e2.to != vid) {
+          const Real e2dw_k =
+              kk < e2.dwBatch.size() ? e2.dwBatch[kk] : Real(0.0);
+          if (e2dw_k != Real(0.0) || soDot != Real(0.0)) {
+            ++g_batch_pushdot_count;
+            PushEdgeDotBatch(
+                kk,
+                e2,
+                soEdge,
+                e2dw_k,
+                soDot);
+          }
         }
       }
     }
@@ -1488,27 +1718,42 @@ inline void PropagateAdjointDirectionalBatch() {
 
     for (int k = 0; k < nDirections; ++k) {
       const size_t kk = static_cast<size_t>(k);
+      if (!BatchDirectionHasLocalSignal(vertex, e1, e2, vid, kk)) {
+        continue;
+      }
+
       const Real SDot = g_ADGraph->selfSoEdgesDotBatch[kk][vid];
 
       if (S != Real(0.0) || SDot != Real(0.0)) {
-        g_ADGraph->selfSoEdgesDotBatch[kk][e1.to] +=
+        const Real e1SelfDot =
             Real(2.0) * e1.w * e1.dwBatch[kk] * S + e1.w * e1.w * SDot;
+        if (!AddBatchDirectionalSlotValue(kk, e1.to, e1.to, e1SelfDot)) {
+          g_ADGraph->selfSoEdgesDotBatch[kk][e1.to] += e1SelfDot;
+        }
 
         if (e2.to != vid) {
-          g_ADGraph->selfSoEdgesDotBatch[kk][e2.to] +=
+          const Real e2SelfDot =
               Real(2.0) * e2.w * e2.dwBatch[kk] * S + e2.w * e2.w * SDot;
+          if (!AddBatchDirectionalSlotValue(kk, e2.to, e2.to, e2SelfDot)) {
+            g_ADGraph->selfSoEdgesDotBatch[kk][e2.to] += e2SelfDot;
+          }
 
           const Real crossDot =
               (e1.dwBatch[kk] * e2.w + e1.w * e2.dwBatch[kk]) * S +
               e1.w * e2.w * SDot;
 
           if (e1.to == e2.to) {
-            g_ADGraph->selfSoEdgesDotBatch[kk][e1.to] += Real(2.0) * crossDot;
+            if (!AddBatchDirectionalSlotValue(
+                    kk, e1.to, e1.to, Real(2.0) * crossDot)) {
+              g_ADGraph->selfSoEdgesDotBatch[kk][e1.to] += Real(2.0) * crossDot;
+            }
           } else {
-            ++g_batch_insert_count;
-            EnsureBatchDotTreeSlot(
-                kk, std::max(e1.to, e2.to), "crossDot")
-                .Insert(std::min(e1.to, e2.to), crossDot);
+            if (!AddBatchDirectionalSlotValue(kk, e1.to, e2.to, crossDot)) {
+              ++g_batch_insert_count;
+              EnsureBatchDotTreeSlot(
+                  kk, std::max(e1.to, e2.to), "crossDot")
+                  .Insert(std::min(e1.to, e2.to), crossDot);
+            }
           }
         }
       }
@@ -1531,6 +1776,10 @@ inline void PropagateAdjointDirectionalBatch() {
 
     for (int k = 0; k < nDirections; ++k) {
       const size_t kk = static_cast<size_t>(k);
+      if (!BatchDirectionHasLocalSignal(vertex, e1, e2, vid, kk)) {
+        continue;
+      }
+
       const Real aDot = vertex.wDotBatch[kk];
 
       if ((a != Real(0.0) || aDot != Real(0.0)) &&
@@ -1538,9 +1787,14 @@ inline void PropagateAdjointDirectionalBatch() {
         const Real createDot = aDot * vertex.soW + a * vertex.soWDotBatch[kk];
 
         if (e2.to == vid) {
-          g_ADGraph->selfSoEdgesDotBatch[kk][e1.to] += createDot;
+          if (!AddBatchDirectionalSlotValue(kk, e1.to, e1.to, createDot)) {
+            g_ADGraph->selfSoEdgesDotBatch[kk][e1.to] += createDot;
+          }
         } else if (e1.to == e2.to) {
-          g_ADGraph->selfSoEdgesDotBatch[kk][e1.to] += Real(2.0) * createDot;
+          if (!AddBatchDirectionalSlotValue(
+                  kk, e1.to, e1.to, Real(2.0) * createDot)) {
+            g_ADGraph->selfSoEdgesDotBatch[kk][e1.to] += Real(2.0) * createDot;
+          }
         } else {
           ++g_batch_insert_count;
             EnsureBatchDotTreeSlot(
@@ -1562,6 +1816,10 @@ inline void PropagateAdjointDirectionalBatch() {
 
     for (int k = 0; k < nDirections; ++k) {
       const size_t kk = static_cast<size_t>(k);
+      if (!BatchDirectionHasLocalSignal(vertex, e1, e2, vid, kk)) {
+        continue;
+      }
+
       const Real aDot = vertex.wDotBatch[kk];
 
       if (a != Real(0.0) || aDot != Real(0.0)) {

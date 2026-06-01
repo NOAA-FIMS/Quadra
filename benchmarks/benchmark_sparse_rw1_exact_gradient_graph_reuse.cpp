@@ -451,6 +451,23 @@ struct ExactGradientWorkspaceRw1Adapter {
             &random_vars);
 
         workspace.ResizeDirectionalBatch(static_cast<std::size_t>(K));
+
+        // Experimental RW1/tridiagonal write-side directional slot workspace.
+        // slots: 0..m-1 diag, m..2m-2 subdiag(i,i-1).
+        workspace.HadWorkspace().Activate();
+        had::EnableBatchDirectionalSlotWorkspace(2 * m - 1);
+
+        for (int i = 0; i < m; ++i) {
+            had::SetBatchDirectionalSelfSlot(
+                random_vars[static_cast<std::size_t>(i)].varId,
+                i);
+            if (i > 0) {
+                had::SetBatchDirectionalOffdiagSlot(
+                    random_vars[static_cast<std::size_t>(i)].varId,
+                    random_vars[static_cast<std::size_t>(i - 1)].varId,
+                    m + i - 1);
+            }
+        }
     }
 
     void propagate_base_adjoint() {
@@ -480,26 +497,35 @@ struct ExactGradientWorkspaceRw1Adapter {
         workspace.PropagateDirectionalBatch();
     }
 
-    ExactGradientResult exact_gradient(const Eigen::MatrixXd& Hinv,
+    template <class SelectedInverseAccessor>
+    ExactGradientResult exact_gradient(SelectedInverseAccessor&& selected_inverse,
                                        const Eigen::VectorXd& joint_grad,
                                        double joint_objective,
                                        double logdet) {
         const auto pattern =
             quadra::laplace::MakeTridiagonalHdotPattern(m);
 
-        const auto assembled =
-            workspace.AssembleExactGradient(
-                joint_objective,
-                logdet,
-                joint_grad,
-                [&](int row, int col) {
-                    return Hinv(row, col);
-                },
-                pattern);
+        Eigen::VectorXd traces = Eigen::VectorXd::Zero(K);
+
+        for (int k = 0; k < K; ++k) {
+            double trace = 0.0;
+            for (int i = 0; i < m; ++i) {
+                trace += selected_inverse(i, i) *
+                         had::GetBatchDirectionalSlotValue(
+                             static_cast<size_t>(k), i);
+
+                if (i > 0) {
+                    trace += 2.0 * selected_inverse(i, i - 1) *
+                             had::GetBatchDirectionalSlotValue(
+                                 static_cast<size_t>(k), m + i - 1);
+                }
+            }
+            traces[k] = trace;
+        }
 
         ExactGradientResult out;
-        out.objective = assembled.objective;
-        out.gradient = assembled.gradient;
+        out.objective = joint_objective + 0.5 * logdet;
+        out.gradient = joint_grad + 0.5 * traces;
         return out;
     }
 
@@ -509,12 +535,65 @@ struct ExactGradientWorkspaceRw1Adapter {
     }
 };
 
+
+struct SelectedTridiagonalInverse {
+    Eigen::VectorXd diag;
+    Eigen::VectorXd subdiag;
+
+    double operator()(int row, int col) const {
+        if (row == col) {
+            return diag[row];
+        }
+
+        const int hi = std::max(row, col);
+        const int lo = std::min(row, col);
+
+        if (hi == lo + 1) {
+            return subdiag[hi - 1];
+        }
+
+        return 0.0;
+    }
+};
+
+SelectedTridiagonalInverse compute_selected_tridiagonal_inverse(
+    Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>>& ldlt,
+    int m) {
+    SelectedTridiagonalInverse selected;
+    selected.diag = Eigen::VectorXd::Zero(m);
+    selected.subdiag = Eigen::VectorXd::Zero(std::max(0, m - 1));
+
+    Eigen::VectorXd rhs = Eigen::VectorXd::Zero(m);
+
+    for (int j = 0; j < m; ++j) {
+        rhs.setZero();
+        rhs[j] = 1.0;
+
+        const Eigen::VectorXd col = ldlt.solve(rhs);
+
+        selected.diag[j] = col[j];
+
+        if (j > 0) {
+            selected.subdiag[j - 1] = col[j - 1];
+        }
+    }
+
+    return selected;
+}
+
 struct Row {
     double rebuild_ms = 0.0;
     double reuse_ms = 0.0;
     double speedup = 0.0;
     double grad_diff = 0.0;
     double obj_diff = 0.0;
+    double reuse_base_ms = 0.0;
+    double reuse_seed_ms = 0.0;
+    double reuse_reverse_ms = 0.0;
+    double reuse_assemble_ms = 0.0;
+    double avg_queries = 0.0;
+    double avg_pushdots = 0.0;
+    double avg_inserts = 0.0;
     int vertices = 0;
 };
 
@@ -526,8 +605,11 @@ Row run_case(int m, int K, int reps) {
     const Eigen::SparseMatrix<double> H = Huu_sparse_direct(theta, uhat);
 
     Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> ldlt(H);
+    SelectedTridiagonalInverse selected_inverse =
+        compute_selected_tridiagonal_inverse(ldlt, m);
+
     const Eigen::MatrixXd I = Eigen::MatrixXd::Identity(m, m);
-    const Eigen::MatrixXd Hinv = ldlt.solve(I);
+    const Eigen::MatrixXd Hinv = ldlt.solve(I);  // Rebuild reference only.
 
     double logdet = 0.0;
     Eigen::MatrixXd Hdense(H);
@@ -554,20 +636,54 @@ Row run_case(int m, int K, int reps) {
     ExactGradientWorkspaceRw1Adapter workspace(m, K, theta, uhat);
     out.vertices = workspace.vertex_count();
 
+    double reuse_base_sum = 0.0;
+    double reuse_seed_sum = 0.0;
+    double reuse_reverse_sum = 0.0;
+    double reuse_assemble_sum = 0.0;
+    double query_sum = 0.0;
+    double pushdot_sum = 0.0;
+    double insert_sum = 0.0;
+
     const auto t2 = Clock::now();
     for (int r = 0; r < reps; ++r) {
+        const auto rb0 = Clock::now();
         workspace.propagate_base_adjoint();
+        const auto rb1 = Clock::now();
+
         workspace.seed_directions(theta, uhat, factor);
+        const auto rb2 = Clock::now();
+
+        had::ResetBatchDirectionalCounters();
+
         workspace.propagate_directional_batch();
 
+        const auto rb3 = Clock::now();
+
+        query_sum += static_cast<double>(had::g_batch_query_count);
+        pushdot_sum += static_cast<double>(had::g_batch_pushdot_count);
+        insert_sum += static_cast<double>(had::g_batch_insert_count);
+
         last_reuse = workspace.exact_gradient(
-            Hinv, joint_grad, joint_obj, logdet);
+            selected_inverse, joint_grad, joint_obj, logdet);
+        const auto rb4 = Clock::now();
+
+        reuse_base_sum += ms_between(rb0, rb1);
+        reuse_seed_sum += ms_between(rb1, rb2);
+        reuse_reverse_sum += ms_between(rb2, rb3);
+        reuse_assemble_sum += ms_between(rb3, rb4);
     }
     const auto t3 = Clock::now();
 
     out.rebuild_ms = ms_between(t0, t1) / static_cast<double>(reps);
     out.reuse_ms = ms_between(t2, t3) / static_cast<double>(reps);
     out.speedup = out.rebuild_ms / out.reuse_ms;
+    out.reuse_base_ms = reuse_base_sum / static_cast<double>(reps);
+    out.reuse_seed_ms = reuse_seed_sum / static_cast<double>(reps);
+    out.reuse_reverse_ms = reuse_reverse_sum / static_cast<double>(reps);
+    out.reuse_assemble_ms = reuse_assemble_sum / static_cast<double>(reps);
+    out.avg_queries = query_sum / static_cast<double>(reps);
+    out.avg_pushdots = pushdot_sum / static_cast<double>(reps);
+    out.avg_inserts = insert_sum / static_cast<double>(reps);
     out.grad_diff = (last_rebuild.gradient - last_reuse.gradient).cwiseAbs().maxCoeff();
     out.obj_diff = std::abs(last_rebuild.objective - last_reuse.objective);
 
@@ -592,6 +708,13 @@ int main(int argc, char** argv) {
               << std::setw(16) << "rebuild ms"
               << std::setw(16) << "reuse ms"
               << std::setw(14) << "speedup"
+              << std::setw(14) << "base"
+              << std::setw(14) << "seed"
+              << std::setw(14) << "reverse"
+              << std::setw(14) << "assemble"
+              << std::setw(14) << "queries"
+              << std::setw(14) << "pushdots"
+              << std::setw(14) << "inserts"
               << std::setw(16) << "grad diff"
               << std::setw(16) << "obj diff"
               << "\n";
@@ -606,6 +729,13 @@ int main(int argc, char** argv) {
                   << std::setw(16) << r.rebuild_ms
                   << std::setw(16) << r.reuse_ms
                   << std::setw(14) << r.speedup
+                  << std::setw(14) << r.reuse_base_ms
+                  << std::setw(14) << r.reuse_seed_ms
+                  << std::setw(14) << r.reuse_reverse_ms
+                  << std::setw(14) << r.reuse_assemble_ms
+                  << std::setw(14) << r.avg_queries
+                  << std::setw(14) << r.avg_pushdots
+                  << std::setw(14) << r.avg_inserts
                   << std::setw(16) << r.grad_diff
                   << std::setw(16) << r.obj_diff
                   << "\n";
