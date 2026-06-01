@@ -185,6 +185,11 @@ struct ADVertex {
         // Batched directional derivative of soW along seeded primal tangents.
         std::vector<Real> soWDotBatch;
 
+        // Cached active-direction mask for batched directional reverse.
+        // Bit k is set when direction k has local signal at this vertex.
+        // Used for fast paths when nBatchDirections <= 64.
+        std::uint64_t batchActiveDirectionMask = 0;
+
   // Replay primal value and operation metadata.
   Real primal = Real(0.0);
   OpCode op = OpCode::Independent;
@@ -956,6 +961,7 @@ inline void ResizeDirectionalBatch(const int nDirections)
             v.soWDotBatch.assign(static_cast<size_t>(nDirections), Real(0.0));
             v.e1.dwBatch.assign(static_cast<size_t>(nDirections), Real(0.0));
             v.e2.dwBatch.assign(static_cast<size_t>(nDirections), Real(0.0));
+            v.batchActiveDirectionMask = 0;
         }
 
         g_ADGraph->soEdgesDotBatch.resize(static_cast<size_t>(nDirections));
@@ -994,6 +1000,7 @@ inline void ResizeDirectionalBatch(const int nDirections)
             v.soWDotBatch.assign(static_cast<size_t>(nDirections), Real(0.0));
             v.e1.dwBatch.assign(static_cast<size_t>(nDirections), Real(0.0));
             v.e2.dwBatch.assign(static_cast<size_t>(nDirections), Real(0.0));
+            v.batchActiveDirectionMask = 0;
         }
 
         for (int k = 0; k < nDirections; ++k)
@@ -1552,6 +1559,44 @@ inline bool BatchDirectionHasLocalSignal(const ADVertex &vertex,
          selfDot != Real(0.0);
 }
 
+inline void ComputeBatchActiveDirectionMasks(const int nDirections) {
+  const int cappedDirections = std::min(nDirections, 64);
+
+  for (VertexId vid = 0;
+       vid < static_cast<VertexId>(g_ADGraph->vertices.size());
+       ++vid) {
+    ADVertex &vertex = g_ADGraph->vertices[vid];
+    ADEdge &e1 = vertex.e1;
+    ADEdge &e2 = vertex.e2;
+
+    std::uint64_t mask = 0;
+
+    for (int k = 0; k < cappedDirections; ++k) {
+      const size_t kk = static_cast<size_t>(k);
+      if (BatchDirectionHasLocalSignal(vertex, e1, e2, vid, kk)) {
+        mask |= (std::uint64_t(1) << kk);
+      }
+    }
+
+    vertex.batchActiveDirectionMask = mask;
+  }
+}
+
+inline bool BatchDirectionMaskHasSignal(const ADVertex &vertex,
+                                        const ADVertex & /*unused*/,
+                                        const ADEdge &e1,
+                                        const ADEdge &e2,
+                                        const VertexId vid,
+                                        const size_t kk) {
+  if (kk < 64) {
+    return (vertex.batchActiveDirectionMask & (std::uint64_t(1) << kk)) != 0;
+  }
+
+  return BatchDirectionHasLocalSignal(vertex, e1, e2, vid, kk);
+}
+
+
+
 inline void PropagateAdjointDirectionalBatch() {
   const auto batch_total_start = std::chrono::steady_clock::now();
 
@@ -1640,6 +1685,8 @@ inline void PropagateAdjointDirectionalBatch() {
     }
   }
 
+  ComputeBatchActiveDirectionMasks(nDirections);
+
   for (VertexId vid = n_vertices - 1; vid > 0; --vid) {
     ADVertex &vertex = g_ADGraph->vertices[vid];
     ADEdge &e1 = vertex.e1;
@@ -1718,7 +1765,7 @@ inline void PropagateAdjointDirectionalBatch() {
 
     for (int k = 0; k < nDirections; ++k) {
       const size_t kk = static_cast<size_t>(k);
-      if (!BatchDirectionHasLocalSignal(vertex, e1, e2, vid, kk)) {
+      if (!BatchDirectionMaskHasSignal(vertex, vertex, e1, e2, vid, kk)) {
         continue;
       }
 
@@ -1776,7 +1823,7 @@ inline void PropagateAdjointDirectionalBatch() {
 
     for (int k = 0; k < nDirections; ++k) {
       const size_t kk = static_cast<size_t>(k);
-      if (!BatchDirectionHasLocalSignal(vertex, e1, e2, vid, kk)) {
+      if (!BatchDirectionMaskHasSignal(vertex, vertex, e1, e2, vid, kk)) {
         continue;
       }
 
@@ -1816,7 +1863,7 @@ inline void PropagateAdjointDirectionalBatch() {
 
     for (int k = 0; k < nDirections; ++k) {
       const size_t kk = static_cast<size_t>(k);
-      if (!BatchDirectionHasLocalSignal(vertex, e1, e2, vid, kk)) {
+      if (!BatchDirectionMaskHasSignal(vertex, vertex, e1, e2, vid, kk)) {
         continue;
       }
 
