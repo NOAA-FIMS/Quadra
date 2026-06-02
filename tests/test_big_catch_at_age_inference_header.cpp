@@ -2,8 +2,7 @@
 
 #include <iostream>
 
-int main()
-{
-    std::cout << "PASS: big catch-at-age inference header compiles\n";
-    return 0;
+int main() {
+  std::cout << "PASS: big catch-at-age inference header compiles\n";
+  return 0;
 }

@@ -28,7 +28,7 @@ struct Counter {
 };
 
 struct InitCounter {
-  void operator()(Counter& counter) {
+  void operator()(Counter &counter) {
     counter.created_by = std::this_thread::get_id();
   }
 };
@@ -43,7 +43,7 @@ void test_simple_thread_local() {
 
   for (int i = 0; i < num_tasks; ++i) {
     thread_pool.Schedule([&counter, &barrier]() {
-      Counter& local = counter.local();
+      Counter &local = counter.local();
       local.inc();
 
       std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -54,17 +54,17 @@ void test_simple_thread_local() {
   barrier.Wait();
 
   counter.ForEach(
-      [](std::thread::id, Counter& cnt) { VERIFY_IS_EQUAL(cnt.value(), 3); });
+      [](std::thread::id, Counter &cnt) { VERIFY_IS_EQUAL(cnt.value(), 3); });
 }
 
 void test_zero_sized_thread_local() {
   Eigen::ThreadLocal<Counter, InitCounter> counter(0, InitCounter());
 
-  Counter& local = counter.local();
+  Counter &local = counter.local();
   local.inc();
 
   int total = 0;
-  counter.ForEach([&total](std::thread::id, Counter& cnt) {
+  counter.ForEach([&total](std::thread::id, Counter &cnt) {
     total += cnt.value();
     VERIFY_IS_EQUAL(cnt.value(), 1);
   });
@@ -83,7 +83,7 @@ void test_large_number_of_tasks_no_spill() {
 
   for (int i = 0; i < num_tasks; ++i) {
     thread_pool.Schedule([&counter, &barrier]() {
-      Counter& local = counter.local();
+      Counter &local = counter.local();
       local.inc();
       barrier.Notify();
     });
@@ -94,7 +94,7 @@ void test_large_number_of_tasks_no_spill() {
   int total = 0;
   std::unordered_set<std::thread::id> unique_threads;
 
-  counter.ForEach([&](std::thread::id id, Counter& cnt) {
+  counter.ForEach([&](std::thread::id id, Counter &cnt) {
     total += cnt.value();
     unique_threads.insert(id);
   });
@@ -118,7 +118,7 @@ void test_large_number_of_tasks_with_spill() {
 
   for (int i = 0; i < num_tasks; ++i) {
     thread_pool.Schedule([&counter, &barrier]() {
-      Counter& local = counter.local();
+      Counter &local = counter.local();
       local.inc();
       barrier.Notify();
     });
@@ -129,7 +129,7 @@ void test_large_number_of_tasks_with_spill() {
   int total = 0;
   std::unordered_set<std::thread::id> unique_threads;
 
-  counter.ForEach([&](std::thread::id id, Counter& cnt) {
+  counter.ForEach([&](std::thread::id id, Counter &cnt) {
     total += cnt.value();
     unique_threads.insert(id);
   });

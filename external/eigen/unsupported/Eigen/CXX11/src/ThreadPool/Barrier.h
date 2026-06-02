@@ -16,7 +16,7 @@
 namespace Eigen {
 
 class Barrier {
- public:
+public:
   Barrier(unsigned int count) : state_(count << 1), notified_(false) {
     eigen_plain_assert(((count << 1) >> 1) == count);
   }
@@ -29,7 +29,7 @@ class Barrier {
       // value was not zero. If it was zero, it means that notify was called
       // more times than the original count.
       eigen_plain_assert(((v + 2) & ~1) != 0);
-      return;  // either count has not dropped to 0, or waiter is not waiting
+      return; // either count has not dropped to 0, or waiter is not waiting
     }
     std::unique_lock<std::mutex> l(mu_);
     eigen_plain_assert(!notified_);
@@ -39,17 +39,18 @@ class Barrier {
 
   void Wait() {
     unsigned int v = state_.fetch_or(1, std::memory_order_acq_rel);
-    if ((v >> 1) == 0) return;
+    if ((v >> 1) == 0)
+      return;
     std::unique_lock<std::mutex> l(mu_);
     while (!notified_) {
       cv_.wait(l);
     }
   }
 
- private:
+private:
   std::mutex mu_;
   std::condition_variable cv_;
-  std::atomic<unsigned int> state_;  // low bit is waiter flag
+  std::atomic<unsigned int> state_; // low bit is waiter flag
   bool notified_;
 };
 
@@ -62,6 +63,6 @@ struct Notification : Barrier {
   Notification() : Barrier(1){};
 };
 
-}  // namespace Eigen
+} // namespace Eigen
 
-#endif  // EIGEN_CXX11_THREADPOOL_BARRIER_H
+#endif // EIGEN_CXX11_THREADPOOL_BARRIER_H

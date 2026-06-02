@@ -18,10 +18,9 @@
 
 #else
 
-#if EIGEN_MAX_CPP_VER >= 11 &&                         \
-    ((EIGEN_COMP_GNUC && EIGEN_GNUC_AT_LEAST(4, 8)) || \
-     __has_feature(cxx_thread_local)                || \
-     (EIGEN_COMP_MSVC >= 1900) )
+#if EIGEN_MAX_CPP_VER >= 11 &&                                                 \
+    ((EIGEN_COMP_GNUC && EIGEN_GNUC_AT_LEAST(4, 8)) ||                         \
+     __has_feature(cxx_thread_local) || (EIGEN_COMP_MSVC >= 1900))
 #define EIGEN_THREAD_LOCAL static thread_local
 #endif
 
@@ -34,8 +33,8 @@
 #endif
 // Checks whether C++11's `thread_local` storage duration specifier is
 // supported.
-#if defined(__apple_build_version__) &&     \
-    ((__apple_build_version__ < 8000042) || \
+#if defined(__apple_build_version__) &&                                        \
+    ((__apple_build_version__ < 8000042) ||                                    \
      (TARGET_OS_IPHONE && __IPHONE_OS_VERSION_MIN_REQUIRED < __IPHONE_9_0))
 // Notes: Xcode's clang did not support `thread_local` until version
 // 8, and even then not for all iOS < 9.0.
@@ -52,30 +51,28 @@
 // e.g. `-D__NDK_MAJOR__=11 -D__NKD_MINOR__=0` for NDK r11.
 #if __has_include(<android/ndk-version.h>)
 #include <android/ndk-version.h>
-#endif  // __has_include(<android/ndk-version.h>)
-#if defined(__ANDROID__) && defined(__clang__) && defined(__NDK_MAJOR__) && \
-    defined(__NDK_MINOR__) &&                                               \
+#endif // __has_include(<android/ndk-version.h>)
+#if defined(__ANDROID__) && defined(__clang__) && defined(__NDK_MAJOR__) &&    \
+    defined(__NDK_MINOR__) &&                                                  \
     ((__NDK_MAJOR__ < 12) || ((__NDK_MAJOR__ == 12) && (__NDK_MINOR__ < 1)))
 #undef EIGEN_THREAD_LOCAL
 #endif
-#endif  // defined(__ANDROID__) && defined(__clang__)
+#endif // defined(__ANDROID__) && defined(__clang__)
 
-#endif  // EIGEN_AVOID_THREAD_LOCAL
+#endif // EIGEN_AVOID_THREAD_LOCAL
 
 namespace Eigen {
 
 namespace internal {
-template <typename T>
-struct ThreadLocalNoOpInitialize {
-  void operator()(T&) const {}
+template <typename T> struct ThreadLocalNoOpInitialize {
+  void operator()(T &) const {}
 };
 
-template <typename T>
-struct ThreadLocalNoOpRelease {
-  void operator()(T&) const {}
+template <typename T> struct ThreadLocalNoOpRelease {
+  void operator()(T &) const {}
 };
 
-}  // namespace internal
+} // namespace internal
 
 // Thread local container for elements of type T, that does not use thread local
 // storage. As long as the number of unique threads accessing this storage
@@ -117,7 +114,7 @@ class ThreadLocal {
   static_assert(std::is_default_constructible<T>::value,
                 "ThreadLocal data type must be default constructible");
 
- public:
+public:
   explicit ThreadLocal(int capacity)
       : ThreadLocal(capacity, internal::ThreadLocalNoOpInitialize<T>(),
                     internal::ThreadLocalNoOpRelease<T>()) {}
@@ -127,11 +124,8 @@ class ThreadLocal {
                     internal::ThreadLocalNoOpRelease<T>()) {}
 
   ThreadLocal(int capacity, Initialize initialize, Release release)
-      : initialize_(std::move(initialize)),
-        release_(std::move(release)),
-        capacity_(capacity),
-        data_(capacity_),
-        ptr_(capacity_),
+      : initialize_(std::move(initialize)), release_(std::move(release)),
+        capacity_(capacity), data_(capacity_), ptr_(capacity_),
         filled_records_(0) {
     eigen_assert(capacity_ >= 0);
     data_.resize(capacity_);
@@ -140,9 +134,10 @@ class ThreadLocal {
     }
   }
 
-  T& local() {
+  T &local() {
     std::thread::id this_thread = std::this_thread::get_id();
-    if (capacity_ == 0) return SpilledLocal(this_thread);
+    if (capacity_ == 0)
+      return SpilledLocal(this_thread);
 
     std::size_t h = std::hash<std::thread::id>()(this_thread);
     const int start_idx = h % capacity_;
@@ -157,19 +152,23 @@ class ThreadLocal {
     // Check if we already have an element for `this_thread`.
     int idx = start_idx;
     while (ptr_[idx].load() != nullptr) {
-      ThreadIdAndValue& record = *(ptr_[idx].load());
-      if (record.thread_id == this_thread) return record.value;
+      ThreadIdAndValue &record = *(ptr_[idx].load());
+      if (record.thread_id == this_thread)
+        return record.value;
 
       idx += 1;
-      if (idx >= capacity_) idx -= capacity_;
-      if (idx == start_idx) break;
+      if (idx >= capacity_)
+        idx -= capacity_;
+      if (idx == start_idx)
+        break;
     }
 
     // If we are here, it means that we found an insertion point in lookup
     // table at `idx`, or we did a full traversal and table is full.
 
     // If lock-free storage is full, fallback on mutex.
-    if (filled_records_.load() >= capacity_) return SpilledLocal(this_thread);
+    if (filled_records_.load() >= capacity_)
+      return SpilledLocal(this_thread);
 
     // We double check that we still have space to insert an element into a lock
     // free storage. If old value in `filled_records_` is larger than the
@@ -177,7 +176,8 @@ class ThreadLocal {
     // we were traversing lookup table.
     int insertion_index =
         filled_records_.fetch_add(1, std::memory_order_relaxed);
-    if (insertion_index >= capacity_) return SpilledLocal(this_thread);
+    if (insertion_index >= capacity_)
+      return SpilledLocal(this_thread);
 
     // At this point it's guaranteed that we can access to
     // data_[insertion_index_] without a data race.
@@ -185,10 +185,10 @@ class ThreadLocal {
     initialize_(data_[insertion_index].value);
 
     // That's the pointer we'll put into the lookup table.
-    ThreadIdAndValue* inserted = &data_[insertion_index];
+    ThreadIdAndValue *inserted = &data_[insertion_index];
 
     // We'll use nullptr pointer to ThreadIdAndValue in a compare-and-swap loop.
-    ThreadIdAndValue* empty = nullptr;
+    ThreadIdAndValue *empty = nullptr;
 
     // Now we have to find an insertion point into the lookup table. We start
     // from the `idx` that was identified as an insertion point above, it's
@@ -201,7 +201,8 @@ class ThreadLocal {
       idx = insertion_idx;
       while (ptr_[idx].load() != nullptr) {
         idx += 1;
-        if (idx >= capacity_) idx -= capacity_;
+        if (idx >= capacity_)
+          idx -= capacity_;
         // If we did a full loop, it means that we don't have any free entries
         // in the lookup table, and this means that something is terribly wrong.
         eigen_assert(idx != insertion_idx);
@@ -214,21 +215,23 @@ class ThreadLocal {
   }
 
   // WARN: It's not thread safe to call it concurrently with `local()`.
-  void ForEach(std::function<void(std::thread::id, T&)> f) {
+  void ForEach(std::function<void(std::thread::id, T &)> f) {
     // Reading directly from `data_` is unsafe, because only CAS to the
     // record in `ptr_` makes all changes visible to other threads.
-    for (auto& ptr : ptr_) {
-      ThreadIdAndValue* record = ptr.load();
-      if (record == nullptr) continue;
+    for (auto &ptr : ptr_) {
+      ThreadIdAndValue *record = ptr.load();
+      if (record == nullptr)
+        continue;
       f(record->thread_id, record->value);
     }
 
     // We did not spill into the map based storage.
-    if (filled_records_.load(std::memory_order_relaxed) < capacity_) return;
+    if (filled_records_.load(std::memory_order_relaxed) < capacity_)
+      return;
 
     // Adds a happens before edge from the last call to SpilledLocal().
     std::unique_lock<std::mutex> lock(mu_);
-    for (auto& kv : per_thread_map_) {
+    for (auto &kv : per_thread_map_) {
       f(kv.first, kv.second);
     }
   }
@@ -237,30 +240,32 @@ class ThreadLocal {
   ~ThreadLocal() {
     // Reading directly from `data_` is unsafe, because only CAS to the record
     // in `ptr_` makes all changes visible to other threads.
-    for (auto& ptr : ptr_) {
-      ThreadIdAndValue* record = ptr.load();
-      if (record == nullptr) continue;
+    for (auto &ptr : ptr_) {
+      ThreadIdAndValue *record = ptr.load();
+      if (record == nullptr)
+        continue;
       release_(record->value);
     }
 
     // We did not spill into the map based storage.
-    if (filled_records_.load(std::memory_order_relaxed) < capacity_) return;
+    if (filled_records_.load(std::memory_order_relaxed) < capacity_)
+      return;
 
     // Adds a happens before edge from the last call to SpilledLocal().
     std::unique_lock<std::mutex> lock(mu_);
-    for (auto& kv : per_thread_map_) {
+    for (auto &kv : per_thread_map_) {
       release_(kv.second);
     }
   }
 
- private:
+private:
   struct ThreadIdAndValue {
     std::thread::id thread_id;
     T value;
   };
 
   // Use unordered map guarded by a mutex when lock free storage is full.
-  T& SpilledLocal(std::thread::id this_thread) {
+  T &SpilledLocal(std::thread::id this_thread) {
     std::unique_lock<std::mutex> lock(mu_);
 
     auto it = per_thread_map_.find(this_thread);
@@ -284,7 +289,7 @@ class ThreadLocal {
 
   // Atomic pointers to the data stored in `data_`. Used as a lookup table for
   // linear probing hash map (https://en.wikipedia.org/wiki/Linear_probing).
-  MaxSizeVector<std::atomic<ThreadIdAndValue*>> ptr_;
+  MaxSizeVector<std::atomic<ThreadIdAndValue *>> ptr_;
 
   // Number of records stored in the `data_`.
   std::atomic<int> filled_records_;
@@ -292,10 +297,10 @@ class ThreadLocal {
   // We fallback on per thread map if lock-free storage is full. In practice
   // this should never happen, if `capacity_` is a reasonable estimate of the
   // number of threads running in a system.
-  std::mutex mu_;  // Protects per_thread_map_.
+  std::mutex mu_; // Protects per_thread_map_.
   std::unordered_map<std::thread::id, T> per_thread_map_;
 };
 
-}  // namespace Eigen
+} // namespace Eigen
 
-#endif  // EIGEN_CXX11_THREADPOOL_THREAD_LOCAL_H
+#endif // EIGEN_CXX11_THREADPOOL_THREAD_LOCAL_H

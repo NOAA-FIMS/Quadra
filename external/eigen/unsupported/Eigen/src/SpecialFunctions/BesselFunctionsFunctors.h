@@ -20,20 +20,19 @@ namespace internal {
  * kind of order zero.
  * \sa class CwiseUnaryOp, Cwise::bessel_i0()
  */
-template <typename Scalar>
-struct scalar_bessel_i0_op {
+template <typename Scalar> struct scalar_bessel_i0_op {
   EIGEN_EMPTY_STRUCT_CTOR(scalar_bessel_i0_op)
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator()(const Scalar& x) const {
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar
+  operator()(const Scalar &x) const {
     using numext::bessel_i0;
     return bessel_i0(x);
   }
   typedef typename packet_traits<Scalar>::type Packet;
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet packetOp(const Packet& x) const {
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet packetOp(const Packet &x) const {
     return internal::pbessel_i0(x);
   }
 };
-template <typename Scalar>
-struct functor_traits<scalar_bessel_i0_op<Scalar> > {
+template <typename Scalar> struct functor_traits<scalar_bessel_i0_op<Scalar>> {
   enum {
     // On average, a Chebyshev polynomial of order N=20 is computed.
     // The cost is N multiplications and 2N additions. We also add
@@ -48,20 +47,19 @@ struct functor_traits<scalar_bessel_i0_op<Scalar> > {
  * function of the first kind of order zero
  * \sa class CwiseUnaryOp, Cwise::bessel_i0e()
  */
-template <typename Scalar>
-struct scalar_bessel_i0e_op {
+template <typename Scalar> struct scalar_bessel_i0e_op {
   EIGEN_EMPTY_STRUCT_CTOR(scalar_bessel_i0e_op)
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator()(const Scalar& x) const {
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar
+  operator()(const Scalar &x) const {
     using numext::bessel_i0e;
     return bessel_i0e(x);
   }
   typedef typename packet_traits<Scalar>::type Packet;
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet packetOp(const Packet& x) const {
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet packetOp(const Packet &x) const {
     return internal::pbessel_i0e(x);
   }
 };
-template <typename Scalar>
-struct functor_traits<scalar_bessel_i0e_op<Scalar> > {
+template <typename Scalar> struct functor_traits<scalar_bessel_i0e_op<Scalar>> {
   enum {
     // On average, a Chebyshev polynomial of order N=20 is computed.
     // The cost is N multiplications and 2N additions.
@@ -75,20 +73,19 @@ struct functor_traits<scalar_bessel_i0e_op<Scalar> > {
  * kind of order one
  * \sa class CwiseUnaryOp, Cwise::bessel_i1()
  */
-template <typename Scalar>
-struct scalar_bessel_i1_op {
+template <typename Scalar> struct scalar_bessel_i1_op {
   EIGEN_EMPTY_STRUCT_CTOR(scalar_bessel_i1_op)
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator()(const Scalar& x) const {
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar
+  operator()(const Scalar &x) const {
     using numext::bessel_i1;
     return bessel_i1(x);
   }
   typedef typename packet_traits<Scalar>::type Packet;
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet packetOp(const Packet& x) const {
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet packetOp(const Packet &x) const {
     return internal::pbessel_i1(x);
   }
 };
-template <typename Scalar>
-struct functor_traits<scalar_bessel_i1_op<Scalar> > {
+template <typename Scalar> struct functor_traits<scalar_bessel_i1_op<Scalar>> {
   enum {
     // On average, a Chebyshev polynomial of order N=20 is computed.
     // The cost is N multiplications and 2N additions. We also add
@@ -103,20 +100,19 @@ struct functor_traits<scalar_bessel_i1_op<Scalar> > {
  * function of the first kind of order zero
  * \sa class CwiseUnaryOp, Cwise::bessel_i1e()
  */
-template <typename Scalar>
-struct scalar_bessel_i1e_op {
+template <typename Scalar> struct scalar_bessel_i1e_op {
   EIGEN_EMPTY_STRUCT_CTOR(scalar_bessel_i1e_op)
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator()(const Scalar& x) const {
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar
+  operator()(const Scalar &x) const {
     using numext::bessel_i1e;
     return bessel_i1e(x);
   }
   typedef typename packet_traits<Scalar>::type Packet;
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet packetOp(const Packet& x) const {
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet packetOp(const Packet &x) const {
     return internal::pbessel_i1e(x);
   }
 };
-template <typename Scalar>
-struct functor_traits<scalar_bessel_i1e_op<Scalar> > {
+template <typename Scalar> struct functor_traits<scalar_bessel_i1e_op<Scalar>> {
   enum {
     // On average, a Chebyshev polynomial of order N=20 is computed.
     // The cost is N multiplications and 2N additions.
@@ -130,20 +126,19 @@ struct functor_traits<scalar_bessel_i1e_op<Scalar> > {
  * order zero
  * \sa class CwiseUnaryOp, Cwise::bessel_j0()
  */
-template <typename Scalar>
-struct scalar_bessel_j0_op {
+template <typename Scalar> struct scalar_bessel_j0_op {
   EIGEN_EMPTY_STRUCT_CTOR(scalar_bessel_j0_op)
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator()(const Scalar& x) const {
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar
+  operator()(const Scalar &x) const {
     using numext::bessel_j0;
     return bessel_j0(x);
   }
   typedef typename packet_traits<Scalar>::type Packet;
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet packetOp(const Packet& x) const {
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet packetOp(const Packet &x) const {
     return internal::pbessel_j0(x);
   }
 };
-template <typename Scalar>
-struct functor_traits<scalar_bessel_j0_op<Scalar> > {
+template <typename Scalar> struct functor_traits<scalar_bessel_j0_op<Scalar>> {
   enum {
     // 6 polynomial of order ~N=8 is computed.
     // The cost is N multiplications and N additions each, along with a
@@ -158,20 +153,19 @@ struct functor_traits<scalar_bessel_j0_op<Scalar> > {
  * order zero
  * \sa class CwiseUnaryOp, Cwise::bessel_y0()
  */
-template <typename Scalar>
-struct scalar_bessel_y0_op {
+template <typename Scalar> struct scalar_bessel_y0_op {
   EIGEN_EMPTY_STRUCT_CTOR(scalar_bessel_y0_op)
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator()(const Scalar& x) const {
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar
+  operator()(const Scalar &x) const {
     using numext::bessel_y0;
     return bessel_y0(x);
   }
   typedef typename packet_traits<Scalar>::type Packet;
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet packetOp(const Packet& x) const {
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet packetOp(const Packet &x) const {
     return internal::pbessel_y0(x);
   }
 };
-template <typename Scalar>
-struct functor_traits<scalar_bessel_y0_op<Scalar> > {
+template <typename Scalar> struct functor_traits<scalar_bessel_y0_op<Scalar>> {
   enum {
     // 6 polynomial of order ~N=8 is computed.
     // The cost is N multiplications and N additions each, along with a
@@ -186,20 +180,19 @@ struct functor_traits<scalar_bessel_y0_op<Scalar> > {
  * order one
  * \sa class CwiseUnaryOp, Cwise::bessel_j1()
  */
-template <typename Scalar>
-struct scalar_bessel_j1_op {
+template <typename Scalar> struct scalar_bessel_j1_op {
   EIGEN_EMPTY_STRUCT_CTOR(scalar_bessel_j1_op)
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator()(const Scalar& x) const {
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar
+  operator()(const Scalar &x) const {
     using numext::bessel_j1;
     return bessel_j1(x);
   }
   typedef typename packet_traits<Scalar>::type Packet;
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet packetOp(const Packet& x) const {
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet packetOp(const Packet &x) const {
     return internal::pbessel_j1(x);
   }
 };
-template <typename Scalar>
-struct functor_traits<scalar_bessel_j1_op<Scalar> > {
+template <typename Scalar> struct functor_traits<scalar_bessel_j1_op<Scalar>> {
   enum {
     // 6 polynomial of order ~N=8 is computed.
     // The cost is N multiplications and N additions each, along with a
@@ -214,20 +207,19 @@ struct functor_traits<scalar_bessel_j1_op<Scalar> > {
  * order one
  * \sa class CwiseUnaryOp, Cwise::bessel_j1e()
  */
-template <typename Scalar>
-struct scalar_bessel_y1_op {
+template <typename Scalar> struct scalar_bessel_y1_op {
   EIGEN_EMPTY_STRUCT_CTOR(scalar_bessel_y1_op)
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator()(const Scalar& x) const {
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar
+  operator()(const Scalar &x) const {
     using numext::bessel_y1;
     return bessel_y1(x);
   }
   typedef typename packet_traits<Scalar>::type Packet;
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet packetOp(const Packet& x) const {
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet packetOp(const Packet &x) const {
     return internal::pbessel_y1(x);
   }
 };
-template <typename Scalar>
-struct functor_traits<scalar_bessel_y1_op<Scalar> > {
+template <typename Scalar> struct functor_traits<scalar_bessel_y1_op<Scalar>> {
   enum {
     // 6 polynomial of order ~N=8 is computed.
     // The cost is N multiplications and N additions each, along with a
@@ -242,20 +234,19 @@ struct functor_traits<scalar_bessel_y1_op<Scalar> > {
  * kind of order zero
  * \sa class CwiseUnaryOp, Cwise::bessel_k0()
  */
-template <typename Scalar>
-struct scalar_bessel_k0_op {
+template <typename Scalar> struct scalar_bessel_k0_op {
   EIGEN_EMPTY_STRUCT_CTOR(scalar_bessel_k0_op)
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator()(const Scalar& x) const {
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar
+  operator()(const Scalar &x) const {
     using numext::bessel_k0;
     return bessel_k0(x);
   }
   typedef typename packet_traits<Scalar>::type Packet;
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet packetOp(const Packet& x) const {
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet packetOp(const Packet &x) const {
     return internal::pbessel_k0(x);
   }
 };
-template <typename Scalar>
-struct functor_traits<scalar_bessel_k0_op<Scalar> > {
+template <typename Scalar> struct functor_traits<scalar_bessel_k0_op<Scalar>> {
   enum {
     // On average, a Chebyshev polynomial of order N=10 is computed.
     // The cost is N multiplications and 2N additions. In addition we compute
@@ -270,20 +261,19 @@ struct functor_traits<scalar_bessel_k0_op<Scalar> > {
  * function of the second kind of order zero
  * \sa class CwiseUnaryOp, Cwise::bessel_k0e()
  */
-template <typename Scalar>
-struct scalar_bessel_k0e_op {
+template <typename Scalar> struct scalar_bessel_k0e_op {
   EIGEN_EMPTY_STRUCT_CTOR(scalar_bessel_k0e_op)
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator()(const Scalar& x) const {
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar
+  operator()(const Scalar &x) const {
     using numext::bessel_k0e;
     return bessel_k0e(x);
   }
   typedef typename packet_traits<Scalar>::type Packet;
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet packetOp(const Packet& x) const {
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet packetOp(const Packet &x) const {
     return internal::pbessel_k0e(x);
   }
 };
-template <typename Scalar>
-struct functor_traits<scalar_bessel_k0e_op<Scalar> > {
+template <typename Scalar> struct functor_traits<scalar_bessel_k0e_op<Scalar>> {
   enum {
     // On average, a Chebyshev polynomial of order N=10 is computed.
     // The cost is N multiplications and 2N additions. In addition we compute
@@ -298,20 +288,19 @@ struct functor_traits<scalar_bessel_k0e_op<Scalar> > {
  * second kind of order one
  * \sa class CwiseUnaryOp, Cwise::bessel_k1()
  */
-template <typename Scalar>
-struct scalar_bessel_k1_op {
+template <typename Scalar> struct scalar_bessel_k1_op {
   EIGEN_EMPTY_STRUCT_CTOR(scalar_bessel_k1_op)
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator()(const Scalar& x) const {
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar
+  operator()(const Scalar &x) const {
     using numext::bessel_k1;
     return bessel_k1(x);
   }
   typedef typename packet_traits<Scalar>::type Packet;
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet packetOp(const Packet& x) const {
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet packetOp(const Packet &x) const {
     return internal::pbessel_k1(x);
   }
 };
-template <typename Scalar>
-struct functor_traits<scalar_bessel_k1_op<Scalar> > {
+template <typename Scalar> struct functor_traits<scalar_bessel_k1_op<Scalar>> {
   enum {
     // On average, a Chebyshev polynomial of order N=10 is computed.
     // The cost is N multiplications and 2N additions. In addition we compute
@@ -326,20 +315,19 @@ struct functor_traits<scalar_bessel_k1_op<Scalar> > {
  * function of the second kind of order one
  * \sa class CwiseUnaryOp, Cwise::bessel_k1e()
  */
-template <typename Scalar>
-struct scalar_bessel_k1e_op {
+template <typename Scalar> struct scalar_bessel_k1e_op {
   EIGEN_EMPTY_STRUCT_CTOR(scalar_bessel_k1e_op)
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator()(const Scalar& x) const {
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar
+  operator()(const Scalar &x) const {
     using numext::bessel_k1e;
     return bessel_k1e(x);
   }
   typedef typename packet_traits<Scalar>::type Packet;
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet packetOp(const Packet& x) const {
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet packetOp(const Packet &x) const {
     return internal::pbessel_k1e(x);
   }
 };
-template <typename Scalar>
-struct functor_traits<scalar_bessel_k1e_op<Scalar> > {
+template <typename Scalar> struct functor_traits<scalar_bessel_k1e_op<Scalar>> {
   enum {
     // On average, a Chebyshev polynomial of order N=10 is computed.
     // The cost is N multiplications and 2N additions. In addition we compute
@@ -348,7 +336,6 @@ struct functor_traits<scalar_bessel_k1e_op<Scalar> > {
     PacketAccess = packet_traits<Scalar>::HasBessel
   };
 };
-
 
 } // end namespace internal
 

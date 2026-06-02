@@ -591,8 +591,7 @@ void contraction_both_transposed(const Device &sycl_device, IndexType m_size,
   sycl_device.deallocate(d_t_result);
 }
 
-template <typename Dev>
-void inline tensorOutofBound(const Dev &sycl_device) {
+template <typename Dev> void inline tensorOutofBound(const Dev &sycl_device) {
   typedef float DataType;
   typedef int64_t IndexType;
   std::chrono::time_point<std::chrono::system_clock> start, end;
@@ -626,8 +625,7 @@ void inline tensorOutofBound(const Dev &sycl_device) {
             << "elapsed time: " << elapsed_seconds.count() << "s\n";
 }
 
-template <typename Dev>
-void inline tensorTensor(const Dev &sycl_device) {
+template <typename Dev> void inline tensorTensor(const Dev &sycl_device) {
   typedef float DataType;
   typedef int64_t IndexType;
   std::chrono::time_point<std::chrono::system_clock> start, end;
@@ -645,8 +643,7 @@ void inline tensorTensor(const Dev &sycl_device) {
             << "elapsed time: " << elapsed_seconds.count() << "s\n";
 }
 
-template <typename Dev>
-void inline tensorTensor_m(const Dev &sycl_device) {
+template <typename Dev> void inline tensorTensor_m(const Dev &sycl_device) {
   typedef float DataType;
   typedef int64_t IndexType;
   std::chrono::time_point<std::chrono::system_clock> start, end;
@@ -663,8 +660,7 @@ void inline tensorTensor_m(const Dev &sycl_device) {
             << "elapsed time: " << elapsed_seconds.count() << "s\n";
 }
 
-template <typename Dev>
-void inline tensorTensor_n(const Dev &sycl_device) {
+template <typename Dev> void inline tensorTensor_n(const Dev &sycl_device) {
   typedef float DataType;
   typedef int64_t IndexType;
   std::chrono::time_point<std::chrono::system_clock> start, end;
@@ -681,8 +677,7 @@ void inline tensorTensor_n(const Dev &sycl_device) {
             << "elapsed time: " << elapsed_seconds.count() << "s\n";
 }
 
-template <typename Dev>
-void inline tensorTensor_k(const Dev &sycl_device) {
+template <typename Dev> void inline tensorTensor_k(const Dev &sycl_device) {
   typedef float DataType;
   typedef int64_t IndexType;
   std::chrono::time_point<std::chrono::system_clock> start, end;
@@ -698,8 +693,7 @@ void inline tensorTensor_k(const Dev &sycl_device) {
             << "elapsed time: " << elapsed_seconds.count() << "s\n";
 }
 
-template <typename Dev>
-void inline tensorTensor_sizes(const Dev &sycl_device) {
+template <typename Dev> void inline tensorTensor_sizes(const Dev &sycl_device) {
   typedef float DataType;
   typedef int64_t IndexType;
   std::chrono::time_point<std::chrono::system_clock> start, end;
@@ -715,8 +709,7 @@ void inline tensorTensor_sizes(const Dev &sycl_device) {
             << std::ctime(&end_time)
             << "elapsed time: " << elapsed_seconds.count() << "s\n";
 }
-template <typename Dev>
-void inline vectorVector(const Dev &sycl_device) {
+template <typename Dev> void inline vectorVector(const Dev &sycl_device) {
   typedef float DataType;
   typedef int64_t IndexType;
   std::chrono::time_point<std::chrono::system_clock> start, end;
@@ -743,8 +736,7 @@ void inline vectorVector(const Dev &sycl_device) {
             << "elapsed time: " << elapsed_seconds.count() << "s\n";
 }
 
-template <typename Dev>
-void inline vectorTensor(const Dev &sycl_device) {
+template <typename Dev> void inline vectorTensor(const Dev &sycl_device) {
   typedef float DataType;
   typedef int64_t IndexType;
   std::chrono::time_point<std::chrono::system_clock> start, end;
@@ -785,8 +777,7 @@ void inline vectorTensor(const Dev &sycl_device) {
             << "elapsed time: " << elapsed_seconds.count() << "s\n";
 }
 
-template <typename Dev>
-void inline tensorVector(const Dev &sycl_device) {
+template <typename Dev> void inline tensorVector(const Dev &sycl_device) {
   typedef float DataType;
   typedef int64_t IndexType;
   std::chrono::time_point<std::chrono::system_clock> start, end;
@@ -833,8 +824,7 @@ void inline tensorVector(const Dev &sycl_device) {
             << "elapsed time: " << elapsed_seconds.count() << "s\n";
 }
 
-template <typename Dev>
-void inline tensorScalar(const Dev &sycl_device) {
+template <typename Dev> void inline tensorScalar(const Dev &sycl_device) {
   typedef float DataType;
   typedef int64_t IndexType;
   std::chrono::time_point<std::chrono::system_clock> start, end;
@@ -854,8 +844,7 @@ void inline tensorScalar(const Dev &sycl_device) {
             << "elapsed time: " << elapsed_seconds.count() << "s\n";
 }
 
-template <typename Dev>
-void inline skinnyTensor_row(const Dev &sycl_device) {
+template <typename Dev> void inline skinnyTensor_row(const Dev &sycl_device) {
   typedef float DataType;
   typedef int64_t IndexType;
   std::chrono::time_point<std::chrono::system_clock> start, end;
@@ -877,8 +866,7 @@ void inline skinnyTensor_row(const Dev &sycl_device) {
             << "elapsed time: " << elapsed_seconds.count() << "s\n";
 }
 
-template <typename Dev>
-void inline skinnyTensor_col(const Dev &sycl_device) {
+template <typename Dev> void inline skinnyTensor_col(const Dev &sycl_device) {
   typedef float DataType;
   typedef int64_t IndexType;
   std::chrono::time_point<std::chrono::system_clock> start, end;

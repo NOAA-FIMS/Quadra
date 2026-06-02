@@ -47,10 +47,10 @@ namespace Eigen {
 // the waiter, or both. But it can't happen that both threads don't see each
 // other changes, which would lead to deadlock.
 class EventCount {
- public:
+public:
   class Waiter;
 
-  EventCount(MaxSizeVector<Waiter>& waiters)
+  EventCount(MaxSizeVector<Waiter> &waiters)
       : state_(kStackMask), waiters_(waiters) {
     eigen_plain_assert(waiters.size() < (1 << kWaiterBits) - 1);
   }
@@ -76,7 +76,7 @@ class EventCount {
   }
 
   // CommitWait commits waiting after Prewait.
-  void CommitWait(Waiter* w) {
+  void CommitWait(Waiter *w) {
     eigen_plain_assert((w->epoch & ~kEpochMask) == 0);
     w->state = Waiter::kNotSignaled;
     const uint64_t me = (w - &waiters_[0]) | w->epoch;
@@ -135,7 +135,8 @@ class EventCount {
       const uint64_t waiters = (state & kWaiterMask) >> kWaiterShift;
       const uint64_t signals = (state & kSignalMask) >> kSignalShift;
       // Easy case: no waiters.
-      if ((state & kStackMask) == kStackMask && waiters == signals) return;
+      if ((state & kStackMask) == kStackMask && waiters == signals)
+        return;
       uint64_t newstate;
       if (notifyAll) {
         // Empty wait stack and set signal to number of pre-wait threads.
@@ -146,7 +147,7 @@ class EventCount {
         newstate = state + kSignalInc;
       } else {
         // Pop a waiter from list and unpark it.
-        Waiter* w = &waiters_[state & kStackMask];
+        Waiter *w = &waiters_[state & kStackMask];
         uint64_t next = w->next.load(std::memory_order_relaxed);
         newstate = (state & (kWaiterMask | kSignalMask)) | next;
       }
@@ -154,10 +155,12 @@ class EventCount {
       if (state_.compare_exchange_weak(state, newstate,
                                        std::memory_order_acq_rel)) {
         if (!notifyAll && (signals < waiters))
-          return;  // unblocked pre-wait thread
-        if ((state & kStackMask) == kStackMask) return;
-        Waiter* w = &waiters_[state & kStackMask];
-        if (!notifyAll) w->next.store(kStackMask, std::memory_order_relaxed);
+          return; // unblocked pre-wait thread
+        if ((state & kStackMask) == kStackMask)
+          return;
+        Waiter *w = &waiters_[state & kStackMask];
+        if (!notifyAll)
+          w->next.store(kStackMask, std::memory_order_relaxed);
         Unpark(w);
         return;
       }
@@ -180,7 +183,7 @@ class EventCount {
     };
   };
 
- private:
+private:
   // State_ layout:
   // - low kWaiterBits is a stack of waiters committed wait
   //   (indexes in waiters_ array are used as stack elements,
@@ -204,7 +207,7 @@ class EventCount {
   static const uint64_t kEpochMask = ((1ull << kEpochBits) - 1) << kEpochShift;
   static const uint64_t kEpochInc = 1ull << kEpochShift;
   std::atomic<uint64_t> state_;
-  MaxSizeVector<Waiter>& waiters_;
+  MaxSizeVector<Waiter> &waiters_;
 
   static void CheckState(uint64_t state, bool waiter = false) {
     static_assert(kEpochBits >= 20, "not enough bits to prevent ABA problem");
@@ -217,7 +220,7 @@ class EventCount {
     (void)signals;
   }
 
-  void Park(Waiter* w) {
+  void Park(Waiter *w) {
     std::unique_lock<std::mutex> lock(w->mu);
     while (w->state != Waiter::kSignaled) {
       w->state = Waiter::kWaiting;
@@ -225,8 +228,8 @@ class EventCount {
     }
   }
 
-  void Unpark(Waiter* w) {
-    for (Waiter* next; w; w = next) {
+  void Unpark(Waiter *w) {
+    for (Waiter *next; w; w = next) {
       uint64_t wnext = w->next.load(std::memory_order_relaxed) & kStackMask;
       next = wnext == kStackMask ? nullptr : &waiters_[wnext];
       unsigned state;
@@ -236,14 +239,15 @@ class EventCount {
         w->state = Waiter::kSignaled;
       }
       // Avoid notifying if it wasn't waiting.
-      if (state == Waiter::kWaiting) w->cv.notify_one();
+      if (state == Waiter::kWaiting)
+        w->cv.notify_one();
     }
   }
 
-  EventCount(const EventCount&) = delete;
-  void operator=(const EventCount&) = delete;
+  EventCount(const EventCount &) = delete;
+  void operator=(const EventCount &) = delete;
 };
 
-}  // namespace Eigen
+} // namespace Eigen
 
-#endif  // EIGEN_CXX11_THREADPOOL_EVENTCOUNT_H_
+#endif // EIGEN_CXX11_THREADPOOL_EVENTCOUNT_H_

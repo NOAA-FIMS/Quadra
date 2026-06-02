@@ -12,7 +12,7 @@
 
 // This header file container defines fo gpu* macros which will resolve to
 // their equivalent hip* or cuda* versions depending on the compiler in use
-// A separate header (included at the end of this file) will undefine all 
+// A separate header (included at the end of this file) will undefine all
 #include "TensorGpuHipCudaDefines.h"
 
 namespace Eigen {
@@ -22,44 +22,42 @@ static const int kGpuScratchSize = 1024;
 // This defines an interface that GPUDevice can take to use
 // HIP / CUDA streams underneath.
 class StreamInterface {
- public:
+public:
   virtual ~StreamInterface() {}
 
-  virtual const gpuStream_t& stream() const = 0;
-  virtual const gpuDeviceProp_t& deviceProperties() const = 0;
+  virtual const gpuStream_t &stream() const = 0;
+  virtual const gpuDeviceProp_t &deviceProperties() const = 0;
 
   // Allocate memory on the actual device where the computation will run
-  virtual void* allocate(size_t num_bytes) const = 0;
-  virtual void deallocate(void* buffer) const = 0;
+  virtual void *allocate(size_t num_bytes) const = 0;
+  virtual void deallocate(void *buffer) const = 0;
 
   // Return a scratchpad buffer of size 1k
-  virtual void* scratchpad() const = 0;
+  virtual void *scratchpad() const = 0;
 
   // Return a semaphore. The semaphore is initially initialized to 0, and
   // each kernel using it is responsible for resetting to 0 upon completion
   // to maintain the invariant that the semaphore is always equal to 0 upon
   // each kernel start.
-  virtual unsigned int* semaphore() const = 0;
+  virtual unsigned int *semaphore() const = 0;
 };
 
 class GpuDeviceProperties {
- public:
-  GpuDeviceProperties() : 
-      initialized_(false), first_(true), device_properties_(nullptr) {}
- 
+public:
+  GpuDeviceProperties()
+      : initialized_(false), first_(true), device_properties_(nullptr) {}
+
   ~GpuDeviceProperties() {
     if (device_properties_) {
       delete[] device_properties_;
     }
   }
-  
-  EIGEN_STRONG_INLINE const gpuDeviceProp_t& get(int device) const {
+
+  EIGEN_STRONG_INLINE const gpuDeviceProp_t &get(int device) const {
     return device_properties_[device];
   }
 
-  EIGEN_STRONG_INLINE bool isInitialized() const {
-    return initialized_;
-  }
+  EIGEN_STRONG_INLINE bool isInitialized() const { return initialized_; }
 
   void initialize() {
     if (!initialized_) {
@@ -75,19 +73,15 @@ class GpuDeviceProperties {
         gpuError_t status = gpuGetDeviceCount(&num_devices);
         if (status != gpuSuccess) {
           std::cerr << "Failed to get the number of GPU devices: "
-                    << gpuGetErrorString(status)
-                    << std::endl;
+                    << gpuGetErrorString(status) << std::endl;
           gpu_assert(status == gpuSuccess);
         }
         device_properties_ = new gpuDeviceProp_t[num_devices];
         for (int i = 0; i < num_devices; ++i) {
           status = gpuGetDeviceProperties(&device_properties_[i], i);
           if (status != gpuSuccess) {
-            std::cerr << "Failed to initialize GPU device #"
-                      << i
-                      << ": "
-                      << gpuGetErrorString(status)
-                      << std::endl;
+            std::cerr << "Failed to initialize GPU device #" << i << ": "
+                      << gpuGetErrorString(status) << std::endl;
             gpu_assert(status == gpuSuccess);
           }
         }
@@ -104,39 +98,42 @@ class GpuDeviceProperties {
     }
   }
 
- private:
+private:
   volatile bool initialized_;
   std::atomic<bool> first_;
-  gpuDeviceProp_t* device_properties_;
+  gpuDeviceProp_t *device_properties_;
 };
 
-EIGEN_ALWAYS_INLINE const GpuDeviceProperties& GetGpuDeviceProperties() {
-  static GpuDeviceProperties* deviceProperties = new GpuDeviceProperties();
+EIGEN_ALWAYS_INLINE const GpuDeviceProperties &GetGpuDeviceProperties() {
+  static GpuDeviceProperties *deviceProperties = new GpuDeviceProperties();
   if (!deviceProperties->isInitialized()) {
     deviceProperties->initialize();
   }
   return *deviceProperties;
 }
 
-EIGEN_ALWAYS_INLINE const gpuDeviceProp_t& GetGpuDeviceProperties(int device) {
+EIGEN_ALWAYS_INLINE const gpuDeviceProp_t &GetGpuDeviceProperties(int device) {
   return GetGpuDeviceProperties().get(device);
 }
 
 static const gpuStream_t default_stream = gpuStreamDefault;
 
 class GpuStreamDevice : public StreamInterface {
- public:
+public:
   // Use the default stream on the current device
-  GpuStreamDevice() : stream_(&default_stream), scratch_(NULL), semaphore_(NULL) {
+  GpuStreamDevice()
+      : stream_(&default_stream), scratch_(NULL), semaphore_(NULL) {
     gpuGetDevice(&device_);
   }
   // Use the default stream on the specified device
-  GpuStreamDevice(int device) : stream_(&default_stream), device_(device), scratch_(NULL), semaphore_(NULL) {}
+  GpuStreamDevice(int device)
+      : stream_(&default_stream), device_(device), scratch_(NULL),
+        semaphore_(NULL) {}
   // Use the specified stream. Note that it's the
   // caller responsibility to ensure that the stream can run on
   // the specified device. If no device is specified the code
   // assumes that the stream is associated to the current gpu device.
-  GpuStreamDevice(const gpuStream_t* stream, int device = -1)
+  GpuStreamDevice(const gpuStream_t *stream, int device = -1)
       : stream_(stream), device_(device), scratch_(NULL), semaphore_(NULL) {
     if (device < 0) {
       gpuGetDevice(&device_);
@@ -156,21 +153,21 @@ class GpuStreamDevice : public StreamInterface {
     }
   }
 
-  const gpuStream_t& stream() const { return *stream_; }
-  const gpuDeviceProp_t& deviceProperties() const {
+  const gpuStream_t &stream() const { return *stream_; }
+  const gpuDeviceProp_t &deviceProperties() const {
     return GetGpuDeviceProperties(device_);
   }
-  virtual void* allocate(size_t num_bytes) const {
+  virtual void *allocate(size_t num_bytes) const {
     gpuError_t err = gpuSetDevice(device_);
     EIGEN_UNUSED_VARIABLE(err)
     gpu_assert(err == gpuSuccess);
-    void* result;
+    void *result;
     err = gpuMalloc(&result, num_bytes);
     gpu_assert(err == gpuSuccess);
     gpu_assert(result != NULL);
     return result;
   }
-  virtual void deallocate(void* buffer) const {
+  virtual void deallocate(void *buffer) const {
     gpuError_t err = gpuSetDevice(device_);
     EIGEN_UNUSED_VARIABLE(err)
     gpu_assert(err == gpuSuccess);
@@ -179,109 +176,118 @@ class GpuStreamDevice : public StreamInterface {
     gpu_assert(err == gpuSuccess);
   }
 
-  virtual void* scratchpad() const {
+  virtual void *scratchpad() const {
     if (scratch_ == NULL) {
       scratch_ = allocate(kGpuScratchSize + sizeof(unsigned int));
     }
     return scratch_;
   }
 
-  virtual unsigned int* semaphore() const {
+  virtual unsigned int *semaphore() const {
     if (semaphore_ == NULL) {
-      char* scratch = static_cast<char*>(scratchpad()) + kGpuScratchSize;
-      semaphore_ = reinterpret_cast<unsigned int*>(scratch);
-      gpuError_t err = gpuMemsetAsync(semaphore_, 0, sizeof(unsigned int), *stream_);
+      char *scratch = static_cast<char *>(scratchpad()) + kGpuScratchSize;
+      semaphore_ = reinterpret_cast<unsigned int *>(scratch);
+      gpuError_t err =
+          gpuMemsetAsync(semaphore_, 0, sizeof(unsigned int), *stream_);
       EIGEN_UNUSED_VARIABLE(err)
       gpu_assert(err == gpuSuccess);
     }
     return semaphore_;
   }
 
- private:
-  const gpuStream_t* stream_;
+private:
+  const gpuStream_t *stream_;
   int device_;
-  mutable void* scratch_;
-  mutable unsigned int* semaphore_;
+  mutable void *scratch_;
+  mutable unsigned int *semaphore_;
 };
 
 struct GpuDevice {
   // The StreamInterface is not owned: the caller is
   // responsible for its initialization and eventual destruction.
-  explicit GpuDevice(const StreamInterface* stream) : stream_(stream), max_blocks_(INT_MAX) {
+  explicit GpuDevice(const StreamInterface *stream)
+      : stream_(stream), max_blocks_(INT_MAX) {
     eigen_assert(stream);
   }
-  explicit GpuDevice(const StreamInterface* stream, int num_blocks) : stream_(stream), max_blocks_(num_blocks) {
+  explicit GpuDevice(const StreamInterface *stream, int num_blocks)
+      : stream_(stream), max_blocks_(num_blocks) {
     eigen_assert(stream);
   }
   // TODO(bsteiner): This is an internal API, we should not expose it.
-  EIGEN_STRONG_INLINE const gpuStream_t& stream() const {
+  EIGEN_STRONG_INLINE const gpuStream_t &stream() const {
     return stream_->stream();
   }
 
-  EIGEN_STRONG_INLINE void* allocate(size_t num_bytes) const {
+  EIGEN_STRONG_INLINE void *allocate(size_t num_bytes) const {
     return stream_->allocate(num_bytes);
   }
 
-  EIGEN_STRONG_INLINE void deallocate(void* buffer) const {
+  EIGEN_STRONG_INLINE void deallocate(void *buffer) const {
     stream_->deallocate(buffer);
   }
 
-  EIGEN_STRONG_INLINE void* allocate_temp(size_t num_bytes) const {
+  EIGEN_STRONG_INLINE void *allocate_temp(size_t num_bytes) const {
     return stream_->allocate(num_bytes);
   }
 
-  EIGEN_STRONG_INLINE void deallocate_temp(void* buffer) const {
+  EIGEN_STRONG_INLINE void deallocate_temp(void *buffer) const {
     stream_->deallocate(buffer);
   }
 
-  template<typename Type>
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Type get(Type data) const { 
+  template <typename Type>
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Type get(Type data) const {
     return data;
   }
 
-  EIGEN_STRONG_INLINE void* scratchpad() const {
-    return stream_->scratchpad();
-  }
+  EIGEN_STRONG_INLINE void *scratchpad() const { return stream_->scratchpad(); }
 
-  EIGEN_STRONG_INLINE unsigned int* semaphore() const {
+  EIGEN_STRONG_INLINE unsigned int *semaphore() const {
     return stream_->semaphore();
   }
 
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void memcpy(void* dst, const void* src, size_t n) const {
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void memcpy(void *dst, const void *src,
+                                                    size_t n) const {
 #ifndef EIGEN_GPU_COMPILE_PHASE
-    gpuError_t err = gpuMemcpyAsync(dst, src, n, gpuMemcpyDeviceToDevice,
-                                      stream_->stream());
+    gpuError_t err =
+        gpuMemcpyAsync(dst, src, n, gpuMemcpyDeviceToDevice, stream_->stream());
     EIGEN_UNUSED_VARIABLE(err)
     gpu_assert(err == gpuSuccess);
 #else
     EIGEN_UNUSED_VARIABLE(dst);
     EIGEN_UNUSED_VARIABLE(src);
     EIGEN_UNUSED_VARIABLE(n);
-    eigen_assert(false && "The default device should be used instead to generate kernel code");
+    eigen_assert(
+        false &&
+        "The default device should be used instead to generate kernel code");
 #endif
   }
 
-  EIGEN_STRONG_INLINE void memcpyHostToDevice(void* dst, const void* src, size_t n) const {
+  EIGEN_STRONG_INLINE void memcpyHostToDevice(void *dst, const void *src,
+                                              size_t n) const {
     gpuError_t err =
         gpuMemcpyAsync(dst, src, n, gpuMemcpyHostToDevice, stream_->stream());
     EIGEN_UNUSED_VARIABLE(err)
     gpu_assert(err == gpuSuccess);
   }
 
-  EIGEN_STRONG_INLINE void memcpyDeviceToHost(void* dst, const void* src, size_t n) const {
+  EIGEN_STRONG_INLINE void memcpyDeviceToHost(void *dst, const void *src,
+                                              size_t n) const {
     gpuError_t err =
         gpuMemcpyAsync(dst, src, n, gpuMemcpyDeviceToHost, stream_->stream());
     EIGEN_UNUSED_VARIABLE(err)
     gpu_assert(err == gpuSuccess);
   }
 
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void memset(void* buffer, int c, size_t n) const {
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void memset(void *buffer, int c,
+                                                    size_t n) const {
 #ifndef EIGEN_GPU_COMPILE_PHASE
     gpuError_t err = gpuMemsetAsync(buffer, c, n, stream_->stream());
     EIGEN_UNUSED_VARIABLE(err)
     gpu_assert(err == gpuSuccess);
 #else
-  eigen_assert(false && "The default device should be used instead to generate kernel code");
+    eigen_assert(
+        false &&
+        "The default device should be used instead to generate kernel code");
 #endif
   }
 
@@ -292,7 +298,7 @@ struct GpuDevice {
 
   EIGEN_STRONG_INLINE size_t firstLevelCacheSize() const {
     // FIXME
-    return 48*1024;
+    return 48 * 1024;
   }
 
   EIGEN_STRONG_INLINE size_t lastLevelCacheSize() const {
@@ -305,13 +311,14 @@ struct GpuDevice {
 #ifndef EIGEN_GPU_COMPILE_PHASE
     gpuError_t err = gpuStreamSynchronize(stream_->stream());
     if (err != gpuSuccess) {
-      std::cerr << "Error detected in GPU stream: "
-                << gpuGetErrorString(err)
+      std::cerr << "Error detected in GPU stream: " << gpuGetErrorString(err)
                 << std::endl;
       gpu_assert(err == gpuSuccess);
     }
 #else
-    gpu_assert(false && "The default device should be used instead to generate kernel code");
+    gpu_assert(
+        false &&
+        "The default device should be used instead to generate kernel code");
 #endif
   }
 
@@ -334,9 +341,7 @@ struct GpuDevice {
     return stream_->deviceProperties().minor;
   }
 
-  EIGEN_STRONG_INLINE int maxBlocks() const {
-    return max_blocks_;
-  }
+  EIGEN_STRONG_INLINE int maxBlocks() const { return max_blocks_; }
 
   // This function checks if the GPU runtime recorded an error for the
   // underlying stream device.
@@ -349,28 +354,31 @@ struct GpuDevice {
 #endif
   }
 
- private:
-  const StreamInterface* stream_;
+private:
+  const StreamInterface *stream_;
   int max_blocks_;
 };
 
 #if defined(EIGEN_HIPCC)
 
-#define LAUNCH_GPU_KERNEL(kernel, gridsize, blocksize, sharedmem, device, ...)             \
-  hipLaunchKernelGGL(kernel, dim3(gridsize), dim3(blocksize), (sharedmem), (device).stream(), __VA_ARGS__); \
+#define LAUNCH_GPU_KERNEL(kernel, gridsize, blocksize, sharedmem, device, ...) \
+  hipLaunchKernelGGL(kernel, dim3(gridsize), dim3(blocksize), (sharedmem),     \
+                     (device).stream(), __VA_ARGS__);                          \
   gpu_assert(hipGetLastError() == hipSuccess);
 
 #else
- 
-#define LAUNCH_GPU_KERNEL(kernel, gridsize, blocksize, sharedmem, device, ...)             \
-  (kernel) <<< (gridsize), (blocksize), (sharedmem), (device).stream() >>> (__VA_ARGS__);   \
+
+#define LAUNCH_GPU_KERNEL(kernel, gridsize, blocksize, sharedmem, device, ...) \
+  (kernel)<<<(gridsize), (blocksize), (sharedmem), (device).stream()>>>(       \
+      __VA_ARGS__);                                                            \
   gpu_assert(cudaGetLastError() == cudaSuccess);
 
 #endif
- 
+
 // FIXME: Should be device and kernel specific.
 #ifdef EIGEN_GPUCC
-static EIGEN_DEVICE_FUNC inline void setGpuSharedMemConfig(gpuSharedMemConfig config) {
+static EIGEN_DEVICE_FUNC inline void
+setGpuSharedMemConfig(gpuSharedMemConfig config) {
 #ifndef EIGEN_GPU_COMPILE_PHASE
   gpuError_t status = gpuDeviceSetSharedMemConfig(config);
   EIGEN_UNUSED_VARIABLE(status)
@@ -381,9 +389,9 @@ static EIGEN_DEVICE_FUNC inline void setGpuSharedMemConfig(gpuSharedMemConfig co
 }
 #endif
 
-}  // end namespace Eigen
+} // end namespace Eigen
 
 // undefine all the gpu* macros we defined at the beginning of the file
 #include "TensorGpuHipCudaUndefines.h"
 
-#endif  // EIGEN_CXX11_TENSOR_TENSOR_DEVICE_GPU_H
+#endif // EIGEN_CXX11_TENSOR_TENSOR_DEVICE_GPU_H

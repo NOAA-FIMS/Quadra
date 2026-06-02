@@ -13,8 +13,10 @@ class Rosenbrock
 {
 private:
     int n;
+
 public:
-    Rosenbrock(int n_) : n(n_) {}
+    Rosenbrock(int n_) :
+        n(n_) {}
     Scalar operator()(const Vector& x, Vector& grad)
     {
         Scalar fx = 0.0;
@@ -23,7 +25,7 @@ public:
             Scalar t1 = 1.0 - x[i];
             Scalar t2 = 10 * (x[i + 1] - x[i] * x[i]);
             grad[i + 1] = 20 * t2;
-            grad[i]     = -2.0 * (x[i] * grad[i + 1] + t1);
+            grad[i] = -2.0 * (x[i] * grad[i + 1] + t1);
             fx += t1 * t1 + t2 * t2;
         }
         return fx;
@@ -42,12 +44,15 @@ int main()
     int niter = solver.minimize(fun, x, fx);
 
     std::cout << niter << " iterations" << std::endl;
-    std::cout << "x = \n" << x.transpose() << std::endl;
+    std::cout << "x = \n"
+              << x.transpose() << std::endl;
     std::cout << "f(x) = " << fx << std::endl;
     std::cout << "grad = " << solver.final_grad().transpose() << std::endl;
     std::cout << "||grad|| = " << solver.final_grad_norm() << std::endl;
-    std::cout << "approx_hess = \n" << solver.final_approx_hessian() << std::endl;
-    std::cout << "approx_inv_hess = \n" << solver.final_approx_inverse_hessian() << std::endl;
+    std::cout << "approx_hess = \n"
+              << solver.final_approx_hessian() << std::endl;
+    std::cout << "approx_inv_hess = \n"
+              << solver.final_approx_inverse_hessian() << std::endl;
 
     return 0;
 }

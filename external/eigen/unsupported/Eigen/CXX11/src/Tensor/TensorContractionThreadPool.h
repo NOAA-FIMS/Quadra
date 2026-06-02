@@ -15,17 +15,31 @@
 
 namespace Eigen {
 
-template<typename Indices, typename LeftArgType, typename RightArgType, typename OutputKernelType>
-struct TensorEvaluator<const TensorContractionOp<Indices, LeftArgType, RightArgType, OutputKernelType>, ThreadPoolDevice> :
-    public TensorContractionEvaluatorBase<TensorEvaluator<const TensorContractionOp<Indices, LeftArgType, RightArgType, OutputKernelType>, ThreadPoolDevice> > {
+template <typename Indices, typename LeftArgType, typename RightArgType,
+          typename OutputKernelType>
+struct TensorEvaluator<
+    const TensorContractionOp<Indices, LeftArgType, RightArgType,
+                              OutputKernelType>,
+    ThreadPoolDevice>
+    : public TensorContractionEvaluatorBase<TensorEvaluator<
+          const TensorContractionOp<Indices, LeftArgType, RightArgType,
+                                    OutputKernelType>,
+          ThreadPoolDevice>> {
 
   typedef ThreadPoolDevice Device;
 
-  typedef TensorEvaluator<const TensorContractionOp<Indices, LeftArgType, RightArgType, OutputKernelType>, Device> Self;
+  typedef TensorEvaluator<
+      const TensorContractionOp<Indices, LeftArgType, RightArgType,
+                                OutputKernelType>,
+      Device>
+      Self;
   typedef TensorContractionEvaluatorBase<Self> Base;
 
-  typedef TensorContractionOp<Indices, LeftArgType, RightArgType, OutputKernelType> XprType;
-  typedef typename internal::remove_const<typename XprType::Scalar>::type Scalar;
+  typedef TensorContractionOp<Indices, LeftArgType, RightArgType,
+                              OutputKernelType>
+      XprType;
+  typedef
+      typename internal::remove_const<typename XprType::Scalar>::type Scalar;
   typedef typename XprType::Index Index;
   typedef typename XprType::CoeffReturnType CoeffReturnType;
   typedef typename PacketType<CoeffReturnType, Device>::type PacketReturnType;
@@ -39,14 +53,16 @@ struct TensorEvaluator<const TensorContractionOp<Indices, LeftArgType, RightArgT
   // If we want to compute A * B = C, where A is LHS and B is RHS, the code
   // will pretend B is LHS and A is RHS.
   typedef typename internal::conditional<
-    static_cast<int>(Layout) == static_cast<int>(ColMajor), LeftArgType, RightArgType>::type EvalLeftArgType;
+      static_cast<int>(Layout) == static_cast<int>(ColMajor), LeftArgType,
+      RightArgType>::type EvalLeftArgType;
   typedef typename internal::conditional<
-    static_cast<int>(Layout) == static_cast<int>(ColMajor), RightArgType, LeftArgType>::type EvalRightArgType;
+      static_cast<int>(Layout) == static_cast<int>(ColMajor), RightArgType,
+      LeftArgType>::type EvalRightArgType;
 
-  static const int LDims =
-      internal::array_size<typename TensorEvaluator<EvalLeftArgType, Device>::Dimensions>::value;
-  static const int RDims =
-      internal::array_size<typename TensorEvaluator<EvalRightArgType, Device>::Dimensions>::value;
+  static const int LDims = internal::array_size<
+      typename TensorEvaluator<EvalLeftArgType, Device>::Dimensions>::value;
+  static const int RDims = internal::array_size<
+      typename TensorEvaluator<EvalRightArgType, Device>::Dimensions>::value;
   static const int ContractDims = internal::array_size<Indices>::value;
 
   typedef array<Index, LDims> left_dim_mapper_t;
@@ -61,28 +77,30 @@ struct TensorEvaluator<const TensorContractionOp<Indices, LeftArgType, RightArgT
   typedef DSizes<Index, NumDims> Dimensions;
 
   // typedefs needed in evalTo
-  typedef typename internal::remove_const<typename EvalLeftArgType::Scalar>::type LhsScalar;
-  typedef typename internal::remove_const<typename EvalRightArgType::Scalar>::type RhsScalar;
+  typedef
+      typename internal::remove_const<typename EvalLeftArgType::Scalar>::type
+          LhsScalar;
+  typedef
+      typename internal::remove_const<typename EvalRightArgType::Scalar>::type
+          RhsScalar;
   typedef typename internal::gebp_traits<LhsScalar, RhsScalar> Traits;
 
   typedef TensorEvaluator<EvalLeftArgType, Device> LeftEvaluator;
   typedef TensorEvaluator<EvalRightArgType, Device> RightEvaluator;
 
-  TensorEvaluator(const XprType& op, const Device& device) :
-      Base(op, device) {}
+  TensorEvaluator(const XprType &op, const Device &device) : Base(op, device) {}
 
-  template <int Alignment>
-  void evalProduct(Scalar* buffer) const {
+  template <int Alignment> void evalProduct(Scalar *buffer) const {
     evalProductImpl<NoCallback, Alignment>(buffer, NoCallback());
   }
 
   template <typename EvalToCallback, int Alignment>
-  void evalProductAsync(Scalar* buffer, EvalToCallback done) const {
+  void evalProductAsync(Scalar *buffer, EvalToCallback done) const {
     evalProductImpl<EvalToCallback, Alignment>(buffer, std::move(done));
   }
 
   template <typename DoneCallback, int Alignment>
-  void evalProductImpl(Scalar* buffer, DoneCallback done) const {
+  void evalProductImpl(Scalar *buffer, DoneCallback done) const {
     // This function computes a lot of heuristics in multiple steps, and it
     // also has multiple exit points. To keep it sane, readable and all in one
     // place, sync/async execution decision is made at runtime at the very end.
@@ -104,7 +122,8 @@ struct TensorEvaluator<const TensorContractionOp<Indices, LeftArgType, RightArgT
     const Index m = this->m_i_size;
     const Index n = this->m_j_size;
     const Index k = this->m_k_size;
-    if (m == 0 || n == 0 || k == 0) return;
+    if (m == 0 || n == 0 || k == 0)
+      return;
 
     // Compute a set of algorithm parameters:
     // - kernel block sizes (bm, bn, bk)
@@ -167,7 +186,7 @@ struct TensorEvaluator<const TensorContractionOp<Indices, LeftArgType, RightArgT
             this, num_threads_by_k, buffer, m, n, k, std::move(done));
         ctx.template run<Alignment>();
       } else {
-        auto* ctx = new EvalShardedByInnerDimContext<DoneCallback>(
+        auto *ctx = new EvalShardedByInnerDimContext<DoneCallback>(
             this, num_threads_by_k, buffer, m, n, k, std::move(done));
         ctx->template runAsync<Alignment>();
       }
@@ -177,12 +196,14 @@ struct TensorEvaluator<const TensorContractionOp<Indices, LeftArgType, RightArgT
 
     // TODO(dvyukov): this is a stop-gap to prevent regressions while the cost
     // model is not tuned. Remove this when the cost model is tuned.
-    if (n == 1) num_threads = 1;
+    if (n == 1)
+      num_threads = 1;
 
     if (num_threads == 1) {
       TENSOR_CONTRACTION_DISPATCH(this->template evalProductSequential,
                                   Unaligned, (buffer));
-      if (!IsEvalInSyncMode) done();
+      if (!IsEvalInSyncMode)
+        done();
       return;
     }
 
@@ -238,12 +259,13 @@ struct TensorEvaluator<const TensorContractionOp<Indices, LeftArgType, RightArgT
     // With small number of threads we want to make sure that we do not reduce
     // parallelism too much. With large number of threads we trade maximum
     // parallelism for better memory locality.
-    const float oversharding_factor =
-        num_worker_threads <= 4  ? 8.0 :
-        num_worker_threads <= 8  ? 4.0 :
-        num_worker_threads <= 16 ? 2.0 :
-        num_worker_threads <= 32 ? 1.0 :
-        num_worker_threads <= 64 ? 0.8 : /* num_worker_threads > 64 */ 0.6;
+    const float oversharding_factor = num_worker_threads <= 4    ? 8.0
+                                      : num_worker_threads <= 8  ? 4.0
+                                      : num_worker_threads <= 16 ? 2.0
+                                      : num_worker_threads <= 32 ? 1.0
+                                      : num_worker_threads <= 64
+                                          ? 0.8
+                                          : /* num_worker_threads > 64 */ 0.6;
 
     const bool parallelize_by_sharding_dim_only =
         sharding_dim_tasks >= oversharding_factor * num_worker_threads;
@@ -262,26 +284,28 @@ struct TensorEvaluator<const TensorContractionOp<Indices, LeftArgType, RightArgT
       parallel_pack = true;
     // But don't do it if we will use each rhs only once. Locality seems to be
     // more important in this case.
-    if ((shard_by_col ? nm : nn) == 1) parallel_pack = false;
+    if ((shard_by_col ? nm : nn) == 1)
+      parallel_pack = false;
     // Also don't get in the way of parallelize_by_sharding_dim_only
     // optimization.
-    if (parallelize_by_sharding_dim_only) parallel_pack = false;
+    if (parallelize_by_sharding_dim_only)
+      parallel_pack = false;
 
     // TODO(ezhulnev): With if contexpr we don't need SyncEvalParallelContext.
     if (IsEvalInSyncMode) {
-#define CONTEXT_ARGS                                                        \
-  (this, num_threads, buffer, m, n, k, bm, bn, bk, nm, nn, nk, gm, gn, nm0, \
-   nn0, shard_by_col, parallel_pack, parallelize_by_sharding_dim_only,      \
-   NoCallback())                                                            \
+#define CONTEXT_ARGS                                                           \
+  (this, num_threads, buffer, m, n, k, bm, bn, bk, nm, nn, nk, gm, gn, nm0,    \
+   nn0, shard_by_col, parallel_pack, parallelize_by_sharding_dim_only,         \
+   NoCallback())                                                               \
       .run()
       TENSOR_CONTRACTION_DISPATCH(SyncEvalParallelContext, Alignment,
                                   CONTEXT_ARGS);
 #undef CONTEXT_ARGS
 
     } else {
-#define CONTEXT_ARGS                                                        \
-  (this, num_threads, buffer, m, n, k, bm, bn, bk, nm, nn, nk, gm, gn, nm0, \
-   nn0, shard_by_col, parallel_pack, parallelize_by_sharding_dim_only,      \
+#define CONTEXT_ARGS                                                           \
+  (this, num_threads, buffer, m, n, k, bm, bn, bk, nm, nn, nk, gm, gn, nm0,    \
+   nn0, shard_by_col, parallel_pack, parallelize_by_sharding_dim_only,         \
    std::move(done))
       TENSOR_CONTRACTION_ASYNC_DISPATCH(EvalParallelContext, DoneCallback,
                                         Alignment, CONTEXT_ARGS, run());
@@ -307,19 +331,20 @@ struct TensorEvaluator<const TensorContractionOp<Indices, LeftArgType, RightArgT
   // Synchronous evaluation notification that blocks caller thread in Wait().
   template <typename Context>
   class EvalParallelNotification<NoCallback, Context> {
-   public:
-    EvalParallelNotification(Context*, NoCallback) {}
+  public:
+    EvalParallelNotification(Context *, NoCallback) {}
     void Notify() { done_.Notify(); }
     void Wait() { done_.Wait(); }
-   private:
+
+  private:
     Eigen::Notification done_;
   };
 
   // Asynchronous evaluation notification that does not block in Wait().
   template <typename DoneCallback, typename Context>
   class EvalParallelNotification {
-   public:
-    EvalParallelNotification(Context* ctx, DoneCallback done)
+  public:
+    EvalParallelNotification(Context *ctx, DoneCallback done)
         : ctx_(ctx), done_(std::move(done)) {}
 
     void Notify() {
@@ -337,8 +362,8 @@ struct TensorEvaluator<const TensorContractionOp<Indices, LeftArgType, RightArgT
 
     void Wait() {}
 
-   private:
-    Context* ctx_;
+  private:
+    Context *ctx_;
     DoneCallback done_;
   };
 
@@ -350,7 +375,7 @@ struct TensorEvaluator<const TensorContractionOp<Indices, LeftArgType, RightArgT
             bool rhs_inner_dim_contiguous, bool rhs_inner_dim_reordered,
             int Alignment>
   class EvalParallelContext {
-   public:
+  public:
     typedef internal::TensorContractionInputMapper<
         LhsScalar, Index, internal::Lhs, LeftEvaluator, left_nocontract_t,
         contract_t, internal::packet_traits<LhsScalar>::size,
@@ -372,7 +397,7 @@ struct TensorEvaluator<const TensorContractionOp<Indices, LeftArgType, RightArgT
     typedef typename TensorContractionKernel::RhsBlock RhsBlock;
     typedef typename TensorContractionKernel::BlockMemHandle BlockMemHandle;
 
-    EvalParallelContext(const Self* self, int num_threads, Scalar* buffer,
+    EvalParallelContext(const Self *self, int num_threads, Scalar *buffer,
                         Index tm, Index tn, Index tk, Index bm, Index bn,
                         Index bk, Index nm, Index nn, Index nk, Index gm,
                         Index gn, Index nm0, Index nn0, bool shard_by_col,
@@ -380,37 +405,22 @@ struct TensorEvaluator<const TensorContractionOp<Indices, LeftArgType, RightArgT
                         bool parallelize_by_sharding_dim_only,
                         DoneCallback done)
         : created_by_thread_id_(std::this_thread::get_id()),
-          done_(this, std::move(done)),
-          device_(self->m_device),
+          done_(this, std::move(done)), device_(self->m_device),
           lhs_(self->m_leftImpl, self->m_left_nocontract_strides,
                self->m_i_strides, self->m_left_contracting_strides,
                self->m_k_strides),
           rhs_(self->m_rightImpl, self->m_right_nocontract_strides,
                self->m_j_strides, self->m_right_contracting_strides,
                self->m_k_strides),
-          buffer_(buffer),
-          output_(buffer, tm),
+          buffer_(buffer), output_(buffer, tm),
           output_kernel_(self->m_output_kernel),
           tensor_contraction_params_(self->m_tensor_contraction_params),
-          num_threads_(num_threads),
-          shard_by_col_(shard_by_col),
+          num_threads_(num_threads), shard_by_col_(shard_by_col),
           parallel_pack_(parallel_pack),
           parallelize_by_sharding_dim_only_(parallelize_by_sharding_dim_only),
-          m_(tm),
-          n_(tn),
-          k_(tk),
-          bm_(bm),
-          bn_(bn),
-          bk_(bk),
-          nm_(nm),
-          nn_(nn),
-          nk_(nk),
-          gm_(gm),
-          gn_(gn),
-          nm0_(nm0),
-          nn0_(nn0),
-          kernel_(m_, k_, n_, bm_, bk_, bn_),
-          num_thread_local_allocations_(0),
+          m_(tm), n_(tn), k_(tk), bm_(bm), bn_(bn), bk_(bk), nm_(nm), nn_(nn),
+          nk_(nk), gm_(gm), gn_(gn), nm0_(nm0), nn0_(nn0),
+          kernel_(m_, k_, n_, bm_, bk_, bn_), num_thread_local_allocations_(0),
           // We reserve 2X more capacity for a thread local values, than the
           // number of threads in the pool to efficiently handle task stealing
           // by threads that are not managed by the pool.
@@ -438,25 +448,25 @@ struct TensorEvaluator<const TensorContractionOp<Indices, LeftArgType, RightArgT
                       (x == P - 1 ? nm_ * nn_ : 0);
         state_packing_ready_[x] =
             parallel_pack_ ? 0 : (shard_by_col_ ? nm_ : nn_);
-        state_kernel_[x] = new std::atomic<uint8_t>*[nm_];
+        state_kernel_[x] = new std::atomic<uint8_t> *[nm_];
         for (Index m = 0; m < nm_; m++) {
           state_kernel_[x][m] = new std::atomic<uint8_t>[nn_];
           // Kernels generally receive 3 notifications (previous kernel + 2
           // packing), but the first slice won't get notifications from previous
           // kernels.
           for (Index n = 0; n < nn_; n++)
-            state_kernel_[x][m][n].store(
-                (x == 0 ? 0 : 1) + (parallel_pack_ ? 2 : 1),
-                std::memory_order_relaxed);
+            state_kernel_[x][m][n].store((x == 0 ? 0 : 1) +
+                                             (parallel_pack_ ? 2 : 1),
+                                         std::memory_order_relaxed);
         }
       }
 
       // Allocate memory for packed rhs/lhs matrices.
-      packed_mem_ = kernel_.allocateSlices(            //
-          device_,                                     //
-          /*num_lhs=*/nm0_,                            //
-          /*num_rhs=*/nn0_,                            //
-          /*num_slices=*/std::min<Index>(nk_, P - 1),  //
+      packed_mem_ = kernel_.allocateSlices(           //
+          device_,                                    //
+          /*num_lhs=*/nm0_,                           //
+          /*num_rhs=*/nn0_,                           //
+          /*num_slices=*/std::min<Index>(nk_, P - 1), //
           packed_lhs_, packed_rhs_);
 
       if (parallelize_by_sharding_dim_only_) {
@@ -469,11 +479,11 @@ struct TensorEvaluator<const TensorContractionOp<Indices, LeftArgType, RightArgT
                                                   std::memory_order_relaxed);
 
           Index num_blocks = num_worker_threads * gn_;
-          thread_local_pre_alocated_mem_ = kernel_.allocateSlices(  //
-              device_,                                              //
-              /*num_lhs=*/0,                                        //
-              /*num_rhs=*/num_blocks,                               //
-              /*num_slices=*/1,                                     //
+          thread_local_pre_alocated_mem_ = kernel_.allocateSlices( //
+              device_,                                             //
+              /*num_lhs=*/0,                                       //
+              /*num_rhs=*/num_blocks,                              //
+              /*num_slices=*/1,                                    //
               /*lhs_blocks=*/nullptr, &rhs_thread_local_pre_allocated_);
 
         } else {
@@ -483,11 +493,11 @@ struct TensorEvaluator<const TensorContractionOp<Indices, LeftArgType, RightArgT
                                                   std::memory_order_relaxed);
 
           Index num_blocks = num_worker_threads * gm_;
-          thread_local_pre_alocated_mem_ = kernel_.allocateSlices(  //
-              device_,                                              //
-              /*num_lhs=*/num_blocks,                               //
-              /*num_rhs=*/0,                                        //
-              /*num_slices=*/1, &lhs_thread_local_pre_allocated_,   //
+          thread_local_pre_alocated_mem_ = kernel_.allocateSlices( //
+              device_,                                             //
+              /*num_lhs=*/num_blocks,                              //
+              /*num_rhs=*/0,                                       //
+              /*num_slices=*/1, &lhs_thread_local_pre_allocated_,  //
               /*rhs_blocks=*/nullptr);
         }
       }
@@ -495,7 +505,8 @@ struct TensorEvaluator<const TensorContractionOp<Indices, LeftArgType, RightArgT
 
     ~EvalParallelContext() {
       for (Index x = 0; x < P; x++) {
-        for (Index m = 0; m < nm_; m++) delete[] state_kernel_[x][m];
+        for (Index m = 0; m < nm_; m++)
+          delete[] state_kernel_[x][m];
         delete[] state_kernel_[x];
       }
       kernel_.deallocate(device_, packed_mem_);
@@ -525,17 +536,17 @@ struct TensorEvaluator<const TensorContractionOp<Indices, LeftArgType, RightArgT
       done_.Wait();
     }
 
-   private:
+  private:
     std::thread::id created_by_thread_id_;
 
     // This notification is specialized on the type of DoneCallback and can be
     // blocking or non-blocking.
     EvalParallelNotification<DoneCallback, EvalParallelContext> done_;
 
-    const Device& device_;
+    const Device &device_;
     LhsMapper lhs_;
     RhsMapper rhs_;
-    Scalar* const buffer_;
+    Scalar *const buffer_;
     OutputMapper output_;
     OutputKernelType output_kernel_;
     TensorContractionParams tensor_contraction_params_;
@@ -641,30 +652,27 @@ struct TensorEvaluator<const TensorContractionOp<Indices, LeftArgType, RightArgT
 
     // ThreadLocalBlocks is a container for Lhs or Rhs thread local buffers. Its
     // size is equal to the grain size in Lhs/Rhs sharding dimension.
-    template <typename BlockType>
-    class ThreadLocalBlocks {
-     public:
+    template <typename BlockType> class ThreadLocalBlocks {
+    public:
       ThreadLocalBlocks() = default;
 
-      ThreadLocalBlocks(BlockType* base, size_t grain_size)
-          : is_pre_allocated_(true),
-            thread_local_pre_allocated_base_(base),
+      ThreadLocalBlocks(BlockType *base, size_t grain_size)
+          : is_pre_allocated_(true), thread_local_pre_allocated_base_(base),
             grain_size_(grain_size) {}
 
       ThreadLocalBlocks(BlockMemHandle mem_handle,
                         std::vector<BlockType> blocks)
-          : is_pre_allocated_(false),
-            mem_handle_(std::move(mem_handle)),
+          : is_pre_allocated_(false), mem_handle_(std::move(mem_handle)),
             blocks_(std::move(blocks)) {}
 
-      BlockType& block(int grain_index) {
+      BlockType &block(int grain_index) {
         eigen_assert(grain_index >= 0);
         eigen_assert(static_cast<size_t>(grain_index) < size());
         return is_pre_allocated_ ? thread_local_pre_allocated_base_[grain_index]
                                  : blocks_[grain_index];
       }
 
-      void Release(EvalParallelContext& ctx) const {
+      void Release(EvalParallelContext &ctx) const {
         if (!is_pre_allocated_) {
           ctx.kernel_.deallocate(ctx.device_, mem_handle_);
         }
@@ -674,11 +682,11 @@ struct TensorEvaluator<const TensorContractionOp<Indices, LeftArgType, RightArgT
         return is_pre_allocated_ ? grain_size_ : blocks_.size();
       }
 
-     private:
+    private:
       bool is_pre_allocated_;
 
       // Reuse pre-allocated thread local buffers.
-      BlockType* thread_local_pre_allocated_base_ = nullptr;
+      BlockType *thread_local_pre_allocated_base_ = nullptr;
       size_t grain_size_ = 0;
 
       // These will be initialized only if `is_pre_allocated == false`.
@@ -702,12 +710,11 @@ struct TensorEvaluator<const TensorContractionOp<Indices, LeftArgType, RightArgT
 
       using Blocks = ThreadLocalBlocks<BlockType>;
 
-     public:
-      ThreadLocalBlocksInitialize(EvalParallelContext& ctx)
-          : ctx_(ctx),
-            num_worker_threads_(ctx_.device_.numThreadsInPool()) {}
+    public:
+      ThreadLocalBlocksInitialize(EvalParallelContext &ctx)
+          : ctx_(ctx), num_worker_threads_(ctx_.device_.numThreadsInPool()) {}
 
-      void operator()(Blocks& blocks) {
+      void operator()(Blocks &blocks) {
         const int n = ctx_.num_thread_local_allocations_.fetch_add(
             1, std::memory_order_relaxed);
 
@@ -718,7 +725,7 @@ struct TensorEvaluator<const TensorContractionOp<Indices, LeftArgType, RightArgT
         }
       }
 
-     private:
+    private:
       // NOTE(ezhulenev): Without 'if constexpr' we have to put calls to
       // TensorContractionKernel::allocateSlices into template specializations.
       // Also explicit specializations are not allowed at class scope in C++03,
@@ -728,7 +735,7 @@ struct TensorEvaluator<const TensorContractionOp<Indices, LeftArgType, RightArgT
 
       template <typename EvalCtx>
       struct ThreadLocalBlocksAllocator</*pack_rhs=*/true, EvalCtx> {
-        static void allocate(EvalCtx& ctx, Blocks& blocks) {
+        static void allocate(EvalCtx &ctx, Blocks &blocks) {
           std::vector<RhsBlock> rhs_blocks;
           BlockMemHandle mem_handle = ctx.kernel_.allocateSlices(
               ctx.device_,
@@ -741,15 +748,15 @@ struct TensorEvaluator<const TensorContractionOp<Indices, LeftArgType, RightArgT
                                                std::move(rhs_blocks));
         }
 
-        static void reuse(EvalCtx& ctx, int index, Blocks& blocks) {
-          RhsBlock* ptr = &ctx.rhs_thread_local_pre_allocated_[ctx.gn_ * index];
+        static void reuse(EvalCtx &ctx, int index, Blocks &blocks) {
+          RhsBlock *ptr = &ctx.rhs_thread_local_pre_allocated_[ctx.gn_ * index];
           blocks = ThreadLocalBlocks<RhsBlock>(ptr, ctx.gn_);
         }
       };
 
       template <typename EvalCtx>
       struct ThreadLocalBlocksAllocator</*pack_rhs=*/false, EvalCtx> {
-        static void allocate(EvalCtx& ctx, Blocks& blocks) {
+        static void allocate(EvalCtx &ctx, Blocks &blocks) {
           std::vector<LhsBlock> lhs_blocks;
           BlockMemHandle mem_handle = ctx.kernel_.allocateSlices(
               ctx.device_,
@@ -762,25 +769,24 @@ struct TensorEvaluator<const TensorContractionOp<Indices, LeftArgType, RightArgT
                                                std::move(lhs_blocks));
         }
 
-        static void reuse(EvalCtx& ctx, int index, Blocks& blocks) {
-          LhsBlock* ptr = &ctx.lhs_thread_local_pre_allocated_[ctx.gm_ * index];
+        static void reuse(EvalCtx &ctx, int index, Blocks &blocks) {
+          LhsBlock *ptr = &ctx.lhs_thread_local_pre_allocated_[ctx.gm_ * index];
           blocks = ThreadLocalBlocks<LhsBlock>(ptr, ctx.gm_);
         }
       };
 
-      EvalParallelContext& ctx_;
+      EvalParallelContext &ctx_;
       const int num_worker_threads_;
     };
 
-    template <typename BlockType>
-    class ThreadLocalBlocksRelease {
-     public:
+    template <typename BlockType> class ThreadLocalBlocksRelease {
+    public:
       using Blocks = ThreadLocalBlocks<BlockType>;
-      ThreadLocalBlocksRelease(EvalParallelContext& ctx) : ctx_(ctx) {}
-      void operator()(Blocks& blocks) { blocks.Release(ctx_); }
+      ThreadLocalBlocksRelease(EvalParallelContext &ctx) : ctx_(ctx) {}
+      void operator()(Blocks &blocks) { blocks.Release(ctx_); }
 
-     private:
-      EvalParallelContext& ctx_;
+    private:
+      EvalParallelContext &ctx_;
     };
 
     // ThreadLocalBlocks initialization callables.
@@ -807,9 +813,9 @@ struct TensorEvaluator<const TensorContractionOp<Indices, LeftArgType, RightArgT
     // longer schedule K+1 and following slices in thread local mode, because
     // there is no more guarantee that previous kernels were executed
     // sequentially in the same thread (size is nn_ or nm_).
-    std::atomic<bool>* can_use_thread_local_packed_;
+    std::atomic<bool> *can_use_thread_local_packed_;
 
-    std::atomic<uint8_t>** state_kernel_[P];
+    std::atomic<uint8_t> **state_kernel_[P];
     // state_switch_ is frequently modified by worker threads, while other
     // fields are read-only after constructor. Let's move it to a separate cache
     // line to reduce cache-coherency traffic.
@@ -817,25 +823,29 @@ struct TensorEvaluator<const TensorContractionOp<Indices, LeftArgType, RightArgT
     std::atomic<Index> state_packing_ready_[P];
     std::atomic<Index> state_switch_[P];
 
-    LhsBlock& packed_lhs(Index m, Index k, Index m1, bool use_thread_local) {
+    LhsBlock &packed_lhs(Index m, Index k, Index m1, bool use_thread_local) {
       if (use_thread_local) {
         eigen_assert(!shard_by_col_);
-        ThreadLocalBlocks<LhsBlock>& blocks = lhs_thread_local_blocks_.local();
+        ThreadLocalBlocks<LhsBlock> &blocks = lhs_thread_local_blocks_.local();
 
         Index grain_index = m1 - m * gm_;
-        return blocks.block(internal::convert_index<int>(grain_index)); // FIXME better make ThreadLocalBlocks use Eigen::Index?
+        return blocks.block(internal::convert_index<int>(
+            grain_index)); // FIXME better make ThreadLocalBlocks use
+                           // Eigen::Index?
       } else {
         return packed_lhs_[k % (P - 1)][m1];
       }
     }
 
-    RhsBlock& packed_rhs(Index n, Index k, Index n1, bool use_thread_local) {
+    RhsBlock &packed_rhs(Index n, Index k, Index n1, bool use_thread_local) {
       if (use_thread_local) {
         eigen_assert(shard_by_col_);
-        ThreadLocalBlocks<RhsBlock>& blocks = rhs_thread_local_blocks_.local();
+        ThreadLocalBlocks<RhsBlock> &blocks = rhs_thread_local_blocks_.local();
 
         Index grain_index = n1 - n * gn_;
-        return blocks.block(internal::convert_index<int>(grain_index)); // FIXME better make ThreadLocalBlocks use Eigen::Index?
+        return blocks.block(internal::convert_index<int>(
+            grain_index)); // FIXME better make ThreadLocalBlocks use
+                           // Eigen::Index?
       } else {
         return packed_rhs_[k % (P - 1)][n1];
       }
@@ -986,14 +996,15 @@ struct TensorEvaluator<const TensorContractionOp<Indices, LeftArgType, RightArgT
       eigen_assert(!parallel_pack_);
       Index s = state_packing_ready_[k % P].fetch_sub(1);
       eigen_assert(s > 0);
-      if (s != 1) return;
+      if (s != 1)
+        return;
       state_packing_ready_[k % P] = shard_by_col_ ? nm_ : nn_;
       enqueue_packing(k, shard_by_col_);
     }
 
     void signal_kernel(Index m, Index n, Index k, bool sync,
                        bool use_thread_local) {
-      std::atomic<uint8_t>* state = &state_kernel_[k % P][m][n];
+      std::atomic<uint8_t> *state = &state_kernel_[k % P][m][n];
       Index s = state->load();
       eigen_assert(s > 0);
       if (s != 1 && state->fetch_sub(1) != 1) {
@@ -1013,7 +1024,8 @@ struct TensorEvaluator<const TensorContractionOp<Indices, LeftArgType, RightArgT
     void signal_switch(Index k, Index v = 1) {
       Index s = state_switch_[k % P].fetch_sub(v);
       eigen_assert(s >= v);
-      if (s != v) return;
+      if (s != v)
+        return;
 
       // Ready to switch to the next k slice.
       // Reset counter for the next iteration.
@@ -1073,9 +1085,9 @@ struct TensorEvaluator<const TensorContractionOp<Indices, LeftArgType, RightArgT
         // (2) all pack tasks for sharded dim must be executed in a thread
         //     pool to get pre-allocated thead local buffers.
         bool pack_async =
-          (start == 0) &&
-          (parallelize_by_sharding_dim_only_&& shard_by_col_ == rhs) &&
-          (k > 0 || std::this_thread::get_id() == created_by_thread_id_);
+            (start == 0) &&
+            (parallelize_by_sharding_dim_only_ && shard_by_col_ == rhs) &&
+            (k > 0 || std::this_thread::get_id() == created_by_thread_id_);
 
         if (pack_async) {
           device_.enqueueNoNotification(
@@ -1087,15 +1099,23 @@ struct TensorEvaluator<const TensorContractionOp<Indices, LeftArgType, RightArgT
     }
 
     // Block sizes with accounting for potentially incomplete last block.
-    Index bm(Index m) const { return m + 1 < nm0_ ? bm_ : m_ + bm_ - bm_ * nm0_; }
-    Index bn(Index n) const { return n + 1 < nn0_ ? bn_ : n_ + bn_ - bn_ * nn0_; }
+    Index bm(Index m) const {
+      return m + 1 < nm0_ ? bm_ : m_ + bm_ - bm_ * nm0_;
+    }
+    Index bn(Index n) const {
+      return n + 1 < nn0_ ? bn_ : n_ + bn_ - bn_ * nn0_;
+    }
     Index bk(Index k) const { return k + 1 < nk_ ? bk_ : k_ + bk_ - bk_ * nk_; }
     // Task grain sizes accounting for potentially incomplete last task.
-    Index gm(Index m) const { return m + 1 < nm_ ? gm_ : nm0_ + gm_ - gm_ * nm_; }
-    Index gn(Index n) const { return n + 1 < nn_ ? gn_ : nn0_ + gn_ - gn_ * nn_; }
+    Index gm(Index m) const {
+      return m + 1 < nm_ ? gm_ : nm0_ + gm_ - gm_ * nm_;
+    }
+    Index gn(Index n) const {
+      return n + 1 < nn_ ? gn_ : nn0_ + gn_ - gn_ * nn_;
+    }
 
-    EvalParallelContext(const EvalParallelContext&) = delete;
-    void operator=(const EvalParallelContext&) = delete;
+    EvalParallelContext(const EvalParallelContext &) = delete;
+    void operator=(const EvalParallelContext &) = delete;
   };
 
   template <bool lhs_inner_dim_contiguous, bool rhs_inner_dim_contiguous,
@@ -1112,27 +1132,22 @@ struct TensorEvaluator<const TensorContractionOp<Indices, LeftArgType, RightArgT
   // asynchronous mode, it owns all the shared state that might be accessible by
   // block processing tasks.
 
-  template <typename DoneCallback>
-  struct EvalShardedByInnerDimContext {
-    EvalShardedByInnerDimContext(const Self* self, int num_threads,
-                                 Scalar* result_buffer,
-                                 Index m_size, Index n_size, Index k_size,
+  template <typename DoneCallback> struct EvalShardedByInnerDimContext {
+    EvalShardedByInnerDimContext(const Self *self, int num_threads,
+                                 Scalar *result_buffer, Index m_size,
+                                 Index n_size, Index k_size,
                                  DoneCallback done_callback)
         : evaluator(self),
           m_lhs_inner_dim_contiguous(evaluator->m_lhs_inner_dim_contiguous),
           m_rhs_inner_dim_contiguous(evaluator->m_rhs_inner_dim_contiguous),
           m_rhs_inner_dim_reordered(evaluator->m_rhs_inner_dim_reordered),
-          result(result_buffer),
-          m(m_size),
-          n(n_size),
-          k(k_size),
+          result(result_buffer), m(m_size), n(n_size), k(k_size),
           done(std::move(done_callback)),
           buffer_size_bytes(m * n * sizeof(Scalar)),
           block_size(blockSize(k, num_threads)),
           num_blocks(divup<Index>(k, block_size)),
           num_pending_blocks(internal::convert_index<int>(num_blocks)),
-          l0_ranges(divup<Index>(num_blocks, l0_size)),
-          l0_state(l0_ranges),
+          l0_ranges(divup<Index>(num_blocks, l0_size)), l0_state(l0_ranges),
           block_buffers(num_blocks) {
       // Keep count of pending gemm tasks for each l0 range.
       for (int i = 0; i < l0_ranges; ++i) {
@@ -1142,9 +1157,9 @@ struct TensorEvaluator<const TensorContractionOp<Indices, LeftArgType, RightArgT
 
       // Allocate temporary buffers for each block.
       for (Index block_idx = 0; block_idx < num_blocks; ++block_idx) {
-        Scalar* buf = block_idx == 0
+        Scalar *buf = block_idx == 0
                           ? result
-                          : static_cast<Scalar*>(evaluator->m_device.allocate(
+                          : static_cast<Scalar *>(evaluator->m_device.allocate(
                                 buffer_size_bytes));
         block_buffers.emplace_back(buf);
       }
@@ -1156,8 +1171,7 @@ struct TensorEvaluator<const TensorContractionOp<Indices, LeftArgType, RightArgT
       }
     }
 
-    template <int Alignment>
-    void run() {
+    template <int Alignment> void run() {
       Barrier barrier(internal::convert_index<int>(num_blocks));
       eval<Alignment>(barrier, 0, num_blocks);
       barrier.Wait();
@@ -1169,24 +1183,23 @@ struct TensorEvaluator<const TensorContractionOp<Indices, LeftArgType, RightArgT
       applyOutputKernel();
     }
 
-    template <int Alignment>
-    void runAsync() {
+    template <int Alignment> void runAsync() {
       evalAsync<Alignment>(0, num_blocks);
     }
 
-   private:
+  private:
     // The underlying GEMM kernel assumes that k is a multiple of
     // the packet size and subtle breakage occurs if this is violated.
     static const Index packet_size = internal::packet_traits<RhsScalar>::size;
 
-    const Self* evaluator;  // TensorContraction evaluator
+    const Self *evaluator; // TensorContraction evaluator
 
     // These fields required fromTENSOR_CONTRACTION_DISPATCH macro.
     bool m_lhs_inner_dim_contiguous;
     bool m_rhs_inner_dim_contiguous;
     bool m_rhs_inner_dim_reordered;
 
-    Scalar* result;
+    Scalar *result;
 
     Index m;
     Index n;
@@ -1226,14 +1239,14 @@ struct TensorEvaluator<const TensorContractionOp<Indices, LeftArgType, RightArgT
     Index l0_ranges;
 
     // Keep count of pending gemm tasks for each l0 range.
-    MaxSizeVector<std::atomic<int>> l0_state;  // [0, l0_ranges)
+    MaxSizeVector<std::atomic<int>> l0_state; // [0, l0_ranges)
 
     // Buffers allocated for each temporary block computation.
-    MaxSizeVector<Scalar*> block_buffers;  // [0, num_blocks)
+    MaxSizeVector<Scalar *> block_buffers; // [0, num_blocks)
 
     template <int Alignment>
     void processBlock(Index block_idx, Index begin, Index end) {
-      Scalar* buf = block_buffers[block_idx];
+      Scalar *buf = block_buffers[block_idx];
 
       TENSOR_CONTRACTION_DISPATCH(
           evaluator->template evalGemmPartialWithoutOutputKernel, Alignment,
@@ -1270,8 +1283,7 @@ struct TensorEvaluator<const TensorContractionOp<Indices, LeftArgType, RightArgT
     }
 
     // Aggregate partial sums from l0 ranges.
-    template <int Alignment>
-    void aggregateL0Blocks() const {
+    template <int Alignment> void aggregateL0Blocks() const {
       Index l0_index = 1;
 
       for (; l0_index + 2 < l0_ranges; l0_index += 3) {
@@ -1313,8 +1325,8 @@ struct TensorEvaluator<const TensorContractionOp<Indices, LeftArgType, RightArgT
     };
 
     template <int Alignment>
-    EIGEN_STRONG_INLINE static void addToBuffer(size_t n, const Scalar* src_buf,
-                                                Scalar* tgt_buf) {
+    EIGEN_STRONG_INLINE static void addToBuffer(size_t n, const Scalar *src_buf,
+                                                Scalar *tgt_buf) {
       const int output_packet_size =
           internal::unpacket_traits<PacketReturnType>::size;
       size_t i = 0;
@@ -1334,11 +1346,9 @@ struct TensorEvaluator<const TensorContractionOp<Indices, LeftArgType, RightArgT
     }
 
     template <int Alignment>
-    EIGEN_STRONG_INLINE static void addAllToBuffer(size_t n,
-                                                   const Scalar* src_buf0,
-                                                   const Scalar* src_buf1,
-                                                   const Scalar* src_buf2,
-                                                   Scalar* dst_buf) {
+    EIGEN_STRONG_INLINE static void
+    addAllToBuffer(size_t n, const Scalar *src_buf0, const Scalar *src_buf1,
+                   const Scalar *src_buf2, Scalar *dst_buf) {
       using ::Eigen::internal::padd;
       using ::Eigen::internal::pload;
       using ::Eigen::internal::ploadt;
@@ -1366,7 +1376,7 @@ struct TensorEvaluator<const TensorContractionOp<Indices, LeftArgType, RightArgT
     }
 
     template <int Alignment>
-    void eval(Barrier& barrier, Index start_block_idx, Index end_block_idx) {
+    void eval(Barrier &barrier, Index start_block_idx, Index end_block_idx) {
       while (end_block_idx - start_block_idx > 1) {
         Index mid_block_idx = (start_block_idx + end_block_idx) / 2;
         evaluator->m_device.enqueueNoNotification(
@@ -1443,8 +1453,8 @@ struct TensorEvaluator<const TensorContractionOp<Indices, LeftArgType, RightArgT
           k, numext::maxi<Index>(desired_min_block_size, target_block_size));
     }
 
-    EvalShardedByInnerDimContext(const EvalShardedByInnerDimContext&) = delete;
-    void operator=(const EvalShardedByInnerDimContext&) = delete;
+    EvalShardedByInnerDimContext(const EvalShardedByInnerDimContext &) = delete;
+    void operator=(const EvalShardedByInnerDimContext &) = delete;
   };
 
   // ------------------------------------------------------------------------ //
@@ -1476,7 +1486,8 @@ struct TensorEvaluator<const TensorContractionOp<Indices, LeftArgType, RightArgT
       return false;
     // Wait, or if matrices are just substantially prolonged over the other
     // dimension.
-    if (n / num_threads < 16 * Traits::nr && m > n * 32) return false;
+    if (n / num_threads < 16 * Traits::nr && m > n * 32)
+      return false;
     return true;
   }
 
@@ -1490,14 +1501,18 @@ struct TensorEvaluator<const TensorContractionOp<Indices, LeftArgType, RightArgT
       // Find the next candidate for m grain size. It needs to result in
       // different number of blocks. E.g. if we have 10 kernels, we want to try
       // 5 and 10, but not 6, 7, 8 and 9.
-      while (gm1 <= nm0 && nm1 == divup(nm0, gm1)) gm1++;
-      if (gm1 > nm0) break;
+      while (gm1 <= nm0 && nm1 == divup(nm0, gm1))
+        gm1++;
+      if (gm1 > nm0)
+        break;
       // Check the candidate.
       int res = checkGrain(m, n, bm, bn, bk, gm1, gn, gm, gn, num_threads,
                            shard_by_col);
-      if (res < 0) break;
+      if (res < 0)
+        break;
       nm1 = divup(nm0, gm1);
-      if (res == 0) continue;
+      if (res == 0)
+        continue;
       // Commit new grain size.
       gm = gm1;
     }
@@ -1511,13 +1526,17 @@ struct TensorEvaluator<const TensorContractionOp<Indices, LeftArgType, RightArgT
     Index nn0 = divup(n, bn);
     Index nn1 = nn0;
     for (;;) {
-      while (gn1 <= nn0 && nn1 == divup(nn0, gn1)) gn1++;
-      if (gn1 > nn0) break;
+      while (gn1 <= nn0 && nn1 == divup(nn0, gn1))
+        gn1++;
+      if (gn1 > nn0)
+        break;
       int res = checkGrain(m, n, bm, bn, bk, gm, gn1, gm, gn, num_threads,
                            shard_by_col);
-      if (res < 0) break;
+      if (res < 0)
+        break;
       nn1 = divup(nn0, gn1);
-      if (res == 0) continue;
+      if (res == 0)
+        continue;
       gn = gn1;
     }
     return gn;
@@ -1534,9 +1553,11 @@ struct TensorEvaluator<const TensorContractionOp<Indices, LeftArgType, RightArgT
         static_cast<double>(bm) * gm * bn * gn, cost);
     // If the task is too small, then we agree on it regardless of anything
     // else. Otherwise synchronization overheads will dominate.
-    if (taskSize < 1) return 1;
+    if (taskSize < 1)
+      return 1;
     // If it is too large, then we reject it and all larger tasks.
-    if (taskSize > 2) return -1;
+    if (taskSize > 2)
+      return -1;
     // Now we are in presumably good task size range.
     // The main deciding factor here is parallelism. Consider that we have 12
     // kernels and 4 threads. Grains of 2, 3 and 4 all yield good task sizes.
@@ -1551,7 +1572,8 @@ struct TensorEvaluator<const TensorContractionOp<Indices, LeftArgType, RightArgT
     Index old_tasks = divup(nm0, oldgm) * divup(nn0, oldgn);
     double old_parallelism = static_cast<double>(old_tasks) /
                              (divup<int>(old_tasks, num_threads) * num_threads);
-    if (new_parallelism > old_parallelism || new_parallelism == 1) return 1;
+    if (new_parallelism > old_parallelism || new_parallelism == 1)
+      return 1;
     return 0;
   }
 
@@ -1559,13 +1581,16 @@ struct TensorEvaluator<const TensorContractionOp<Indices, LeftArgType, RightArgT
                                bool shard_by_col, bool prepacked) const {
     const int packed_size = std::min<int>(PacketType<LhsScalar, Device>::size,
                                           PacketType<RhsScalar, Device>::size);
-    const int output_packet_size = internal::unpacket_traits<PacketReturnType>::size;
+    const int output_packet_size =
+        internal::unpacket_traits<PacketReturnType>::size;
     const double kd = static_cast<double>(bk);
     double compute_bandwidth = computeBandwidth(false, bm, bn, bk);
     // Computations.
-    TensorOpCost cost = TensorOpCost(0, 0, kd * compute_bandwidth, true, packed_size);
+    TensorOpCost cost =
+        TensorOpCost(0, 0, kd * compute_bandwidth, true, packed_size);
     // Output stores.
-    cost += TensorOpCost(0, sizeof(CoeffReturnType), 0, true, output_packet_size);
+    cost +=
+        TensorOpCost(0, sizeof(CoeffReturnType), 0, true, output_packet_size);
     if (prepacked) {
       // Packing and kernels are executed in different tasks. When we calculate
       // task grain size we look only at kernel cost assuming that kernel
@@ -1590,16 +1615,16 @@ struct TensorEvaluator<const TensorContractionOp<Indices, LeftArgType, RightArgT
                               int num_threads_by_k) {
     std::ptrdiff_t bufsize = m * n * sizeof(Scalar);
     bool shard_by_k = false;
-    if (n == 1 ||                // If mat*vec or...
-        num_threads_by_k < 2 ||  // running single threaded or...
+    if (n == 1 ||               // If mat*vec or...
+        num_threads_by_k < 2 || // running single threaded or...
         num_threads_by_k <
-            num_threads ||  // sharding by k gives less parallelism or...
-        bufsize > l3CacheSize() / num_threads_by_k ||  // need more buffer space
+            num_threads || // sharding by k gives less parallelism or...
+        bufsize > l3CacheSize() / num_threads_by_k || // need more buffer space
         // than L3 cache or...
-        k / num_threads_by_k < 2 * Traits::nr) {  // k per thread is tiny.
+        k / num_threads_by_k < 2 * Traits::nr) { // k per thread is tiny.
       shard_by_k = false;
     } else if (numext::maxi(m, n) / num_threads <
-                   Traits::nr ||  // both other dimensions are tiny or...
+                   Traits::nr || // both other dimensions are tiny or...
                // k per thread is not small and...
                (k / num_threads_by_k > 8 * Traits::nr &&
                 // one of the outer dimensions is tiny or sharding by k offers
@@ -1613,10 +1638,13 @@ struct TensorEvaluator<const TensorContractionOp<Indices, LeftArgType, RightArgT
 
   TensorOpCost contractionCostPerInnerDim(Index m, Index n, Index k) const {
     // Compute cost.
-    const int output_packet_size = internal::unpacket_traits<PacketReturnType>::size;
-    TensorOpCost cost(0, 0, (computeBandwidth(true, m, n, k) * m) * n, true, output_packet_size);
+    const int output_packet_size =
+        internal::unpacket_traits<PacketReturnType>::size;
+    TensorOpCost cost(0, 0, (computeBandwidth(true, m, n, k) * m) * n, true,
+                      output_packet_size);
     // Output stores.
-    cost += TensorOpCost(0, sizeof(CoeffReturnType), 0, true, output_packet_size);
+    cost +=
+        TensorOpCost(0, sizeof(CoeffReturnType), 0, true, output_packet_size);
     TensorOpCost lhsCost = this->m_leftImpl.costPerCoeff(true) * m;
     TensorOpCost rhsCost = this->m_rightImpl.costPerCoeff(true) * n;
     // Since the inner gemm kernel is always sharded by column, the lhs
@@ -1626,7 +1654,8 @@ struct TensorEvaluator<const TensorContractionOp<Indices, LeftArgType, RightArgT
   }
 
   int numThreadsInnerDim(Index m, Index n, Index k) const {
-    const int output_packet_size = internal::unpacket_traits<PacketReturnType>::size;
+    const int output_packet_size =
+        internal::unpacket_traits<PacketReturnType>::size;
     TensorOpCost cost = contractionCostPerInnerDim(m, n, k);
     double total_parallel_cost =
         TensorCostModel<ThreadPoolDevice>::totalCost(k, cost);
@@ -1655,25 +1684,24 @@ struct TensorEvaluator<const TensorContractionOp<Indices, LeftArgType, RightArgT
     // Peak VFMA bandwidth is 0.5. However if we have not enough data for
     // vectorization bandwidth drops. The 4.0 and 2.0 bandwidth is determined
     // experimentally.
-    double computeBandwidth =
-        bk == 1 ? 4.0
-                : (shard_by_col ? bn : bm) < Traits::nr ||
-                          (shard_by_col ? bm : bn) < Traits::mr
-                      ? 2.0
-                      : 0.5;
+    double computeBandwidth = bk == 1 ? 4.0
+                              : (shard_by_col ? bn : bm) < Traits::nr ||
+                                      (shard_by_col ? bm : bn) < Traits::mr
+                                  ? 2.0
+                                  : 0.5;
 #ifndef EIGEN_VECTORIZE_FMA
     // Bandwidth of all of VFMA/MULPS/ADDPS is 0.5 on latest Intel processors.
     // However for MULPS/ADDPS we have dependent sequence of 2 such
     // instructions,
     // so overall bandwidth is 1.0.
-    if (computeBandwidth == 0.5) computeBandwidth = 1.0;
+    if (computeBandwidth == 0.5)
+      computeBandwidth = 1.0;
 #endif
     return computeBandwidth;
   }
-
 };
 
 } // end namespace Eigen
 
-#endif  // EIGEN_USE_THREADS
+#endif // EIGEN_USE_THREADS
 #endif // EIGEN_CXX11_TENSOR_TENSOR_CONTRACTION_THREAD_POOL_H
