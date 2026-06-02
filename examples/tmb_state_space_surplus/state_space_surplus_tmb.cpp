@@ -1,7 +1,6 @@
 #include <TMB.hpp>
 
-template<class Type>
-Type objective_function<Type>::operator()() {
+template <class Type> Type objective_function<Type>::operator()() {
   DATA_VECTOR(catch_observed);
   DATA_VECTOR(index_observed);
 
@@ -36,18 +35,14 @@ Type objective_function<Type>::operator()() {
     biomass(t) = exp(log_biomass(t));
     index_predicted(t) = q * biomass(t);
 
-    nll -= dnorm(log(index_observed(t)),
-                 log(index_predicted(t)),
-                 sigma_index,
+    nll -= dnorm(log(index_observed(t)), log(index_predicted(t)), sigma_index,
                  true);
 
     if (t < n - 1) {
       const Type production = r * biomass(t) * (Type(1.0) - biomass(t) / K);
-      const Type deterministic_next =
-          CppAD::CondExpGt(biomass(t) + production - catch_observed(t),
-                           Type(1e-9),
-                           biomass(t) + production - catch_observed(t),
-                           Type(1e-9));
+      const Type deterministic_next = CppAD::CondExpGt(
+          biomass(t) + production - catch_observed(t), Type(1e-9),
+          biomass(t) + production - catch_observed(t), Type(1e-9));
 
       log_biomass(t + 1) = log(deterministic_next) + u(t);
 
