@@ -1,0 +1,5 @@
+---
+triple:          'arm64-apple-darwin'
+binary-path:     'build/tests/test_hessian_structure_dispatch'
+relocations:     []
+...

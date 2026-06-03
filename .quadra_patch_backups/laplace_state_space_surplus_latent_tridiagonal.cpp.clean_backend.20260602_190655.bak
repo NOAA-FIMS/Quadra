@@ -1,0 +1,367 @@
+#include "state_space_surplus_production.hpp"
+#include "../../core/laplace/laplace_backend.hpp"
+#include "../../core/laplace/laplace_backend_factory.hpp"
+
+#include <Eigen/Dense>
+#include <Eigen/Sparse>
+#include <LBFGS.h>
+
+#include <chrono>
+#include <cmath>
+#include <iomanip>
+#include <iostream>
+#include <limits>
+#include <vector>
+
+namespace ss = quadra_examples::state_space_surplus_production;
+using Clock = std::chrono::high_resolution_clock;
+
+namespace {
+
+double ms_between(const Clock::time_point& a, const Clock::time_point& b) {
+  return std::chrono::duration<double, std::milli>(b - a).count();
+}
+
+double normal_nll(const double residual, const double sigma) {
+  const double z = residual / sigma;
+  return std::log(sigma) + 0.5 * std::log(2.0 * M_PI) + 0.5 * z * z;
+}
+
+struct Transformed {
+  double r;
+  double K;
+  double q;
+  double sigma_process;
+  double sigma_index;
+  double B0_frac;
+  double B0;
+};
+
+Transformed transform(const ss::Parameters& par) {
+  Transformed out;
+  out.r = std::exp(par.log_r);
+  out.K = std::exp(par.log_K);
+  out.q = std::exp(par.log_q);
+  out.sigma_process = std::exp(par.log_sigma_process);
+  out.sigma_index = std::exp(par.log_sigma_index);
+  out.B0_frac = ss::inv_logit(par.logit_B0_frac);
+  out.B0 = out.B0_frac * out.K;
+  return out;
+}
+
+double predicted_next_biomass(const double B,
+                              const double catch_value,
+                              const Transformed& tr) {
+  const double production = tr.r * B * (1.0 - B / tr.K);
+  return std::max(B + production - catch_value, 1e-9);
+}
+
+// x has length n - 1 and stores log biomass for years 1..n-1.
+// Year 0 biomass is fixed by B0/K and K.
+double joint_x(const ss::Data& data,
+               const ss::Parameters& par,
+               const Eigen::VectorXd& x) {
+  const int n = static_cast<int>(data.catch_observed.size());
+  const Transformed tr = transform(par);
+
+  double nll = 0.0;
+
+  // Observation at year 0.
+  nll += normal_nll(std::log(data.index_observed[0]) -
+                        (std::log(tr.q) + std::log(tr.B0)),
+                    tr.sigma_index);
+
+  for (int t = 0; t < n - 1; ++t) {
+    const double log_B_t = (t == 0) ? std::log(tr.B0) : x[t - 1];
+    const double B_t = std::exp(log_B_t);
+    const double pred_next =
+        predicted_next_biomass(B_t, data.catch_observed[static_cast<std::size_t>(t)], tr);
+
+    const double process_residual = x[t] - std::log(pred_next);
+    nll += normal_nll(process_residual, tr.sigma_process);
+
+    // Observation at year t + 1.
+    const double obs_residual =
+        std::log(data.index_observed[static_cast<std::size_t>(t + 1)]) -
+        (std::log(tr.q) + x[t]);
+
+    nll += normal_nll(obs_residual, tr.sigma_index);
+  }
+
+  return nll;
+}
+
+Eigen::VectorXd deterministic_initial_x(const ss::Data& data,
+                                        const ss::Parameters& par) {
+  const int n = static_cast<int>(data.catch_observed.size());
+  const Transformed tr = transform(par);
+  Eigen::VectorXd x(n - 1);
+
+  double B = tr.B0;
+  for (int t = 0; t < n - 1; ++t) {
+    B = predicted_next_biomass(B, data.catch_observed[static_cast<std::size_t>(t)], tr);
+    x[t] = std::log(B);
+  }
+
+  return x;
+}
+
+Eigen::VectorXd fd_grad_x(const ss::Data& data,
+                          const ss::Parameters& par,
+                          const Eigen::VectorXd& x) {
+  Eigen::VectorXd grad(x.size());
+
+  for (int i = 0; i < x.size(); ++i) {
+    const double h = 1e-5 * (1.0 + std::abs(x[i]));
+    Eigen::VectorXd xp = x;
+    Eigen::VectorXd xm = x;
+    xp[i] += h;
+    xm[i] -= h;
+    grad[i] = (joint_x(data, par, xp) - joint_x(data, par, xm)) / (2.0 * h);
+  }
+
+  return grad;
+}
+
+class ObjX {
+ public:
+  ObjX(const ss::Data& data, const ss::Parameters& par)
+      : data_(data), par_(par) {}
+
+  double operator()(const Eigen::VectorXd& x, Eigen::VectorXd& grad) {
+    const double f = joint_x(data_, par_, x);
+    grad = fd_grad_x(data_, par_, x);
+    return f;
+  }
+
+ private:
+  const ss::Data& data_;
+  const ss::Parameters& par_;
+};
+
+Eigen::VectorXd optimize_x(const ss::Data& data, const ss::Parameters& par) {
+  Eigen::VectorXd x = deterministic_initial_x(data, par);
+
+  LBFGSpp::LBFGSParam<double> param;
+  param.epsilon = 1e-7;
+  param.max_iterations = 500;
+  param.max_linesearch = 100;
+  param.m = 8;
+  param.ftol = 1e-4;
+  param.wolfe = 0.9;
+  param.min_step = 1e-20;
+  param.max_step = 1.0;
+
+  LBFGSpp::LBFGSSolver<double> solver(param);
+  ObjX obj(data, par);
+  double f = 0.0;
+
+  try {
+    solver.minimize(obj, x, f);
+  } catch (...) {
+    const double gnorm = fd_grad_x(data, par, x).norm();
+    if (!(std::isfinite(joint_x(data, par, x)) && gnorm < 1e-3)) {
+      throw;
+    }
+  }
+
+  return x;
+}
+
+// Since x is a Markov latent state, H_xx is tridiagonal. Compute only
+// diagonal and first off-diagonal by finite-differencing the gradient.
+Eigen::SparseMatrix<double> fd_tridiagonal_hessian_xx(const ss::Data& data,
+                                                      const ss::Parameters& par,
+                                                      const Eigen::VectorXd& x) {
+  const int n = static_cast<int>(x.size());
+  std::vector<Eigen::Triplet<double>> triplets;
+  triplets.reserve(static_cast<std::size_t>(3 * n));
+
+  for (int j = 0; j < n; ++j) {
+    const double h = 1e-5 * (1.0 + std::abs(x[j]));
+    Eigen::VectorXd xp = x;
+    Eigen::VectorXd xm = x;
+    xp[j] += h;
+    xm[j] -= h;
+
+    const Eigen::VectorXd gp = fd_grad_x(data, par, xp);
+    const Eigen::VectorXd gm = fd_grad_x(data, par, xm);
+
+    for (int i = std::max(0, j - 1); i <= std::min(n - 1, j + 1); ++i) {
+      const double hij = (gp[i] - gm[i]) / (2.0 * h);
+      if (std::abs(hij) > 1e-12) {
+        triplets.emplace_back(i, j, hij);
+      }
+    }
+  }
+
+  Eigen::SparseMatrix<double> H(n, n);
+  H.setFromTriplets(triplets.begin(), triplets.end());
+  Eigen::SparseMatrix<double> Hsym = 0.5 * (H + Eigen::SparseMatrix<double>(H.transpose()));
+  return Hsym;
+}
+
+double sparse_logdet_ldlt(const Eigen::SparseMatrix<double>& H) {
+  Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> ldlt;
+  ldlt.compute(H);
+
+  if (ldlt.info() != Eigen::Success) {
+    throw std::runtime_error("Sparse LDLT failed");
+  }
+
+  const auto& D = ldlt.vectorD();
+  double logdet = 0.0;
+  for (int i = 0; i < D.size(); ++i) {
+    if (!(D[i] > 0.0)) {
+      throw std::runtime_error("Hxx is not positive definite");
+    }
+    logdet += std::log(D[i]);
+  }
+
+  return logdet;
+}
+
+struct EvalResult {
+  double objective = 0.0;
+  double joint = 0.0;
+  double logdet = 0.0;
+  double correction = 0.0;
+  double grad_norm = 0.0;
+  int nnz = 0;
+};
+
+EvalResult latent_tridiagonal_laplace_eval(const ss::Data& data,
+                                           const ss::Parameters& par) {
+  EvalResult out;
+  const Eigen::VectorXd xhat = optimize_x(data, par);
+
+  out.joint = joint_x(data, par, xhat);
+  out.grad_norm = fd_grad_x(data, par, xhat).norm();
+
+  const Eigen::SparseMatrix<double> H = fd_tridiagonal_hessian_xx(data, par, xhat);
+  out.nnz = static_cast<int>(H.nonZeros());
+
+  using namespace quadra::laplace;
+
+  static std::unique_ptr<LaplaceBackend> backend;
+  static BackendRecommendation recommendation;
+  static int backend_creations = 0;
+
+  if (!backend) {
+    ++backend_creations;
+
+    backend =
+        CreateLaplaceBackendForHessian(
+            H,
+            &recommendation);
+
+      backend =
+          quadra::laplace::CreateLaplaceBackendForHessian(
+              H,
+              &recommendation);
+
+      std::cout
+          << "[backend create] "
+          << backend_creations
+          << "\n";
+
+      std::cout
+          << "[backend] "
+          << backend->name()
+          << "\n";
+
+      std::cout
+          << "[recommendation] "
+          << "backend="
+          << quadra::laplace::ToString(
+                 recommendation.backend)
+          << " rows="
+          << recommendation.random_size
+          << " nnz="
+          << recommendation.nnz
+          << " bandwidth="
+          << recommendation.bandwidth
+          << " fill="
+          << recommendation.fill_ratio
+          << " symmetric="
+          << recommendation.symmetric
+          << " reason="
+          << recommendation.reason
+          << "\n";
+  }
+
+  const double old_logdet =
+      sparse_logdet_ldlt(H);
+
+  auto factor_t0 =
+      std::chrono::steady_clock::now();
+
+  backend->factorize(H);
+
+  auto factor_t1 =
+      std::chrono::steady_clock::now();
+
+  const double factor_ms =
+      std::chrono::duration<double,std::milli>(
+          factor_t1 - factor_t0).count();
+
+  if (!backend->is_spd()) {
+    throw std::runtime_error(
+        "Laplace backend reported non-SPD Hessian");
+  }
+
+  out.logdet = backend->logdet();
+
+  std::cout << "[factor_ms] "
+            << factor_ms
+            << "\n";
+
+  std::cout << "[logdet compare] old="
+            << old_logdet
+            << " new="
+            << out.logdet
+            << " diff="
+            << (out.logdet - old_logdet)
+            << "\n";
+
+  const double n_x = static_cast<double>(xhat.size());
+  out.correction = 0.5 * out.logdet - 0.5 * n_x * std::log(2.0 * M_PI);
+  out.objective = out.joint + out.correction;
+
+  return out;
+}
+
+}  // namespace
+
+int main(int argc, char** argv) {
+  int reps = 20;
+  if (argc > 1) reps = std::stoi(argv[1]);
+
+  const ss::Data data = ss::make_demo_data();
+  const ss::Parameters par = ss::make_demo_parameters();
+
+  EvalResult last = latent_tridiagonal_laplace_eval(data, par);
+
+  const auto t0 = Clock::now();
+  for (int r = 0; r < reps; ++r) {
+    last = latent_tridiagonal_laplace_eval(data, par);
+  }
+  const auto t1 = Clock::now();
+
+  const double total_ms = ms_between(t0, t1);
+  const double avg_ms = total_ms / static_cast<double>(reps);
+
+  std::cout << std::fixed << std::setprecision(6);
+  std::cout << "Quadra latent-state tridiagonal Laplace fixed-theta benchmark\n";
+  std::cout << "reps = " << reps << "\n";
+  std::cout << "objective = " << last.objective << "\n";
+  std::cout << "joint = " << last.joint << "\n";
+  std::cout << "logdet = " << last.logdet << "\n";
+  std::cout << "correction = " << last.correction << "\n";
+  std::cout << "grad_norm = " << last.grad_norm << "\n";
+  std::cout << "nnz = " << last.nnz << "\n";
+  std::cout << "total_ms = " << total_ms << "\n";
+  std::cout << "avg_ms = " << avg_ms << "\n";
+
+  return 0;
+}

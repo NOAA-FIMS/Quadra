@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+REPS="${1:-10}"
+LENGTHS="${2:-25,50,100,250,500,1000}"
+AGES="${3:-10}"
+
+echo "== Quadra age-structured recruitment deviations =="
+./run_quadra_age_structured_recruitment_benchmark.sh "$REPS" "$LENGTHS" "$AGES"
+
+echo
+echo "== TMB age-structured recruitment deviations =="
+./run_tmb_age_structured_recruitment_benchmark.sh "$REPS" "$LENGTHS" "$AGES"

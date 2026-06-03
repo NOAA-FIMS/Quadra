@@ -1,0 +1,5 @@
+---
+triple:          'arm64-apple-darwin'
+binary-path:     'build/examples/check_age_structured_no_plus_derivatives'
+relocations:     []
+...

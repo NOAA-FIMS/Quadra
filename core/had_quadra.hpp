@@ -48,6 +48,8 @@ THE SOFTWARE.
 #include <cmath>
 #include <iostream>
 #include <vector>
+#include "had/batch_directional_flat_accumulator.hpp"
+#include "had/intermediate_edge_slot_registry.hpp"
 #include <cstdint>
 #include <chrono>
 #ifdef WIN32
@@ -285,6 +287,17 @@ struct BTree {
     return Real(0.0);
   }
 
+  inline std::size_t CountMappedKeys(BTree &slot_map_tree) const {
+    std::size_t mapped = 0;
+    for (const auto &node : nodes) {
+      if (slot_map_tree.Query(node.key) != Real(0.0)) {
+        ++mapped;
+      }
+    }
+    return mapped;
+  }
+
+
   inline void Clear() {
     nodes.clear();
     root = 0;
@@ -316,6 +329,8 @@ struct ADGraph {
     soEdges.clear();
     selfSoEdges.clear();
     soEdgesDot.clear();
+    intermediateEdgeSlotRegistry.Clear();
+    intermediateEdgeSlotRegistryBuilt = false;
     selfSoEdgesDot.clear();
   }
 
@@ -446,6 +461,14 @@ struct ADGraph {
   std::vector<BTree> soEdges;
   std::vector<Real> selfSoEdges;
   std::vector<BTree> soEdgesDot;
+  // Cached slot registry for intermediate second-order edges.
+  // Future flat reverse backend will use this to replace BTree query/insert
+  // with direct slot-indexed directional accumulation.
+  had::IntermediateEdgeSlotRegistry intermediateEdgeSlotRegistry;
+  bool intermediateEdgeSlotRegistryBuilt = false;
+  bool useFlatIntermediateDirectionalBackend = false;
+  had::BatchDirectionalFlatAccumulator flatIntermediateDirectionalValues;
+
   std::vector<Real> selfSoEdgesDot;
 
         // Number of active batched directional tangents.
@@ -973,6 +996,240 @@ inline void ReserveDirectionalBTreeStorage(const size_t reserve_per_tree) {
   }
 }
 
+
+struct BatchEdgeSlotCoverageDiagnostic {
+  std::size_t total_edges = 0;
+  std::size_t mapped_edges = 0;
+  std::size_t unmapped_edges = 0;
+  double mapped_fraction = 0.0;
+};
+
+inline BatchEdgeSlotCoverageDiagnostic DiagnoseBatchEdgeSlotCoverage() {
+  BatchEdgeSlotCoverageDiagnostic out;
+
+  if (!g_ADGraph->useBatchDirectionalSlotWorkspace) {
+    return out;
+  }
+
+  const std::size_t n =
+      std::min(g_ADGraph->soEdges.size(),
+               g_ADGraph->batchSlotOuterInnerToSlot.size());
+
+  for (std::size_t outer = 0; outer < n; ++outer) {
+    const auto &edges = g_ADGraph->soEdges[outer];
+    auto &slot_map = g_ADGraph->batchSlotOuterInnerToSlot[outer];
+
+    const std::size_t total = edges.Size();
+    const std::size_t mapped = edges.CountMappedKeys(slot_map);
+
+    out.total_edges += total;
+    out.mapped_edges += mapped;
+  }
+
+  out.unmapped_edges = out.total_edges - out.mapped_edges;
+  if (out.total_edges > 0) {
+    out.mapped_fraction =
+        static_cast<double>(out.mapped_edges) /
+        static_cast<double>(out.total_edges);
+  }
+
+  return out;
+}
+
+inline void PrintBatchEdgeSlotCoverageDiagnostic() {
+  const auto d = DiagnoseBatchEdgeSlotCoverage();
+  std::cerr << "batch edge slot coverage:"
+            << " total=" << d.total_edges
+            << " mapped=" << d.mapped_edges
+            << " unmapped=" << d.unmapped_edges
+            << " mapped_fraction=" << d.mapped_fraction
+            << "\n";
+}
+
+
+struct IntermediateEdgeSlotRegistryDiagnostic {
+  std::size_t slots = 0;
+  std::size_t source_edges = 0;
+};
+
+inline IntermediateEdgeSlotRegistryDiagnostic
+BuildIntermediateEdgeSlotRegistryFromSoEdges() {
+  IntermediateEdgeSlotRegistryDiagnostic out;
+
+  g_ADGraph->intermediateEdgeSlotRegistry.Clear();
+
+  for (VertexId outer = 0;
+       outer < static_cast<VertexId>(g_ADGraph->soEdges.size());
+       ++outer) {
+    auto &tree = g_ADGraph->soEdges[outer];
+
+    for (const auto &node : tree.nodes) {
+      g_ADGraph->intermediateEdgeSlotRegistry.GetOrCreate(
+          outer,
+          static_cast<VertexId>(node.key));
+      ++out.source_edges;
+    }
+  }
+
+  g_ADGraph->intermediateEdgeSlotRegistryBuilt = true;
+  out.slots = g_ADGraph->intermediateEdgeSlotRegistry.size();
+  return out;
+}
+
+inline IntermediateEdgeSlotRegistryDiagnostic
+GetIntermediateEdgeSlotRegistryDiagnostic() {
+  IntermediateEdgeSlotRegistryDiagnostic out;
+  out.slots = g_ADGraph->intermediateEdgeSlotRegistry.size();
+  out.source_edges = g_ADGraph->intermediateEdgeSlotRegistry.size();
+  return out;
+}
+
+inline void PrintIntermediateEdgeSlotRegistryDiagnostic() {
+  const auto d = BuildIntermediateEdgeSlotRegistryFromSoEdges();
+  std::cerr << "intermediate edge registry:"
+            << " source_edges=" << d.source_edges
+            << " slots=" << d.slots
+            << "\n";
+}
+
+
+
+inline std::uint64_t g_flat_intermediate_read_hit_count = 0;
+inline std::uint64_t g_flat_intermediate_read_miss_count = 0;
+inline std::uint64_t g_flat_intermediate_write_hit_count = 0;
+inline std::uint64_t g_flat_intermediate_write_miss_count = 0;
+
+inline std::vector<std::pair<VertexId, VertexId>>
+    g_flat_intermediate_read_miss_samples;
+inline std::vector<std::pair<VertexId, VertexId>>
+    g_flat_intermediate_write_miss_samples;
+
+inline void RecordFlatIntermediateMissSample(
+    std::vector<std::pair<VertexId, VertexId>> &samples,
+    const VertexId i,
+    const VertexId j) {
+  if (samples.size() < 12) {
+    samples.emplace_back(std::max(i, j), std::min(i, j));
+  }
+}
+
+inline void PrintFlatIntermediateMissSamples() {
+  std::cerr << "flat intermediate read miss samples:";
+  for (const auto &p : g_flat_intermediate_read_miss_samples) {
+    std::cerr << " (" << p.first << "," << p.second << ")";
+  }
+  std::cerr << "\n";
+
+  std::cerr << "flat intermediate write miss samples:";
+  for (const auto &p : g_flat_intermediate_write_miss_samples) {
+    std::cerr << " (" << p.first << "," << p.second << ")";
+  }
+  std::cerr << "\n";
+}
+
+
+inline void ResetFlatIntermediateDirectionalCounters() {
+  g_flat_intermediate_read_hit_count = 0;
+  g_flat_intermediate_read_miss_count = 0;
+  g_flat_intermediate_write_hit_count = 0;
+  g_flat_intermediate_write_miss_count = 0;
+
+  g_flat_intermediate_read_miss_samples.clear();
+  g_flat_intermediate_write_miss_samples.clear();
+}
+
+inline void PrintFlatIntermediateDirectionalCounters() {
+  std::cerr << "flat intermediate:"
+            << " read_hit=" << g_flat_intermediate_read_hit_count
+            << " read_miss=" << g_flat_intermediate_read_miss_count
+            << " write_hit=" << g_flat_intermediate_write_hit_count
+            << " write_miss=" << g_flat_intermediate_write_miss_count
+            << "\n";
+
+  PrintFlatIntermediateMissSamples();
+}
+
+inline void ClearFlatIntermediateDirectionalValues() {
+  if (g_ADGraph->useFlatIntermediateDirectionalBackend) {
+    g_ADGraph->flatIntermediateDirectionalValues.Clear();
+  }
+}
+
+
+inline std::size_t EstimateFlatIntermediateDirectionalSlotCapacity() {
+  std::size_t edge_count = 0;
+
+  for (const auto &tree : g_ADGraph->soEdges) {
+    edge_count += tree.Size();
+  }
+
+  const std::size_t base =
+      std::max(edge_count, g_ADGraph->intermediateEdgeSlotRegistry.size());
+
+  // Reverse propagation creates additional intermediate directional edges
+  // beyond the initial soEdges snapshot. Over-allocate to avoid repeated
+  // EnsureSlotsPreserve() realloc/copy in the hot loop.
+  return base * 4 + 1024;
+}
+
+inline void EnableFlatIntermediateDirectionalBackend() {
+  if (!g_ADGraph->intermediateEdgeSlotRegistryBuilt ||
+      g_ADGraph->intermediateEdgeSlotRegistry.size() == 0) {
+    BuildIntermediateEdgeSlotRegistryFromSoEdges();
+  }
+
+  g_ADGraph->useFlatIntermediateDirectionalBackend = true;
+  g_ADGraph->flatIntermediateDirectionalValues.Resize(
+      static_cast<size_t>(g_ADGraph->nBatchDirections),
+      EstimateFlatIntermediateDirectionalSlotCapacity());
+}
+
+
+inline bool AddFlatIntermediateDirectionalValue(const size_t direction,
+                                                const VertexId i,
+                                                const VertexId j,
+                                                const Real value) {
+  if (!g_ADGraph->useFlatIntermediateDirectionalBackend) {
+    ++g_flat_intermediate_write_miss_count;
+    RecordFlatIntermediateMissSample(
+        g_flat_intermediate_write_miss_samples, i, j);
+    return false;
+  }
+
+  const std::size_t slot =
+      g_ADGraph->intermediateEdgeSlotRegistry.GetOrCreate(i, j);
+
+  g_ADGraph->flatIntermediateDirectionalValues.EnsureSlotsPreserve(slot + 1);
+  g_ADGraph->flatIntermediateDirectionalValues.Add(direction, slot, value);
+
+  ++g_flat_intermediate_write_hit_count;
+  return true;
+}
+
+
+inline bool TryGetFlatIntermediateDirectionalValue(const size_t direction,
+                                                   const VertexId i,
+                                                   const VertexId j,
+                                                   Real &value_out) {
+  if (!g_ADGraph->useFlatIntermediateDirectionalBackend) {
+    ++g_flat_intermediate_read_miss_count;
+    RecordFlatIntermediateMissSample(
+        g_flat_intermediate_read_miss_samples, i, j);
+    return false;
+  }
+
+  std::size_t slot = 0;
+  if (!g_ADGraph->intermediateEdgeSlotRegistry.TryGet(i, j, slot)) {
+    ++g_flat_intermediate_read_miss_count;
+    RecordFlatIntermediateMissSample(
+        g_flat_intermediate_read_miss_samples, i, j);
+    return false;
+  }
+
+  value_out = g_ADGraph->flatIntermediateDirectionalValues(direction, slot);
+  ++g_flat_intermediate_read_hit_count;
+  return true;
+}
 inline void ResizeDirectionalBatch(const int nDirections)
     {
         if (nDirections < 0)
@@ -1161,7 +1418,9 @@ inline void PushEdgeDotBatchValue(const size_t direction,
     }
 
     if (!AddBatchDirectionalSlotValue(direction, outer, inner, valDot)) {
-      trees[outer].Insert(inner, valDot);
+      if (!AddFlatIntermediateDirectionalValue(direction, outer, inner, valDot)) {
+        trees[outer].Insert(inner, valDot);
+      }
     }
   }
 }
@@ -1678,6 +1937,8 @@ inline bool BatchDirectionMaskHasSignal(const ADVertex &vertex,
 
 
 inline void PropagateAdjointDirectionalBatch() {
+  ResetFlatIntermediateDirectionalCounters();
+
   const auto batch_total_start = std::chrono::steady_clock::now();
 
   const int nDirections = g_ADGraph->nBatchDirections;
@@ -1746,6 +2007,7 @@ inline void PropagateAdjointDirectionalBatch() {
 
   PropagateDirectionalBatchForwardReplay();
   ClearBatchDirectionalSlotValues();
+  ClearFlatIntermediateDirectionalValues();
 
   // Defensive storage normalization before reverse sweep. The directional
   // reverse pass inserts into soEdgesDotBatch[direction][vertex], so every
@@ -1764,6 +2026,8 @@ inline void PropagateAdjointDirectionalBatch() {
       selfDots.resize(g_ADGraph->vertices.size(), Real(0.0));
     }
   }
+
+  EnableFlatIntermediateDirectionalBackend();
 
   ComputeBatchActiveDirectionMasks(nDirections);
 
@@ -1791,9 +2055,16 @@ inline void PropagateAdjointDirectionalBatch() {
         Real soDot = Real(0.0);
 
         if (!TryGetBatchDirectionalSlotValue(kk, vid, it->key, soDot)) {
-          BTree &btreeDot = g_ADGraph->soEdgesDotBatch[kk][vid];
-          ++g_batch_query_count;
-          soDot = btreeDot.Query(it->key);
+          if (g_ADGraph->useFlatIntermediateDirectionalBackend) {
+            // A flat miss means no directional value was written for this edge.
+            // Since all patched writes use the flat backend, leave soDot = 0.
+            (void)TryGetFlatIntermediateDirectionalValue(
+                kk, vid, static_cast<VertexId>(it->key), soDot);
+          } else {
+            BTree &btreeDot = g_ADGraph->soEdgesDotBatch[kk][vid];
+            ++g_batch_query_count;
+            soDot = btreeDot.Query(it->key);
+          }
         }
 
         const Real e1dw_k =
