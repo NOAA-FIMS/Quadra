@@ -2,6 +2,7 @@
 
 #include "hessian_structure.hpp"
 #include "structure_detector.hpp"
+#include "structured_value_backend.hpp"
 
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
@@ -57,17 +58,19 @@ class DiagonalBackend final : public LaplaceBackend {
   void factorize(const Eigen::SparseMatrix<double>& H) override {
     analyze_pattern(H);
 
-    logdet_ = 0.0;
-    spd_ = true;
+    try {
+      DiagonalValues values;
+      values.diag = Eigen::VectorXd::Zero(H.rows());
 
-    for (int i = 0; i < H.rows(); ++i) {
-      const double d = H.coeff(i, i);
-      if (!(d > 0.0) || !std::isfinite(d)) {
-        spd_ = false;
-        logdet_ = std::numeric_limits<double>::quiet_NaN();
-        return;
+      for (int i = 0; i < H.rows(); ++i) {
+        values.diag[i] = H.coeff(i, i);
       }
-      logdet_ += std::log(d);
+
+      logdet_ = logdet_diagonal_values(values);
+      spd_ = true;
+    } catch (...) {
+      logdet_ = std::numeric_limits<double>::quiet_NaN();
+      spd_ = false;
     }
   }
 
@@ -94,7 +97,21 @@ class TridiagonalBackend final : public LaplaceBackend {
     analyze_pattern(H);
 
     try {
-      logdet_ = LogDetTridiagonalLDLT(H);
+      const int n = static_cast<int>(H.rows());
+
+      TridiagonalValues values;
+      values.diag = Eigen::VectorXd::Zero(n);
+      values.offdiag = Eigen::VectorXd::Zero(std::max(0, n - 1));
+
+      for (int i = 0; i < n; ++i) {
+        values.diag[i] = H.coeff(i, i);
+
+        if (i > 0) {
+          values.offdiag[i - 1] = H.coeff(i, i - 1);
+        }
+      }
+
+      logdet_ = logdet_tridiagonal_values_ldlt(values);
       spd_ = true;
     } catch (...) {
       logdet_ = std::numeric_limits<double>::quiet_NaN();
@@ -144,7 +161,32 @@ class BandedBackend final : public LaplaceBackend {
     analyze_pattern(H);
 
     try {
-      logdet_ = LogDetBandedLDLT(H, bandwidth_);
+      const int n = static_cast<int>(H.rows());
+      const int bw = std::min(bandwidth_, std::max(0, n - 1));
+
+      BandedValues values;
+      values.bandwidth = bw;
+      values.diag = Eigen::VectorXd::Zero(n);
+      values.lower_bands.resize(static_cast<std::size_t>(bw));
+
+      for (int d = 1; d <= bw; ++d) {
+        values.lower_bands[static_cast<std::size_t>(d - 1)] =
+            Eigen::VectorXd::Zero(std::max(0, n - d));
+      }
+
+      for (int i = 0; i < n; ++i) {
+        values.diag[i] = H.coeff(i, i);
+
+        for (int d = 1; d <= bw; ++d) {
+          const int j = i - d;
+          if (j < 0) continue;
+
+          values.lower_bands[static_cast<std::size_t>(d - 1)][j] =
+              H.coeff(i, j);
+        }
+      }
+
+      logdet_ = logdet_banded_values_ldlt(values);
       spd_ = true;
     } catch (...) {
       logdet_ = std::numeric_limits<double>::quiet_NaN();

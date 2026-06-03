@@ -1,0 +1,132 @@
+#pragma once
+
+#include "structure_detector.hpp"
+#include "structured_value_backend.hpp"
+
+#include <Eigen/Sparse>
+
+#include <stdexcept>
+#include <variant>
+
+namespace quadra {
+namespace laplace {
+
+using StructuredValues =
+    std::variant<DiagonalValues, TridiagonalValues, BandedValues>;
+
+inline DiagonalValues extract_diagonal_values(
+    const Eigen::SparseMatrix<double>& H) {
+  if (H.rows() != H.cols()) {
+    throw std::invalid_argument("Diagonal value extraction requires square matrix");
+  }
+
+  DiagonalValues values;
+  values.diag = Eigen::VectorXd::Zero(H.rows());
+
+  for (int i = 0; i < H.rows(); ++i) {
+    values.diag[i] = H.coeff(i, i);
+  }
+
+  return values;
+}
+
+inline TridiagonalValues extract_tridiagonal_values(
+    const Eigen::SparseMatrix<double>& H) {
+  if (H.rows() != H.cols()) {
+    throw std::invalid_argument("Tridiagonal value extraction requires square matrix");
+  }
+
+  const int n = static_cast<int>(H.rows());
+
+  TridiagonalValues values;
+  values.diag = Eigen::VectorXd::Zero(n);
+  values.offdiag = Eigen::VectorXd::Zero(std::max(0, n - 1));
+
+  for (int i = 0; i < n; ++i) {
+    values.diag[i] = H.coeff(i, i);
+
+    if (i > 0) {
+      values.offdiag[i - 1] = H.coeff(i, i - 1);
+    }
+  }
+
+  return values;
+}
+
+inline BandedValues extract_banded_values(
+    const Eigen::SparseMatrix<double>& H,
+    const int bandwidth) {
+  if (H.rows() != H.cols()) {
+    throw std::invalid_argument("Banded value extraction requires square matrix");
+  }
+  if (bandwidth < 0) {
+    throw std::invalid_argument("Banded value extraction requires non-negative bandwidth");
+  }
+
+  const int n = static_cast<int>(H.rows());
+  const int bw = std::min(bandwidth, std::max(0, n - 1));
+
+  BandedValues values;
+  values.bandwidth = bw;
+  values.diag = Eigen::VectorXd::Zero(n);
+  values.lower_bands.resize(static_cast<std::size_t>(bw));
+  for (int d = 1; d <= bw; ++d) {
+    values.lower_bands[static_cast<std::size_t>(d - 1)] =
+        Eigen::VectorXd::Zero(std::max(0, n - d));
+  }
+
+  for (int i = 0; i < n; ++i) {
+    values.diag[i] = H.coeff(i, i);
+    for (int d = 1; d <= bw; ++d) {
+      const int j = i - d;
+      if (j < 0) continue;
+      values.lower_bands[static_cast<std::size_t>(d - 1)][j] =
+          H.coeff(i, j);
+    }
+  }
+
+  return values;
+}
+
+inline StructuredValues extract_structured_values(
+    const Eigen::SparseMatrix<double>& H,
+    const BackendRecommendation& rec) {
+  switch (rec.backend) {
+    case LaplaceBackendKind::Diagonal:
+      return extract_diagonal_values(H);
+
+    case LaplaceBackendKind::Tridiagonal:
+      return extract_tridiagonal_values(H);
+
+    case LaplaceBackendKind::Banded:
+      return extract_banded_values(H, rec.bandwidth);
+
+    case LaplaceBackendKind::SparseLDLT:
+    case LaplaceBackendKind::DenseLDLT:
+      throw std::invalid_argument(
+          "Structured value extraction is not implemented for requested backend");
+  }
+
+  throw std::invalid_argument("Unknown backend recommendation");
+}
+
+inline double logdet_structured_values(const StructuredValues& values) {
+  return std::visit(
+      [](const auto& v) -> double {
+        using T = std::decay_t<decltype(v)>;
+
+        if constexpr (std::is_same_v<T, DiagonalValues>) {
+          return logdet_diagonal_values(v);
+        } else if constexpr (std::is_same_v<T, TridiagonalValues>) {
+          return logdet_tridiagonal_values_ldlt(v);
+        } else if constexpr (std::is_same_v<T, BandedValues>) {
+          return logdet_banded_values_ldlt(v);
+        } else {
+          throw std::invalid_argument("Unsupported structured value type");
+        }
+      },
+      values);
+}
+
+}  // namespace laplace
+}  // namespace quadra
