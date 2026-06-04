@@ -1,5 +1,5 @@
-#include "../core/laplace/structured_value_factory.hpp"
 #include "../core/laplace/hessian_structure.hpp"
+#include "../core/laplace/structured_value_factory.hpp"
 
 #include <Eigen/Sparse>
 
@@ -11,33 +11,37 @@
 #include <vector>
 
 using quadra::laplace::BackendRecommendation;
+using quadra::laplace::extract_structured_values;
 using quadra::laplace::HessianStructure;
 using quadra::laplace::LaplaceBackendKind;
+using quadra::laplace::logdet_structured_values;
 using quadra::laplace::LogDetSparseLDLT;
 using quadra::laplace::StructureDetector;
 using quadra::laplace::StructureDetectorOptions;
 using quadra::laplace::StructureInfo;
 using quadra::laplace::ToString;
-using quadra::laplace::extract_structured_values;
-using quadra::laplace::logdet_structured_values;
 
-void expect_close(const double a, const double b, const char* msg) {
+void expect_close(const double a, const double b, const char *msg) {
   const double diff = std::abs(a - b);
   const double scale = 1.0 + std::max(std::abs(a), std::abs(b));
   if (diff > 1e-9 * scale) {
-    std::cerr << msg << ": a=" << a << " b=" << b
-              << " diff=" << diff << "\n";
+    std::cerr << msg << ": a=" << a << " b=" << b << " diff=" << diff << "\n";
     throw std::runtime_error(msg);
   }
 }
 
-const char* structure_name(const HessianStructure s) {
+const char *structure_name(const HessianStructure s) {
   switch (s) {
-    case HessianStructure::Diagonal: return "diagonal";
-    case HessianStructure::Tridiagonal: return "tridiagonal";
-    case HessianStructure::Banded: return "banded";
-    case HessianStructure::SparsePattern: return "sparse_pattern";
-    case HessianStructure::Dense: return "dense";
+  case HessianStructure::Diagonal:
+    return "diagonal";
+  case HessianStructure::Tridiagonal:
+    return "tridiagonal";
+  case HessianStructure::Banded:
+    return "banded";
+  case HessianStructure::SparsePattern:
+    return "sparse_pattern";
+  case HessianStructure::Dense:
+    return "dense";
   }
   return "unknown";
 }
@@ -102,14 +106,13 @@ StructureDetector make_detector() {
   return StructureDetector(opts);
 }
 
-void analyze_case(const std::string& label,
-                  const Eigen::SparseMatrix<double>& H,
+void analyze_case(const std::string &label,
+                  const Eigen::SparseMatrix<double> &H,
                   const LaplaceBackendKind expected_backend) {
   StructureDetector detector = make_detector();
   const BackendRecommendation rec = detector.Analyze(H);
-  const StructureInfo info =
-      quadra::laplace::InspectHessianStructure(
-          H, detector.options().structure_options);
+  const StructureInfo info = quadra::laplace::InspectHessianStructure(
+      H, detector.options().structure_options);
 
   if (rec.backend != expected_backend) {
     std::cerr << label << " expected backend " << ToString(expected_backend)
@@ -125,16 +128,12 @@ void analyze_case(const std::string& label,
   expect_close(structured_logdet, sparse_logdet,
                (label + " structured factory logdet").c_str());
 
-  std::cout << std::setw(14) << label
-            << std::setw(8) << info.rows
-            << std::setw(8) << info.nnz
-            << std::setw(10) << info.max_bandwidth
-            << std::setw(14) << info.fill_ratio
-            << std::setw(16) << structure_name(info.detected)
-            << std::setw(16) << ToString(rec.backend)
-            << std::setw(24) << rec.reason
-            << std::setw(18) << diff
-            << "\n";
+  std::cout << std::setw(14) << label << std::setw(8) << info.rows
+            << std::setw(8) << info.nnz << std::setw(10) << info.max_bandwidth
+            << std::setw(14) << info.fill_ratio << std::setw(16)
+            << structure_name(info.detected) << std::setw(16)
+            << ToString(rec.backend) << std::setw(24) << rec.reason
+            << std::setw(18) << diff << "\n";
 }
 
 void test_unsupported_backend_rejected() {
@@ -155,19 +154,15 @@ void test_unsupported_backend_rejected() {
 int main() {
   std::cout << std::fixed << std::setprecision(12);
   std::cout << "structured value factory structural analysis\n";
-  std::cout << std::setw(14) << "case"
-            << std::setw(8) << "rows"
-            << std::setw(8) << "nnz"
-            << std::setw(10) << "band"
-            << std::setw(14) << "fill"
-            << std::setw(16) << "structure"
-            << std::setw(16) << "backend"
-            << std::setw(24) << "reason"
-            << std::setw(18) << "logdet_diff"
+  std::cout << std::setw(14) << "case" << std::setw(8) << "rows" << std::setw(8)
+            << "nnz" << std::setw(10) << "band" << std::setw(14) << "fill"
+            << std::setw(16) << "structure" << std::setw(16) << "backend"
+            << std::setw(24) << "reason" << std::setw(18) << "logdet_diff"
             << "\n";
 
   analyze_case("diagonal", make_diagonal(), LaplaceBackendKind::Diagonal);
-  analyze_case("tridiagonal", make_tridiagonal(), LaplaceBackendKind::Tridiagonal);
+  analyze_case("tridiagonal", make_tridiagonal(),
+               LaplaceBackendKind::Tridiagonal);
   analyze_case("banded", make_banded(), LaplaceBackendKind::Banded);
   test_unsupported_backend_rejected();
   std::cout << "structured value factory tests passed\n";

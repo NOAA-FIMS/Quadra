@@ -26,12 +26,12 @@ struct ToySolverPolicy {
   int initial_calls = 0;
   int solve_calls = 0;
 
-  Eigen::VectorXd initial_x(ToyContext& ctx) {
+  Eigen::VectorXd initial_x(ToyContext &ctx) {
     ++initial_calls;
     return Eigen::VectorXd::Zero(ctx.target.size());
   }
 
-  ToySolveResult solve(ToyContext& ctx, const Eigen::VectorXd& initial_x) {
+  ToySolveResult solve(ToyContext &ctx, const Eigen::VectorXd &initial_x) {
     ++solve_calls;
 
     ToySolveResult out;
@@ -50,9 +50,8 @@ struct ToyEvalResult {
 };
 
 struct ToyEvaluationPolicy {
-  ToyEvalResult evaluate(ToyContext& ctx,
-                         const Eigen::VectorXd& xhat,
-                         PersistentStructuredRuntimeState& structured) {
+  ToyEvalResult evaluate(ToyContext &ctx, const Eigen::VectorXd &xhat,
+                         PersistentStructuredRuntimeState &structured) {
     TridiagonalValues H;
     const int n = static_cast<int>(xhat.size());
     H.diag = Eigen::VectorXd::Constant(n, 4.0);

@@ -17,23 +17,22 @@ using quadra::laplace::StructureDetectorOptions;
 
 namespace {
 
-void expect_true(bool cond, const char* msg) {
+void expect_true(bool cond, const char *msg) {
   if (!cond) {
     throw std::runtime_error(msg);
   }
 }
 
-void expect_near(double a, double b, double tol, const char* msg) {
+void expect_near(double a, double b, double tol, const char *msg) {
   if (std::abs(a - b) > tol) {
-    std::cerr << msg << ": a=" << a << " b=" << b
-              << " diff=" << std::abs(a - b) << "\n";
+    std::cerr << msg << ": a=" << a << " b=" << b << " diff=" << std::abs(a - b)
+              << "\n";
     throw std::runtime_error(msg);
   }
 }
 
-Eigen::SparseMatrix<double> make_sparse(
-    int n,
-    const std::vector<Eigen::Triplet<double>>& triplets) {
+Eigen::SparseMatrix<double>
+make_sparse(int n, const std::vector<Eigen::Triplet<double>> &triplets) {
   Eigen::SparseMatrix<double> H(n, n);
   H.setFromTriplets(triplets.begin(), triplets.end());
   return H;
@@ -41,7 +40,7 @@ Eigen::SparseMatrix<double> make_sparse(
 
 StructureDetector make_detector() {
   StructureDetectorOptions opts;
-  opts.dense_size_cutoff = 0;  // test structural dispatch even for small cases
+  opts.dense_size_cutoff = 0; // test structural dispatch even for small cases
   opts.banded_width_cutoff = 8;
   opts.dense_fill_ratio = 0.40;
   opts.prefer_dense_for_small_matrices = false;
@@ -69,7 +68,8 @@ void test_diagonal_recommendation() {
 void test_tridiagonal_recommendation() {
   const int n = 6;
   std::vector<Eigen::Triplet<double>> t;
-  for (int i = 0; i < n; ++i) t.emplace_back(i, i, 4.0);
+  for (int i = 0; i < n; ++i)
+    t.emplace_back(i, i, 4.0);
   for (int i = 0; i < n - 1; ++i) {
     t.emplace_back(i, i + 1, -1.0);
     t.emplace_back(i + 1, i, -1.0);
@@ -121,7 +121,8 @@ void test_sparse_recommendation() {
   const int n = 30;
   std::vector<Eigen::Triplet<double>> t;
 
-  for (int i = 0; i < n; ++i) t.emplace_back(i, i, 5.0);
+  for (int i = 0; i < n; ++i)
+    t.emplace_back(i, i, 5.0);
 
   // Wide but sparse links.
   t.emplace_back(0, 20, 0.1);
@@ -184,11 +185,12 @@ void test_small_matrix_exact_structure_precedence() {
   auto H = make_sparse(3, t);
   const auto rec = det.Analyze(H);
 
-  expect_true(rec.backend == LaplaceBackendKind::Diagonal,
-              "small exact diagonal structure takes precedence over dense preference");
+  expect_true(
+      rec.backend == LaplaceBackendKind::Diagonal,
+      "small exact diagonal structure takes precedence over dense preference");
 }
 
-}  // namespace
+} // namespace
 
 int main() {
   test_diagonal_recommendation();

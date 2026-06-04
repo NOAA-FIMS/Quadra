@@ -1,5 +1,5 @@
-#include "../core/laplace/structured_value_factory.hpp"
 #include "../core/laplace/hessian_structure.hpp"
+#include "../core/laplace/structured_value_factory.hpp"
 
 #include <Eigen/Sparse>
 
@@ -13,26 +13,27 @@
 #include <vector>
 
 using quadra::laplace::BackendRecommendation;
+using quadra::laplace::extract_structured_values;
+using quadra::laplace::logdet_structured_values;
 using quadra::laplace::LogDetSparseLDLT;
 using quadra::laplace::StructureDetector;
 using quadra::laplace::StructureDetectorOptions;
 using quadra::laplace::StructureInfo;
-using quadra::laplace::extract_structured_values;
-using quadra::laplace::logdet_structured_values;
 
 using Clock = std::chrono::high_resolution_clock;
 
-double ms_between(const Clock::time_point& a, const Clock::time_point& b) {
+double ms_between(const Clock::time_point &a, const Clock::time_point &b) {
   return std::chrono::duration<double, std::milli>(b - a).count();
 }
 
-std::vector<int> parse_lengths(const std::string& s) {
+std::vector<int> parse_lengths(const std::string &s) {
   std::vector<int> out;
   std::stringstream ss(s);
   std::string item;
 
   while (std::getline(ss, item, ',')) {
-    if (!item.empty()) out.push_back(std::stoi(item));
+    if (!item.empty())
+      out.push_back(std::stoi(item));
   }
 
   return out;
@@ -81,10 +82,10 @@ Eigen::SparseMatrix<double> make_banded(const int n, const int bandwidth) {
     double diag = 10.0 + 0.001 * i;
 
     for (int d = 1; d <= bandwidth; ++d) {
-      if (i - d < 0) continue;
+      if (i - d < 0)
+        continue;
 
-      const double e =
-          ((d % 2 == 0) ? 0.015 : -0.025) / static_cast<double>(d);
+      const double e = ((d % 2 == 0) ? 0.015 : -0.025) / static_cast<double>(d);
 
       t.emplace_back(i, i - d, e);
       t.emplace_back(i - d, i, e);
@@ -121,14 +122,12 @@ struct BenchResult {
   double logdet_diff = 0.0;
 };
 
-BenchResult bench_case(const std::string& name,
-                       const Eigen::SparseMatrix<double>& H,
-                       const int reps) {
+BenchResult bench_case(const std::string &name,
+                       const Eigen::SparseMatrix<double> &H, const int reps) {
   StructureDetector detector = make_detector();
   const BackendRecommendation rec = detector.Analyze(H);
-  const StructureInfo info =
-      quadra::laplace::InspectHessianStructure(
-          H, detector.options().structure_options);
+  const StructureInfo info = quadra::laplace::InspectHessianStructure(
+      H, detector.options().structure_options);
 
   volatile double sparse_acc = 0.0;
   volatile double structured_acc = 0.0;
@@ -161,53 +160,48 @@ BenchResult bench_case(const std::string& name,
   out.sparse_ms = ms_between(sparse0, sparse1) / static_cast<double>(reps);
   out.structured_ms =
       ms_between(structured0, structured1) / static_cast<double>(reps);
-  out.speedup = out.structured_ms > 0.0 ? out.sparse_ms / out.structured_ms : 0.0;
+  out.speedup =
+      out.structured_ms > 0.0 ? out.sparse_ms / out.structured_ms : 0.0;
   out.logdet_diff = structured_ref - sparse_ref;
   return out;
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   int reps = 20;
   std::vector<int> lengths = {100, 500, 1000, 5000};
 
-  if (argc > 1) reps = std::stoi(argv[1]);
-  if (argc > 2) lengths = parse_lengths(argv[2]);
+  if (argc > 1)
+    reps = std::stoi(argv[1]);
+  if (argc > 2)
+    lengths = parse_lengths(argv[2]);
 
   std::cout << std::fixed << std::setprecision(6);
   std::cout << "Structured value factory benchmark\n";
   std::cout << "reps per case = " << reps << "\n\n";
 
-  std::cout << std::setw(14) << "case"
-            << std::setw(8) << "n"
-            << std::setw(10) << "nnz"
-            << std::setw(10) << "band"
-            << std::setw(14) << "sparse_ms"
-            << std::setw(16) << "structured_ms"
-            << std::setw(12) << "speedup"
-            << std::setw(16) << "logdet_diff"
-            << "\n";
+  std::cout << std::setw(14) << "case" << std::setw(8) << "n" << std::setw(10)
+            << "nnz" << std::setw(10) << "band" << std::setw(14) << "sparse_ms"
+            << std::setw(16) << "structured_ms" << std::setw(12) << "speedup"
+            << std::setw(16) << "logdet_diff" << "\n";
 
   for (const int n : lengths) {
-    const std::vector<std::pair<std::string, Eigen::SparseMatrix<double>>> cases = {
-        {"diagonal", make_diagonal(n)},
-        {"tridiagonal", make_tridiagonal(n)},
-        {"banded2", make_banded(n, 2)},
-        {"banded5", make_banded(n, 5)},
-        {"banded10", make_banded(n, 10)},
-    };
+    const std::vector<std::pair<std::string, Eigen::SparseMatrix<double>>>
+        cases = {
+            {"diagonal", make_diagonal(n)},
+            {"tridiagonal", make_tridiagonal(n)},
+            {"banded2", make_banded(n, 2)},
+            {"banded5", make_banded(n, 5)},
+            {"banded10", make_banded(n, 10)},
+        };
 
-    for (const auto& item : cases) {
+    for (const auto &item : cases) {
       const BenchResult b = bench_case(item.first, item.second, reps);
 
-      std::cout << std::setw(14) << b.name
-                << std::setw(8) << b.n
-                << std::setw(10) << b.nnz
-                << std::setw(10) << b.bandwidth
-                << std::setw(14) << b.sparse_ms
-                << std::setw(16) << b.structured_ms
-                << std::setw(12) << b.speedup
-                << std::setw(16) << b.logdet_diff
-                << "\n";
+      std::cout << std::setw(14) << b.name << std::setw(8) << b.n
+                << std::setw(10) << b.nnz << std::setw(10) << b.bandwidth
+                << std::setw(14) << b.sparse_ms << std::setw(16)
+                << b.structured_ms << std::setw(12) << b.speedup
+                << std::setw(16) << b.logdet_diff << "\n";
     }
   }
 

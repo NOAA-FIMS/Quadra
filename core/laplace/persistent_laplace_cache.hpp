@@ -28,23 +28,23 @@ struct LaplaceCacheState {
   int cached_evaluations = 0;
 };
 
-template <class ModelAdapter>
-class PersistentLaplaceCache {
- public:
+template <class ModelAdapter> class PersistentLaplaceCache {
+public:
   explicit PersistentLaplaceCache(ModelAdapter adapter)
       : adapter_(std::move(adapter)) {
     state_.uhat = adapter_.initial_random();
     if (state_.uhat.size() != adapter_.random_size()) {
-      throw std::invalid_argument(
-          "PersistentLaplaceCache: initial_random size does not match random_size");
+      throw std::invalid_argument("PersistentLaplaceCache: initial_random size "
+                                  "does not match random_size");
     }
   }
 
-  const LaplaceCacheState& state() const { return state_; }
+  const LaplaceCacheState &state() const { return state_; }
 
-  const Eigen::VectorXd& uhat() const {
+  const Eigen::VectorXd &uhat() const {
     if (!state_.initialized) {
-      throw std::runtime_error("PersistentLaplaceCache: uhat requested before initialization");
+      throw std::runtime_error(
+          "PersistentLaplaceCache: uhat requested before initialization");
     }
     return state_.uhat;
   }
@@ -76,8 +76,8 @@ class PersistentLaplaceCache {
   // Evaluate Laplace at cached uhat without re-solving.
   LaplaceEvaluation evaluate_cached_no_solve() {
     if (!state_.initialized) {
-      throw std::runtime_error(
-          "PersistentLaplaceCache: cached evaluation requested before initialization");
+      throw std::runtime_error("PersistentLaplaceCache: cached evaluation "
+                               "requested before initialization");
     }
 
     ++state_.cached_evaluations;
@@ -94,13 +94,13 @@ class PersistentLaplaceCache {
     return evaluate_warm();
   }
 
-  ModelAdapter& adapter() { return adapter_; }
-  const ModelAdapter& adapter() const { return adapter_; }
+  ModelAdapter &adapter() { return adapter_; }
+  const ModelAdapter &adapter() const { return adapter_; }
 
- private:
+private:
   ModelAdapter adapter_;
   LaplaceCacheState state_;
 };
 
-}  // namespace laplace
-}  // namespace quadra
+} // namespace laplace
+} // namespace quadra

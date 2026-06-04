@@ -12,7 +12,7 @@ namespace {
 
 using Theta = std::array<double, 5>;
 
-sp::Parameters unpack(const Theta& theta) {
+sp::Parameters unpack(const Theta &theta) {
   sp::Parameters par;
   par.log_r = theta[0];
   par.log_K = theta[1];
@@ -22,16 +22,12 @@ sp::Parameters unpack(const Theta& theta) {
   return par;
 }
 
-Theta pack(const sp::Parameters& par) {
-  return Theta{
-      par.log_r,
-      par.log_K,
-      par.log_q,
-      par.log_sigma_index,
-      par.logit_B0_frac};
+Theta pack(const sp::Parameters &par) {
+  return Theta{par.log_r, par.log_K, par.log_q, par.log_sigma_index,
+               par.logit_B0_frac};
 }
 
-double objective(const sp::Data& data, const Theta& theta) {
+double objective(const sp::Data &data, const Theta &theta) {
   try {
     const sp::Parameters par = unpack(theta);
     const sp::Derived d = sp::evaluate_derived(data, par);
@@ -62,7 +58,7 @@ double objective(const sp::Data& data, const Theta& theta) {
   }
 }
 
-Theta finite_difference_gradient(const sp::Data& data, const Theta& theta) {
+Theta finite_difference_gradient(const sp::Data &data, const Theta &theta) {
   Theta grad{};
 
   for (std::size_t i = 0; i < theta.size(); ++i) {
@@ -82,7 +78,7 @@ Theta finite_difference_gradient(const sp::Data& data, const Theta& theta) {
   return grad;
 }
 
-double norm2(const Theta& x) {
+double norm2(const Theta &x) {
   double out = 0.0;
   for (const double v : x) {
     out += v * v;
@@ -98,7 +94,7 @@ struct FitResult {
   bool converged = false;
 };
 
-FitResult fit(const sp::Data& data, const sp::Parameters& initial) {
+FitResult fit(const sp::Data &data, const sp::Parameters &initial) {
   Theta theta = pack(initial);
 
   double f = objective(data, theta);
@@ -118,11 +114,9 @@ FitResult fit(const sp::Data& data, const sp::Parameters& initial) {
     result.theta = theta;
 
     if (iter % 25 == 0) {
-      std::cout << "iter " << std::setw(4) << iter
-                << " objective " << std::setw(12) << std::setprecision(6) << f
-                << " grad_norm " << std::setw(12) << gnorm
-                << " step " << step_scale
-                << "\n";
+      std::cout << "iter " << std::setw(4) << iter << " objective "
+                << std::setw(12) << std::setprecision(6) << f << " grad_norm "
+                << std::setw(12) << gnorm << " step " << step_scale << "\n";
     }
 
     if (gnorm < 1e-5) {
@@ -168,55 +162,40 @@ FitResult fit(const sp::Data& data, const sp::Parameters& initial) {
   return result;
 }
 
-void print_parameter_comparison(const sp::Parameters& initial,
-                                const sp::Parameters& estimated) {
+void print_parameter_comparison(const sp::Parameters &initial,
+                                const sp::Parameters &estimated) {
   const sp::Data data = sp::make_demo_data();
   const sp::Derived d0 = sp::evaluate_derived(data, initial);
   const sp::Derived d1 = sp::evaluate_derived(data, estimated);
 
   std::cout << "\nParameter comparison\n";
-  std::cout << std::setw(18) << "quantity"
-            << std::setw(16) << "initial"
-            << std::setw(16) << "estimated"
-            << "\n";
+  std::cout << std::setw(18) << "quantity" << std::setw(16) << "initial"
+            << std::setw(16) << "estimated" << "\n";
 
-  std::cout << std::setw(18) << "r"
-            << std::setw(16) << d0.r
-            << std::setw(16) << d1.r
-            << "\n";
+  std::cout << std::setw(18) << "r" << std::setw(16) << d0.r << std::setw(16)
+            << d1.r << "\n";
 
-  std::cout << std::setw(18) << "K"
-            << std::setw(16) << d0.K
-            << std::setw(16) << d1.K
-            << "\n";
+  std::cout << std::setw(18) << "K" << std::setw(16) << d0.K << std::setw(16)
+            << d1.K << "\n";
 
-  std::cout << std::setw(18) << "q"
-            << std::setw(16) << d0.q
-            << std::setw(16) << d1.q
-            << "\n";
+  std::cout << std::setw(18) << "q" << std::setw(16) << d0.q << std::setw(16)
+            << d1.q << "\n";
 
-  std::cout << std::setw(18) << "sigma_index"
-            << std::setw(16) << d0.sigma_index
-            << std::setw(16) << d1.sigma_index
-            << "\n";
+  std::cout << std::setw(18) << "sigma_index" << std::setw(16) << d0.sigma_index
+            << std::setw(16) << d1.sigma_index << "\n";
 
-  std::cout << std::setw(18) << "B0/K"
-            << std::setw(16) << d0.B0_frac
-            << std::setw(16) << d1.B0_frac
-            << "\n";
+  std::cout << std::setw(18) << "B0/K" << std::setw(16) << d0.B0_frac
+            << std::setw(16) << d1.B0_frac << "\n";
 
-  std::cout << std::setw(18) << "MSY"
-            << std::setw(16) << d0.MSY
-            << std::setw(16) << d1.MSY
-            << "\n";
+  std::cout << std::setw(18) << "MSY" << std::setw(16) << d0.MSY
+            << std::setw(16) << d1.MSY << "\n";
 
-  std::cout << std::setw(18) << "B_terminal/K"
-            << std::setw(16) << d0.depletion_terminal
-            << std::setw(16) << d1.depletion_terminal
+  std::cout << std::setw(18) << "B_terminal/K" << std::setw(16)
+            << d0.depletion_terminal << std::setw(16) << d1.depletion_terminal
             << "\n";
 }
 
-}  // namespace
+} // namespace
 
 int main() {
   const sp::Data data = sp::make_demo_data();

@@ -19,12 +19,10 @@ struct StructureAwareRw1HdotTraceResult {
 };
 
 template <class FuThetaColumnProvider>
-Eigen::VectorXd rw1_total_u_direction(
-    const Eigen::VectorXd &theta,
-    const Eigen::VectorXd &uhat,
-    const int theta_index,
-    SparseHuuFactorization &factor,
-    FuThetaColumnProvider &&f_u_theta_column) {
+Eigen::VectorXd
+rw1_total_u_direction(const Eigen::VectorXd &theta, const Eigen::VectorXd &uhat,
+                      const int theta_index, SparseHuuFactorization &factor,
+                      FuThetaColumnProvider &&f_u_theta_column) {
   (void)theta;
 
   if (theta_index < 0) {
@@ -36,13 +34,9 @@ Eigen::VectorXd rw1_total_u_direction(
 
 template <class SelectedInverseAccessor, class FuThetaColumnProvider>
 Eigen::VectorXd rw1_structure_aware_hdot_traces(
-    const int m,
-    const int n_directions,
-    const Eigen::VectorXd &theta,
-    const Eigen::VectorXd &uhat,
-    SelectedInverseAccessor &&selected_inverse,
-    SparseHuuFactorization &factor,
-    FuThetaColumnProvider &&f_u_theta_column) {
+    const int m, const int n_directions, const Eigen::VectorXd &theta,
+    const Eigen::VectorXd &uhat, SelectedInverseAccessor &&selected_inverse,
+    SparseHuuFactorization &factor, FuThetaColumnProvider &&f_u_theta_column) {
   if (m < 0) {
     throw std::invalid_argument("rw1_structure_aware_hdot_traces: m < 0");
   }
@@ -70,10 +64,9 @@ Eigen::VectorXd rw1_structure_aware_hdot_traces(
     Eigen::VectorXd theta_direction = Eigen::VectorXd::Zero(5);
     theta_direction[theta_index] = 1.0;
 
-    const Eigen::VectorXd u_direction =
-        rw1_total_u_direction(theta, uhat, theta_index, factor,
-                              std::forward<FuThetaColumnProvider>(
-                                  f_u_theta_column));
+    const Eigen::VectorXd u_direction = rw1_total_u_direction(
+        theta, uhat, theta_index, factor,
+        std::forward<FuThetaColumnProvider>(f_u_theta_column));
 
     double trace = 0.0;
 
@@ -86,8 +79,8 @@ Eigen::VectorXd rw1_structure_aware_hdot_traces(
       }
 
       // Total direction contribution through beta * exp(u_i).
-      hdot_diag += beta * std::exp(uhat[i]) *
-                   (theta_direction[4] + u_direction[i]);
+      hdot_diag +=
+          beta * std::exp(uhat[i]) * (theta_direction[4] + u_direction[i]);
 
       trace += selected_inverse(i, i) * hdot_diag;
 
@@ -107,21 +100,15 @@ Eigen::VectorXd rw1_structure_aware_hdot_traces(
 
 template <class SelectedInverseAccessor, class FuThetaColumnProvider>
 StructureAwareRw1HdotTraceResult rw1_structure_aware_exact_gradient(
-    const int m,
-    const int n_directions,
-    const Eigen::VectorXd &theta,
-    const Eigen::VectorXd &uhat,
-    SelectedInverseAccessor &&selected_inverse,
-    const Eigen::VectorXd &joint_gradient,
-    const double joint_objective,
-    const double logdet_huu,
-    SparseHuuFactorization &factor,
+    const int m, const int n_directions, const Eigen::VectorXd &theta,
+    const Eigen::VectorXd &uhat, SelectedInverseAccessor &&selected_inverse,
+    const Eigen::VectorXd &joint_gradient, const double joint_objective,
+    const double logdet_huu, SparseHuuFactorization &factor,
     FuThetaColumnProvider &&f_u_theta_column) {
   StructureAwareRw1HdotTraceResult out;
   out.trace_terms = rw1_structure_aware_hdot_traces(
       m, n_directions, theta, uhat,
-      std::forward<SelectedInverseAccessor>(selected_inverse),
-      factor,
+      std::forward<SelectedInverseAccessor>(selected_inverse), factor,
       std::forward<FuThetaColumnProvider>(f_u_theta_column));
 
   out.objective = joint_objective + 0.5 * logdet_huu;
@@ -129,7 +116,7 @@ StructureAwareRw1HdotTraceResult rw1_structure_aware_exact_gradient(
   return out;
 }
 
-}  // namespace laplace
-}  // namespace quadra
+} // namespace laplace
+} // namespace quadra
 
-#endif  // QUADRA_LAPLACE_STRUCTURE_AWARE_RW1_HDOT_HPP
+#endif // QUADRA_LAPLACE_STRUCTURE_AWARE_RW1_HDOT_HPP

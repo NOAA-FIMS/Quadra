@@ -21,18 +21,18 @@ enum class LaplaceBackendKind {
   DenseLDLT
 };
 
-inline const char* ToString(const LaplaceBackendKind backend) {
+inline const char *ToString(const LaplaceBackendKind backend) {
   switch (backend) {
-    case LaplaceBackendKind::Diagonal:
-      return "diagonal";
-    case LaplaceBackendKind::Tridiagonal:
-      return "tridiagonal";
-    case LaplaceBackendKind::Banded:
-      return "banded";
-    case LaplaceBackendKind::SparseLDLT:
-      return "sparse_ldlt";
-    case LaplaceBackendKind::DenseLDLT:
-      return "dense_ldlt";
+  case LaplaceBackendKind::Diagonal:
+    return "diagonal";
+  case LaplaceBackendKind::Tridiagonal:
+    return "tridiagonal";
+  case LaplaceBackendKind::Banded:
+    return "banded";
+  case LaplaceBackendKind::SparseLDLT:
+    return "sparse_ldlt";
+  case LaplaceBackendKind::DenseLDLT:
+    return "dense_ldlt";
   }
   return "unknown";
 }
@@ -72,31 +72,29 @@ struct StructureDetectorOptions {
 };
 
 class StructureDetector {
- public:
+public:
   explicit StructureDetector(
       StructureDetectorOptions options = StructureDetectorOptions())
       : options_(options) {
-    options_.structure_options.max_banded_width =
-        options_.banded_width_cutoff;
-    options_.structure_options.dense_fill_ratio =
-        options_.dense_fill_ratio;
+    options_.structure_options.max_banded_width = options_.banded_width_cutoff;
+    options_.structure_options.dense_fill_ratio = options_.dense_fill_ratio;
   }
 
-  BackendRecommendation Analyze(const Eigen::SparseMatrix<double>& H) const {
+  BackendRecommendation Analyze(const Eigen::SparseMatrix<double> &H) const {
     const StructureInfo info =
         InspectHessianStructure(H, options_.structure_options);
 
     return Recommend(info);
   }
 
-  BackendRecommendation Analyze(const Eigen::MatrixXd& H) const {
+  BackendRecommendation Analyze(const Eigen::MatrixXd &H) const {
     const StructureInfo info =
         InspectHessianStructure(H, options_.structure_options);
 
     return Recommend(info);
   }
 
-  BackendRecommendation Recommend(const StructureInfo& info) const {
+  BackendRecommendation Recommend(const StructureInfo &info) const {
     BackendRecommendation rec;
     rec.random_size = info.rows;
     rec.nnz = info.nnz;
@@ -170,30 +168,29 @@ class StructureDetector {
     return rec;
   }
 
-  const StructureDetectorOptions& options() const { return options_; }
+  const StructureDetectorOptions &options() const { return options_; }
 
- private:
+private:
   StructureDetectorOptions options_;
 };
 
-inline double LogDetWithRecommendation(
-    const Eigen::SparseMatrix<double>& H,
-    const BackendRecommendation& rec) {
+inline double LogDetWithRecommendation(const Eigen::SparseMatrix<double> &H,
+                                       const BackendRecommendation &rec) {
   switch (rec.backend) {
-    case LaplaceBackendKind::Diagonal:
-      return LogDetDiagonal(H);
-    case LaplaceBackendKind::Tridiagonal:
-      return LogDetTridiagonalLDLT(H);
-    case LaplaceBackendKind::Banded:
-      return LogDetBandedLDLT(H, rec.bandwidth);
-    case LaplaceBackendKind::SparseLDLT:
-      return LogDetSparseLDLT(H);
-    case LaplaceBackendKind::DenseLDLT:
-      return LogDetDenseLDLT(Eigen::MatrixXd(H));
+  case LaplaceBackendKind::Diagonal:
+    return LogDetDiagonal(H);
+  case LaplaceBackendKind::Tridiagonal:
+    return LogDetTridiagonalLDLT(H);
+  case LaplaceBackendKind::Banded:
+    return LogDetBandedLDLT(H, rec.bandwidth);
+  case LaplaceBackendKind::SparseLDLT:
+    return LogDetSparseLDLT(H);
+  case LaplaceBackendKind::DenseLDLT:
+    return LogDetDenseLDLT(Eigen::MatrixXd(H));
   }
 
   throw std::runtime_error("Unknown backend recommendation");
 }
 
-}  // namespace laplace
-}  // namespace quadra
+} // namespace laplace
+} // namespace quadra

@@ -7,7 +7,7 @@ namespace quadra {
 namespace laplace {
 
 class PersistentLatentStateRuntime {
- public:
+public:
   PersistentLatentStateRuntime() = default;
 
   void clear() {
@@ -15,24 +15,18 @@ class PersistentLatentStateRuntime {
     structured_.clear();
   }
 
-  bool has_random_effects() const {
-    return random_effects_.initialized();
-  }
+  bool has_random_effects() const { return random_effects_.initialized(); }
 
-  bool has_structure() const {
-    return structured_.initialized;
-  }
+  bool has_structure() const { return structured_.initialized; }
 
-  PersistentRandomEffectState& random_effects() {
-    return random_effects_;
-  }
+  PersistentRandomEffectState &random_effects() { return random_effects_; }
 
-  const PersistentRandomEffectState& random_effects() const {
+  const PersistentRandomEffectState &random_effects() const {
     return random_effects_;
   }
 
   template <class ModelContext, class SolverPolicy>
-  auto solve_random_effects(ModelContext& context, SolverPolicy& solver) {
+  auto solve_random_effects(ModelContext &context, SolverPolicy &solver) {
     Eigen::VectorXd initial_x;
 
     if (random_effects_.initialized()) {
@@ -48,18 +42,16 @@ class PersistentLatentStateRuntime {
     return result;
   }
 
-  PersistentStructuredRuntimeState& structured() {
+  PersistentStructuredRuntimeState &structured() { return structured_; }
+
+  const PersistentStructuredRuntimeState &structured() const {
     return structured_;
   }
 
-  const PersistentStructuredRuntimeState& structured() const {
-    return structured_;
-  }
-
- private:
+private:
   PersistentRandomEffectState random_effects_;
   PersistentStructuredRuntimeState structured_;
 };
 
-}  // namespace laplace
-}  // namespace quadra
+} // namespace laplace
+} // namespace quadra

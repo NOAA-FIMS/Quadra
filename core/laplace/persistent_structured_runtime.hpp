@@ -25,8 +25,8 @@ struct PersistentStructuredRuntimeState {
     last_logdet = StructuredLogDetResult();
   }
 
-  void update_from_hessian(const Eigen::SparseMatrix<double>& H,
-                           const BackendRecommendation& rec) {
+  void update_from_hessian(const Eigen::SparseMatrix<double> &H,
+                           const BackendRecommendation &rec) {
     recommendation = rec;
     update_structured_values_from_hessian(values, H, recommendation);
 
@@ -41,16 +41,16 @@ struct PersistentStructuredRuntimeState {
   }
 
   void update_from_hessian(
-      const Eigen::SparseMatrix<double>& H,
-      const StructureDetectorOptions& options = StructureDetectorOptions()) {
+      const Eigen::SparseMatrix<double> &H,
+      const StructureDetectorOptions &options = StructureDetectorOptions()) {
     StructureDetector detector(options);
     update_from_hessian(H, detector.Analyze(H));
   }
 
-  void update_values_only(const Eigen::SparseMatrix<double>& H) {
+  void update_values_only(const Eigen::SparseMatrix<double> &H) {
     if (!initialized) {
-      throw std::runtime_error(
-          "PersistentStructuredRuntimeState::update_values_only used before initialization");
+      throw std::runtime_error("PersistentStructuredRuntimeState::update_"
+                               "values_only used before initialization");
     }
 
     values = extract_structured_values(H, recommendation);
@@ -63,7 +63,7 @@ struct PersistentStructuredRuntimeState {
     last_logdet.logdet = logdet_structured_values(values);
   }
 
-  void update_direct(const DiagonalValues& new_values) {
+  void update_direct(const DiagonalValues &new_values) {
     BackendRecommendation rec;
     rec.backend = LaplaceBackendKind::Diagonal;
     rec.structure = HessianStructure::Diagonal;
@@ -79,7 +79,7 @@ struct PersistentStructuredRuntimeState {
     update_direct(new_values, rec);
   }
 
-  void update_direct(const TridiagonalValues& new_values) {
+  void update_direct(const TridiagonalValues &new_values) {
     const int n = static_cast<int>(new_values.diag.size());
 
     BackendRecommendation rec;
@@ -97,11 +97,11 @@ struct PersistentStructuredRuntimeState {
     update_direct(new_values, rec);
   }
 
-  void update_direct(const BandedValues& new_values) {
+  void update_direct(const BandedValues &new_values) {
     const int n = static_cast<int>(new_values.diag.size());
 
     int offdiag_nnz = 0;
-    for (const auto& band : new_values.lower_bands) {
+    for (const auto &band : new_values.lower_bands) {
       offdiag_nnz += static_cast<int>(band.size());
     }
 
@@ -120,16 +120,12 @@ struct PersistentStructuredRuntimeState {
     update_direct(new_values, rec);
   }
 
-  void update_direct(const StructuredValues& new_values) {
-    std::visit(
-        [this](const auto& v) {
-          this->update_direct(v);
-        },
-        new_values);
+  void update_direct(const StructuredValues &new_values) {
+    std::visit([this](const auto &v) { this->update_direct(v); }, new_values);
   }
 
-  void update_direct(const DiagonalValues& new_values,
-                     const BackendRecommendation& rec) {
+  void update_direct(const DiagonalValues &new_values,
+                     const BackendRecommendation &rec) {
     recommendation = rec;
     values = new_values;
 
@@ -143,8 +139,8 @@ struct PersistentStructuredRuntimeState {
     initialized = true;
   }
 
-  void update_direct(const TridiagonalValues& new_values,
-                     const BackendRecommendation& rec) {
+  void update_direct(const TridiagonalValues &new_values,
+                     const BackendRecommendation &rec) {
     recommendation = rec;
     values = new_values;
 
@@ -159,13 +155,13 @@ struct PersistentStructuredRuntimeState {
     initialized = true;
   }
 
-  void update_direct(const BandedValues& new_values,
-                     const BackendRecommendation& rec) {
+  void update_direct(const BandedValues &new_values,
+                     const BackendRecommendation &rec) {
     recommendation = rec;
     values = new_values;
 
     int offdiag_nnz = 0;
-    for (const auto& band : new_values.lower_bands) {
+    for (const auto &band : new_values.lower_bands) {
       offdiag_nnz += static_cast<int>(band.size());
     }
 
@@ -173,7 +169,8 @@ struct PersistentStructuredRuntimeState {
     last_logdet.backend = recommendation.backend;
     last_logdet.bandwidth = recommendation.bandwidth;
     last_logdet.rows = static_cast<int>(new_values.diag.size());
-    last_logdet.nnz = static_cast<int>(new_values.diag.size()) + 2 * offdiag_nnz;
+    last_logdet.nnz =
+        static_cast<int>(new_values.diag.size()) + 2 * offdiag_nnz;
     last_logdet.logdet = logdet_structured_values(values);
 
     initialized = true;
@@ -188,25 +185,25 @@ struct PersistentStructuredRuntimeState {
     return last_logdet.logdet;
   }
 
-  const BackendRecommendation& backend_recommendation() const {
+  const BackendRecommendation &backend_recommendation() const {
     if (!initialized) {
       throw std::runtime_error(
-          "PersistentStructuredRuntimeState recommendation requested before initialization");
+          "PersistentStructuredRuntimeState recommendation requested before "
+          "initialization");
     }
 
     return recommendation;
   }
 
-  const StructuredValues& structured_values() const {
+  const StructuredValues &structured_values() const {
     if (!initialized) {
-      throw std::runtime_error(
-          "PersistentStructuredRuntimeState values requested before initialization");
+      throw std::runtime_error("PersistentStructuredRuntimeState values "
+                               "requested before initialization");
     }
 
     return values;
   }
 };
-
 
 struct PersistentStructuredLaplaceResult {
   double logdet = 0.0;
@@ -217,13 +214,13 @@ struct PersistentStructuredLaplaceResult {
 };
 
 class PersistentStructuredLaplaceRuntime {
- public:
+public:
   explicit PersistentStructuredLaplaceRuntime(
       StructureDetectorOptions options = StructureDetectorOptions())
       : options_(options) {}
 
-  PersistentStructuredLaplaceResult evaluate(
-      const Eigen::SparseMatrix<double>& H) {
+  PersistentStructuredLaplaceResult
+  evaluate(const Eigen::SparseMatrix<double> &H) {
     PersistentStructuredLaplaceResult out;
     out.initialized_before_call = state_.initialized;
 
@@ -246,21 +243,16 @@ class PersistentStructuredLaplaceRuntime {
 
   bool initialized() const { return state_.initialized; }
 
-  const PersistentStructuredRuntimeState& state() const {
-    return state_;
-  }
+  const PersistentStructuredRuntimeState &state() const { return state_; }
 
-  PersistentStructuredRuntimeState& mutable_state() {
-    return state_;
-  }
+  PersistentStructuredRuntimeState &mutable_state() { return state_; }
 
-  const StructureDetectorOptions& options() const { return options_; }
+  const StructureDetectorOptions &options() const { return options_; }
 
- private:
+private:
   StructureDetectorOptions options_;
   PersistentStructuredRuntimeState state_;
 };
 
-
-}  // namespace laplace
-}  // namespace quadra
+} // namespace laplace
+} // namespace quadra

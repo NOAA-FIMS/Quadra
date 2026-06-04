@@ -1,12 +1,10 @@
 #include <TMB.hpp>
 
-template<class Type>
-Type logistic(Type x) {
+template <class Type> Type logistic(Type x) {
   return Type(1.0) / (Type(1.0) + exp(-x));
 }
 
-template<class Type>
-Type objective_function<Type>::operator()() {
+template <class Type> Type objective_function<Type>::operator()() {
   DATA_VECTOR(index_obs);
   DATA_INTEGER(n_ages);
 
@@ -41,7 +39,8 @@ Type objective_function<Type>::operator()() {
       vulnerable += sel(a) * N(a);
     }
 
-    nll -= dnorm(log(index_obs(y)), log(q) + log(vulnerable), sigma_index, true);
+    nll -=
+        dnorm(log(index_obs(y)), log(q) + log(vulnerable), sigma_index, true);
     nll -= dnorm(x(y), Type(0.0), sigma_R, true);
 
     vector<Type> N_next(n_ages);

@@ -15,27 +15,31 @@ using Clock = std::chrono::high_resolution_clock;
 
 namespace {
 
-std::vector<double> to_std_vector(const Eigen::VectorXd& x) {
+std::vector<double> to_std_vector(const Eigen::VectorXd &x) {
   std::vector<double> out(static_cast<std::size_t>(x.size()));
-  for (int i = 0; i < x.size(); ++i) out[static_cast<std::size_t>(i)] = x[i];
+  for (int i = 0; i < x.size(); ++i)
+    out[static_cast<std::size_t>(i)] = x[i];
   return out;
 }
 
-Eigen::VectorXd to_eigen_vector(const std::vector<double>& x) {
+Eigen::VectorXd to_eigen_vector(const std::vector<double> &x) {
   Eigen::VectorXd out(static_cast<int>(x.size()));
-  for (std::size_t i = 0; i < x.size(); ++i) out[static_cast<int>(i)] = x[i];
+  for (std::size_t i = 0; i < x.size(); ++i)
+    out[static_cast<int>(i)] = x[i];
   return out;
 }
 
-double ms_between(const Clock::time_point& a, const Clock::time_point& b) {
+double ms_between(const Clock::time_point &a, const Clock::time_point &b) {
   return std::chrono::duration<double, std::milli>(b - a).count();
 }
 
-double joint_u(const ss::Data& data, const ss::Parameters& par, const Eigen::VectorXd& u) {
+double joint_u(const ss::Data &data, const ss::Parameters &par,
+               const Eigen::VectorXd &u) {
   return ss::joint_objective(data, par, to_std_vector(u));
 }
 
-Eigen::VectorXd fd_grad_u(const ss::Data& data, const ss::Parameters& par, const Eigen::VectorXd& u) {
+Eigen::VectorXd fd_grad_u(const ss::Data &data, const ss::Parameters &par,
+                          const Eigen::VectorXd &u) {
   Eigen::VectorXd grad(u.size());
   for (int i = 0; i < u.size(); ++i) {
     const double h = 1e-5 * (1.0 + std::abs(u[i]));
@@ -48,19 +52,21 @@ Eigen::VectorXd fd_grad_u(const ss::Data& data, const ss::Parameters& par, const
 }
 
 class ObjU {
- public:
-  ObjU(const ss::Data& data, const ss::Parameters& par) : data_(data), par_(par) {}
-  double operator()(const Eigen::VectorXd& u, Eigen::VectorXd& grad) {
+public:
+  ObjU(const ss::Data &data, const ss::Parameters &par)
+      : data_(data), par_(par) {}
+  double operator()(const Eigen::VectorXd &u, Eigen::VectorXd &grad) {
     const double f = joint_u(data_, par_, u);
     grad = fd_grad_u(data_, par_, u);
     return f;
   }
- private:
-  const ss::Data& data_;
-  const ss::Parameters& par_;
+
+private:
+  const ss::Data &data_;
+  const ss::Parameters &par_;
 };
 
-Eigen::VectorXd optimize_u(const ss::Data& data, const ss::Parameters& par) {
+Eigen::VectorXd optimize_u(const ss::Data &data, const ss::Parameters &par) {
   Eigen::VectorXd u = to_eigen_vector(ss::zero_random_effects(data));
 
   LBFGSpp::LBFGSParam<double> param;
@@ -91,7 +97,8 @@ Eigen::VectorXd optimize_u(const ss::Data& data, const ss::Parameters& par) {
   return u;
 }
 
-Eigen::MatrixXd fd_hessian_uu(const ss::Data& data, const ss::Parameters& par, const Eigen::VectorXd& u) {
+Eigen::MatrixXd fd_hessian_uu(const ss::Data &data, const ss::Parameters &par,
+                              const Eigen::VectorXd &u) {
   const int n = static_cast<int>(u.size());
   Eigen::MatrixXd H = Eigen::MatrixXd::Zero(n, n);
   const double f0 = joint_u(data, par, u);
@@ -101,18 +108,23 @@ Eigen::MatrixXd fd_hessian_uu(const ss::Data& data, const ss::Parameters& par, c
     Eigen::VectorXd up = u, um = u;
     up[i] += hi;
     um[i] -= hi;
-    H(i, i) = (joint_u(data, par, up) - 2.0 * f0 + joint_u(data, par, um)) / (hi * hi);
+    H(i, i) = (joint_u(data, par, up) - 2.0 * f0 + joint_u(data, par, um)) /
+              (hi * hi);
 
     for (int j = i + 1; j < n; ++j) {
       const double hj = 1e-4 * (1.0 + std::abs(u[j]));
       Eigen::VectorXd upp = u, upm = u, ump = u, umm = u;
-      upp[i] += hi; upp[j] += hj;
-      upm[i] += hi; upm[j] -= hj;
-      ump[i] -= hi; ump[j] += hj;
-      umm[i] -= hi; umm[j] -= hj;
-      const double hij =
-          (joint_u(data, par, upp) - joint_u(data, par, upm) -
-           joint_u(data, par, ump) + joint_u(data, par, umm)) / (4.0 * hi * hj);
+      upp[i] += hi;
+      upp[j] += hj;
+      upm[i] += hi;
+      upm[j] -= hj;
+      ump[i] -= hi;
+      ump[j] += hj;
+      umm[i] -= hi;
+      umm[j] -= hj;
+      const double hij = (joint_u(data, par, upp) - joint_u(data, par, upm) -
+                          joint_u(data, par, ump) + joint_u(data, par, umm)) /
+                         (4.0 * hi * hj);
       H(i, j) = hij;
       H(j, i) = hij;
     }
@@ -121,7 +133,7 @@ Eigen::MatrixXd fd_hessian_uu(const ss::Data& data, const ss::Parameters& par, c
   return H;
 }
 
-double dense_laplace_eval(const ss::Data& data, const ss::Parameters& par) {
+double dense_laplace_eval(const ss::Data &data, const ss::Parameters &par) {
   const Eigen::VectorXd uhat = optimize_u(data, par);
   const double joint = joint_u(data, par, uhat);
   const Eigen::MatrixXd H = fd_hessian_uu(data, par, uhat);
@@ -131,7 +143,7 @@ double dense_laplace_eval(const ss::Data& data, const ss::Parameters& par) {
     throw std::runtime_error("Huu not SPD");
   }
 
-  const auto& L = llt.matrixL();
+  const auto &L = llt.matrixL();
   double logdet = 0.0;
   for (int i = 0; i < H.rows(); ++i) {
     logdet += 2.0 * std::log(L(i, i));
@@ -141,11 +153,12 @@ double dense_laplace_eval(const ss::Data& data, const ss::Parameters& par) {
   return joint + 0.5 * logdet - 0.5 * n_u * std::log(2.0 * M_PI);
 }
 
-}  // namespace
+} // namespace
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   int reps = 20;
-  if (argc > 1) reps = std::stoi(argv[1]);
+  if (argc > 1)
+    reps = std::stoi(argv[1]);
 
   const ss::Data data = ss::make_demo_data();
   const ss::Parameters par = ss::make_demo_parameters();

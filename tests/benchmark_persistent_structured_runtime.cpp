@@ -1,6 +1,6 @@
+#include "../core/laplace/hessian_structure.hpp"
 #include "../core/laplace/persistent_structured_runtime.hpp"
 #include "../core/laplace/structured_value_factory.hpp"
-#include "../core/laplace/hessian_structure.hpp"
 
 #include <Eigen/Sparse>
 
@@ -14,26 +14,27 @@
 #include <vector>
 
 using quadra::laplace::BackendRecommendation;
+using quadra::laplace::extract_structured_values;
+using quadra::laplace::logdet_structured_values;
 using quadra::laplace::PersistentStructuredLaplaceRuntime;
 using quadra::laplace::PersistentStructuredRuntimeState;
 using quadra::laplace::StructureDetector;
 using quadra::laplace::StructureDetectorOptions;
 using quadra::laplace::StructureInfo;
-using quadra::laplace::extract_structured_values;
-using quadra::laplace::logdet_structured_values;
 
 using Clock = std::chrono::high_resolution_clock;
 
-double ms_between(const Clock::time_point& a, const Clock::time_point& b) {
+double ms_between(const Clock::time_point &a, const Clock::time_point &b) {
   return std::chrono::duration<double, std::milli>(b - a).count();
 }
 
-std::vector<int> parse_lengths(const std::string& s) {
+std::vector<int> parse_lengths(const std::string &s) {
   std::vector<int> out;
   std::stringstream ss(s);
   std::string item;
   while (std::getline(ss, item, ',')) {
-    if (!item.empty()) out.push_back(std::stoi(item));
+    if (!item.empty())
+      out.push_back(std::stoi(item));
   }
   return out;
 }
@@ -76,8 +77,7 @@ Eigen::SparseMatrix<double> make_tridiagonal(const int n, const double scale) {
   return H;
 }
 
-Eigen::SparseMatrix<double> make_banded(const int n,
-                                        const int bandwidth,
+Eigen::SparseMatrix<double> make_banded(const int n, const int bandwidth,
                                         const double scale) {
   std::vector<Eigen::Triplet<double>> t;
   t.reserve(static_cast<std::size_t>(n * (2 * bandwidth + 1)));
@@ -86,11 +86,11 @@ Eigen::SparseMatrix<double> make_banded(const int n,
     double diag = scale * (10.0 + 0.001 * i);
 
     for (int d = 1; d <= bandwidth; ++d) {
-      if (i - d < 0) continue;
+      if (i - d < 0)
+        continue;
 
       const double e =
-          scale * (((d % 2 == 0) ? 0.015 : -0.025) /
-                   static_cast<double>(d));
+          scale * (((d % 2 == 0) ? 0.015 : -0.025) / static_cast<double>(d));
 
       t.emplace_back(i, i - d, e);
       t.emplace_back(i - d, i, e);
@@ -106,14 +106,18 @@ Eigen::SparseMatrix<double> make_banded(const int n,
   return H;
 }
 
-Eigen::SparseMatrix<double> make_case(const std::string& name,
-                                      const int n,
+Eigen::SparseMatrix<double> make_case(const std::string &name, const int n,
                                       const double scale) {
-  if (name == "diagonal") return make_diagonal(n, scale);
-  if (name == "tridiagonal") return make_tridiagonal(n, scale);
-  if (name == "banded2") return make_banded(n, 2, scale);
-  if (name == "banded5") return make_banded(n, 5, scale);
-  if (name == "banded10") return make_banded(n, 10, scale);
+  if (name == "diagonal")
+    return make_diagonal(n, scale);
+  if (name == "tridiagonal")
+    return make_tridiagonal(n, scale);
+  if (name == "banded2")
+    return make_banded(n, 2, scale);
+  if (name == "banded5")
+    return make_banded(n, 5, scale);
+  if (name == "banded10")
+    return make_banded(n, 10, scale);
   throw std::invalid_argument("unknown benchmark case: " + name);
 }
 
@@ -133,16 +137,13 @@ struct BenchResult {
   double logdet_diff = 0.0;
 };
 
-BenchResult bench_case(const std::string& name,
-                       const int n,
-                       const int reps) {
+BenchResult bench_case(const std::string &name, const int n, const int reps) {
   const StructureDetectorOptions opts = detector_options();
   StructureDetector detector(opts);
 
   const Eigen::SparseMatrix<double> H0 = make_case(name, n, 1.0);
   const StructureInfo info =
-      quadra::laplace::InspectHessianStructure(
-          H0, opts.structure_options);
+      quadra::laplace::InspectHessianStructure(H0, opts.structure_options);
 
   // Reference for equality checks.
   const BackendRecommendation rec0 = detector.Analyze(H0);
@@ -205,8 +206,7 @@ BenchResult bench_case(const std::string& name,
   out.runtime_first_ms = ms_between(first0, first1);
   out.runtime_update_ms =
       ms_between(runtime0, runtime1) / static_cast<double>(reps);
-  out.state_update_ms =
-      ms_between(state0, state1) / static_cast<double>(reps);
+  out.state_update_ms = ms_between(state0, state1) / static_cast<double>(reps);
   out.runtime_speedup = out.runtime_update_ms > 0.0
                             ? out.full_detect_ms / out.runtime_update_ms
                             : 0.0;
@@ -217,49 +217,40 @@ BenchResult bench_case(const std::string& name,
   return out;
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   int reps = 20;
   std::vector<int> lengths = {100, 500, 1000, 5000};
 
-  if (argc > 1) reps = std::stoi(argv[1]);
-  if (argc > 2) lengths = parse_lengths(argv[2]);
+  if (argc > 1)
+    reps = std::stoi(argv[1]);
+  if (argc > 2)
+    lengths = parse_lengths(argv[2]);
 
-  const std::vector<std::string> cases = {
-      "diagonal", "tridiagonal", "banded2", "banded5", "banded10"};
+  const std::vector<std::string> cases = {"diagonal", "tridiagonal", "banded2",
+                                          "banded5", "banded10"};
 
   std::cout << std::fixed << std::setprecision(6);
   std::cout << "Persistent structured runtime benchmark\n";
   std::cout << "reps per case = " << reps << "\n\n";
 
-  std::cout << std::setw(14) << "case"
-            << std::setw(8) << "n"
-            << std::setw(10) << "nnz"
-            << std::setw(8) << "band"
-            << std::setw(16) << "full_ms"
-            << std::setw(16) << "first_ms"
-            << std::setw(18) << "runtime_ms"
-            << std::setw(16) << "state_ms"
-            << std::setw(16) << "runtime_x"
-            << std::setw(14) << "state_x"
-            << std::setw(16) << "logdet_diff"
+  std::cout << std::setw(14) << "case" << std::setw(8) << "n" << std::setw(10)
+            << "nnz" << std::setw(8) << "band" << std::setw(16) << "full_ms"
+            << std::setw(16) << "first_ms" << std::setw(18) << "runtime_ms"
+            << std::setw(16) << "state_ms" << std::setw(16) << "runtime_x"
+            << std::setw(14) << "state_x" << std::setw(16) << "logdet_diff"
             << "\n";
 
   for (const int n : lengths) {
-    for (const std::string& name : cases) {
+    for (const std::string &name : cases) {
       const BenchResult b = bench_case(name, n, reps);
 
-      std::cout << std::setw(14) << b.name
-                << std::setw(8) << b.n
-                << std::setw(10) << b.nnz
-                << std::setw(8) << b.bandwidth
-                << std::setw(16) << b.full_detect_ms
-                << std::setw(16) << b.runtime_first_ms
-                << std::setw(18) << b.runtime_update_ms
-                << std::setw(16) << b.state_update_ms
-                << std::setw(16) << b.runtime_speedup
-                << std::setw(14) << b.state_speedup
-                << std::setw(16) << b.logdet_diff
-                << "\n";
+      std::cout << std::setw(14) << b.name << std::setw(8) << b.n
+                << std::setw(10) << b.nnz << std::setw(8) << b.bandwidth
+                << std::setw(16) << b.full_detect_ms << std::setw(16)
+                << b.runtime_first_ms << std::setw(18) << b.runtime_update_ms
+                << std::setw(16) << b.state_update_ms << std::setw(16)
+                << b.runtime_speedup << std::setw(14) << b.state_speedup
+                << std::setw(16) << b.logdet_diff << "\n";
     }
   }
 

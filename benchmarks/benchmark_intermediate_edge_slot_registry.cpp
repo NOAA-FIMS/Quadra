@@ -13,7 +13,7 @@ namespace {
 
 using Clock = std::chrono::steady_clock;
 
-double ms_between(const Clock::time_point& a, const Clock::time_point& b) {
+double ms_between(const Clock::time_point &a, const Clock::time_point &b) {
   return std::chrono::duration<double, std::milli>(b - a).count();
 }
 
@@ -59,28 +59,25 @@ Row run_case(int vertices, int target_edges, int K, int reps) {
   while (static_cast<int>(registry.size()) < target_edges) {
     const auto a = static_cast<std::uint32_t>(vertex_dist(rng));
     const auto b = static_cast<std::uint32_t>(vertex_dist(rng));
-    if (a == b) continue;
+    if (a == b)
+      continue;
 
     registry.GetOrCreate(a, b);
   }
 
   const auto rb1 = Clock::now();
 
-  const auto& edges = registry.edges();
+  const auto &edges = registry.edges();
 
-  for (const auto& edge : edges) {
+  for (const auto &edge : edges) {
     for (int pass = 0; pass < 4; ++pass) {
-      updates.push_back(Update{
-          edge.outer,
-          edge.inner,
-          direction_dist(rng),
-          value_dist(rng)});
+      updates.push_back(
+          Update{edge.outer, edge.inner, direction_dist(rng), value_dist(rng)});
     }
   }
 
-  had::BatchDirectionalFlatAccumulator flat(
-      static_cast<std::size_t>(K),
-      registry.size());
+  had::BatchDirectionalFlatAccumulator flat(static_cast<std::size_t>(K),
+                                            registry.size());
 
   std::vector<std::map<std::uint64_t, double>> mapped(
       static_cast<std::size_t>(K));
@@ -90,7 +87,7 @@ Row run_case(int vertices, int target_edges, int K, int reps) {
   for (int r = 0; r < reps; ++r) {
     flat.Clear();
 
-    for (const auto& u : updates) {
+    for (const auto &u : updates) {
       std::size_t slot = 0;
       if (!registry.TryGet(u.a, u.b, slot)) {
         throw std::runtime_error("missing registry slot");
@@ -105,11 +102,11 @@ Row run_case(int vertices, int target_edges, int K, int reps) {
   const auto m0 = Clock::now();
 
   for (int r = 0; r < reps; ++r) {
-    for (auto& direction_map : mapped) {
+    for (auto &direction_map : mapped) {
       direction_map.clear();
     }
 
-    for (const auto& u : updates) {
+    for (const auto &u : updates) {
       mapped[static_cast<std::size_t>(u.direction)][pack(u.a, u.b)] += u.value;
     }
   }
@@ -118,10 +115,9 @@ Row run_case(int vertices, int target_edges, int K, int reps) {
 
   double max_diff = 0.0;
 
-  for (const auto& edge : edges) {
+  for (const auto &edge : edges) {
     for (int k = 0; k < K; ++k) {
-      const double flat_value =
-          flat(static_cast<std::size_t>(k), edge.slot);
+      const double flat_value = flat(static_cast<std::size_t>(k), edge.slot);
 
       double map_value = 0.0;
       const auto key = pack(edge.outer, edge.inner);
@@ -147,9 +143,9 @@ Row run_case(int vertices, int target_edges, int K, int reps) {
   return row;
 }
 
-}  // namespace
+} // namespace
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   int reps = 100;
   if (argc > 1) {
     reps = std::stoi(argv[1]);
@@ -161,32 +157,24 @@ int main(int argc, char** argv) {
   std::cout << "reps per case = " << reps << "\n";
   std::cout << "K = " << K << "\n\n";
 
-  std::cout << std::setw(10) << "vertices"
-            << std::setw(10) << "edges"
-            << std::setw(12) << "updates"
-            << std::setw(14) << "reg ms"
-            << std::setw(14) << "flat ms"
-            << std::setw(14) << "map ms"
-            << std::setw(14) << "speedup"
-            << std::setw(14) << "max diff"
+  std::cout << std::setw(10) << "vertices" << std::setw(10) << "edges"
+            << std::setw(12) << "updates" << std::setw(14) << "reg ms"
+            << std::setw(14) << "flat ms" << std::setw(14) << "map ms"
+            << std::setw(14) << "speedup" << std::setw(14) << "max diff"
             << "\n";
 
   std::cout << std::scientific << std::setprecision(6);
 
-  for (const auto& cfg : {std::pair<int, int>{2606, 16000},
-                          std::pair<int, int>{6506, 40000},
-                          std::pair<int, int>{13006, 80000}}) {
+  for (const auto &cfg :
+       {std::pair<int, int>{2606, 16000}, std::pair<int, int>{6506, 40000},
+        std::pair<int, int>{13006, 80000}}) {
     const Row row = run_case(cfg.first, cfg.second, K, reps);
 
-    std::cout << std::setw(10) << row.vertices
-              << std::setw(10) << row.edges
-              << std::setw(12) << row.updates
-              << std::setw(14) << row.registry_build_ms
-              << std::setw(14) << row.flat_ms
-              << std::setw(14) << row.map_ms
-              << std::setw(14) << row.speedup
-              << std::setw(14) << row.max_diff
-              << "\n";
+    std::cout << std::setw(10) << row.vertices << std::setw(10) << row.edges
+              << std::setw(12) << row.updates << std::setw(14)
+              << row.registry_build_ms << std::setw(14) << row.flat_ms
+              << std::setw(14) << row.map_ms << std::setw(14) << row.speedup
+              << std::setw(14) << row.max_diff << "\n";
   }
 
   std::cout << "\nBenchmark complete.\n";

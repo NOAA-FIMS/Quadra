@@ -7,18 +7,17 @@
 #include <iostream>
 #include <stdexcept>
 
+using quadra::laplace::logdet_tridiagonal_values_ldlt;
 using quadra::laplace::NewtonSolveStatus;
 using quadra::laplace::PersistentLatentStateRuntime;
 using quadra::laplace::TridiagonalValues;
-using quadra::laplace::logdet_tridiagonal_values_ldlt;
 
-void expect_close(const double a, const double b, const char* msg) {
+void expect_close(const double a, const double b, const char *msg) {
   const double diff = std::abs(a - b);
   const double scale = 1.0 + std::max(std::abs(a), std::abs(b));
 
   if (diff > 1e-12 * scale) {
-    std::cerr << msg << ": a=" << a << " b=" << b
-              << " diff=" << diff << "\n";
+    std::cerr << msg << ": a=" << a << " b=" << b << " diff=" << diff << "\n";
     throw std::runtime_error(msg);
   }
 }
@@ -83,8 +82,7 @@ void test_structured_state_owned() {
     throw std::runtime_error("runtime did not report cached structure");
   }
 
-  expect_close(runtime.structured().logdet(),
-               logdet_tridiagonal_values_ldlt(H),
+  expect_close(runtime.structured().logdet(), logdet_tridiagonal_values_ldlt(H),
                "runtime structured logdet");
 }
 

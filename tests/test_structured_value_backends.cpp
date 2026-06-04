@@ -1,5 +1,5 @@
-#include "../core/laplace/structured_value_backend.hpp"
 #include "../core/laplace/hessian_structure.hpp"
+#include "../core/laplace/structured_value_backend.hpp"
 
 #include <cmath>
 #include <iostream>
@@ -7,21 +7,20 @@
 
 using quadra::laplace::BandedValues;
 using quadra::laplace::DiagonalValues;
-using quadra::laplace::TridiagonalValues;
-using quadra::laplace::LogDetSparseLDLT;
 using quadra::laplace::logdet_banded_values_ldlt;
 using quadra::laplace::logdet_diagonal_values;
 using quadra::laplace::logdet_tridiagonal_values_ldlt;
+using quadra::laplace::LogDetSparseLDLT;
 using quadra::laplace::sparse_from_banded_values;
 using quadra::laplace::sparse_from_diagonal_values;
 using quadra::laplace::sparse_from_tridiagonal_values;
+using quadra::laplace::TridiagonalValues;
 
-void expect_close(const double a, const double b, const char* msg) {
+void expect_close(const double a, const double b, const char *msg) {
   const double diff = std::abs(a - b);
   const double scale = 1.0 + std::max(std::abs(a), std::abs(b));
   if (diff > 1e-9 * scale) {
-    std::cerr << msg << ": a=" << a << " b=" << b
-              << " diff=" << diff << "\n";
+    std::cerr << msg << ": a=" << a << " b=" << b << " diff=" << diff << "\n";
     throw std::runtime_error(msg);
   }
 }

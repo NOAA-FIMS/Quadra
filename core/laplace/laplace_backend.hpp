@@ -17,18 +17,18 @@ namespace quadra {
 namespace laplace {
 
 class LaplaceBackend {
- public:
+public:
   virtual ~LaplaceBackend() = default;
 
-  virtual const char* name() const = 0;
+  virtual const char *name() const = 0;
 
-  virtual void analyze_pattern(const Eigen::SparseMatrix<double>& H) {
+  virtual void analyze_pattern(const Eigen::SparseMatrix<double> &H) {
     analyzed_ = true;
     rows_ = static_cast<int>(H.rows());
     cols_ = static_cast<int>(H.cols());
   }
 
-  virtual void factorize(const Eigen::SparseMatrix<double>& H) = 0;
+  virtual void factorize(const Eigen::SparseMatrix<double> &H) = 0;
 
   virtual double logdet() const = 0;
 
@@ -38,24 +38,24 @@ class LaplaceBackend {
   virtual int cols() const { return cols_; }
   virtual bool analyzed() const { return analyzed_; }
 
- protected:
+protected:
   bool analyzed_ = false;
   int rows_ = 0;
   int cols_ = 0;
 };
 
 class DiagonalBackend final : public LaplaceBackend {
- public:
-  const char* name() const override { return "diagonal"; }
+public:
+  const char *name() const override { return "diagonal"; }
 
-  void analyze_pattern(const Eigen::SparseMatrix<double>& H) override {
+  void analyze_pattern(const Eigen::SparseMatrix<double> &H) override {
     LaplaceBackend::analyze_pattern(H);
     if (H.rows() != H.cols()) {
       throw std::invalid_argument("DiagonalBackend requires square matrix");
     }
   }
 
-  void factorize(const Eigen::SparseMatrix<double>& H) override {
+  void factorize(const Eigen::SparseMatrix<double> &H) override {
     analyze_pattern(H);
 
     try {
@@ -77,23 +77,23 @@ class DiagonalBackend final : public LaplaceBackend {
   double logdet() const override { return logdet_; }
   bool is_spd() const override { return spd_; }
 
- private:
+private:
   double logdet_ = 0.0;
   bool spd_ = false;
 };
 
 class TridiagonalBackend final : public LaplaceBackend {
- public:
-  const char* name() const override { return "tridiagonal"; }
+public:
+  const char *name() const override { return "tridiagonal"; }
 
-  void analyze_pattern(const Eigen::SparseMatrix<double>& H) override {
+  void analyze_pattern(const Eigen::SparseMatrix<double> &H) override {
     LaplaceBackend::analyze_pattern(H);
     if (H.rows() != H.cols()) {
       throw std::invalid_argument("TridiagonalBackend requires square matrix");
     }
   }
 
-  void factorize(const Eigen::SparseMatrix<double>& H) override {
+  void factorize(const Eigen::SparseMatrix<double> &H) override {
     analyze_pattern(H);
 
     try {
@@ -122,24 +122,25 @@ class TridiagonalBackend final : public LaplaceBackend {
   double logdet() const override { return logdet_; }
   bool is_spd() const override { return spd_; }
 
- private:
+private:
   double logdet_ = 0.0;
   bool spd_ = false;
 };
 
 class BandedBackend final : public LaplaceBackend {
- public:
+public:
   explicit BandedBackend(int bandwidth) : bandwidth_(bandwidth) {
     if (bandwidth_ < 0) {
-      throw std::invalid_argument("BandedBackend bandwidth must be non-negative");
+      throw std::invalid_argument(
+          "BandedBackend bandwidth must be non-negative");
     }
   }
 
-  const char* name() const override { return "banded"; }
+  const char *name() const override { return "banded"; }
 
   int bandwidth() const { return bandwidth_; }
 
-  void analyze_pattern(const Eigen::SparseMatrix<double>& H) override {
+  void analyze_pattern(const Eigen::SparseMatrix<double> &H) override {
     LaplaceBackend::analyze_pattern(H);
     if (H.rows() != H.cols()) {
       throw std::invalid_argument("BandedBackend requires square matrix");
@@ -151,13 +152,14 @@ class BandedBackend final : public LaplaceBackend {
         const int i = static_cast<int>(it.row());
         const int j = static_cast<int>(it.col());
         if (std::abs(i - j) > bandwidth_ && std::abs(it.value()) > 0.0) {
-          throw std::invalid_argument("BandedBackend pattern exceeds bandwidth");
+          throw std::invalid_argument(
+              "BandedBackend pattern exceeds bandwidth");
         }
       }
     }
   }
 
-  void factorize(const Eigen::SparseMatrix<double>& H) override {
+  void factorize(const Eigen::SparseMatrix<double> &H) override {
     analyze_pattern(H);
 
     try {
@@ -179,7 +181,8 @@ class BandedBackend final : public LaplaceBackend {
 
         for (int d = 1; d <= bw; ++d) {
           const int j = i - d;
-          if (j < 0) continue;
+          if (j < 0)
+            continue;
 
           values.lower_bands[static_cast<std::size_t>(d - 1)][j] =
               H.coeff(i, j);
@@ -197,17 +200,17 @@ class BandedBackend final : public LaplaceBackend {
   double logdet() const override { return logdet_; }
   bool is_spd() const override { return spd_; }
 
- private:
+private:
   int bandwidth_ = 0;
   double logdet_ = 0.0;
   bool spd_ = false;
 };
 
 class SparseLDLTBackend final : public LaplaceBackend {
- public:
-  const char* name() const override { return "sparse_ldlt"; }
+public:
+  const char *name() const override { return "sparse_ldlt"; }
 
-  void analyze_pattern(const Eigen::SparseMatrix<double>& H) override {
+  void analyze_pattern(const Eigen::SparseMatrix<double> &H) override {
     LaplaceBackend::analyze_pattern(H);
     if (H.rows() != H.cols()) {
       throw std::invalid_argument("SparseLDLTBackend requires square matrix");
@@ -221,7 +224,7 @@ class SparseLDLTBackend final : public LaplaceBackend {
     symbolic_ready_ = true;
   }
 
-  void factorize(const Eigen::SparseMatrix<double>& H) override {
+  void factorize(const Eigen::SparseMatrix<double> &H) override {
     Eigen::SparseMatrix<double> canonical = H;
     canonical.makeCompressed();
 
@@ -237,7 +240,7 @@ class SparseLDLTBackend final : public LaplaceBackend {
       return;
     }
 
-    const auto& D = ldlt_.vectorD();
+    const auto &D = ldlt_.vectorD();
     logdet_ = 0.0;
     spd_ = true;
 
@@ -254,7 +257,7 @@ class SparseLDLTBackend final : public LaplaceBackend {
   double logdet() const override { return logdet_; }
   bool is_spd() const override { return spd_; }
 
- private:
+private:
   Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> ldlt_;
   bool symbolic_ready_ = false;
   double logdet_ = 0.0;
@@ -262,17 +265,17 @@ class SparseLDLTBackend final : public LaplaceBackend {
 };
 
 class DenseLDLTBackend final : public LaplaceBackend {
- public:
-  const char* name() const override { return "dense_ldlt"; }
+public:
+  const char *name() const override { return "dense_ldlt"; }
 
-  void analyze_pattern(const Eigen::SparseMatrix<double>& H) override {
+  void analyze_pattern(const Eigen::SparseMatrix<double> &H) override {
     LaplaceBackend::analyze_pattern(H);
     if (H.rows() != H.cols()) {
       throw std::invalid_argument("DenseLDLTBackend requires square matrix");
     }
   }
 
-  void factorize(const Eigen::SparseMatrix<double>& H) override {
+  void factorize(const Eigen::SparseMatrix<double> &H) override {
     analyze_pattern(H);
 
     Eigen::MatrixXd dense = Eigen::MatrixXd(H);
@@ -284,7 +287,7 @@ class DenseLDLTBackend final : public LaplaceBackend {
       return;
     }
 
-    const auto& D = ldlt.vectorD();
+    const auto &D = ldlt.vectorD();
     logdet_ = 0.0;
     spd_ = true;
 
@@ -301,10 +304,10 @@ class DenseLDLTBackend final : public LaplaceBackend {
   double logdet() const override { return logdet_; }
   bool is_spd() const override { return spd_; }
 
- private:
+private:
   double logdet_ = 0.0;
   bool spd_ = false;
 };
 
-}  // namespace laplace
-}  // namespace quadra
+} // namespace laplace
+} // namespace quadra

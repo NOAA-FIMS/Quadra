@@ -11,7 +11,7 @@
 namespace had {
 
 class IntermediateEdgeSlotRegistry {
- public:
+public:
   using VertexId = std::uint32_t;
 
   struct Edge {
@@ -25,13 +25,9 @@ class IntermediateEdgeSlotRegistry {
     edges_.clear();
   }
 
-  std::size_t size() const {
-    return edges_.size();
-  }
+  std::size_t size() const { return edges_.size(); }
 
-  const std::vector<Edge>& edges() const {
-    return edges_;
-  }
+  const std::vector<Edge> &edges() const { return edges_; }
 
   std::size_t GetOrCreate(VertexId a, VertexId b) {
     const VertexId outer = std::max(a, b);
@@ -49,7 +45,7 @@ class IntermediateEdgeSlotRegistry {
     return slot;
   }
 
-  bool TryGet(VertexId a, VertexId b, std::size_t& slot_out) const {
+  bool TryGet(VertexId a, VertexId b, std::size_t &slot_out) const {
     const VertexId outer = std::max(a, b);
     const VertexId inner = std::min(a, b);
     const std::uint64_t key = Pack(outer, inner);
@@ -63,7 +59,7 @@ class IntermediateEdgeSlotRegistry {
     return true;
   }
 
- private:
+private:
   static std::uint64_t Pack(VertexId outer, VertexId inner) {
     return (static_cast<std::uint64_t>(outer) << 32) |
            static_cast<std::uint64_t>(inner);
@@ -73,6 +69,6 @@ class IntermediateEdgeSlotRegistry {
   std::vector<Edge> edges_;
 };
 
-}  // namespace had
+} // namespace had
 
-#endif  // QUADRA_HAD_INTERMEDIATE_EDGE_SLOT_REGISTRY_HPP
+#endif // QUADRA_HAD_INTERMEDIATE_EDGE_SLOT_REGISTRY_HPP

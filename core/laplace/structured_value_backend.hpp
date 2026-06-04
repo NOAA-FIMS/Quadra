@@ -17,7 +17,7 @@ struct DiagonalValues {
 
 struct TridiagonalValues {
   Eigen::VectorXd diag;
-  Eigen::VectorXd offdiag;  // offdiag[i - 1] = H(i, i - 1)
+  Eigen::VectorXd offdiag; // offdiag[i - 1] = H(i, i - 1)
 };
 
 struct BandedValues {
@@ -29,29 +29,33 @@ struct BandedValues {
   std::vector<Eigen::VectorXd> lower_bands;
 };
 
-inline double logdet_diagonal_values(const DiagonalValues& H) {
+inline double logdet_diagonal_values(const DiagonalValues &H) {
   double logdet = 0.0;
   for (int i = 0; i < H.diag.size(); ++i) {
     const double d = H.diag[i];
     if (!(d > 0.0) || !std::isfinite(d)) {
-      throw std::runtime_error("Diagonal value Hessian is not positive definite");
+      throw std::runtime_error(
+          "Diagonal value Hessian is not positive definite");
     }
     logdet += std::log(d);
   }
   return logdet;
 }
 
-inline double logdet_tridiagonal_values_ldlt(const TridiagonalValues& H) {
+inline double logdet_tridiagonal_values_ldlt(const TridiagonalValues &H) {
   const int n = static_cast<int>(H.diag.size());
-  if (n == 0) return 0.0;
+  if (n == 0)
+    return 0.0;
 
   if (H.offdiag.size() != std::max(0, n - 1)) {
-    throw std::invalid_argument("TridiagonalValues has inconsistent offdiag size");
+    throw std::invalid_argument(
+        "TridiagonalValues has inconsistent offdiag size");
   }
 
   double d_prev = H.diag[0];
   if (!(d_prev > 0.0) || !std::isfinite(d_prev)) {
-    throw std::runtime_error("Tridiagonal value Hessian is not positive definite");
+    throw std::runtime_error(
+        "Tridiagonal value Hessian is not positive definite");
   }
 
   double logdet = std::log(d_prev);
@@ -61,7 +65,8 @@ inline double logdet_tridiagonal_values_ldlt(const TridiagonalValues& H) {
     const double d = H.diag[i] - (e * e) / d_prev;
 
     if (!(d > 0.0) || !std::isfinite(d)) {
-      throw std::runtime_error("Tridiagonal value Hessian is not positive definite");
+      throw std::runtime_error(
+          "Tridiagonal value Hessian is not positive definite");
     }
 
     logdet += std::log(d);
@@ -71,25 +76,28 @@ inline double logdet_tridiagonal_values_ldlt(const TridiagonalValues& H) {
   return logdet;
 }
 
-inline double lower_band_value(const BandedValues& H,
-                                      const int i,
-                                      const int j) {
-  if (i < j) return 0.0;
+inline double lower_band_value(const BandedValues &H, const int i,
+                               const int j) {
+  if (i < j)
+    return 0.0;
 
   const int d = i - j;
-  if (d == 0) return H.diag[i];
-  if (d < 0 || d > H.bandwidth) return 0.0;
+  if (d == 0)
+    return H.diag[i];
+  if (d < 0 || d > H.bandwidth)
+    return 0.0;
 
-  const Eigen::VectorXd& band =
-      H.lower_bands[static_cast<std::size_t>(d - 1)];
+  const Eigen::VectorXd &band = H.lower_bands[static_cast<std::size_t>(d - 1)];
 
-  if (j < 0 || j >= band.size()) return 0.0;
+  if (j < 0 || j >= band.size())
+    return 0.0;
   return band[j];
 }
 
-inline double logdet_banded_values_ldlt(const BandedValues& H) {
+inline double logdet_banded_values_ldlt(const BandedValues &H) {
   const int n = static_cast<int>(H.diag.size());
-  if (n == 0) return 0.0;
+  if (n == 0)
+    return 0.0;
 
   if (H.bandwidth < 0) {
     throw std::invalid_argument("BandedValues bandwidth must be non-negative");
@@ -102,8 +110,8 @@ inline double logdet_banded_values_ldlt(const BandedValues& H) {
 
   for (int d = 1; d <= H.bandwidth; ++d) {
     const int expected = std::max(0, n - d);
-    const int actual = static_cast<int>(
-        H.lower_bands[static_cast<std::size_t>(d - 1)].size());
+    const int actual =
+        static_cast<int>(H.lower_bands[static_cast<std::size_t>(d - 1)].size());
     if (actual != expected) {
       throw std::invalid_argument("BandedValues lower band has wrong length");
     }
@@ -113,14 +121,16 @@ inline double logdet_banded_values_ldlt(const BandedValues& H) {
   const int stride = bw + 1;
   std::vector<double> work(static_cast<std::size_t>(n * stride), 0.0);
 
-  auto at = [&](const int i, const int j) -> double& {
+  auto at = [&](const int i, const int j) -> double & {
     return work[static_cast<std::size_t>(i * stride + (i - j))];
   };
 
   auto get = [&](const int i, const int j) -> double {
-    if (i < j) return 0.0;
+    if (i < j)
+      return 0.0;
     const int d = i - j;
-    if (d < 0 || d > bw) return 0.0;
+    if (d < 0 || d > bw)
+      return 0.0;
     return work[static_cast<std::size_t>(i * stride + d)];
   };
 
@@ -145,8 +155,7 @@ inline double logdet_banded_values_ldlt(const BandedValues& H) {
     }
 
     if (!(dkk > 0.0) || !std::isfinite(dkk)) {
-      throw std::runtime_error(
-          "Banded value Hessian is not positive definite");
+      throw std::runtime_error("Banded value Hessian is not positive definite");
     }
     at(k, k) = dkk;
     logdet += std::log(dkk);
@@ -167,8 +176,8 @@ inline double logdet_banded_values_ldlt(const BandedValues& H) {
   return logdet;
 }
 
-inline Eigen::SparseMatrix<double> sparse_from_diagonal_values(
-    const DiagonalValues& H) {
+inline Eigen::SparseMatrix<double>
+sparse_from_diagonal_values(const DiagonalValues &H) {
   const int n = static_cast<int>(H.diag.size());
   std::vector<Eigen::Triplet<double>> triplets;
   triplets.reserve(static_cast<std::size_t>(n));
@@ -185,8 +194,8 @@ inline Eigen::SparseMatrix<double> sparse_from_diagonal_values(
   return S;
 }
 
-inline Eigen::SparseMatrix<double> sparse_from_banded_values(
-    const BandedValues& H) {
+inline Eigen::SparseMatrix<double>
+sparse_from_banded_values(const BandedValues &H) {
   const int n = static_cast<int>(H.diag.size());
   if (static_cast<int>(H.lower_bands.size()) != H.bandwidth) {
     throw std::invalid_argument(
@@ -201,10 +210,12 @@ inline Eigen::SparseMatrix<double> sparse_from_banded_values(
     }
     for (int d = 1; d <= H.bandwidth; ++d) {
       const int j = i - d;
-      if (j < 0) continue;
-      const Eigen::VectorXd& band =
+      if (j < 0)
+        continue;
+      const Eigen::VectorXd &band =
           H.lower_bands[static_cast<std::size_t>(d - 1)];
-      if (j >= band.size()) continue;
+      if (j >= band.size())
+        continue;
       const double v = band[j];
       if (std::abs(v) > 0.0) {
         triplets.emplace_back(i, j, v);
@@ -219,8 +230,8 @@ inline Eigen::SparseMatrix<double> sparse_from_banded_values(
   return S;
 }
 
-inline Eigen::SparseMatrix<double> sparse_from_tridiagonal_values(
-    const TridiagonalValues& H) {
+inline Eigen::SparseMatrix<double>
+sparse_from_tridiagonal_values(const TridiagonalValues &H) {
   const int n = static_cast<int>(H.diag.size());
   std::vector<Eigen::Triplet<double>> triplets;
   triplets.reserve(static_cast<std::size_t>(3 * n));
@@ -242,5 +253,5 @@ inline Eigen::SparseMatrix<double> sparse_from_tridiagonal_values(
   return S;
 }
 
-}  // namespace laplace
-}  // namespace quadra
+} // namespace laplace
+} // namespace quadra

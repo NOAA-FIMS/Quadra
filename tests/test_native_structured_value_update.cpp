@@ -1,5 +1,5 @@
-#include "../core/laplace/structured_value_factory.hpp"
 #include "../core/laplace/hessian_structure.hpp"
+#include "../core/laplace/structured_value_factory.hpp"
 
 #include <Eigen/Sparse>
 
@@ -9,22 +9,21 @@
 #include <vector>
 
 using quadra::laplace::BackendRecommendation;
+using quadra::laplace::extract_structured_values;
 using quadra::laplace::LaplaceBackendKind;
+using quadra::laplace::logdet_structured_values;
 using quadra::laplace::LogDetSparseLDLT;
 using quadra::laplace::StructureDetector;
 using quadra::laplace::StructureDetectorOptions;
 using quadra::laplace::StructuredValues;
-using quadra::laplace::extract_structured_values;
-using quadra::laplace::logdet_structured_values;
 using quadra::laplace::update_structured_values_from_hessian;
 
-void expect_close(const double a, const double b, const char* msg) {
+void expect_close(const double a, const double b, const char *msg) {
   const double diff = std::abs(a - b);
   const double scale = 1.0 + std::max(std::abs(a), std::abs(b));
 
   if (diff > 1e-9 * scale) {
-    std::cerr << msg << ": a=" << a << " b=" << b
-              << " diff=" << diff << "\\n";
+    std::cerr << msg << ": a=" << a << " b=" << b << " diff=" << diff << "\\n";
     throw std::runtime_error(msg);
   }
 }
@@ -65,17 +64,16 @@ Eigen::SparseMatrix<double> make_tri(const int n, const double scale) {
   return H;
 }
 
-Eigen::SparseMatrix<double> make_banded(const int n,
-                                        const int bandwidth,
+Eigen::SparseMatrix<double> make_banded(const int n, const int bandwidth,
                                         const double scale) {
   std::vector<Eigen::Triplet<double>> t;
   for (int i = 0; i < n; ++i) {
     double diag = scale * (10.0 + 0.01 * i);
     for (int d = 1; d <= bandwidth; ++d) {
-      if (i - d < 0) continue;
+      if (i - d < 0)
+        continue;
       const double e =
-          scale * (((d % 2 == 0) ? 0.015 : -0.025) /
-                   static_cast<double>(d));
+          scale * (((d % 2 == 0) ? 0.015 : -0.025) / static_cast<double>(d));
       t.emplace_back(i, i - d, e);
       t.emplace_back(i - d, i, e);
       diag += 2.0 * std::abs(e);
@@ -88,10 +86,9 @@ Eigen::SparseMatrix<double> make_banded(const int n,
   return H;
 }
 
-void test_case(const Eigen::SparseMatrix<double>& H1,
-               const Eigen::SparseMatrix<double>& H2,
-               const LaplaceBackendKind expected,
-               const char* label) {
+void test_case(const Eigen::SparseMatrix<double> &H1,
+               const Eigen::SparseMatrix<double> &H2,
+               const LaplaceBackendKind expected, const char *label) {
   StructureDetector detector(detector_options());
   const BackendRecommendation rec = detector.Analyze(H1);
 

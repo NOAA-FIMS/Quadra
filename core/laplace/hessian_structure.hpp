@@ -21,18 +21,18 @@ enum class HessianStructure {
   Dense
 };
 
-inline const char* ToString(const HessianStructure s) {
+inline const char *ToString(const HessianStructure s) {
   switch (s) {
-    case HessianStructure::Diagonal:
-      return "diagonal";
-    case HessianStructure::Tridiagonal:
-      return "tridiagonal";
-    case HessianStructure::Banded:
-      return "banded";
-    case HessianStructure::SparsePattern:
-      return "sparse_pattern";
-    case HessianStructure::Dense:
-      return "dense";
+  case HessianStructure::Diagonal:
+    return "diagonal";
+  case HessianStructure::Tridiagonal:
+    return "tridiagonal";
+  case HessianStructure::Banded:
+    return "banded";
+  case HessianStructure::SparsePattern:
+    return "sparse_pattern";
+  case HessianStructure::Dense:
+    return "dense";
   }
   return "unknown";
 }
@@ -64,16 +64,17 @@ struct StructureOptions {
   double dense_fill_ratio = 0.25;
 };
 
-inline StructureInfo InspectHessianStructure(
-    const Eigen::SparseMatrix<double>& H,
-    const StructureOptions& options = StructureOptions()) {
+inline StructureInfo
+InspectHessianStructure(const Eigen::SparseMatrix<double> &H,
+                        const StructureOptions &options = StructureOptions()) {
   StructureInfo info;
   info.rows = static_cast<int>(H.rows());
   info.cols = static_cast<int>(H.cols());
   info.square = (info.rows == info.cols);
 
   if (!info.square) {
-    throw std::invalid_argument("Hessian structure inspection requires a square matrix");
+    throw std::invalid_argument(
+        "Hessian structure inspection requires a square matrix");
   }
 
   Eigen::SparseMatrix<double> canonical = H;
@@ -90,7 +91,8 @@ inline StructureInfo InspectHessianStructure(
   for (int outer = 0; outer < canonical.outerSize(); ++outer) {
     current_outer_count = 0;
 
-    for (Eigen::SparseMatrix<double>::InnerIterator it(canonical, outer); it; ++it) {
+    for (Eigen::SparseMatrix<double>::InnerIterator it(canonical, outer); it;
+         ++it) {
       const int i = static_cast<int>(it.row());
       const int j = static_cast<int>(it.col());
       const double v = it.value();
@@ -120,14 +122,16 @@ inline StructureInfo InspectHessianStructure(
   }
   info.max_row_nnz = max_row_nnz;
 
-  const double total = static_cast<double>(info.rows) * static_cast<double>(info.cols);
+  const double total =
+      static_cast<double>(info.rows) * static_cast<double>(info.cols);
   info.fill_ratio = total > 0.0 ? static_cast<double>(info.nnz) / total : 0.0;
 
   // Numeric symmetry check. This is O(nnz * lookup), acceptable for detection
   // and tests. Production evaluators can cache this after pattern discovery.
   info.max_abs_asymmetry = 0.0;
   for (int outer = 0; outer < canonical.outerSize(); ++outer) {
-    for (Eigen::SparseMatrix<double>::InnerIterator it(canonical, outer); it; ++it) {
+    for (Eigen::SparseMatrix<double>::InnerIterator it(canonical, outer); it;
+         ++it) {
       const int i = static_cast<int>(it.row());
       const int j = static_cast<int>(it.col());
       const double v = it.value();
@@ -164,11 +168,12 @@ inline StructureInfo InspectHessianStructure(
   return info;
 }
 
-inline StructureInfo InspectHessianStructure(
-    const Eigen::MatrixXd& H,
-    const StructureOptions& options = StructureOptions()) {
+inline StructureInfo
+InspectHessianStructure(const Eigen::MatrixXd &H,
+                        const StructureOptions &options = StructureOptions()) {
   if (H.rows() != H.cols()) {
-    throw std::invalid_argument("Hessian structure inspection requires a square matrix");
+    throw std::invalid_argument(
+        "Hessian structure inspection requires a square matrix");
   }
 
   std::vector<Eigen::Triplet<double>> triplets;
@@ -188,13 +193,14 @@ inline StructureInfo InspectHessianStructure(
 }
 
 inline HessianStructure ChooseFactorizationBackend(
-    const StructureInfo& info,
-    const StructureOptions& options = StructureOptions()) {
+    const StructureInfo &info,
+    const StructureOptions &options = StructureOptions()) {
   if (!info.square) {
     throw std::invalid_argument("Cannot factor non-square Hessian");
   }
   if (!info.numerically_symmetric) {
-    throw std::invalid_argument("Cannot use symmetric Hessian backend on non-symmetric matrix");
+    throw std::invalid_argument(
+        "Cannot use symmetric Hessian backend on non-symmetric matrix");
   }
 
   if (info.max_bandwidth == 0) {
@@ -213,7 +219,7 @@ inline HessianStructure ChooseFactorizationBackend(
   return HessianStructure::Dense;
 }
 
-inline double LogDetDiagonal(const Eigen::SparseMatrix<double>& H) {
+inline double LogDetDiagonal(const Eigen::SparseMatrix<double> &H) {
   if (H.rows() != H.cols()) {
     throw std::invalid_argument("Diagonal logdet requires square matrix");
   }
@@ -233,13 +239,14 @@ inline double LogDetDiagonal(const Eigen::SparseMatrix<double>& H) {
 
 // LDLT logdet for symmetric tridiagonal positive definite matrices.
 // This avoids sparse symbolic overhead for max_bandwidth == 1.
-inline double LogDetTridiagonalLDLT(const Eigen::SparseMatrix<double>& H) {
+inline double LogDetTridiagonalLDLT(const Eigen::SparseMatrix<double> &H) {
   if (H.rows() != H.cols()) {
     throw std::invalid_argument("Tridiagonal logdet requires square matrix");
   }
 
   const int n = static_cast<int>(H.rows());
-  if (n == 0) return 0.0;
+  if (n == 0)
+    return 0.0;
 
   double logdet = 0.0;
 
@@ -267,7 +274,7 @@ inline double LogDetTridiagonalLDLT(const Eigen::SparseMatrix<double>& H) {
 
 // True banded LDLT log determinant for symmetric positive definite matrices.
 // Uses compact lower-band storage and costs O(n * bandwidth^2).
-inline double LogDetBandedLDLT(const Eigen::SparseMatrix<double>& H,
+inline double LogDetBandedLDLT(const Eigen::SparseMatrix<double> &H,
                                const int bandwidth) {
   if (H.rows() != H.cols()) {
     throw std::invalid_argument("Banded LDLT logdet requires square matrix");
@@ -277,7 +284,8 @@ inline double LogDetBandedLDLT(const Eigen::SparseMatrix<double>& H,
   }
 
   const int n = static_cast<int>(H.rows());
-  if (n == 0) return 0.0;
+  if (n == 0)
+    return 0.0;
 
   const int bw = std::min(bandwidth, n - 1);
   const int stride = bw + 1;
@@ -285,14 +293,16 @@ inline double LogDetBandedLDLT(const Eigen::SparseMatrix<double>& H,
   // Lower-band values: A_band[i * stride + d] = A(i, i - d).
   std::vector<double> A_band(static_cast<std::size_t>(n * stride), 0.0);
 
-  auto at = [&](const int i, const int j) -> double& {
+  auto at = [&](const int i, const int j) -> double & {
     return A_band[static_cast<std::size_t>(i * stride + (i - j))];
   };
 
   auto get = [&](const int i, const int j) -> double {
-    if (i < j) return 0.0;
+    if (i < j)
+      return 0.0;
     const int d = i - j;
-    if (d < 0 || d > bw) return 0.0;
+    if (d < 0 || d > bw)
+      return 0.0;
     return A_band[static_cast<std::size_t>(i * stride + d)];
   };
 
@@ -300,7 +310,8 @@ inline double LogDetBandedLDLT(const Eigen::SparseMatrix<double>& H,
   canonical.makeCompressed();
 
   for (int outer = 0; outer < canonical.outerSize(); ++outer) {
-    for (Eigen::SparseMatrix<double>::InnerIterator it(canonical, outer); it; ++it) {
+    for (Eigen::SparseMatrix<double>::InnerIterator it(canonical, outer); it;
+         ++it) {
       const int r = static_cast<int>(it.row());
       const int c = static_cast<int>(it.col());
       const double v = it.value();
@@ -323,10 +334,13 @@ inline double LogDetBandedLDLT(const Eigen::SparseMatrix<double>& H,
   std::vector<double> D(static_cast<std::size_t>(n), 0.0);
 
   auto L = [&](const int i, const int j) -> double {
-    if (i == j) return 1.0;
-    if (i < j) return 0.0;
+    if (i == j)
+      return 1.0;
+    if (i < j)
+      return 0.0;
     const int d = i - j;
-    if (d <= 0 || d > bw) return 0.0;
+    if (d <= 0 || d > bw)
+      return 0.0;
     return get(i, j);
   };
 
@@ -365,12 +379,12 @@ inline double LogDetBandedLDLT(const Eigen::SparseMatrix<double>& H,
 }
 
 // Backwards-compatible name used by early dispatch code.
-inline double LogDetBandedDenseLDLT(const Eigen::SparseMatrix<double>& H,
+inline double LogDetBandedDenseLDLT(const Eigen::SparseMatrix<double> &H,
                                     const int bandwidth) {
   return LogDetBandedLDLT(H, bandwidth);
 }
 
-inline double LogDetSparseLDLT(const Eigen::SparseMatrix<double>& H) {
+inline double LogDetSparseLDLT(const Eigen::SparseMatrix<double> &H) {
   Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> ldlt;
   ldlt.compute(H);
 
@@ -378,7 +392,7 @@ inline double LogDetSparseLDLT(const Eigen::SparseMatrix<double>& H) {
     throw std::runtime_error("Sparse LDLT failed");
   }
 
-  const auto& D = ldlt.vectorD();
+  const auto &D = ldlt.vectorD();
   double logdet = 0.0;
   for (int i = 0; i < D.size(); ++i) {
     if (!(D[i] > 0.0)) {
@@ -390,14 +404,14 @@ inline double LogDetSparseLDLT(const Eigen::SparseMatrix<double>& H) {
   return logdet;
 }
 
-inline double LogDetDenseLDLT(const Eigen::MatrixXd& H) {
+inline double LogDetDenseLDLT(const Eigen::MatrixXd &H) {
   Eigen::LDLT<Eigen::MatrixXd> ldlt(H);
 
   if (ldlt.info() != Eigen::Success) {
     throw std::runtime_error("Dense LDLT failed");
   }
 
-  const auto& D = ldlt.vectorD();
+  const auto &D = ldlt.vectorD();
   double logdet = 0.0;
   for (int i = 0; i < D.size(); ++i) {
     if (!(D[i] > 0.0)) {
@@ -409,11 +423,11 @@ inline double LogDetDenseLDLT(const Eigen::MatrixXd& H) {
   return logdet;
 }
 
-inline double AutomaticLogDet(
-    const Eigen::SparseMatrix<double>& H,
-    const StructureOptions& options = StructureOptions(),
-    HessianStructure* selected_backend = nullptr,
-    StructureInfo* out_info = nullptr) {
+inline double
+AutomaticLogDet(const Eigen::SparseMatrix<double> &H,
+                const StructureOptions &options = StructureOptions(),
+                HessianStructure *selected_backend = nullptr,
+                StructureInfo *out_info = nullptr) {
   const StructureInfo info = InspectHessianStructure(H, options);
   const HessianStructure backend = ChooseFactorizationBackend(info, options);
 
@@ -425,20 +439,20 @@ inline double AutomaticLogDet(
   }
 
   switch (backend) {
-    case HessianStructure::Diagonal:
-      return LogDetDiagonal(H);
-    case HessianStructure::Tridiagonal:
-      return LogDetTridiagonalLDLT(H);
-    case HessianStructure::Banded:
-      return LogDetBandedDenseLDLT(H, info.max_bandwidth);
-    case HessianStructure::SparsePattern:
-      return LogDetSparseLDLT(H);
-    case HessianStructure::Dense:
-      return LogDetDenseLDLT(Eigen::MatrixXd(H));
+  case HessianStructure::Diagonal:
+    return LogDetDiagonal(H);
+  case HessianStructure::Tridiagonal:
+    return LogDetTridiagonalLDLT(H);
+  case HessianStructure::Banded:
+    return LogDetBandedDenseLDLT(H, info.max_bandwidth);
+  case HessianStructure::SparsePattern:
+    return LogDetSparseLDLT(H);
+  case HessianStructure::Dense:
+    return LogDetDenseLDLT(Eigen::MatrixXd(H));
   }
 
   throw std::runtime_error("Unknown Hessian backend");
 }
 
-}  // namespace laplace
-}  // namespace quadra
+} // namespace laplace
+} // namespace quadra

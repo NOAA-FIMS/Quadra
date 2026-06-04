@@ -18,23 +18,23 @@ using quadra::laplace::ToString;
 
 namespace {
 
-void expect_true(bool cond, const char* msg) {
+void expect_true(bool cond, const char *msg) {
   if (!cond) {
     throw std::runtime_error(msg);
   }
 }
 
-void expect_near(double a, double b, double tol, const char* msg) {
+void expect_near(double a, double b, double tol, const char *msg) {
   if (std::abs(a - b) > tol) {
-    std::cerr << msg << ": a=" << a << " b=" << b
-              << " diff=" << std::abs(a - b) << "\n";
+    std::cerr << msg << ": a=" << a << " b=" << b << " diff=" << std::abs(a - b)
+              << "\n";
     throw std::runtime_error(msg);
   }
 }
 
-Eigen::SparseMatrix<double> make_sparse_from_triplets(
-    int n,
-    const std::vector<Eigen::Triplet<double>>& triplets) {
+Eigen::SparseMatrix<double>
+make_sparse_from_triplets(int n,
+                          const std::vector<Eigen::Triplet<double>> &triplets) {
   Eigen::SparseMatrix<double> H(n, n);
   H.setFromTriplets(triplets.begin(), triplets.end());
   return H;
@@ -60,7 +60,8 @@ void test_diagonal() {
 void test_tridiagonal() {
   std::vector<Eigen::Triplet<double>> t;
   const int n = 4;
-  for (int i = 0; i < n; ++i) t.emplace_back(i, i, 4.0);
+  for (int i = 0; i < n; ++i)
+    t.emplace_back(i, i, 4.0);
   for (int i = 0; i < n - 1; ++i) {
     t.emplace_back(i, i + 1, -1.0);
     t.emplace_back(i + 1, i, -1.0);
@@ -69,12 +70,14 @@ void test_tridiagonal() {
   auto H = make_sparse_from_triplets(n, t);
   StructureInfo info;
   HessianStructure backend;
-  const double auto_logdet = AutomaticLogDet(H, StructureOptions(), &backend, &info);
+  const double auto_logdet =
+      AutomaticLogDet(H, StructureOptions(), &backend, &info);
 
   const double dense_logdet =
       quadra::laplace::LogDetDenseLDLT(Eigen::MatrixXd(H));
 
-  expect_true(info.detected == HessianStructure::Tridiagonal, "tridiagonal detected");
+  expect_true(info.detected == HessianStructure::Tridiagonal,
+              "tridiagonal detected");
   expect_true(backend == HessianStructure::Tridiagonal, "tridiagonal backend");
   expect_true(info.max_bandwidth == 1, "tridiagonal bandwidth");
   expect_near(auto_logdet, dense_logdet, 1e-10, "tridiagonal logdet");
@@ -115,7 +118,8 @@ void test_banded() {
 void test_sparse_pattern() {
   const int n = 20;
   std::vector<Eigen::Triplet<double>> t;
-  for (int i = 0; i < n; ++i) t.emplace_back(i, i, 5.0);
+  for (int i = 0; i < n; ++i)
+    t.emplace_back(i, i, 5.0);
 
   // Wide sparse links, still SPD by diagonal dominance.
   t.emplace_back(0, 10, 0.1);
@@ -133,7 +137,8 @@ void test_sparse_pattern() {
   const double auto_logdet = AutomaticLogDet(H, opts, &backend, &info);
   const double sparse_logdet = quadra::laplace::LogDetSparseLDLT(H);
 
-  expect_true(info.detected == HessianStructure::SparsePattern, "sparse detected");
+  expect_true(info.detected == HessianStructure::SparsePattern,
+              "sparse detected");
   expect_true(backend == HessianStructure::SparsePattern, "sparse backend");
   expect_near(auto_logdet, sparse_logdet, 1e-10, "sparse logdet");
 }
@@ -170,7 +175,7 @@ void test_dense() {
   expect_near(auto_logdet, dense_logdet, 1e-10, "dense logdet");
 }
 
-}  // namespace
+} // namespace
 
 int main() {
   test_diagonal();

@@ -23,12 +23,12 @@ struct ToySolverPolicy {
   int solve_calls = 0;
   Eigen::VectorXd last_initial_x;
 
-  Eigen::VectorXd initial_x(ToyContext& ctx) {
+  Eigen::VectorXd initial_x(ToyContext &ctx) {
     ++initial_calls;
     return Eigen::VectorXd::Zero(ctx.target.size());
   }
 
-  ToySolveResult solve(ToyContext& ctx, const Eigen::VectorXd& initial_x) {
+  ToySolveResult solve(ToyContext &ctx, const Eigen::VectorXd &initial_x) {
     ++solve_calls;
     last_initial_x = initial_x;
 
@@ -57,7 +57,8 @@ void test_solver_policy_initializes_then_warm_starts() {
   }
 
   if (solver.initial_calls != 1 || solver.solve_calls != 1) {
-    throw std::runtime_error("first solve did not call initial/solve exactly once");
+    throw std::runtime_error(
+        "first solve did not call initial/solve exactly once");
   }
 
   if ((runtime.random_effects().xhat() - ctx.target).norm() > 1e-12) {
@@ -76,7 +77,8 @@ void test_solver_policy_initializes_then_warm_starts() {
   }
 
   if ((solver.last_initial_x - first.xhat).norm() > 1e-12) {
-    throw std::runtime_error("second solve was not warm-started from cached xhat");
+    throw std::runtime_error(
+        "second solve was not warm-started from cached xhat");
   }
 
   if ((runtime.random_effects().xhat() - ctx.target).norm() > 1e-12) {

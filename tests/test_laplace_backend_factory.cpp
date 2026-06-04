@@ -19,23 +19,22 @@ using quadra::laplace::StructureDetectorOptions;
 
 namespace {
 
-void expect_true(bool cond, const char* msg) {
+void expect_true(bool cond, const char *msg) {
   if (!cond) {
     throw std::runtime_error(msg);
   }
 }
 
-void expect_near(double a, double b, double tol, const char* msg) {
+void expect_near(double a, double b, double tol, const char *msg) {
   if (std::abs(a - b) > tol) {
-    std::cerr << msg << ": a=" << a << " b=" << b
-              << " diff=" << std::abs(a - b) << "\n";
+    std::cerr << msg << ": a=" << a << " b=" << b << " diff=" << std::abs(a - b)
+              << "\n";
     throw std::runtime_error(msg);
   }
 }
 
-Eigen::SparseMatrix<double> make_sparse(
-    int n,
-    const std::vector<Eigen::Triplet<double>>& triplets) {
+Eigen::SparseMatrix<double>
+make_sparse(int n, const std::vector<Eigen::Triplet<double>> &triplets) {
   Eigen::SparseMatrix<double> H(n, n);
   H.setFromTriplets(triplets.begin(), triplets.end());
   H.makeCompressed();
@@ -51,14 +50,16 @@ StructureDetectorOptions detector_options() {
   return opts;
 }
 
-void test_backend_on_matrix(const Eigen::SparseMatrix<double>& H,
+void test_backend_on_matrix(const Eigen::SparseMatrix<double> &H,
                             LaplaceBackendKind expected_backend,
-                            const char* expected_name) {
+                            const char *expected_name) {
   BackendRecommendation rec;
   auto backend = CreateLaplaceBackendForHessian(H, &rec, detector_options());
 
-  expect_true(rec.backend == expected_backend, "backend recommendation mismatch");
-  expect_true(std::string(backend->name()) == expected_name, "backend name mismatch");
+  expect_true(rec.backend == expected_backend,
+              "backend recommendation mismatch");
+  expect_true(std::string(backend->name()) == expected_name,
+              "backend name mismatch");
 
   backend->factorize(H);
 
@@ -73,22 +74,21 @@ void test_diagonal_backend() {
   t.emplace_back(1, 1, 3.0);
   t.emplace_back(2, 2, 4.0);
 
-  test_backend_on_matrix(make_sparse(3, t),
-                         LaplaceBackendKind::Diagonal,
+  test_backend_on_matrix(make_sparse(3, t), LaplaceBackendKind::Diagonal,
                          "diagonal");
 }
 
 void test_tridiagonal_backend() {
   const int n = 10;
   std::vector<Eigen::Triplet<double>> t;
-  for (int i = 0; i < n; ++i) t.emplace_back(i, i, 4.0);
+  for (int i = 0; i < n; ++i)
+    t.emplace_back(i, i, 4.0);
   for (int i = 0; i < n - 1; ++i) {
     t.emplace_back(i, i + 1, -0.25);
     t.emplace_back(i + 1, i, -0.25);
   }
 
-  test_backend_on_matrix(make_sparse(n, t),
-                         LaplaceBackendKind::Tridiagonal,
+  test_backend_on_matrix(make_sparse(n, t), LaplaceBackendKind::Tridiagonal,
                          "tridiagonal");
 }
 
@@ -107,23 +107,22 @@ void test_banded_backend() {
     }
   }
 
-  test_backend_on_matrix(make_sparse(n, t),
-                         LaplaceBackendKind::Banded,
+  test_backend_on_matrix(make_sparse(n, t), LaplaceBackendKind::Banded,
                          "banded");
 }
 
 void test_sparse_backend() {
   const int n = 30;
   std::vector<Eigen::Triplet<double>> t;
-  for (int i = 0; i < n; ++i) t.emplace_back(i, i, 5.0);
+  for (int i = 0; i < n; ++i)
+    t.emplace_back(i, i, 5.0);
 
   t.emplace_back(0, 20, 0.1);
   t.emplace_back(20, 0, 0.1);
   t.emplace_back(3, 27, -0.1);
   t.emplace_back(27, 3, -0.1);
 
-  test_backend_on_matrix(make_sparse(n, t),
-                         LaplaceBackendKind::SparseLDLT,
+  test_backend_on_matrix(make_sparse(n, t), LaplaceBackendKind::SparseLDLT,
                          "sparse_ldlt");
 }
 
@@ -140,8 +139,7 @@ void test_dense_backend() {
     }
   }
 
-  test_backend_on_matrix(make_sparse(n, t),
-                         LaplaceBackendKind::DenseLDLT,
+  test_backend_on_matrix(make_sparse(n, t), LaplaceBackendKind::DenseLDLT,
                          "dense_ldlt");
 }
 
@@ -185,7 +183,7 @@ void test_sparse_symbolic_reuse() {
               "reuse H2 logdet");
 }
 
-}  // namespace
+} // namespace
 
 int main() {
   test_diagonal_backend();

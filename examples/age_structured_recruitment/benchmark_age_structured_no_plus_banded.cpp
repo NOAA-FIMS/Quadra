@@ -14,23 +14,22 @@ using Clock = std::chrono::high_resolution_clock;
 
 namespace {
 
-double ms_between(const Clock::time_point& a, const Clock::time_point& b) {
+double ms_between(const Clock::time_point &a, const Clock::time_point &b) {
   return std::chrono::duration<double, std::milli>(b - a).count();
 }
 
-std::vector<int> parse_lengths(const std::string& s) {
+std::vector<int> parse_lengths(const std::string &s) {
   std::vector<int> out;
   std::stringstream ss_in(s);
   std::string item;
   while (std::getline(ss_in, item, ',')) {
-    if (!item.empty()) out.push_back(std::stoi(item));
+    if (!item.empty())
+      out.push_back(std::stoi(item));
   }
   return out;
 }
 
-double logistic(const double x) {
-  return 1.0 / (1.0 + std::exp(-x));
-}
+double logistic(const double x) { return 1.0 / (1.0 + std::exp(-x)); }
 
 double normal_nll(const double residual, const double sigma) {
   const double z = residual / sigma;
@@ -59,7 +58,7 @@ struct Derived {
   double sigma_index = 0.0;
 };
 
-Derived transform(const Parameters& par) {
+Derived transform(const Parameters &par) {
   Derived d;
   d.R0 = std::exp(par.log_R0);
   d.M = std::exp(par.log_M);
@@ -78,9 +77,8 @@ std::vector<double> selectivity(const int n_ages) {
   return sel;
 }
 
-std::vector<double> simulate_index(const int n_years,
-                                   const int n_ages,
-                                   const Parameters& par) {
+std::vector<double> simulate_index(const int n_years, const int n_ages,
+                                   const Parameters &par) {
   const Derived p = transform(par);
   const std::vector<double> sel = selectivity(n_ages);
 
@@ -95,16 +93,15 @@ std::vector<double> simulate_index(const int n_years,
   for (int y = 0; y < n_years; ++y) {
     double vulnerable = 0.0;
     for (int a = 0; a < n_ages; ++a) {
-      vulnerable += sel[static_cast<std::size_t>(a)] *
-                    N[static_cast<std::size_t>(a)];
+      vulnerable +=
+          sel[static_cast<std::size_t>(a)] * N[static_cast<std::size_t>(a)];
     }
 
     const double obs_error =
         0.04 * std::sin(2.0 * M_PI * static_cast<double>(y) / 13.0) +
         0.02 * std::cos(2.0 * M_PI * static_cast<double>(y) / 7.0);
 
-    index[static_cast<std::size_t>(y)] =
-        p.q * vulnerable * std::exp(obs_error);
+    index[static_cast<std::size_t>(y)] = p.q * vulnerable * std::exp(obs_error);
 
     std::vector<double> N_next(static_cast<std::size_t>(n_ages), 0.0);
     const double recruitment_dev =
@@ -124,7 +121,7 @@ std::vector<double> simulate_index(const int n_years,
   return index;
 }
 
-Data make_data(const int n_years, const int n_ages, const Parameters& par) {
+Data make_data(const int n_years, const int n_ages, const Parameters &par) {
   Data data;
   data.n_years = n_years;
   data.n_ages = n_ages;
@@ -132,7 +129,8 @@ Data make_data(const int n_years, const int n_ages, const Parameters& par) {
   return data;
 }
 
-double joint_x(const Data& data, const Parameters& par, const Eigen::VectorXd& x) {
+double joint_x(const Data &data, const Parameters &par,
+               const Eigen::VectorXd &x) {
   const Derived p = transform(par);
   const std::vector<double> sel = selectivity(data.n_ages);
 
@@ -147,8 +145,8 @@ double joint_x(const Data& data, const Parameters& par, const Eigen::VectorXd& x
   for (int y = 0; y < data.n_years; ++y) {
     double vulnerable = 0.0;
     for (int a = 0; a < data.n_ages; ++a) {
-      vulnerable += sel[static_cast<std::size_t>(a)] *
-                    N[static_cast<std::size_t>(a)];
+      vulnerable +=
+          sel[static_cast<std::size_t>(a)] * N[static_cast<std::size_t>(a)];
     }
 
     const double obs_residual =
@@ -174,9 +172,8 @@ double joint_x(const Data& data, const Parameters& par, const Eigen::VectorXd& x
   return nll;
 }
 
-Eigen::VectorXd fd_grad_x(const Data& data,
-                          const Parameters& par,
-                          const Eigen::VectorXd& x) {
+Eigen::VectorXd fd_grad_x(const Data &data, const Parameters &par,
+                          const Eigen::VectorXd &x) {
   Eigen::VectorXd g(x.size());
 
   for (int i = 0; i < x.size(); ++i) {
@@ -193,22 +190,21 @@ Eigen::VectorXd fd_grad_x(const Data& data,
 }
 
 class ObjX {
- public:
-  ObjX(const Data& data, const Parameters& par)
-      : data_(data), par_(par) {}
+public:
+  ObjX(const Data &data, const Parameters &par) : data_(data), par_(par) {}
 
-  double operator()(const Eigen::VectorXd& x, Eigen::VectorXd& grad) {
+  double operator()(const Eigen::VectorXd &x, Eigen::VectorXd &grad) {
     const double f = joint_x(data_, par_, x);
     grad = fd_grad_x(data_, par_, x);
     return f;
   }
 
- private:
-  const Data& data_;
-  const Parameters& par_;
+private:
+  const Data &data_;
+  const Parameters &par_;
 };
 
-Eigen::VectorXd optimize_x(const Data& data, const Parameters& par) {
+Eigen::VectorXd optimize_x(const Data &data, const Parameters &par) {
   Eigen::VectorXd x = Eigen::VectorXd::Zero(data.n_years);
 
   LBFGSpp::LBFGSParam<double> param;
@@ -237,9 +233,9 @@ Eigen::VectorXd optimize_x(const Data& data, const Parameters& par) {
   return x;
 }
 
-Eigen::SparseMatrix<double> fd_banded_hessian_xx(const Data& data,
-                                                 const Parameters& par,
-                                                 const Eigen::VectorXd& x,
+Eigen::SparseMatrix<double> fd_banded_hessian_xx(const Data &data,
+                                                 const Parameters &par,
+                                                 const Eigen::VectorXd &x,
                                                  const int bandwidth) {
   const int n = static_cast<int>(x.size());
   std::vector<Eigen::Triplet<double>> triplets;
@@ -255,8 +251,9 @@ Eigen::SparseMatrix<double> fd_banded_hessian_xx(const Data& data,
     xp[i] += hi;
     xm[i] -= hi;
 
-    const double hii = (joint_x(data, par, xp) - 2.0 * f0 +
-                        joint_x(data, par, xm)) / (hi * hi);
+    const double hii =
+        (joint_x(data, par, xp) - 2.0 * f0 + joint_x(data, par, xm)) /
+        (hi * hi);
 
     if (std::abs(hii) > 1e-12) {
       triplets.emplace_back(i, i, hii);
@@ -271,15 +268,18 @@ Eigen::SparseMatrix<double> fd_banded_hessian_xx(const Data& data,
       Eigen::VectorXd xmp = x;
       Eigen::VectorXd xmm = x;
 
-      xpp[i] += hi; xpp[j] += hj;
-      xpm[i] += hi; xpm[j] -= hj;
-      xmp[i] -= hi; xmp[j] += hj;
-      xmm[i] -= hi; xmm[j] -= hj;
+      xpp[i] += hi;
+      xpp[j] += hj;
+      xpm[i] += hi;
+      xpm[j] -= hj;
+      xmp[i] -= hi;
+      xmp[j] += hj;
+      xmm[i] -= hi;
+      xmm[j] -= hj;
 
-      const double hij =
-          (joint_x(data, par, xpp) - joint_x(data, par, xpm) -
-           joint_x(data, par, xmp) + joint_x(data, par, xmm)) /
-          (4.0 * hi * hj);
+      const double hij = (joint_x(data, par, xpp) - joint_x(data, par, xpm) -
+                          joint_x(data, par, xmp) + joint_x(data, par, xmm)) /
+                         (4.0 * hi * hj);
 
       if (std::abs(hij) > 1e-12) {
         triplets.emplace_back(i, j, hij);
@@ -293,7 +293,7 @@ Eigen::SparseMatrix<double> fd_banded_hessian_xx(const Data& data,
   return H;
 }
 
-double sparse_logdet_ldlt(const Eigen::SparseMatrix<double>& H) {
+double sparse_logdet_ldlt(const Eigen::SparseMatrix<double> &H) {
   Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> ldlt;
   ldlt.compute(H);
 
@@ -301,7 +301,7 @@ double sparse_logdet_ldlt(const Eigen::SparseMatrix<double>& H) {
     throw std::runtime_error("sparse LDLT failed");
   }
 
-  const auto& D = ldlt.vectorD();
+  const auto &D = ldlt.vectorD();
 
   double logdet = 0.0;
   for (int i = 0; i < D.size(); ++i) {
@@ -322,56 +322,53 @@ struct EvalResult {
   int nnz = 0;
 };
 
-EvalResult eval(const Data& data,
-                const Parameters& par,
-                const int bandwidth) {
+EvalResult eval(const Data &data, const Parameters &par, const int bandwidth) {
   EvalResult out;
 
   const Eigen::VectorXd xhat = optimize_x(data, par);
   out.joint = joint_x(data, par, xhat);
   out.grad_norm = fd_grad_x(data, par, xhat).norm();
 
-  const Eigen::SparseMatrix<double> H = fd_banded_hessian_xx(data, par, xhat, bandwidth);
+  const Eigen::SparseMatrix<double> H =
+      fd_banded_hessian_xx(data, par, xhat, bandwidth);
   out.nnz = static_cast<int>(H.nonZeros());
   out.logdet = sparse_logdet_ldlt(H);
 
   const double n_x = static_cast<double>(xhat.size());
-  out.objective = out.joint + 0.5 * out.logdet -
-                  0.5 * n_x * std::log(2.0 * M_PI);
+  out.objective =
+      out.joint + 0.5 * out.logdet - 0.5 * n_x * std::log(2.0 * M_PI);
 
   return out;
 }
 
-}  // namespace
+} // namespace
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   int reps = 10;
   std::vector<int> lengths = {25, 50, 100, 250, 500, 1000};
   int n_ages = 10;
   int bandwidth = 9;
 
-  if (argc > 1) reps = std::stoi(argv[1]);
-  if (argc > 2) lengths = parse_lengths(argv[2]);
-  if (argc > 3) n_ages = std::stoi(argv[3]);
-  if (argc > 4) bandwidth = std::stoi(argv[4]);
+  if (argc > 1)
+    reps = std::stoi(argv[1]);
+  if (argc > 2)
+    lengths = parse_lengths(argv[2]);
+  if (argc > 3)
+    n_ages = std::stoi(argv[3]);
+  if (argc > 4)
+    bandwidth = std::stoi(argv[4]);
 
   const Parameters par;
 
   std::cout << std::fixed << std::setprecision(6);
   std::cout << "Quadra no-plus age-structured banded Laplace benchmark\n";
-  std::cout << "reps per n = " << reps
-            << ", ages = " << n_ages
-            << ", bandwidth = " << bandwidth
-            << "\n\n";
+  std::cout << "reps per n = " << reps << ", ages = " << n_ages
+            << ", bandwidth = " << bandwidth << "\n\n";
 
-  std::cout << std::setw(8) << "n"
-            << std::setw(14) << "objective"
-            << std::setw(14) << "joint"
-            << std::setw(14) << "logdet"
-            << std::setw(14) << "nnz"
-            << std::setw(14) << "grad_norm"
-            << std::setw(14) << "avg_ms"
-            << "\n";
+  std::cout << std::setw(8) << "n" << std::setw(14) << "objective"
+            << std::setw(14) << "joint" << std::setw(14) << "logdet"
+            << std::setw(14) << "nnz" << std::setw(14) << "grad_norm"
+            << std::setw(14) << "avg_ms" << "\n";
 
   for (const int n : lengths) {
     const Data data = make_data(n, n_ages, par);
@@ -385,14 +382,10 @@ int main(int argc, char** argv) {
 
     const double avg_ms = ms_between(t0, t1) / static_cast<double>(reps);
 
-    std::cout << std::setw(8) << n
-              << std::setw(14) << last.objective
-              << std::setw(14) << last.joint
-              << std::setw(14) << last.logdet
-              << std::setw(14) << last.nnz
-              << std::setw(14) << last.grad_norm
-              << std::setw(14) << avg_ms
-              << "\n";
+    std::cout << std::setw(8) << n << std::setw(14) << last.objective
+              << std::setw(14) << last.joint << std::setw(14) << last.logdet
+              << std::setw(14) << last.nnz << std::setw(14) << last.grad_norm
+              << std::setw(14) << avg_ms << "\n";
   }
 
   return 0;

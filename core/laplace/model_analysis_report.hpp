@@ -14,55 +14,51 @@
 namespace quadra {
 namespace laplace {
 
-enum class SolverRecommendation {
-  Newton,
-  SparseNewton,
-  LBFGS
-};
+enum class SolverRecommendation { Newton, SparseNewton, LBFGS };
 
-inline const char* ToString(const SolverRecommendation solver) {
+inline const char *ToString(const SolverRecommendation solver) {
   switch (solver) {
-    case SolverRecommendation::Newton:
-      return "Newton";
-    case SolverRecommendation::SparseNewton:
-      return "SparseNewton";
-    case SolverRecommendation::LBFGS:
-      return "LBFGS";
+  case SolverRecommendation::Newton:
+    return "Newton";
+  case SolverRecommendation::SparseNewton:
+    return "SparseNewton";
+  case SolverRecommendation::LBFGS:
+    return "LBFGS";
   }
 
   return "Unknown";
 }
 
-inline const char* ComplexityForBackend(const LaplaceBackendKind backend) {
+inline const char *ComplexityForBackend(const LaplaceBackendKind backend) {
   switch (backend) {
-    case LaplaceBackendKind::Diagonal:
-      return "O(n)";
-    case LaplaceBackendKind::Tridiagonal:
-      return "O(n)";
-    case LaplaceBackendKind::Banded:
-      return "O(n*b^2)";
-    case LaplaceBackendKind::SparseLDLT:
-      return "problem dependent";
-    case LaplaceBackendKind::DenseLDLT:
-      return "O(n^3)";
+  case LaplaceBackendKind::Diagonal:
+    return "O(n)";
+  case LaplaceBackendKind::Tridiagonal:
+    return "O(n)";
+  case LaplaceBackendKind::Banded:
+    return "O(n*b^2)";
+  case LaplaceBackendKind::SparseLDLT:
+    return "problem dependent";
+  case LaplaceBackendKind::DenseLDLT:
+    return "O(n^3)";
   }
 
   return "unknown";
 }
 
-inline SolverRecommendation RecommendSolver(
-    const BackendRecommendation& recommendation) {
+inline SolverRecommendation
+RecommendSolver(const BackendRecommendation &recommendation) {
   switch (recommendation.backend) {
-    case LaplaceBackendKind::Diagonal:
-    case LaplaceBackendKind::Tridiagonal:
-    case LaplaceBackendKind::Banded:
-      return SolverRecommendation::Newton;
+  case LaplaceBackendKind::Diagonal:
+  case LaplaceBackendKind::Tridiagonal:
+  case LaplaceBackendKind::Banded:
+    return SolverRecommendation::Newton;
 
-    case LaplaceBackendKind::SparseLDLT:
-      return SolverRecommendation::SparseNewton;
+  case LaplaceBackendKind::SparseLDLT:
+    return SolverRecommendation::SparseNewton;
 
-    case LaplaceBackendKind::DenseLDLT:
-      return SolverRecommendation::LBFGS;
+  case LaplaceBackendKind::DenseLDLT:
+    return SolverRecommendation::LBFGS;
   }
 
   return SolverRecommendation::LBFGS;
@@ -92,17 +88,13 @@ struct ModelAnalysisReport {
   std::string complexity;
   bool supports_symbolic_reuse = false;
 
-  bool is_diagonal() const {
-    return structure == HessianStructure::Diagonal;
-  }
+  bool is_diagonal() const { return structure == HessianStructure::Diagonal; }
 
   bool is_tridiagonal() const {
     return structure == HessianStructure::Tridiagonal;
   }
 
-  bool is_banded() const {
-    return structure == HessianStructure::Banded;
-  }
+  bool is_banded() const { return structure == HessianStructure::Banded; }
 
   bool has_sparse_structure() const {
     return is_diagonal() || is_tridiagonal() || is_banded() ||
@@ -115,7 +107,7 @@ struct ModelAnalysisReport {
     return os.str();
   }
 
-  void Print(std::ostream& os) const {
+  void Print(std::ostream &os) const {
     os << "Model Analysis Report\n";
     os << "=====================\n\n";
 
@@ -153,11 +145,13 @@ struct ModelAnalysisReport {
     os << "Interpretation\n";
     os << "--------------\n";
     if (is_diagonal()) {
-      os << "Random effects are conditionally independent under this Hessian.\n";
+      os << "Random effects are conditionally independent under this "
+            "Hessian.\n";
       os << "A diagonal Newton/update path should be very cheap.\n";
     } else if (is_tridiagonal()) {
       os << "Random effects have first-order Markov structure.\n";
-      os << "A tridiagonal Newton solver and tridiagonal logdet are recommended.\n";
+      os << "A tridiagonal Newton solver and tridiagonal logdet are "
+            "recommended.\n";
     } else if (is_banded()) {
       os << "Random effects have fixed-width local dependence.\n";
       os << "A banded Newton/backend path is recommended.\n";
@@ -172,8 +166,8 @@ struct ModelAnalysisReport {
 };
 
 inline ModelAnalysisReport analyze_hessian_structure(
-    const Eigen::SparseMatrix<double>& H,
-    const StructureDetectorOptions& options = StructureDetectorOptions()) {
+    const Eigen::SparseMatrix<double> &H,
+    const StructureDetectorOptions &options = StructureDetectorOptions()) {
   StructureDetector detector(options);
   const BackendRecommendation recommendation = detector.Analyze(H);
   const StructureInfo info =
@@ -203,11 +197,10 @@ inline ModelAnalysisReport analyze_hessian_structure(
   return report;
 }
 
-inline void PrintModelAnalysisReport(
-    std::ostream& os,
-    const ModelAnalysisReport& report) {
+inline void PrintModelAnalysisReport(std::ostream &os,
+                                     const ModelAnalysisReport &report) {
   report.Print(os);
 }
 
-}  // namespace laplace
-}  // namespace quadra
+} // namespace laplace
+} // namespace quadra

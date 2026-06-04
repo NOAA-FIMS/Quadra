@@ -15,23 +15,22 @@ using Clock = std::chrono::high_resolution_clock;
 
 namespace {
 
-double ms_between(const Clock::time_point& a, const Clock::time_point& b) {
+double ms_between(const Clock::time_point &a, const Clock::time_point &b) {
   return std::chrono::duration<double, std::milli>(b - a).count();
 }
 
-std::vector<int> parse_lengths(const std::string& s) {
+std::vector<int> parse_lengths(const std::string &s) {
   std::vector<int> out;
   std::stringstream ss_in(s);
   std::string item;
   while (std::getline(ss_in, item, ',')) {
-    if (!item.empty()) out.push_back(std::stoi(item));
+    if (!item.empty())
+      out.push_back(std::stoi(item));
   }
   return out;
 }
 
-double logistic(const double x) {
-  return 1.0 / (1.0 + std::exp(-x));
-}
+double logistic(const double x) { return 1.0 / (1.0 + std::exp(-x)); }
 
 double normal_nll(const double residual, const double sigma) {
   const double z = residual / sigma;
@@ -60,7 +59,7 @@ struct Derived {
   double sigma_index = 0.0;
 };
 
-Derived transform(const Parameters& par) {
+Derived transform(const Parameters &par) {
   Derived d;
   d.R0 = std::exp(par.log_R0);
   d.M = std::exp(par.log_M);
@@ -79,9 +78,8 @@ std::vector<double> selectivity(const int n_ages) {
   return sel;
 }
 
-std::vector<double> simulate_index(const int n_years,
-                                   const int n_ages,
-                                   const Parameters& par) {
+std::vector<double> simulate_index(const int n_years, const int n_ages,
+                                   const Parameters &par) {
   const Derived p = transform(par);
   const std::vector<double> sel = selectivity(n_ages);
 
@@ -96,16 +94,15 @@ std::vector<double> simulate_index(const int n_years,
   for (int y = 0; y < n_years; ++y) {
     double vulnerable = 0.0;
     for (int a = 0; a < n_ages; ++a) {
-      vulnerable += sel[static_cast<std::size_t>(a)] *
-                    N[static_cast<std::size_t>(a)];
+      vulnerable +=
+          sel[static_cast<std::size_t>(a)] * N[static_cast<std::size_t>(a)];
     }
 
     const double obs_error =
         0.04 * std::sin(2.0 * M_PI * static_cast<double>(y) / 13.0) +
         0.02 * std::cos(2.0 * M_PI * static_cast<double>(y) / 7.0);
 
-    index[static_cast<std::size_t>(y)] =
-        p.q * vulnerable * std::exp(obs_error);
+    index[static_cast<std::size_t>(y)] = p.q * vulnerable * std::exp(obs_error);
 
     std::vector<double> N_next(static_cast<std::size_t>(n_ages), 0.0);
     const double recruitment_dev =
@@ -126,7 +123,7 @@ std::vector<double> simulate_index(const int n_years,
   return index;
 }
 
-Data make_data(const int n_years, const int n_ages, const Parameters& par) {
+Data make_data(const int n_years, const int n_ages, const Parameters &par) {
   Data data;
   data.n_years = n_years;
   data.n_ages = n_ages;
@@ -134,7 +131,8 @@ Data make_data(const int n_years, const int n_ages, const Parameters& par) {
   return data;
 }
 
-double joint_x(const Data& data, const Parameters& par, const Eigen::VectorXd& x) {
+double joint_x(const Data &data, const Parameters &par,
+               const Eigen::VectorXd &x) {
   const Derived p = transform(par);
   const std::vector<double> sel = selectivity(data.n_ages);
 
@@ -149,8 +147,8 @@ double joint_x(const Data& data, const Parameters& par, const Eigen::VectorXd& x
   for (int y = 0; y < data.n_years; ++y) {
     double vulnerable = 0.0;
     for (int a = 0; a < data.n_ages; ++a) {
-      vulnerable += sel[static_cast<std::size_t>(a)] *
-                    N[static_cast<std::size_t>(a)];
+      vulnerable +=
+          sel[static_cast<std::size_t>(a)] * N[static_cast<std::size_t>(a)];
     }
 
     const double obs_residual =
@@ -177,9 +175,8 @@ double joint_x(const Data& data, const Parameters& par, const Eigen::VectorXd& x
   return nll;
 }
 
-Eigen::VectorXd fd_grad_x(const Data& data,
-                          const Parameters& par,
-                          const Eigen::VectorXd& x) {
+Eigen::VectorXd fd_grad_x(const Data &data, const Parameters &par,
+                          const Eigen::VectorXd &x) {
   Eigen::VectorXd g(x.size());
 
   for (int i = 0; i < x.size(); ++i) {
@@ -196,22 +193,21 @@ Eigen::VectorXd fd_grad_x(const Data& data,
 }
 
 class ObjX {
- public:
-  ObjX(const Data& data, const Parameters& par)
-      : data_(data), par_(par) {}
+public:
+  ObjX(const Data &data, const Parameters &par) : data_(data), par_(par) {}
 
-  double operator()(const Eigen::VectorXd& x, Eigen::VectorXd& grad) {
+  double operator()(const Eigen::VectorXd &x, Eigen::VectorXd &grad) {
     const double f = joint_x(data_, par_, x);
     grad = fd_grad_x(data_, par_, x);
     return f;
   }
 
- private:
-  const Data& data_;
-  const Parameters& par_;
+private:
+  const Data &data_;
+  const Parameters &par_;
 };
 
-Eigen::VectorXd optimize_x(const Data& data, const Parameters& par) {
+Eigen::VectorXd optimize_x(const Data &data, const Parameters &par) {
   Eigen::VectorXd x = Eigen::VectorXd::Zero(data.n_years);
 
   LBFGSpp::LBFGSParam<double> param;
@@ -240,9 +236,8 @@ Eigen::VectorXd optimize_x(const Data& data, const Parameters& par) {
   return x;
 }
 
-Eigen::MatrixXd fd_dense_hessian_xx(const Data& data,
-                                    const Parameters& par,
-                                    const Eigen::VectorXd& x) {
+Eigen::MatrixXd fd_dense_hessian_xx(const Data &data, const Parameters &par,
+                                    const Eigen::VectorXd &x) {
   const int n = static_cast<int>(x.size());
   Eigen::MatrixXd H = Eigen::MatrixXd::Zero(n, n);
   const double f0 = joint_x(data, par, x);
@@ -255,8 +250,8 @@ Eigen::MatrixXd fd_dense_hessian_xx(const Data& data,
     xp[i] += hi;
     xm[i] -= hi;
 
-    H(i, i) = (joint_x(data, par, xp) - 2.0 * f0 +
-               joint_x(data, par, xm)) / (hi * hi);
+    H(i, i) = (joint_x(data, par, xp) - 2.0 * f0 + joint_x(data, par, xm)) /
+              (hi * hi);
 
     for (int j = i + 1; j < n; ++j) {
       const double hj = 1e-4 * (1.0 + std::abs(x[j]));
@@ -266,15 +261,18 @@ Eigen::MatrixXd fd_dense_hessian_xx(const Data& data,
       Eigen::VectorXd xmp = x;
       Eigen::VectorXd xmm = x;
 
-      xpp[i] += hi; xpp[j] += hj;
-      xpm[i] += hi; xpm[j] -= hj;
-      xmp[i] -= hi; xmp[j] += hj;
-      xmm[i] -= hi; xmm[j] -= hj;
+      xpp[i] += hi;
+      xpp[j] += hj;
+      xpm[i] += hi;
+      xpm[j] -= hj;
+      xmp[i] -= hi;
+      xmp[j] += hj;
+      xmm[i] -= hi;
+      xmm[j] -= hj;
 
-      const double hij =
-          (joint_x(data, par, xpp) - joint_x(data, par, xpm) -
-           joint_x(data, par, xmp) + joint_x(data, par, xmm)) /
-          (4.0 * hi * hj);
+      const double hij = (joint_x(data, par, xpp) - joint_x(data, par, xpm) -
+                          joint_x(data, par, xmp) + joint_x(data, par, xmm)) /
+                         (4.0 * hi * hj);
 
       H(i, j) = hij;
       H(j, i) = hij;
@@ -284,9 +282,9 @@ Eigen::MatrixXd fd_dense_hessian_xx(const Data& data,
   return H;
 }
 
-Eigen::SparseMatrix<double> fd_banded_hessian_xx(const Data& data,
-                                                 const Parameters& par,
-                                                 const Eigen::VectorXd& x,
+Eigen::SparseMatrix<double> fd_banded_hessian_xx(const Data &data,
+                                                 const Parameters &par,
+                                                 const Eigen::VectorXd &x,
                                                  const int bandwidth) {
   const int n = static_cast<int>(x.size());
   std::vector<Eigen::Triplet<double>> triplets;
@@ -302,8 +300,9 @@ Eigen::SparseMatrix<double> fd_banded_hessian_xx(const Data& data,
     xp[i] += hi;
     xm[i] -= hi;
 
-    const double hii = (joint_x(data, par, xp) - 2.0 * f0 +
-                        joint_x(data, par, xm)) / (hi * hi);
+    const double hii =
+        (joint_x(data, par, xp) - 2.0 * f0 + joint_x(data, par, xm)) /
+        (hi * hi);
 
     if (std::abs(hii) > 1e-12) {
       triplets.emplace_back(i, i, hii);
@@ -318,15 +317,18 @@ Eigen::SparseMatrix<double> fd_banded_hessian_xx(const Data& data,
       Eigen::VectorXd xmp = x;
       Eigen::VectorXd xmm = x;
 
-      xpp[i] += hi; xpp[j] += hj;
-      xpm[i] += hi; xpm[j] -= hj;
-      xmp[i] -= hi; xmp[j] += hj;
-      xmm[i] -= hi; xmm[j] -= hj;
+      xpp[i] += hi;
+      xpp[j] += hj;
+      xpm[i] += hi;
+      xpm[j] -= hj;
+      xmp[i] -= hi;
+      xmp[j] += hj;
+      xmm[i] -= hi;
+      xmm[j] -= hj;
 
-      const double hij =
-          (joint_x(data, par, xpp) - joint_x(data, par, xpm) -
-           joint_x(data, par, xmp) + joint_x(data, par, xmm)) /
-          (4.0 * hi * hj);
+      const double hij = (joint_x(data, par, xpp) - joint_x(data, par, xpm) -
+                          joint_x(data, par, xmp) + joint_x(data, par, xmm)) /
+                         (4.0 * hi * hj);
 
       if (std::abs(hij) > 1e-12) {
         triplets.emplace_back(i, j, hij);
@@ -340,13 +342,13 @@ Eigen::SparseMatrix<double> fd_banded_hessian_xx(const Data& data,
   return H;
 }
 
-double dense_logdet_cholesky(const Eigen::MatrixXd& H) {
+double dense_logdet_cholesky(const Eigen::MatrixXd &H) {
   Eigen::LLT<Eigen::MatrixXd> llt(H);
   if (llt.info() != Eigen::Success) {
     throw std::runtime_error("dense Hxx is not SPD");
   }
 
-  const auto& L = llt.matrixL();
+  const auto &L = llt.matrixL();
   double logdet = 0.0;
   for (int i = 0; i < H.rows(); ++i) {
     logdet += 2.0 * std::log(L(i, i));
@@ -355,7 +357,7 @@ double dense_logdet_cholesky(const Eigen::MatrixXd& H) {
   return logdet;
 }
 
-double sparse_logdet_ldlt(const Eigen::SparseMatrix<double>& H) {
+double sparse_logdet_ldlt(const Eigen::SparseMatrix<double> &H) {
   Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> ldlt;
   ldlt.compute(H);
 
@@ -363,7 +365,7 @@ double sparse_logdet_ldlt(const Eigen::SparseMatrix<double>& H) {
     throw std::runtime_error("sparse LDLT failed");
   }
 
-  const auto& D = ldlt.vectorD();
+  const auto &D = ldlt.vectorD();
 
   double logdet = 0.0;
   for (int i = 0; i < D.size(); ++i) {
@@ -384,14 +386,14 @@ struct EvalResult {
   int nnz = 0;
 };
 
-double laplace_from_parts(const double joint,
-                          const double logdet,
+double laplace_from_parts(const double joint, const double logdet,
                           const int n_random) {
   return joint + 0.5 * logdet -
          0.5 * static_cast<double>(n_random) * std::log(2.0 * M_PI);
 }
 
-EvalResult eval_dense(const Data& data, const Parameters& par, const Eigen::VectorXd& xhat) {
+EvalResult eval_dense(const Data &data, const Parameters &par,
+                      const Eigen::VectorXd &xhat) {
   EvalResult out;
   out.joint = joint_x(data, par, xhat);
   out.grad_norm = fd_grad_x(data, par, xhat).norm();
@@ -399,55 +401,54 @@ EvalResult eval_dense(const Data& data, const Parameters& par, const Eigen::Vect
   const Eigen::MatrixXd H = fd_dense_hessian_xx(data, par, xhat);
   out.nnz = static_cast<int>(H.rows() * H.cols());
   out.logdet = dense_logdet_cholesky(H);
-  out.objective = laplace_from_parts(out.joint, out.logdet, static_cast<int>(xhat.size()));
+  out.objective =
+      laplace_from_parts(out.joint, out.logdet, static_cast<int>(xhat.size()));
   return out;
 }
 
-EvalResult eval_banded(const Data& data,
-                       const Parameters& par,
-                       const Eigen::VectorXd& xhat,
-                       const int bandwidth) {
+EvalResult eval_banded(const Data &data, const Parameters &par,
+                       const Eigen::VectorXd &xhat, const int bandwidth) {
   EvalResult out;
   out.joint = joint_x(data, par, xhat);
   out.grad_norm = fd_grad_x(data, par, xhat).norm();
 
-  const Eigen::SparseMatrix<double> H = fd_banded_hessian_xx(data, par, xhat, bandwidth);
+  const Eigen::SparseMatrix<double> H =
+      fd_banded_hessian_xx(data, par, xhat, bandwidth);
   out.nnz = static_cast<int>(H.nonZeros());
   out.logdet = sparse_logdet_ldlt(H);
-  out.objective = laplace_from_parts(out.joint, out.logdet, static_cast<int>(xhat.size()));
+  out.objective =
+      laplace_from_parts(out.joint, out.logdet, static_cast<int>(xhat.size()));
   return out;
 }
 
-}  // namespace
+} // namespace
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   int reps = 3;
   std::vector<int> lengths = {25, 50};
   int n_ages = 10;
   int bandwidth = 9;
 
-  if (argc > 1) reps = std::stoi(argv[1]);
-  if (argc > 2) lengths = parse_lengths(argv[2]);
-  if (argc > 3) n_ages = std::stoi(argv[3]);
-  if (argc > 4) bandwidth = std::stoi(argv[4]);
+  if (argc > 1)
+    reps = std::stoi(argv[1]);
+  if (argc > 2)
+    lengths = parse_lengths(argv[2]);
+  if (argc > 3)
+    n_ages = std::stoi(argv[3]);
+  if (argc > 4)
+    bandwidth = std::stoi(argv[4]);
 
   const Parameters par;
 
   std::cout << std::fixed << std::setprecision(6);
   std::cout << "Quadra age-structured banded Laplace validation\n";
-  std::cout << "reps per n = " << reps
-            << ", ages = " << n_ages
-            << ", bandwidth = " << bandwidth
-            << "\n\n";
+  std::cout << "reps per n = " << reps << ", ages = " << n_ages
+            << ", bandwidth = " << bandwidth << "\n\n";
 
-  std::cout << std::setw(8) << "n"
-            << std::setw(14) << "dense_obj"
-            << std::setw(14) << "band_obj"
-            << std::setw(14) << "diff"
-            << std::setw(14) << "band_nnz"
-            << std::setw(14) << "grad_norm"
-            << std::setw(14) << "band_ms"
-            << "\n";
+  std::cout << std::setw(8) << "n" << std::setw(14) << "dense_obj"
+            << std::setw(14) << "band_obj" << std::setw(14) << "diff"
+            << std::setw(14) << "band_nnz" << std::setw(14) << "grad_norm"
+            << std::setw(14) << "band_ms" << "\n";
 
   for (const int n : lengths) {
     const Data data = make_data(n, n_ages, par);
@@ -464,13 +465,10 @@ int main(int argc, char** argv) {
 
     const double band_ms = ms_between(t0, t1) / static_cast<double>(reps);
 
-    std::cout << std::setw(8) << n
-              << std::setw(14) << dense.objective
-              << std::setw(14) << band.objective
-              << std::setw(14) << (band.objective - dense.objective)
-              << std::setw(14) << band.nnz
-              << std::setw(14) << band.grad_norm
-              << std::setw(14) << band_ms
+    std::cout << std::setw(8) << n << std::setw(14) << dense.objective
+              << std::setw(14) << band.objective << std::setw(14)
+              << (band.objective - dense.objective) << std::setw(14) << band.nnz
+              << std::setw(14) << band.grad_norm << std::setw(14) << band_ms
               << "\n";
   }
 

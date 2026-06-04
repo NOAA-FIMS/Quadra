@@ -21,8 +21,8 @@ struct TransformCenter {
   double logit_B0_frac = std::log(0.85 / 0.15);
 };
 
-sp::Parameters unpack_scaled(const Eigen::VectorXd& x,
-                             const TransformCenter& center) {
+sp::Parameters unpack_scaled(const Eigen::VectorXd &x,
+                             const TransformCenter &center) {
   sp::Parameters par;
   par.log_r = center.log_r + x[0];
   par.log_K = center.log_K + x[1];
@@ -32,8 +32,8 @@ sp::Parameters unpack_scaled(const Eigen::VectorXd& x,
   return par;
 }
 
-Eigen::VectorXd pack_scaled(const sp::Parameters& par,
-                            const TransformCenter& center) {
+Eigen::VectorXd pack_scaled(const sp::Parameters &par,
+                            const TransformCenter &center) {
   Eigen::VectorXd x(5);
   x[0] = par.log_r - center.log_r;
   x[1] = par.log_K - center.log_K;
@@ -45,9 +45,8 @@ Eigen::VectorXd pack_scaled(const sp::Parameters& par,
 
 double square(const double x) { return x * x; }
 
-double soft_prior_penalty(const sp::Derived& d,
-                          const sp::Parameters& par,
-                          const TransformCenter& center) {
+double soft_prior_penalty(const sp::Derived &d, const sp::Parameters &par,
+                          const TransformCenter &center) {
   // These are weak regularization terms for a tiny toy dataset.
   // They stabilize K/q/r tradeoffs without forcing a single answer.
   double p = 0.0;
@@ -71,15 +70,14 @@ double soft_prior_penalty(const sp::Derived& d,
   return p;
 }
 
-double objective_value(const sp::Data& data,
-                       const TransformCenter& center,
-                       const Eigen::VectorXd& x) {
+double objective_value(const sp::Data &data, const TransformCenter &center,
+                       const Eigen::VectorXd &x) {
   try {
     const sp::Parameters par = unpack_scaled(x, center);
     const sp::Derived d = sp::evaluate_derived(data, par);
 
-    if (!std::isfinite(d.r) || !std::isfinite(d.K) ||
-        !std::isfinite(d.q) || !std::isfinite(d.sigma_index)) {
+    if (!std::isfinite(d.r) || !std::isfinite(d.K) || !std::isfinite(d.q) ||
+        !std::isfinite(d.sigma_index)) {
       return std::numeric_limits<double>::infinity();
     }
 
@@ -90,9 +88,9 @@ double objective_value(const sp::Data& data,
   }
 }
 
-Eigen::VectorXd finite_difference_gradient(const sp::Data& data,
-                                           const TransformCenter& center,
-                                           const Eigen::VectorXd& x) {
+Eigen::VectorXd finite_difference_gradient(const sp::Data &data,
+                                           const TransformCenter &center,
+                                           const Eigen::VectorXd &x) {
   Eigen::VectorXd grad(x.size());
 
   for (int i = 0; i < x.size(); ++i) {
@@ -117,70 +115,55 @@ Eigen::VectorXd finite_difference_gradient(const sp::Data& data,
 }
 
 class Objective {
- public:
-  Objective(const sp::Data& data, const TransformCenter& center)
+public:
+  Objective(const sp::Data &data, const TransformCenter &center)
       : data_(data), center_(center) {}
 
-  double operator()(const Eigen::VectorXd& x, Eigen::VectorXd& grad) {
+  double operator()(const Eigen::VectorXd &x, Eigen::VectorXd &grad) {
     const double f = objective_value(data_, center_, x);
     grad = finite_difference_gradient(data_, center_, x);
     return f;
   }
 
- private:
-  const sp::Data& data_;
-  const TransformCenter& center_;
+private:
+  const sp::Data &data_;
+  const TransformCenter &center_;
 };
 
-void print_parameter_comparison(const sp::Data& data,
-                                const sp::Parameters& initial,
-                                const sp::Parameters& estimated) {
+void print_parameter_comparison(const sp::Data &data,
+                                const sp::Parameters &initial,
+                                const sp::Parameters &estimated) {
   const sp::Derived d0 = sp::evaluate_derived(data, initial);
   const sp::Derived d1 = sp::evaluate_derived(data, estimated);
 
   std::cout << "\nParameter comparison\n";
-  std::cout << std::setw(18) << "quantity"
-            << std::setw(16) << "initial"
-            << std::setw(16) << "estimated"
-            << "\n";
+  std::cout << std::setw(18) << "quantity" << std::setw(16) << "initial"
+            << std::setw(16) << "estimated" << "\n";
 
-  std::cout << std::setw(18) << "r"
-            << std::setw(16) << d0.r
-            << std::setw(16) << d1.r
-            << "\n";
+  std::cout << std::setw(18) << "r" << std::setw(16) << d0.r << std::setw(16)
+            << d1.r << "\n";
 
-  std::cout << std::setw(18) << "K"
-            << std::setw(16) << d0.K
-            << std::setw(16) << d1.K
-            << "\n";
+  std::cout << std::setw(18) << "K" << std::setw(16) << d0.K << std::setw(16)
+            << d1.K << "\n";
 
-  std::cout << std::setw(18) << "q"
-            << std::setw(16) << d0.q
-            << std::setw(16) << d1.q
-            << "\n";
+  std::cout << std::setw(18) << "q" << std::setw(16) << d0.q << std::setw(16)
+            << d1.q << "\n";
 
-  std::cout << std::setw(18) << "sigma_index"
-            << std::setw(16) << d0.sigma_index
-            << std::setw(16) << d1.sigma_index
-            << "\n";
+  std::cout << std::setw(18) << "sigma_index" << std::setw(16) << d0.sigma_index
+            << std::setw(16) << d1.sigma_index << "\n";
 
-  std::cout << std::setw(18) << "B0/K"
-            << std::setw(16) << d0.B0_frac
-            << std::setw(16) << d1.B0_frac
-            << "\n";
+  std::cout << std::setw(18) << "B0/K" << std::setw(16) << d0.B0_frac
+            << std::setw(16) << d1.B0_frac << "\n";
 
-  std::cout << std::setw(18) << "MSY"
-            << std::setw(16) << d0.MSY
-            << std::setw(16) << d1.MSY
-            << "\n";
+  std::cout << std::setw(18) << "MSY" << std::setw(16) << d0.MSY
+            << std::setw(16) << d1.MSY << "\n";
 
-  std::cout << std::setw(18) << "B_terminal/K"
-            << std::setw(16) << d0.depletion_terminal
-            << std::setw(16) << d1.depletion_terminal
+  std::cout << std::setw(18) << "B_terminal/K" << std::setw(16)
+            << d0.depletion_terminal << std::setw(16) << d1.depletion_terminal
             << "\n";
 }
 
-}  // namespace
+} // namespace
 
 int main() {
   const sp::Data data = sp::make_demo_data();
@@ -198,8 +181,8 @@ int main() {
   std::cout << std::fixed << std::setprecision(6);
   std::cout << "Fit surplus production example with LBFGS++\n";
   std::cout << "==========================================\n\n";
-  std::cout << "initial objective = "
-            << objective_value(data, center, x) << "\n\n";
+  std::cout << "initial objective = " << objective_value(data, center, x)
+            << "\n\n";
 
   LBFGSpp::LBFGSParam<double> param;
   param.epsilon = 1e-5;
@@ -222,7 +205,7 @@ int main() {
   try {
     iterations = solver.minimize(objective, x, final_objective);
     converged = true;
-  } catch (const std::exception& e) {
+  } catch (const std::exception &e) {
     final_objective = objective_value(data, center, x);
     const Eigen::VectorXd current_grad =
         finite_difference_gradient(data, center, x);
@@ -246,7 +229,8 @@ int main() {
   }
 
   const sp::Parameters estimated = unpack_scaled(x, center);
-  const Eigen::VectorXd final_grad = finite_difference_gradient(data, center, x);
+  const Eigen::VectorXd final_grad =
+      finite_difference_gradient(data, center, x);
 
   std::cout << "Fit summary\n";
   std::cout << "  converged  = " << (converged ? "yes" : "no") << "\n";

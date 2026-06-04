@@ -8,18 +8,17 @@
 using quadra::laplace::BandedValues;
 using quadra::laplace::DiagonalValues;
 using quadra::laplace::LaplaceBackendKind;
-using quadra::laplace::PersistentStructuredRuntimeState;
-using quadra::laplace::TridiagonalValues;
 using quadra::laplace::logdet_banded_values_ldlt;
 using quadra::laplace::logdet_diagonal_values;
 using quadra::laplace::logdet_tridiagonal_values_ldlt;
+using quadra::laplace::PersistentStructuredRuntimeState;
+using quadra::laplace::TridiagonalValues;
 
-void expect_close(const double a, const double b, const char* msg) {
+void expect_close(const double a, const double b, const char *msg) {
   const double diff = std::abs(a - b);
   const double scale = 1.0 + std::max(std::abs(a), std::abs(b));
   if (diff > 1e-9 * scale) {
-    std::cerr << msg << ": a=" << a << " b=" << b
-              << " diff=" << diff << "\n";
+    std::cerr << msg << ": a=" << a << " b=" << b << " diff=" << diff << "\n";
     throw std::runtime_error(msg);
   }
 }
@@ -63,11 +62,11 @@ BandedValues make_banded(const int n, const int bandwidth, const double scale) {
 
     for (int d = 1; d <= bandwidth; ++d) {
       const int j = i - d;
-      if (j < 0) continue;
+      if (j < 0)
+        continue;
 
       const double e =
-          scale * (((d % 2 == 0) ? 0.015 : -0.025) /
-                   static_cast<double>(d));
+          scale * (((d % 2 == 0) ? 0.015 : -0.025) / static_cast<double>(d));
 
       H.lower_bands[static_cast<std::size_t>(d - 1)][j] = e;
       diag += 2.0 * std::abs(e);
@@ -98,7 +97,8 @@ void test_direct_tridiagonal() {
   const auto H2 = make_tri(50, 1.04);
 
   state.update_direct(H1);
-  if (state.backend_recommendation().backend != LaplaceBackendKind::Tridiagonal) {
+  if (state.backend_recommendation().backend !=
+      LaplaceBackendKind::Tridiagonal) {
     throw std::runtime_error("direct tridiagonal backend mismatch");
   }
   expect_close(state.logdet(), logdet_tridiagonal_values_ldlt(H1),

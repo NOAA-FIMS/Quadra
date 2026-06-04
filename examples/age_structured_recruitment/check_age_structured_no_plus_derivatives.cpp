@@ -2,18 +2,18 @@
 #include "benchmark_age_structured_no_plus_analytic_banded.cpp"
 #undef main
 
-#include <iostream>
 #include <iomanip>
+#include <iostream>
 
 namespace {
 
-double objective_x(const Data& data, const Parameters& par, const Eigen::VectorXd& x) {
+double objective_x(const Data &data, const Parameters &par,
+                   const Eigen::VectorXd &x) {
   return eval_all(data, par, x).objective;
 }
 
-Eigen::VectorXd fd_gradient_check(const Data& data,
-                                  const Parameters& par,
-                                  const Eigen::VectorXd& x) {
+Eigen::VectorXd fd_gradient_check(const Data &data, const Parameters &par,
+                                  const Eigen::VectorXd &x) {
   Eigen::VectorXd g(x.size());
 
   for (int i = 0; i < x.size(); ++i) {
@@ -23,15 +23,15 @@ Eigen::VectorXd fd_gradient_check(const Data& data,
     xp[i] += h;
     xm[i] -= h;
 
-    g[i] = (objective_x(data, par, xp) - objective_x(data, par, xm)) / (2.0 * h);
+    g[i] =
+        (objective_x(data, par, xp) - objective_x(data, par, xm)) / (2.0 * h);
   }
 
   return g;
 }
 
-Eigen::MatrixXd fd_hessian_check(const Data& data,
-                                 const Parameters& par,
-                                 const Eigen::VectorXd& x) {
+Eigen::MatrixXd fd_hessian_check(const Data &data, const Parameters &par,
+                                 const Eigen::VectorXd &x) {
   const int n = static_cast<int>(x.size());
   Eigen::MatrixXd H = Eigen::MatrixXd::Zero(n, n);
   const double f0 = objective_x(data, par, x);
@@ -44,8 +44,9 @@ Eigen::MatrixXd fd_hessian_check(const Data& data,
     xp[i] += hi;
     xm[i] -= hi;
 
-    H(i, i) = (objective_x(data, par, xp) - 2.0 * f0 + objective_x(data, par, xm)) /
-              (hi * hi);
+    H(i, i) =
+        (objective_x(data, par, xp) - 2.0 * f0 + objective_x(data, par, xm)) /
+        (hi * hi);
 
     for (int j = i + 1; j < n; ++j) {
       const double hj = 1e-5 * (1.0 + std::abs(x[j]));
@@ -55,10 +56,14 @@ Eigen::MatrixXd fd_hessian_check(const Data& data,
       Eigen::VectorXd xmp = x;
       Eigen::VectorXd xmm = x;
 
-      xpp[i] += hi; xpp[j] += hj;
-      xpm[i] += hi; xpm[j] -= hj;
-      xmp[i] -= hi; xmp[j] += hj;
-      xmm[i] -= hi; xmm[j] -= hj;
+      xpp[i] += hi;
+      xpp[j] += hj;
+      xpm[i] += hi;
+      xpm[j] -= hj;
+      xmp[i] -= hi;
+      xmp[j] += hj;
+      xmm[i] -= hi;
+      xmm[j] -= hj;
 
       const double hij =
           (objective_x(data, par, xpp) - objective_x(data, par, xpm) -
@@ -73,14 +78,16 @@ Eigen::MatrixXd fd_hessian_check(const Data& data,
   return H;
 }
 
-}  // namespace
+} // namespace
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   int n = 25;
   int ages = 10;
 
-  if (argc > 1) n = std::stoi(argv[1]);
-  if (argc > 2) ages = std::stoi(argv[2]);
+  if (argc > 1)
+    n = std::stoi(argv[1]);
+  if (argc > 2)
+    ages = std::stoi(argv[2]);
 
   const Parameters par;
   const Data data = make_data(n, ages, par);
@@ -132,22 +139,16 @@ int main(int argc, char** argv) {
   std::cout << "H diff norm        = " << H_diff.norm() << "\n";
   std::cout << "H rel diff         = "
             << H_diff.norm() / std::max(1.0, H_fd.norm()) << "\n";
-  std::cout << "H max abs diff     = " << max_abs_H
-            << " at (" << max_i << "," << max_j << ")\n\n";
+  std::cout << "H max abs diff     = " << max_abs_H << " at (" << max_i << ","
+            << max_j << ")\n\n";
 
   std::cout << "First 10 gradient entries:\n";
-  std::cout << std::setw(6) << "i"
-            << std::setw(18) << "analytic"
-            << std::setw(18) << "fd"
-            << std::setw(18) << "diff"
-            << "\n";
+  std::cout << std::setw(6) << "i" << std::setw(18) << "analytic"
+            << std::setw(18) << "fd" << std::setw(18) << "diff" << "\n";
 
   for (int i = 0; i < std::min(n, 10); ++i) {
-    std::cout << std::setw(6) << i
-              << std::setw(18) << a.gradient[i]
-              << std::setw(18) << g_fd[i]
-              << std::setw(18) << g_diff[i]
-              << "\n";
+    std::cout << std::setw(6) << i << std::setw(18) << a.gradient[i]
+              << std::setw(18) << g_fd[i] << std::setw(18) << g_diff[i] << "\n";
   }
 
   std::cout << "\nLargest Hessian diff local row around max:\n";
@@ -158,11 +159,8 @@ int main(int argc, char** argv) {
 
   for (int i = i0; i <= i1; ++i) {
     for (int j = j0; j <= j1; ++j) {
-      std::cout << "(" << i << "," << j << ")"
-                << " A=" << H_analytic(i, j)
-                << " FD=" << H_fd(i, j)
-                << " D=" << H_diff(i, j)
-                << "\n";
+      std::cout << "(" << i << "," << j << ")" << " A=" << H_analytic(i, j)
+                << " FD=" << H_fd(i, j) << " D=" << H_diff(i, j) << "\n";
     }
   }
 

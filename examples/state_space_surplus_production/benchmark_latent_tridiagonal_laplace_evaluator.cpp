@@ -1,11 +1,11 @@
 #include "state_space_surplus_production.hpp"
 
+#include "core/laplace/laplace_evaluator.hpp"
+#include "core/laplace/persistent_latent_state_runtime.hpp"
+#include "core/laplace/persistent_random_effect_state.hpp"
+#include "core/laplace/persistent_structured_runtime.hpp"
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
-#include "core/laplace/persistent_structured_runtime.hpp"
-#include "core/laplace/persistent_random_effect_state.hpp"
-#include "core/laplace/persistent_latent_state_runtime.hpp"
-#include "core/laplace/laplace_evaluator.hpp"
 #include <LBFGS.h>
 
 #include <chrono>
@@ -21,16 +21,17 @@ using Clock = std::chrono::high_resolution_clock;
 
 namespace {
 
-double ms_between(const Clock::time_point& a, const Clock::time_point& b) {
+double ms_between(const Clock::time_point &a, const Clock::time_point &b) {
   return std::chrono::duration<double, std::milli>(b - a).count();
 }
 
-std::vector<int> parse_lengths(const std::string& s) {
+std::vector<int> parse_lengths(const std::string &s) {
   std::vector<int> out;
   std::stringstream ss_in(s);
   std::string item;
   while (std::getline(ss_in, item, ',')) {
-    if (!item.empty()) out.push_back(std::stoi(item));
+    if (!item.empty())
+      out.push_back(std::stoi(item));
   }
   return out;
 }
@@ -44,9 +45,7 @@ double normal_nll(const double residual, const double sigma) {
   return normal_const(sigma) + 0.5 * z * z;
 }
 
-double inv_logit(const double x) {
-  return 1.0 / (1.0 + std::exp(-x));
-}
+double inv_logit(const double x) { return 1.0 / (1.0 + std::exp(-x)); }
 
 ss::Data make_scaled_data(const int n) {
   ss::Data data;
@@ -59,8 +58,10 @@ ss::Data make_scaled_data(const int n) {
   double B = 0.90 * K;
 
   for (int t = 0; t < n; ++t) {
-    const double seasonal = std::sin(2.0 * M_PI * static_cast<double>(t) / 17.0);
-    const double trend = 1.0 + 0.10 * std::sin(2.0 * M_PI * static_cast<double>(t) / 53.0);
+    const double seasonal =
+        std::sin(2.0 * M_PI * static_cast<double>(t) / 17.0);
+    const double trend =
+        1.0 + 0.10 * std::sin(2.0 * M_PI * static_cast<double>(t) / 53.0);
     const double C = 88.0 * trend + 18.0 * seasonal;
 
     data.catch_observed[static_cast<std::size_t>(t)] = std::max(40.0, C);
@@ -69,11 +70,14 @@ ss::Data make_scaled_data(const int n) {
         0.05 * std::sin(2.0 * M_PI * static_cast<double>(t) / 11.0) +
         0.025 * std::cos(2.0 * M_PI * static_cast<double>(t) / 7.0);
 
-    data.index_observed[static_cast<std::size_t>(t)] = q * B * std::exp(obs_error);
+    data.index_observed[static_cast<std::size_t>(t)] =
+        q * B * std::exp(obs_error);
 
     if (t < n - 1) {
       const double production = r * B * (1.0 - B / K);
-      B = std::max(B + production - data.catch_observed[static_cast<std::size_t>(t)], 1e-9);
+      B = std::max(B + production -
+                       data.catch_observed[static_cast<std::size_t>(t)],
+                   1e-9);
     }
   }
 
@@ -92,7 +96,7 @@ struct Transformed {
   double inv_var_index = 0.0;
 };
 
-Transformed transform(const ss::Parameters& par) {
+Transformed transform(const ss::Parameters &par) {
   Transformed tr;
   tr.r = std::exp(par.log_r);
   tr.K = std::exp(par.log_K);
@@ -105,10 +109,6 @@ Transformed transform(const ss::Parameters& par) {
   tr.inv_var_index = 1.0 / (tr.sigma_index * tr.sigma_index);
   return tr;
 }
-
-
-
-
 
 ss::Parameters make_par() {
   ss::Parameters par;
@@ -135,7 +135,7 @@ struct LogPredDerivatives {
 
 LogPredDerivatives log_pred_derivatives(const double log_B,
                                         const double catch_value,
-                                        const Transformed& tr) {
+                                        const Transformed &tr) {
   const double B = std::exp(log_B);
   double pred = B + tr.r * B * (1.0 - B / tr.K) - catch_value;
   pred = std::max(pred, 1e-9);
@@ -157,15 +157,16 @@ LogPredDerivatives log_pred_derivatives(const double log_B,
   return {pred, std::log(pred), d1, d2};
 }
 
-double joint_x(const ss::Data& data, const ss::Parameters& par, const Eigen::VectorXd& x) {
+double joint_x(const ss::Data &data, const ss::Parameters &par,
+               const Eigen::VectorXd &x) {
   const int n = static_cast<int>(data.catch_observed.size());
   const Transformed tr = transform(par);
 
   double nll = 0.0;
 
-  nll += normal_nll(
-      std::log(data.index_observed[0]) - (std::log(tr.q) + std::log(tr.B0)),
-      tr.sigma_index);
+  nll += normal_nll(std::log(data.index_observed[0]) -
+                        (std::log(tr.q) + std::log(tr.B0)),
+                    tr.sigma_index);
 
   for (int t = 0; t < n - 1; ++t) {
     const double log_B_t = (t == 0) ? std::log(tr.B0) : x[t - 1];
@@ -185,7 +186,8 @@ double joint_x(const ss::Data& data, const ss::Parameters& par, const Eigen::Vec
   return nll;
 }
 
-Eigen::VectorXd deterministic_initial_x(const ss::Data& data, const ss::Parameters& par) {
+Eigen::VectorXd deterministic_initial_x(const ss::Data &data,
+                                        const ss::Parameters &par) {
   const int n = static_cast<int>(data.catch_observed.size());
   const Transformed tr = transform(par);
   Eigen::VectorXd x(n - 1);
@@ -193,15 +195,16 @@ Eigen::VectorXd deterministic_initial_x(const ss::Data& data, const ss::Paramete
   double B = tr.B0;
   for (int t = 0; t < n - 1; ++t) {
     const double production = tr.r * B * (1.0 - B / tr.K);
-    B = std::max(B + production - data.catch_observed[static_cast<std::size_t>(t)], 1e-9);
+    B = std::max(B + production -
+                     data.catch_observed[static_cast<std::size_t>(t)],
+                 1e-9);
     x[t] = std::log(B);
   }
   return x;
 }
 
-Eigen::VectorXd analytic_grad_x(const ss::Data& data,
-                                const ss::Parameters& par,
-                                const Eigen::VectorXd& x) {
+Eigen::VectorXd analytic_grad_x(const ss::Data &data, const ss::Parameters &par,
+                                const Eigen::VectorXd &x) {
   const int n_state = static_cast<int>(x.size());
   const Transformed tr = transform(par);
 
@@ -236,9 +239,9 @@ Eigen::VectorXd analytic_grad_x(const ss::Data& data,
   return g;
 }
 
-Eigen::SparseMatrix<double> analytic_hessian_xx(const ss::Data& data,
-                                                const ss::Parameters& par,
-                                                const Eigen::VectorXd& x) {
+Eigen::SparseMatrix<double> analytic_hessian_xx(const ss::Data &data,
+                                                const ss::Parameters &par,
+                                                const Eigen::VectorXd &x) {
   const int n_state = static_cast<int>(x.size());
   const Transformed tr = transform(par);
 
@@ -262,8 +265,8 @@ Eigen::SparseMatrix<double> analytic_hessian_xx(const ss::Data& data,
       const auto lp_next = log_pred_derivatives(
           x[k], data.catch_observed[static_cast<std::size_t>(k + 1)], tr);
       const double e_next = x[k + 1] - lp_next.log_pred;
-      diag += (lp_next.d1 * lp_next.d1 - e_next * lp_next.d2) *
-              tr.inv_var_process;
+      diag +=
+          (lp_next.d1 * lp_next.d1 - e_next * lp_next.d2) * tr.inv_var_process;
 
       // off diagonal H[k, k+1] from e_{k+1}:
       // d/dxk = -e L'/sp^2, d/dx{k+1} => -L'/sp^2
@@ -281,18 +284,20 @@ Eigen::SparseMatrix<double> analytic_hessian_xx(const ss::Data& data,
 }
 
 class ObjX {
- public:
-  ObjX(const ss::Data& data, const ss::Parameters& par) : data_(data), par_(par) {}
-  double operator()(const Eigen::VectorXd& x, Eigen::VectorXd& grad) {
+public:
+  ObjX(const ss::Data &data, const ss::Parameters &par)
+      : data_(data), par_(par) {}
+  double operator()(const Eigen::VectorXd &x, Eigen::VectorXd &grad) {
     grad = analytic_grad_x(data_, par_, x);
     return joint_x(data_, par_, x);
   }
- private:
-  const ss::Data& data_;
-  const ss::Parameters& par_;
+
+private:
+  const ss::Data &data_;
+  const ss::Parameters &par_;
 };
 
-Eigen::VectorXd optimize_x(const ss::Data& data, const ss::Parameters& par) {
+Eigen::VectorXd optimize_x(const ss::Data &data, const ss::Parameters &par) {
   Eigen::VectorXd x = deterministic_initial_x(data, par);
 
   LBFGSpp::LBFGSParam<double> param;
@@ -313,27 +318,28 @@ Eigen::VectorXd optimize_x(const ss::Data& data, const ss::Parameters& par) {
     solver.minimize(obj, x, f);
   } catch (...) {
     const double gnorm = analytic_grad_x(data, par, x).norm();
-    if (!(std::isfinite(joint_x(data, par, x)) && gnorm < 1e-5)) throw;
+    if (!(std::isfinite(joint_x(data, par, x)) && gnorm < 1e-5))
+      throw;
   }
 
   return x;
 }
 
-double sparse_logdet_ldlt(const Eigen::SparseMatrix<double>& H) {
+double sparse_logdet_ldlt(const Eigen::SparseMatrix<double> &H) {
   Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> ldlt;
   ldlt.compute(H);
-  if (ldlt.info() != Eigen::Success) throw std::runtime_error("Sparse LDLT failed");
+  if (ldlt.info() != Eigen::Success)
+    throw std::runtime_error("Sparse LDLT failed");
 
-  const auto& D = ldlt.vectorD();
+  const auto &D = ldlt.vectorD();
   double logdet = 0.0;
   for (int i = 0; i < D.size(); ++i) {
-    if (!(D[i] > 0.0)) throw std::runtime_error("Hxx not positive definite");
+    if (!(D[i] > 0.0))
+      throw std::runtime_error("Hxx not positive definite");
     logdet += std::log(D[i]);
   }
   return logdet;
 }
-
-
 
 struct EvalResult {
   double objective = 0.0;
@@ -343,7 +349,7 @@ struct EvalResult {
   int nnz = 0;
 };
 
-EvalResult eval(const ss::Data& data, const ss::Parameters& par) {
+EvalResult eval(const ss::Data &data, const ss::Parameters &par) {
   EvalResult out;
   const Eigen::VectorXd xhat = optimize_x(data, par);
 
@@ -360,11 +366,9 @@ EvalResult eval(const ss::Data& data, const ss::Parameters& par) {
   return out;
 }
 
-
-quadra::laplace::TridiagonalValues make_tridiagonal_values_xx(
-    const ss::Data& data,
-    const ss::Parameters& par,
-    const Eigen::VectorXd& x) {
+quadra::laplace::TridiagonalValues
+make_tridiagonal_values_xx(const ss::Data &data, const ss::Parameters &par,
+                           const Eigen::VectorXd &x) {
   const int n_state = static_cast<int>(x.size());
   const Transformed tr = transform(par);
 
@@ -389,8 +393,8 @@ quadra::laplace::TridiagonalValues make_tridiagonal_values_xx(
           x[k], data.catch_observed[static_cast<std::size_t>(k + 1)], tr);
       const double e_next = x[k + 1] - lp_next.log_pred;
 
-      diag += (lp_next.d1 * lp_next.d1 - e_next * lp_next.d2) *
-              tr.inv_var_process;
+      diag +=
+          (lp_next.d1 * lp_next.d1 - e_next * lp_next.d2) * tr.inv_var_process;
 
       // Off diagonal H[k, k+1] = H[k+1, k] from e_{k+1}.
       out.offdiag[k] = -lp_next.d1 * tr.inv_var_process;
@@ -403,9 +407,8 @@ quadra::laplace::TridiagonalValues make_tridiagonal_values_xx(
 }
 
 EvalResult eval_direct_runtime(
-    const ss::Data& data,
-    const ss::Parameters& par,
-    quadra::laplace::PersistentStructuredRuntimeState& runtime) {
+    const ss::Data &data, const ss::Parameters &par,
+    quadra::laplace::PersistentStructuredRuntimeState &runtime) {
   EvalResult out;
   const Eigen::VectorXd xhat = optimize_x(data, par);
 
@@ -415,25 +418,22 @@ EvalResult eval_direct_runtime(
   const quadra::laplace::TridiagonalValues H =
       make_tridiagonal_values_xx(data, par, xhat);
 
-  out.nnz = static_cast<int>(H.diag.size()) +
-            2 * static_cast<int>(H.offdiag.size());
+  out.nnz =
+      static_cast<int>(H.diag.size()) + 2 * static_cast<int>(H.offdiag.size());
 
   runtime.update_direct(H);
   out.logdet = runtime.logdet();
 
   const double n_x = static_cast<double>(xhat.size());
-  const double correction =
-      0.5 * out.logdet - 0.5 * n_x * std::log(2.0 * M_PI);
+  const double correction = 0.5 * out.logdet - 0.5 * n_x * std::log(2.0 * M_PI);
 
   out.objective = out.joint + correction;
   return out;
 }
 
-
-
-Eigen::VectorXd solve_tridiagonal_ldlt(
-    const quadra::laplace::TridiagonalValues& H,
-    const Eigen::VectorXd& rhs) {
+Eigen::VectorXd
+solve_tridiagonal_ldlt(const quadra::laplace::TridiagonalValues &H,
+                       const Eigen::VectorXd &rhs) {
   const int n = static_cast<int>(H.diag.size());
 
   if (rhs.size() != n) {
@@ -490,12 +490,11 @@ struct NewtonSolveResult {
   bool converged = false;
 };
 
-NewtonSolveResult optimize_x_newton_tridiagonal(
-    const ss::Data& data,
-    const ss::Parameters& par,
-    const Eigen::VectorXd& initial_x,
-    const int max_iterations = 25,
-    const double grad_tol = 1e-6) {
+NewtonSolveResult
+optimize_x_newton_tridiagonal(const ss::Data &data, const ss::Parameters &par,
+                              const Eigen::VectorXd &initial_x,
+                              const int max_iterations = 25,
+                              const double grad_tol = 1e-6) {
   NewtonSolveResult out;
   Eigen::VectorXd x = initial_x;
 
@@ -560,10 +559,9 @@ NewtonSolveResult optimize_x_newton_tridiagonal(
 }
 
 EvalResult eval_with_xhat_direct_runtime(
-    const ss::Data& data,
-    const ss::Parameters& par,
-    const Eigen::VectorXd& xhat,
-    quadra::laplace::PersistentStructuredRuntimeState& runtime) {
+    const ss::Data &data, const ss::Parameters &par,
+    const Eigen::VectorXd &xhat,
+    quadra::laplace::PersistentStructuredRuntimeState &runtime) {
   EvalResult out;
 
   out.joint = joint_x(data, par, xhat);
@@ -572,28 +570,21 @@ EvalResult eval_with_xhat_direct_runtime(
   const quadra::laplace::TridiagonalValues H =
       make_tridiagonal_values_xx(data, par, xhat);
 
-  out.nnz = static_cast<int>(H.diag.size()) +
-            2 * static_cast<int>(H.offdiag.size());
+  out.nnz =
+      static_cast<int>(H.diag.size()) + 2 * static_cast<int>(H.offdiag.size());
 
   runtime.update_direct(H);
   out.logdet = runtime.logdet();
 
   const double n_x = static_cast<double>(xhat.size());
-  const double correction =
-      0.5 * out.logdet - 0.5 * n_x * std::log(2.0 * M_PI);
+  const double correction = 0.5 * out.logdet - 0.5 * n_x * std::log(2.0 * M_PI);
 
   out.objective = out.joint + correction;
   return out;
 }
 
-
-
-
-
-
-
-quadra::laplace::NewtonSolveStatus to_newton_status(
-    const NewtonSolveResult& result) {
+quadra::laplace::NewtonSolveStatus
+to_newton_status(const NewtonSolveResult &result) {
   quadra::laplace::NewtonSolveStatus status;
   status.iterations = result.iterations;
   status.objective = result.final_joint;
@@ -602,10 +593,9 @@ quadra::laplace::NewtonSolveStatus to_newton_status(
   return status;
 }
 
-
 struct StateSpaceContext {
-  const ss::Data& data;
-  const ss::Parameters& par;
+  const ss::Data &data;
+  const ss::Parameters &par;
 };
 
 struct StateSpaceNewtonSolveResult {
@@ -615,12 +605,12 @@ struct StateSpaceNewtonSolveResult {
 };
 
 struct StateSpaceNewtonPolicy {
-  Eigen::VectorXd initial_x(StateSpaceContext& ctx) {
+  Eigen::VectorXd initial_x(StateSpaceContext &ctx) {
     return deterministic_initial_x(ctx.data, ctx.par);
   }
 
-  StateSpaceNewtonSolveResult solve(StateSpaceContext& ctx,
-                                    const Eigen::VectorXd& initial_x) {
+  StateSpaceNewtonSolveResult solve(StateSpaceContext &ctx,
+                                    const Eigen::VectorXd &initial_x) {
     StateSpaceNewtonSolveResult out;
     out.raw = optimize_x_newton_tridiagonal(ctx.data, ctx.par, initial_x);
     out.xhat = out.raw.xhat;
@@ -629,29 +619,24 @@ struct StateSpaceNewtonPolicy {
   }
 };
 
-
 struct StateSpaceEvaluationPolicy {
-  EvalResult evaluate(
-      StateSpaceContext& ctx,
-      const Eigen::VectorXd& xhat,
-      quadra::laplace::PersistentStructuredRuntimeState& structured) {
-    return eval_with_xhat_direct_runtime(
-        ctx.data,
-        ctx.par,
-        xhat,
-        structured);
+  EvalResult
+  evaluate(StateSpaceContext &ctx, const Eigen::VectorXd &xhat,
+           quadra::laplace::PersistentStructuredRuntimeState &structured) {
+    return eval_with_xhat_direct_runtime(ctx.data, ctx.par, xhat, structured);
   }
 };
 
+} // namespace
 
-}  // namespace
-
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   int reps = 10;
   std::vector<int> lengths = {25, 50, 100, 250};
 
-  if (argc > 1) reps = std::stoi(argv[1]);
-  if (argc > 2) lengths = parse_lengths(argv[2]);
+  if (argc > 1)
+    reps = std::stoi(argv[1]);
+  if (argc > 2)
+    lengths = parse_lengths(argv[2]);
 
   const ss::Parameters par = make_par();
 
@@ -659,16 +644,11 @@ int main(int argc, char** argv) {
   std::cout << "Quadra state-space LaplaceEvaluator benchmark\n";
   std::cout << "reps per n = " << reps << "\n\n";
 
-  std::cout << std::setw(8) << "n"
-            << std::setw(14) << "objective"
-            << std::setw(14) << "lbfgs_ms"
-            << std::setw(16) << "cold_newton"
-            << std::setw(16) << "warm_newton"
-            << std::setw(14) << "warm_x"
-            << std::setw(12) << "cold_it"
-            << std::setw(12) << "warm_it"
-            << std::setw(14) << "grad_norm"
-            << std::setw(16) << "objective_diff"
+  std::cout << std::setw(8) << "n" << std::setw(14) << "objective"
+            << std::setw(14) << "lbfgs_ms" << std::setw(16) << "cold_newton"
+            << std::setw(16) << "warm_newton" << std::setw(14) << "warm_x"
+            << std::setw(12) << "cold_it" << std::setw(12) << "warm_it"
+            << std::setw(14) << "grad_norm" << std::setw(16) << "objective_diff"
             << "\n";
 
   for (const int n : lengths) {
@@ -692,8 +672,8 @@ int main(int argc, char** argv) {
     for (int r = 0; r < reps; ++r) {
       const Eigen::VectorXd initial_x = deterministic_initial_x(data, par);
       cold_last = optimize_x_newton_tridiagonal(data, par, initial_x);
-      last_cold = eval_with_xhat_direct_runtime(
-          data, par, cold_last.xhat, latent_runtime.structured());
+      last_cold = eval_with_xhat_direct_runtime(data, par, cold_last.xhat,
+                                                latent_runtime.structured());
     }
     const auto cold1 = Clock::now();
 
@@ -702,11 +682,8 @@ int main(int argc, char** argv) {
 
     // Warm-start Newton driven through LaplaceEvaluator.
     StateSpaceContext context{data, par};
-    using Evaluator =
-        quadra::laplace::LaplaceEvaluator<
-            StateSpaceContext,
-            StateSpaceNewtonPolicy,
-            StateSpaceEvaluationPolicy>;
+    using Evaluator = quadra::laplace::LaplaceEvaluator<
+        StateSpaceContext, StateSpaceNewtonPolicy, StateSpaceEvaluationPolicy>;
 
     Evaluator evaluator;
 
@@ -728,25 +705,19 @@ int main(int argc, char** argv) {
         ms_between(warm0, warm1) / static_cast<double>(reps);
     const double warm_speedup =
         warm_newton_ms > 0.0 ? lbfgs_ms / warm_newton_ms : 0.0;
-    const int avg_warm_it =
-        static_cast<int>(std::lround(
-            static_cast<double>(warm_iterations_total) /
-            static_cast<double>(reps)));
+    const int avg_warm_it = static_cast<int>(
+        std::lround(static_cast<double>(warm_iterations_total) /
+                    static_cast<double>(reps)));
 
     const double objective_diff =
         std::abs(last_lbfgs.objective - last_warm.objective);
 
-    std::cout << std::setw(8) << n
-              << std::setw(14) << last_warm.objective
-              << std::setw(14) << lbfgs_ms
-              << std::setw(16) << cold_newton_ms
-              << std::setw(16) << warm_newton_ms
-              << std::setw(14) << warm_speedup
-              << std::setw(12) << cold_last.iterations
-              << std::setw(12) << avg_warm_it
-              << std::setw(14) << last_warm.grad_norm
-              << std::setw(16) << objective_diff
-              << "\n";
+    std::cout << std::setw(8) << n << std::setw(14) << last_warm.objective
+              << std::setw(14) << lbfgs_ms << std::setw(16) << cold_newton_ms
+              << std::setw(16) << warm_newton_ms << std::setw(14)
+              << warm_speedup << std::setw(12) << cold_last.iterations
+              << std::setw(12) << avg_warm_it << std::setw(14)
+              << last_warm.grad_norm << std::setw(16) << objective_diff << "\n";
   }
 
   return 0;

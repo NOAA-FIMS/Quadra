@@ -69,7 +69,7 @@ inline Parameters make_demo_parameters() {
   return par;
 }
 
-inline void validate_data(const Data& data) {
+inline void validate_data(const Data &data) {
   if (data.catch_observed.empty()) {
     throw std::runtime_error("catch_observed must not be empty");
   }
@@ -97,9 +97,8 @@ inline double normal_nll(const double residual, const double sigma) {
   return std::log(sigma) + 0.5 * std::log(2.0 * M_PI) + 0.5 * z * z;
 }
 
-inline Derived evaluate_derived(const Data& data,
-                                const Parameters& par,
-                                const std::vector<double>& u) {
+inline Derived evaluate_derived(const Data &data, const Parameters &par,
+                                const std::vector<double> &u) {
   validate_data(data);
 
   const int n = static_cast<int>(data.catch_observed.size());
@@ -126,7 +125,8 @@ inline Derived evaluate_derived(const Data& data,
 
   out.log_biomass.assign(static_cast<std::size_t>(n), 0.0);
   out.biomass.assign(static_cast<std::size_t>(n), 0.0);
-  out.deterministic_next_biomass.assign(static_cast<std::size_t>(expected_u), 0.0);
+  out.deterministic_next_biomass.assign(static_cast<std::size_t>(expected_u),
+                                        0.0);
   out.process_residuals.assign(static_cast<std::size_t>(expected_u), 0.0);
   out.index_predicted.assign(static_cast<std::size_t>(n), 0.0);
   out.log_index_residuals.assign(static_cast<std::size_t>(n), 0.0);
@@ -145,10 +145,9 @@ inline Derived evaluate_derived(const Data& data,
 
     if (t < n - 1) {
       const double production = out.r * B_t * (1.0 - B_t / out.K);
-      const double deterministic_next =
-          std::max(B_t + production -
-                       data.catch_observed[static_cast<std::size_t>(t)],
-                   1e-9);
+      const double deterministic_next = std::max(
+          B_t + production - data.catch_observed[static_cast<std::size_t>(t)],
+          1e-9);
 
       out.deterministic_next_biomass[static_cast<std::size_t>(t)] =
           deterministic_next;
@@ -157,7 +156,8 @@ inline Derived evaluate_derived(const Data& data,
       //
       //   log_B[t+1] = log(deterministic_next) + u[t]
       //
-      out.process_residuals[static_cast<std::size_t>(t)] = u[static_cast<std::size_t>(t)];
+      out.process_residuals[static_cast<std::size_t>(t)] =
+          u[static_cast<std::size_t>(t)];
       out.log_biomass[static_cast<std::size_t>(t + 1)] =
           std::log(deterministic_next) + u[static_cast<std::size_t>(t)];
     }
@@ -171,9 +171,8 @@ inline Derived evaluate_derived(const Data& data,
   return out;
 }
 
-inline double joint_objective(const Data& data,
-                              const Parameters& par,
-                              const std::vector<double>& u) {
+inline double joint_objective(const Data &data, const Parameters &par,
+                              const std::vector<double> &u) {
   const Derived d = evaluate_derived(data, par, u);
 
   double nll = 0.0;
@@ -189,14 +188,13 @@ inline double joint_objective(const Data& data,
   return nll;
 }
 
-inline std::vector<double> zero_random_effects(const Data& data) {
+inline std::vector<double> zero_random_effects(const Data &data) {
   const int n = static_cast<int>(data.catch_observed.size());
   return std::vector<double>(static_cast<std::size_t>(std::max(0, n - 1)), 0.0);
 }
 
-inline void print_report(const Data& data,
-                         const Parameters& par,
-                         const std::vector<double>& u) {
+inline void print_report(const Data &data, const Parameters &par,
+                         const std::vector<double> &u) {
   const Derived d = evaluate_derived(data, par, u);
   const double joint_nll = joint_objective(data, par, u);
 
@@ -220,21 +218,15 @@ inline void print_report(const Data& data,
   std::cout << "  F_MSY          = " << d.F_MSY << "\n";
   std::cout << "  B_terminal / K = " << d.depletion_terminal << "\n\n";
 
-  std::cout << std::setw(6) << "year"
-            << std::setw(14) << "catch"
-            << std::setw(14) << "biomass"
-            << std::setw(14) << "index obs"
-            << std::setw(14) << "index pred"
-            << std::setw(14) << "idx resid"
-            << std::setw(14) << "proc resid"
-            << "\n";
+  std::cout << std::setw(6) << "year" << std::setw(14) << "catch"
+            << std::setw(14) << "biomass" << std::setw(14) << "index obs"
+            << std::setw(14) << "index pred" << std::setw(14) << "idx resid"
+            << std::setw(14) << "proc resid" << "\n";
 
   for (std::size_t t = 0; t < data.catch_observed.size(); ++t) {
-    std::cout << std::setw(6) << t
-              << std::setw(14) << data.catch_observed[t]
-              << std::setw(14) << d.biomass[t]
-              << std::setw(14) << data.index_observed[t]
-              << std::setw(14) << d.index_predicted[t]
+    std::cout << std::setw(6) << t << std::setw(14) << data.catch_observed[t]
+              << std::setw(14) << d.biomass[t] << std::setw(14)
+              << data.index_observed[t] << std::setw(14) << d.index_predicted[t]
               << std::setw(14) << d.log_index_residuals[t];
 
     if (t < d.process_residuals.size()) {
@@ -247,7 +239,7 @@ inline void print_report(const Data& data,
   }
 }
 
-}  // namespace state_space_surplus_production
-}  // namespace quadra_examples
+} // namespace state_space_surplus_production
+} // namespace quadra_examples
 
 #endif

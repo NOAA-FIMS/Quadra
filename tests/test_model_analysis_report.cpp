@@ -7,11 +7,11 @@
 #include <string>
 #include <vector>
 
+using quadra::laplace::analyze_hessian_structure;
 using quadra::laplace::LaplaceBackendKind;
 using quadra::laplace::ModelAnalysisReport;
 using quadra::laplace::SolverRecommendation;
 using quadra::laplace::StructureDetectorOptions;
-using quadra::laplace::analyze_hessian_structure;
 
 StructureDetectorOptions detector_options() {
   StructureDetectorOptions opts;
@@ -58,10 +58,10 @@ Eigen::SparseMatrix<double> make_banded(const int n, const int bandwidth) {
     double diag = 10.0 + 0.01 * i;
 
     for (int d = 1; d <= bandwidth; ++d) {
-      if (i - d < 0) continue;
+      if (i - d < 0)
+        continue;
 
-      const double e =
-          ((d % 2 == 0) ? 0.015 : -0.025) / static_cast<double>(d);
+      const double e = ((d % 2 == 0) ? 0.015 : -0.025) / static_cast<double>(d);
 
       t.emplace_back(i, i - d, e);
       t.emplace_back(i - d, i, e);
@@ -86,7 +86,8 @@ void test_diagonal_report() {
   }
 
   if (report.backend != LaplaceBackendKind::Diagonal) {
-    throw std::runtime_error("diagonal report did not recommend diagonal backend");
+    throw std::runtime_error(
+        "diagonal report did not recommend diagonal backend");
   }
 
   if (report.solver != SolverRecommendation::Newton) {
@@ -108,7 +109,8 @@ void test_tridiagonal_report() {
   }
 
   if (report.backend != LaplaceBackendKind::Tridiagonal) {
-    throw std::runtime_error("tridiagonal report did not recommend tridiagonal backend");
+    throw std::runtime_error(
+        "tridiagonal report did not recommend tridiagonal backend");
   }
 
   if (report.bandwidth != 1) {

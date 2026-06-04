@@ -1,5 +1,5 @@
-#include "../core/laplace/laplace_backend.hpp"
 #include "../core/laplace/hessian_structure.hpp"
+#include "../core/laplace/laplace_backend.hpp"
 
 #include <Eigen/Sparse>
 
@@ -9,16 +9,15 @@
 #include <vector>
 
 using quadra::laplace::DiagonalBackend;
-using quadra::laplace::TridiagonalBackend;
 using quadra::laplace::LogDetSparseLDLT;
+using quadra::laplace::TridiagonalBackend;
 
-void expect_close(const double a, const double b, const char* msg) {
+void expect_close(const double a, const double b, const char *msg) {
   const double diff = std::abs(a - b);
   const double scale = 1.0 + std::max(std::abs(a), std::abs(b));
 
   if (diff > 1e-9 * scale) {
-    std::cerr << msg << ": a=" << a << " b=" << b
-              << " diff=" << diff << "\n";
+    std::cerr << msg << ": a=" << a << " b=" << b << " diff=" << diff << "\n";
     throw std::runtime_error(msg);
   }
 }
@@ -66,7 +65,8 @@ void test_diagonal_backend_uses_value_path() {
     throw std::runtime_error("diagonal backend reported non-SPD");
   }
 
-  expect_close(backend.logdet(), LogDetSparseLDLT(H), "diagonal backend logdet");
+  expect_close(backend.logdet(), LogDetSparseLDLT(H),
+               "diagonal backend logdet");
 }
 
 void test_tridiagonal_backend_uses_value_path() {

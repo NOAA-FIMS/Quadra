@@ -14,7 +14,7 @@ namespace ss = quadra_examples::state_space_surplus_production;
 
 namespace {
 
-std::vector<double> to_std_vector(const Eigen::VectorXd& x) {
+std::vector<double> to_std_vector(const Eigen::VectorXd &x) {
   std::vector<double> out(static_cast<std::size_t>(x.size()));
   for (int i = 0; i < x.size(); ++i) {
     out[static_cast<std::size_t>(i)] = x[i];
@@ -22,7 +22,7 @@ std::vector<double> to_std_vector(const Eigen::VectorXd& x) {
   return out;
 }
 
-Eigen::VectorXd to_eigen_vector(const std::vector<double>& x) {
+Eigen::VectorXd to_eigen_vector(const std::vector<double> &x) {
   Eigen::VectorXd out(static_cast<int>(x.size()));
   for (std::size_t i = 0; i < x.size(); ++i) {
     out[static_cast<int>(i)] = x[i];
@@ -30,15 +30,14 @@ Eigen::VectorXd to_eigen_vector(const std::vector<double>& x) {
   return out;
 }
 
-double joint_u(const ss::Data& data,
-               const ss::Parameters& par,
-               const Eigen::VectorXd& u) {
+double joint_u(const ss::Data &data, const ss::Parameters &par,
+               const Eigen::VectorXd &u) {
   return ss::joint_objective(data, par, to_std_vector(u));
 }
 
-Eigen::VectorXd finite_difference_gradient_u(const ss::Data& data,
-                                             const ss::Parameters& par,
-                                             const Eigen::VectorXd& u) {
+Eigen::VectorXd finite_difference_gradient_u(const ss::Data &data,
+                                             const ss::Parameters &par,
+                                             const Eigen::VectorXd &u) {
   Eigen::VectorXd grad(u.size());
 
   for (int i = 0; i < u.size(); ++i) {
@@ -59,19 +58,19 @@ Eigen::VectorXd finite_difference_gradient_u(const ss::Data& data,
 }
 
 class RandomEffectsObjective {
- public:
-  RandomEffectsObjective(const ss::Data& data, const ss::Parameters& par)
+public:
+  RandomEffectsObjective(const ss::Data &data, const ss::Parameters &par)
       : data_(data), par_(par) {}
 
-  double operator()(const Eigen::VectorXd& u, Eigen::VectorXd& grad) {
+  double operator()(const Eigen::VectorXd &u, Eigen::VectorXd &grad) {
     const double f = joint_u(data_, par_, u);
     grad = finite_difference_gradient_u(data_, par_, u);
     return f;
   }
 
- private:
-  const ss::Data& data_;
-  const ss::Parameters& par_;
+private:
+  const ss::Data &data_;
+  const ss::Parameters &par_;
 };
 
 struct UHatResult {
@@ -83,7 +82,7 @@ struct UHatResult {
   bool accepted_line_search_failure = false;
 };
 
-UHatResult optimize_u_hat(const ss::Data& data, const ss::Parameters& par) {
+UHatResult optimize_u_hat(const ss::Data &data, const ss::Parameters &par) {
   Eigen::VectorXd u = to_eigen_vector(ss::zero_random_effects(data));
 
   LBFGSpp::LBFGSParam<double> param;
@@ -105,15 +104,15 @@ UHatResult optimize_u_hat(const ss::Data& data, const ss::Parameters& par) {
   try {
     out.iterations = solver.minimize(objective, u, out.joint);
     out.converged = true;
-  } catch (const std::exception& e) {
+  } catch (const std::exception &e) {
     out.joint = joint_u(data, par, u);
     out.grad_norm = finite_difference_gradient_u(data, par, u).norm();
 
     if (std::isfinite(out.joint) && out.grad_norm < 1e-3) {
       out.converged = true;
       out.accepted_line_search_failure = true;
-      std::cout << "u_hat solve accepted line-search termination: "
-                << e.what() << "\n";
+      std::cout << "u_hat solve accepted line-search termination: " << e.what()
+                << "\n";
     } else {
       throw;
     }
@@ -126,9 +125,9 @@ UHatResult optimize_u_hat(const ss::Data& data, const ss::Parameters& par) {
   return out;
 }
 
-Eigen::MatrixXd finite_difference_hessian_uu(const ss::Data& data,
-                                             const ss::Parameters& par,
-                                             const Eigen::VectorXd& u) {
+Eigen::MatrixXd finite_difference_hessian_uu(const ss::Data &data,
+                                             const ss::Parameters &par,
+                                             const Eigen::VectorXd &u) {
   const int n = static_cast<int>(u.size());
   Eigen::MatrixXd H = Eigen::MatrixXd::Zero(n, n);
 
@@ -192,8 +191,8 @@ struct LaplaceResult {
   bool hessian_spd = false;
 };
 
-LaplaceResult evaluate_dense_laplace(const ss::Data& data,
-                                     const ss::Parameters& par) {
+LaplaceResult evaluate_dense_laplace(const ss::Data &data,
+                                     const ss::Parameters &par) {
   LaplaceResult out;
 
   out.uhat = optimize_u_hat(data, par);
@@ -209,7 +208,7 @@ LaplaceResult evaluate_dense_laplace(const ss::Data& data,
     throw std::runtime_error("Huu is not SPD at u_hat");
   }
 
-  const auto& L = llt.matrixL();
+  const auto &L = llt.matrixL();
 
   out.logdet_Huu = 0.0;
   for (int i = 0; i < out.Huu.rows(); ++i) {
@@ -225,21 +224,17 @@ LaplaceResult evaluate_dense_laplace(const ss::Data& data,
   return out;
 }
 
-void print_u_hat(const Eigen::VectorXd& u) {
-  std::cout << std::setw(8) << "t"
-            << std::setw(16) << "u_hat"
-            << "\n";
+void print_u_hat(const Eigen::VectorXd &u) {
+  std::cout << std::setw(8) << "t" << std::setw(16) << "u_hat" << "\n";
 
   for (int i = 0; i < u.size(); ++i) {
-    std::cout << std::setw(8) << i
-              << std::setw(16) << u[i]
-              << "\n";
+    std::cout << std::setw(8) << i << std::setw(16) << u[i] << "\n";
   }
 
   std::cout << "\n";
 }
 
-}  // namespace
+} // namespace
 
 int main() {
   const ss::Data data = ss::make_demo_data();
@@ -258,9 +253,11 @@ int main() {
   const LaplaceResult result = evaluate_dense_laplace(data, par);
 
   std::cout << "u_hat solve\n";
-  std::cout << "  converged  = " << (result.uhat.converged ? "yes" : "no") << "\n";
+  std::cout << "  converged  = " << (result.uhat.converged ? "yes" : "no")
+            << "\n";
   std::cout << "  accepted line-search termination = "
-            << (result.uhat.accepted_line_search_failure ? "yes" : "no") << "\n";
+            << (result.uhat.accepted_line_search_failure ? "yes" : "no")
+            << "\n";
   std::cout << "  iterations = " << result.uhat.iterations << "\n";
   std::cout << "  joint(theta, u_hat) = " << result.uhat.joint << "\n";
   std::cout << "  grad_norm = " << result.uhat.grad_norm << "\n\n";
@@ -268,7 +265,8 @@ int main() {
   std::cout << "Huu diagnostics\n";
   std::cout << "  n_u            = " << result.Huu.rows() << "\n";
   std::cout << "  min eigenvalue = " << result.min_eigenvalue << "\n";
-  std::cout << "  SPD            = " << (result.hessian_spd ? "yes" : "no") << "\n";
+  std::cout << "  SPD            = " << (result.hessian_spd ? "yes" : "no")
+            << "\n";
   std::cout << "  logdet(Huu)    = " << result.logdet_Huu << "\n\n";
 
   std::cout << "Laplace objective\n";

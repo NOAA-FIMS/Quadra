@@ -16,27 +16,31 @@ using Clock = std::chrono::high_resolution_clock;
 
 namespace {
 
-std::vector<double> to_std_vector(const Eigen::VectorXd& x) {
+std::vector<double> to_std_vector(const Eigen::VectorXd &x) {
   std::vector<double> out(static_cast<std::size_t>(x.size()));
-  for (int i = 0; i < x.size(); ++i) out[static_cast<std::size_t>(i)] = x[i];
+  for (int i = 0; i < x.size(); ++i)
+    out[static_cast<std::size_t>(i)] = x[i];
   return out;
 }
 
-Eigen::VectorXd to_eigen_vector(const std::vector<double>& x) {
+Eigen::VectorXd to_eigen_vector(const std::vector<double> &x) {
   Eigen::VectorXd out(static_cast<int>(x.size()));
-  for (std::size_t i = 0; i < x.size(); ++i) out[static_cast<int>(i)] = x[i];
+  for (std::size_t i = 0; i < x.size(); ++i)
+    out[static_cast<int>(i)] = x[i];
   return out;
 }
 
-double ms_between(const Clock::time_point& a, const Clock::time_point& b) {
+double ms_between(const Clock::time_point &a, const Clock::time_point &b) {
   return std::chrono::duration<double, std::milli>(b - a).count();
 }
 
-double joint_u(const ss::Data& data, const ss::Parameters& par, const Eigen::VectorXd& u) {
+double joint_u(const ss::Data &data, const ss::Parameters &par,
+               const Eigen::VectorXd &u) {
   return ss::joint_objective(data, par, to_std_vector(u));
 }
 
-Eigen::VectorXd fd_grad_u(const ss::Data& data, const ss::Parameters& par, const Eigen::VectorXd& u) {
+Eigen::VectorXd fd_grad_u(const ss::Data &data, const ss::Parameters &par,
+                          const Eigen::VectorXd &u) {
   Eigen::VectorXd grad(u.size());
   for (int i = 0; i < u.size(); ++i) {
     const double h = 1e-5 * (1.0 + std::abs(u[i]));
@@ -49,19 +53,21 @@ Eigen::VectorXd fd_grad_u(const ss::Data& data, const ss::Parameters& par, const
 }
 
 class ObjU {
- public:
-  ObjU(const ss::Data& data, const ss::Parameters& par) : data_(data), par_(par) {}
-  double operator()(const Eigen::VectorXd& u, Eigen::VectorXd& grad) {
+public:
+  ObjU(const ss::Data &data, const ss::Parameters &par)
+      : data_(data), par_(par) {}
+  double operator()(const Eigen::VectorXd &u, Eigen::VectorXd &grad) {
     const double f = joint_u(data_, par_, u);
     grad = fd_grad_u(data_, par_, u);
     return f;
   }
- private:
-  const ss::Data& data_;
-  const ss::Parameters& par_;
+
+private:
+  const ss::Data &data_;
+  const ss::Parameters &par_;
 };
 
-Eigen::VectorXd optimize_u(const ss::Data& data, const ss::Parameters& par) {
+Eigen::VectorXd optimize_u(const ss::Data &data, const ss::Parameters &par) {
   Eigen::VectorXd u = to_eigen_vector(ss::zero_random_effects(data));
 
   LBFGSpp::LBFGSParam<double> param;
@@ -96,9 +102,9 @@ Eigen::VectorXd optimize_u(const ss::Data& data, const ss::Parameters& par) {
 // Markov latent-state formulation this band should be narrow. This gives a
 // fast diagnostic path and will expose whether the effective H_uu is close to
 // banded for this parameterization.
-Eigen::SparseMatrix<double> fd_band_hessian_uu(const ss::Data& data,
-                                               const ss::Parameters& par,
-                                               const Eigen::VectorXd& u,
+Eigen::SparseMatrix<double> fd_band_hessian_uu(const ss::Data &data,
+                                               const ss::Parameters &par,
+                                               const Eigen::VectorXd &u,
                                                const int bandwidth) {
   const int n = static_cast<int>(u.size());
   std::vector<Eigen::Triplet<double>> triplets;
@@ -130,11 +136,12 @@ Eigen::SparseMatrix<double> fd_band_hessian_uu(const ss::Data& data,
   H.setFromTriplets(triplets.begin(), triplets.end());
 
   // Symmetrize to reduce finite-difference noise.
-  Eigen::SparseMatrix<double> Hsym = 0.5 * (H + Eigen::SparseMatrix<double>(H.transpose()));
+  Eigen::SparseMatrix<double> Hsym =
+      0.5 * (H + Eigen::SparseMatrix<double>(H.transpose()));
   return Hsym;
 }
 
-double sparse_logdet_ldlt(const Eigen::SparseMatrix<double>& H) {
+double sparse_logdet_ldlt(const Eigen::SparseMatrix<double> &H) {
   Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> ldlt;
   ldlt.compute(H);
 
@@ -142,7 +149,7 @@ double sparse_logdet_ldlt(const Eigen::SparseMatrix<double>& H) {
     throw std::runtime_error("Sparse LDLT failed");
   }
 
-  const auto& D = ldlt.vectorD();
+  const auto &D = ldlt.vectorD();
 
   double logdet = 0.0;
   for (int i = 0; i < D.size(); ++i) {
@@ -164,8 +171,7 @@ struct EvalResult {
   int nnz = 0;
 };
 
-EvalResult band_laplace_eval(const ss::Data& data,
-                             const ss::Parameters& par,
+EvalResult band_laplace_eval(const ss::Data &data, const ss::Parameters &par,
                              const int bandwidth) {
   EvalResult out;
   const Eigen::VectorXd uhat = optimize_u(data, par);
@@ -173,7 +179,8 @@ EvalResult band_laplace_eval(const ss::Data& data,
   out.joint = joint_u(data, par, uhat);
   out.grad_norm = fd_grad_u(data, par, uhat).norm();
 
-  const Eigen::SparseMatrix<double> H = fd_band_hessian_uu(data, par, uhat, bandwidth);
+  const Eigen::SparseMatrix<double> H =
+      fd_band_hessian_uu(data, par, uhat, bandwidth);
   out.nnz = static_cast<int>(H.nonZeros());
 
   out.logdet = sparse_logdet_ldlt(H);
@@ -185,14 +192,16 @@ EvalResult band_laplace_eval(const ss::Data& data,
   return out;
 }
 
-}  // namespace
+} // namespace
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   int reps = 20;
   int bandwidth = 3;
 
-  if (argc > 1) reps = std::stoi(argv[1]);
-  if (argc > 2) bandwidth = std::stoi(argv[2]);
+  if (argc > 1)
+    reps = std::stoi(argv[1]);
+  if (argc > 2)
+    bandwidth = std::stoi(argv[2]);
 
   const ss::Data data = ss::make_demo_data();
   const ss::Parameters par = ss::make_demo_parameters();
@@ -209,7 +218,8 @@ int main(int argc, char** argv) {
   const double avg_ms = total_ms / static_cast<double>(reps);
 
   std::cout << std::fixed << std::setprecision(6);
-  std::cout << "Quadra band-Huu finite-difference Laplace fixed-theta benchmark\n";
+  std::cout
+      << "Quadra band-Huu finite-difference Laplace fixed-theta benchmark\n";
   std::cout << "reps = " << reps << "\n";
   std::cout << "bandwidth = " << bandwidth << "\n";
   std::cout << "objective = " << last.objective << "\n";

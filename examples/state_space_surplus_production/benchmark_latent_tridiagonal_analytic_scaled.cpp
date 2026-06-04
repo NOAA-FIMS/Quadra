@@ -17,16 +17,17 @@ using Clock = std::chrono::high_resolution_clock;
 
 namespace {
 
-double ms_between(const Clock::time_point& a, const Clock::time_point& b) {
+double ms_between(const Clock::time_point &a, const Clock::time_point &b) {
   return std::chrono::duration<double, std::milli>(b - a).count();
 }
 
-std::vector<int> parse_lengths(const std::string& s) {
+std::vector<int> parse_lengths(const std::string &s) {
   std::vector<int> out;
   std::stringstream ss_in(s);
   std::string item;
   while (std::getline(ss_in, item, ',')) {
-    if (!item.empty()) out.push_back(std::stoi(item));
+    if (!item.empty())
+      out.push_back(std::stoi(item));
   }
   return out;
 }
@@ -40,9 +41,7 @@ double normal_nll(const double residual, const double sigma) {
   return normal_const(sigma) + 0.5 * z * z;
 }
 
-double inv_logit(const double x) {
-  return 1.0 / (1.0 + std::exp(-x));
-}
+double inv_logit(const double x) { return 1.0 / (1.0 + std::exp(-x)); }
 
 ss::Data make_scaled_data(const int n) {
   ss::Data data;
@@ -55,8 +54,10 @@ ss::Data make_scaled_data(const int n) {
   double B = 0.90 * K;
 
   for (int t = 0; t < n; ++t) {
-    const double seasonal = std::sin(2.0 * M_PI * static_cast<double>(t) / 17.0);
-    const double trend = 1.0 + 0.10 * std::sin(2.0 * M_PI * static_cast<double>(t) / 53.0);
+    const double seasonal =
+        std::sin(2.0 * M_PI * static_cast<double>(t) / 17.0);
+    const double trend =
+        1.0 + 0.10 * std::sin(2.0 * M_PI * static_cast<double>(t) / 53.0);
     const double C = 88.0 * trend + 18.0 * seasonal;
 
     data.catch_observed[static_cast<std::size_t>(t)] = std::max(40.0, C);
@@ -65,11 +66,14 @@ ss::Data make_scaled_data(const int n) {
         0.05 * std::sin(2.0 * M_PI * static_cast<double>(t) / 11.0) +
         0.025 * std::cos(2.0 * M_PI * static_cast<double>(t) / 7.0);
 
-    data.index_observed[static_cast<std::size_t>(t)] = q * B * std::exp(obs_error);
+    data.index_observed[static_cast<std::size_t>(t)] =
+        q * B * std::exp(obs_error);
 
     if (t < n - 1) {
       const double production = r * B * (1.0 - B / K);
-      B = std::max(B + production - data.catch_observed[static_cast<std::size_t>(t)], 1e-9);
+      B = std::max(B + production -
+                       data.catch_observed[static_cast<std::size_t>(t)],
+                   1e-9);
     }
   }
 
@@ -88,7 +92,7 @@ struct Transformed {
   double inv_var_index = 0.0;
 };
 
-Transformed transform(const ss::Parameters& par) {
+Transformed transform(const ss::Parameters &par) {
   Transformed tr;
   tr.r = std::exp(par.log_r);
   tr.K = std::exp(par.log_K);
@@ -127,7 +131,7 @@ struct LogPredDerivatives {
 
 LogPredDerivatives log_pred_derivatives(const double log_B,
                                         const double catch_value,
-                                        const Transformed& tr) {
+                                        const Transformed &tr) {
   const double B = std::exp(log_B);
   double pred = B + tr.r * B * (1.0 - B / tr.K) - catch_value;
   pred = std::max(pred, 1e-9);
@@ -149,15 +153,16 @@ LogPredDerivatives log_pred_derivatives(const double log_B,
   return {pred, std::log(pred), d1, d2};
 }
 
-double joint_x(const ss::Data& data, const ss::Parameters& par, const Eigen::VectorXd& x) {
+double joint_x(const ss::Data &data, const ss::Parameters &par,
+               const Eigen::VectorXd &x) {
   const int n = static_cast<int>(data.catch_observed.size());
   const Transformed tr = transform(par);
 
   double nll = 0.0;
 
-  nll += normal_nll(
-      std::log(data.index_observed[0]) - (std::log(tr.q) + std::log(tr.B0)),
-      tr.sigma_index);
+  nll += normal_nll(std::log(data.index_observed[0]) -
+                        (std::log(tr.q) + std::log(tr.B0)),
+                    tr.sigma_index);
 
   for (int t = 0; t < n - 1; ++t) {
     const double log_B_t = (t == 0) ? std::log(tr.B0) : x[t - 1];
@@ -177,7 +182,8 @@ double joint_x(const ss::Data& data, const ss::Parameters& par, const Eigen::Vec
   return nll;
 }
 
-Eigen::VectorXd deterministic_initial_x(const ss::Data& data, const ss::Parameters& par) {
+Eigen::VectorXd deterministic_initial_x(const ss::Data &data,
+                                        const ss::Parameters &par) {
   const int n = static_cast<int>(data.catch_observed.size());
   const Transformed tr = transform(par);
   Eigen::VectorXd x(n - 1);
@@ -185,15 +191,16 @@ Eigen::VectorXd deterministic_initial_x(const ss::Data& data, const ss::Paramete
   double B = tr.B0;
   for (int t = 0; t < n - 1; ++t) {
     const double production = tr.r * B * (1.0 - B / tr.K);
-    B = std::max(B + production - data.catch_observed[static_cast<std::size_t>(t)], 1e-9);
+    B = std::max(B + production -
+                     data.catch_observed[static_cast<std::size_t>(t)],
+                 1e-9);
     x[t] = std::log(B);
   }
   return x;
 }
 
-Eigen::VectorXd analytic_grad_x(const ss::Data& data,
-                                const ss::Parameters& par,
-                                const Eigen::VectorXd& x) {
+Eigen::VectorXd analytic_grad_x(const ss::Data &data, const ss::Parameters &par,
+                                const Eigen::VectorXd &x) {
   const int n_state = static_cast<int>(x.size());
   const Transformed tr = transform(par);
 
@@ -228,9 +235,9 @@ Eigen::VectorXd analytic_grad_x(const ss::Data& data,
   return g;
 }
 
-Eigen::SparseMatrix<double> analytic_hessian_xx(const ss::Data& data,
-                                                const ss::Parameters& par,
-                                                const Eigen::VectorXd& x) {
+Eigen::SparseMatrix<double> analytic_hessian_xx(const ss::Data &data,
+                                                const ss::Parameters &par,
+                                                const Eigen::VectorXd &x) {
   const int n_state = static_cast<int>(x.size());
   const Transformed tr = transform(par);
 
@@ -254,8 +261,8 @@ Eigen::SparseMatrix<double> analytic_hessian_xx(const ss::Data& data,
       const auto lp_next = log_pred_derivatives(
           x[k], data.catch_observed[static_cast<std::size_t>(k + 1)], tr);
       const double e_next = x[k + 1] - lp_next.log_pred;
-      diag += (lp_next.d1 * lp_next.d1 - e_next * lp_next.d2) *
-              tr.inv_var_process;
+      diag +=
+          (lp_next.d1 * lp_next.d1 - e_next * lp_next.d2) * tr.inv_var_process;
 
       // off diagonal H[k, k+1] from e_{k+1}:
       // d/dxk = -e L'/sp^2, d/dx{k+1} => -L'/sp^2
@@ -273,18 +280,20 @@ Eigen::SparseMatrix<double> analytic_hessian_xx(const ss::Data& data,
 }
 
 class ObjX {
- public:
-  ObjX(const ss::Data& data, const ss::Parameters& par) : data_(data), par_(par) {}
-  double operator()(const Eigen::VectorXd& x, Eigen::VectorXd& grad) {
+public:
+  ObjX(const ss::Data &data, const ss::Parameters &par)
+      : data_(data), par_(par) {}
+  double operator()(const Eigen::VectorXd &x, Eigen::VectorXd &grad) {
     grad = analytic_grad_x(data_, par_, x);
     return joint_x(data_, par_, x);
   }
- private:
-  const ss::Data& data_;
-  const ss::Parameters& par_;
+
+private:
+  const ss::Data &data_;
+  const ss::Parameters &par_;
 };
 
-Eigen::VectorXd optimize_x(const ss::Data& data, const ss::Parameters& par) {
+Eigen::VectorXd optimize_x(const ss::Data &data, const ss::Parameters &par) {
   Eigen::VectorXd x = deterministic_initial_x(data, par);
 
   LBFGSpp::LBFGSParam<double> param;
@@ -305,21 +314,24 @@ Eigen::VectorXd optimize_x(const ss::Data& data, const ss::Parameters& par) {
     solver.minimize(obj, x, f);
   } catch (...) {
     const double gnorm = analytic_grad_x(data, par, x).norm();
-    if (!(std::isfinite(joint_x(data, par, x)) && gnorm < 1e-5)) throw;
+    if (!(std::isfinite(joint_x(data, par, x)) && gnorm < 1e-5))
+      throw;
   }
 
   return x;
 }
 
-double sparse_logdet_ldlt(const Eigen::SparseMatrix<double>& H) {
+double sparse_logdet_ldlt(const Eigen::SparseMatrix<double> &H) {
   Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> ldlt;
   ldlt.compute(H);
-  if (ldlt.info() != Eigen::Success) throw std::runtime_error("Sparse LDLT failed");
+  if (ldlt.info() != Eigen::Success)
+    throw std::runtime_error("Sparse LDLT failed");
 
-  const auto& D = ldlt.vectorD();
+  const auto &D = ldlt.vectorD();
   double logdet = 0.0;
   for (int i = 0; i < D.size(); ++i) {
-    if (!(D[i] > 0.0)) throw std::runtime_error("Hxx not positive definite");
+    if (!(D[i] > 0.0))
+      throw std::runtime_error("Hxx not positive definite");
     logdet += std::log(D[i]);
   }
   return logdet;
@@ -333,7 +345,7 @@ struct EvalResult {
   int nnz = 0;
 };
 
-EvalResult eval(const ss::Data& data, const ss::Parameters& par) {
+EvalResult eval(const ss::Data &data, const ss::Parameters &par) {
   EvalResult out;
   const Eigen::VectorXd xhat = optimize_x(data, par);
 
@@ -350,48 +362,44 @@ EvalResult eval(const ss::Data& data, const ss::Parameters& par) {
   return out;
 }
 
-}  // namespace
+} // namespace
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   int reps = 10;
   std::vector<int> lengths = {25, 50, 100, 250};
 
-  if (argc > 1) reps = std::stoi(argv[1]);
-  if (argc > 2) lengths = parse_lengths(argv[2]);
+  if (argc > 1)
+    reps = std::stoi(argv[1]);
+  if (argc > 2)
+    lengths = parse_lengths(argv[2]);
 
   const ss::Parameters par = make_par();
 
   std::cout << std::fixed << std::setprecision(6);
-  std::cout << "Quadra scaled analytic latent-state tridiagonal Laplace benchmark\n";
+  std::cout
+      << "Quadra scaled analytic latent-state tridiagonal Laplace benchmark\n";
   std::cout << "reps per n = " << reps << "\n\n";
 
-  std::cout << std::setw(8) << "n"
-            << std::setw(14) << "objective"
-            << std::setw(14) << "joint"
-            << std::setw(14) << "logdet"
-            << std::setw(14) << "nnz"
-            << std::setw(14) << "grad_norm"
-            << std::setw(14) << "avg_ms"
-            << "\n";
+  std::cout << std::setw(8) << "n" << std::setw(14) << "objective"
+            << std::setw(14) << "joint" << std::setw(14) << "logdet"
+            << std::setw(14) << "nnz" << std::setw(14) << "grad_norm"
+            << std::setw(14) << "avg_ms" << "\n";
 
   for (const int n : lengths) {
     const ss::Data data = make_scaled_data(n);
     EvalResult last = eval(data, par);
 
     const auto t0 = Clock::now();
-    for (int r = 0; r < reps; ++r) last = eval(data, par);
+    for (int r = 0; r < reps; ++r)
+      last = eval(data, par);
     const auto t1 = Clock::now();
 
     const double avg_ms = ms_between(t0, t1) / static_cast<double>(reps);
 
-    std::cout << std::setw(8) << n
-              << std::setw(14) << last.objective
-              << std::setw(14) << last.joint
-              << std::setw(14) << last.logdet
-              << std::setw(14) << last.nnz
-              << std::setw(14) << last.grad_norm
-              << std::setw(14) << avg_ms
-              << "\n";
+    std::cout << std::setw(8) << n << std::setw(14) << last.objective
+              << std::setw(14) << last.joint << std::setw(14) << last.logdet
+              << std::setw(14) << last.nnz << std::setw(14) << last.grad_norm
+              << std::setw(14) << avg_ms << "\n";
   }
 
   return 0;

@@ -14,10 +14,11 @@ namespace laplace {
 using StructuredValues =
     std::variant<DiagonalValues, TridiagonalValues, BandedValues>;
 
-inline DiagonalValues extract_diagonal_values(
-    const Eigen::SparseMatrix<double>& H) {
+inline DiagonalValues
+extract_diagonal_values(const Eigen::SparseMatrix<double> &H) {
   if (H.rows() != H.cols()) {
-    throw std::invalid_argument("Diagonal value extraction requires square matrix");
+    throw std::invalid_argument(
+        "Diagonal value extraction requires square matrix");
   }
 
   DiagonalValues values;
@@ -30,10 +31,11 @@ inline DiagonalValues extract_diagonal_values(
   return values;
 }
 
-inline TridiagonalValues extract_tridiagonal_values(
-    const Eigen::SparseMatrix<double>& H) {
+inline TridiagonalValues
+extract_tridiagonal_values(const Eigen::SparseMatrix<double> &H) {
   if (H.rows() != H.cols()) {
-    throw std::invalid_argument("Tridiagonal value extraction requires square matrix");
+    throw std::invalid_argument(
+        "Tridiagonal value extraction requires square matrix");
   }
 
   const int n = static_cast<int>(H.rows());
@@ -53,14 +55,15 @@ inline TridiagonalValues extract_tridiagonal_values(
   return values;
 }
 
-inline BandedValues extract_banded_values(
-    const Eigen::SparseMatrix<double>& H,
-    const int bandwidth) {
+inline BandedValues extract_banded_values(const Eigen::SparseMatrix<double> &H,
+                                          const int bandwidth) {
   if (H.rows() != H.cols()) {
-    throw std::invalid_argument("Banded value extraction requires square matrix");
+    throw std::invalid_argument(
+        "Banded value extraction requires square matrix");
   }
   if (bandwidth < 0) {
-    throw std::invalid_argument("Banded value extraction requires non-negative bandwidth");
+    throw std::invalid_argument(
+        "Banded value extraction requires non-negative bandwidth");
   }
 
   const int n = static_cast<int>(H.rows());
@@ -79,40 +82,40 @@ inline BandedValues extract_banded_values(
     values.diag[i] = H.coeff(i, i);
     for (int d = 1; d <= bw; ++d) {
       const int j = i - d;
-      if (j < 0) continue;
-      values.lower_bands[static_cast<std::size_t>(d - 1)][j] =
-          H.coeff(i, j);
+      if (j < 0)
+        continue;
+      values.lower_bands[static_cast<std::size_t>(d - 1)][j] = H.coeff(i, j);
     }
   }
 
   return values;
 }
 
-inline StructuredValues extract_structured_values(
-    const Eigen::SparseMatrix<double>& H,
-    const BackendRecommendation& rec) {
+inline StructuredValues
+extract_structured_values(const Eigen::SparseMatrix<double> &H,
+                          const BackendRecommendation &rec) {
   switch (rec.backend) {
-    case LaplaceBackendKind::Diagonal:
-      return extract_diagonal_values(H);
+  case LaplaceBackendKind::Diagonal:
+    return extract_diagonal_values(H);
 
-    case LaplaceBackendKind::Tridiagonal:
-      return extract_tridiagonal_values(H);
+  case LaplaceBackendKind::Tridiagonal:
+    return extract_tridiagonal_values(H);
 
-    case LaplaceBackendKind::Banded:
-      return extract_banded_values(H, rec.bandwidth);
+  case LaplaceBackendKind::Banded:
+    return extract_banded_values(H, rec.bandwidth);
 
-    case LaplaceBackendKind::SparseLDLT:
-    case LaplaceBackendKind::DenseLDLT:
-      throw std::invalid_argument(
-          "Structured value extraction is not implemented for requested backend");
+  case LaplaceBackendKind::SparseLDLT:
+  case LaplaceBackendKind::DenseLDLT:
+    throw std::invalid_argument(
+        "Structured value extraction is not implemented for requested backend");
   }
 
   throw std::invalid_argument("Unknown backend recommendation");
 }
 
-inline void update_diagonal_values_from_hessian(
-    DiagonalValues& values,
-    const Eigen::SparseMatrix<double>& H) {
+inline void
+update_diagonal_values_from_hessian(DiagonalValues &values,
+                                    const Eigen::SparseMatrix<double> &H) {
   if (H.rows() != H.cols()) {
     throw std::invalid_argument("Diagonal value update requires square matrix");
   }
@@ -128,11 +131,12 @@ inline void update_diagonal_values_from_hessian(
   }
 }
 
-inline void update_tridiagonal_values_from_hessian(
-    TridiagonalValues& values,
-    const Eigen::SparseMatrix<double>& H) {
+inline void
+update_tridiagonal_values_from_hessian(TridiagonalValues &values,
+                                       const Eigen::SparseMatrix<double> &H) {
   if (H.rows() != H.cols()) {
-    throw std::invalid_argument("Tridiagonal value update requires square matrix");
+    throw std::invalid_argument(
+        "Tridiagonal value update requires square matrix");
   }
 
   const int n = static_cast<int>(H.rows());
@@ -154,16 +158,17 @@ inline void update_tridiagonal_values_from_hessian(
   }
 }
 
-inline void update_banded_values_from_hessian(
-    BandedValues& values,
-    const Eigen::SparseMatrix<double>& H,
-    const int bandwidth) {
+inline void
+update_banded_values_from_hessian(BandedValues &values,
+                                  const Eigen::SparseMatrix<double> &H,
+                                  const int bandwidth) {
   if (H.rows() != H.cols()) {
     throw std::invalid_argument("Banded value update requires square matrix");
   }
 
   if (bandwidth < 0) {
-    throw std::invalid_argument("Banded value update requires non-negative bandwidth");
+    throw std::invalid_argument(
+        "Banded value update requires non-negative bandwidth");
   }
 
   const int n = static_cast<int>(H.rows());
@@ -181,7 +186,7 @@ inline void update_banded_values_from_hessian(
 
   for (int d = 1; d <= bw; ++d) {
     const int expected = std::max(0, n - d);
-    Eigen::VectorXd& band = values.lower_bands[static_cast<std::size_t>(d - 1)];
+    Eigen::VectorXd &band = values.lower_bands[static_cast<std::size_t>(d - 1)];
 
     if (band.size() != expected) {
       band = Eigen::VectorXd::Zero(expected);
@@ -193,55 +198,54 @@ inline void update_banded_values_from_hessian(
 
     for (int d = 1; d <= bw; ++d) {
       const int j = i - d;
-      if (j < 0) continue;
+      if (j < 0)
+        continue;
 
-      values.lower_bands[static_cast<std::size_t>(d - 1)][j] =
-          H.coeff(i, j);
+      values.lower_bands[static_cast<std::size_t>(d - 1)][j] = H.coeff(i, j);
     }
   }
 }
 
-inline void update_structured_values_from_hessian(
-    StructuredValues& values,
-    const Eigen::SparseMatrix<double>& H,
-    const BackendRecommendation& rec) {
+inline void
+update_structured_values_from_hessian(StructuredValues &values,
+                                      const Eigen::SparseMatrix<double> &H,
+                                      const BackendRecommendation &rec) {
   switch (rec.backend) {
-    case LaplaceBackendKind::Diagonal:
-      if (!std::holds_alternative<DiagonalValues>(values)) {
-        values = DiagonalValues();
-      }
-      update_diagonal_values_from_hessian(
-          std::get<DiagonalValues>(values), H);
-      return;
+  case LaplaceBackendKind::Diagonal:
+    if (!std::holds_alternative<DiagonalValues>(values)) {
+      values = DiagonalValues();
+    }
+    update_diagonal_values_from_hessian(std::get<DiagonalValues>(values), H);
+    return;
 
-    case LaplaceBackendKind::Tridiagonal:
-      if (!std::holds_alternative<TridiagonalValues>(values)) {
-        values = TridiagonalValues();
-      }
-      update_tridiagonal_values_from_hessian(
-          std::get<TridiagonalValues>(values), H);
-      return;
+  case LaplaceBackendKind::Tridiagonal:
+    if (!std::holds_alternative<TridiagonalValues>(values)) {
+      values = TridiagonalValues();
+    }
+    update_tridiagonal_values_from_hessian(std::get<TridiagonalValues>(values),
+                                           H);
+    return;
 
-    case LaplaceBackendKind::Banded:
-      if (!std::holds_alternative<BandedValues>(values)) {
-        values = BandedValues();
-      }
-      update_banded_values_from_hessian(
-          std::get<BandedValues>(values), H, rec.bandwidth);
-      return;
+  case LaplaceBackendKind::Banded:
+    if (!std::holds_alternative<BandedValues>(values)) {
+      values = BandedValues();
+    }
+    update_banded_values_from_hessian(std::get<BandedValues>(values), H,
+                                      rec.bandwidth);
+    return;
 
-    case LaplaceBackendKind::SparseLDLT:
-    case LaplaceBackendKind::DenseLDLT:
-      throw std::invalid_argument(
-          "Structured value update is not implemented for requested backend");
+  case LaplaceBackendKind::SparseLDLT:
+  case LaplaceBackendKind::DenseLDLT:
+    throw std::invalid_argument(
+        "Structured value update is not implemented for requested backend");
   }
 
   throw std::invalid_argument("Unknown backend recommendation");
 }
 
-inline double logdet_structured_values(const StructuredValues& values) {
+inline double logdet_structured_values(const StructuredValues &values) {
   return std::visit(
-      [](const auto& v) -> double {
+      [](const auto &v) -> double {
         using T = std::decay_t<decltype(v)>;
 
         if constexpr (std::is_same_v<T, DiagonalValues>) {
@@ -257,5 +261,5 @@ inline double logdet_structured_values(const StructuredValues& values) {
       values);
 }
 
-}  // namespace laplace
-}  // namespace quadra
+} // namespace laplace
+} // namespace quadra

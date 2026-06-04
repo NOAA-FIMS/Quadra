@@ -19,7 +19,7 @@ namespace had {
 //
 // This avoids tree query/insert/balance costs in batched Hdot propagation.
 class BatchDirectionalFlatAccumulator {
- public:
+public:
   BatchDirectionalFlatAccumulator() = default;
 
   BatchDirectionalFlatAccumulator(std::size_t n_directions,
@@ -33,9 +33,7 @@ class BatchDirectionalFlatAccumulator {
     values_.assign(n_directions_ * n_slots_, 0.0);
   }
 
-  void Clear() {
-    std::fill(values_.begin(), values_.end(), 0.0);
-  }
+  void Clear() { std::fill(values_.begin(), values_.end(), 0.0); }
 
   void EnsureSlotsPreserve(std::size_t n_slots) {
     if (n_slots <= n_slots_) {
@@ -74,9 +72,8 @@ class BatchDirectionalFlatAccumulator {
       throw std::out_of_range("DirectionView direction out of range");
     }
 
-    return Eigen::Map<Eigen::VectorXd>(
-        values_.data() + direction * n_slots_,
-        static_cast<Eigen::Index>(n_slots_));
+    return Eigen::Map<Eigen::VectorXd>(values_.data() + direction * n_slots_,
+                                       static_cast<Eigen::Index>(n_slots_));
   }
 
   Eigen::Map<const Eigen::VectorXd> DirectionView(std::size_t direction) const {
@@ -89,10 +86,11 @@ class BatchDirectionalFlatAccumulator {
         static_cast<Eigen::Index>(n_slots_));
   }
 
- private:
+private:
   std::size_t Index(std::size_t direction, std::size_t slot) const {
     if (direction >= n_directions_ || slot >= n_slots_) {
-      throw std::out_of_range("BatchDirectionalFlatAccumulator index out of range");
+      throw std::out_of_range(
+          "BatchDirectionalFlatAccumulator index out of range");
     }
     return direction * n_slots_ + slot;
   }
@@ -102,6 +100,6 @@ class BatchDirectionalFlatAccumulator {
   std::vector<double> values_;
 };
 
-}  // namespace had
+} // namespace had
 
-#endif  // QUADRA_HAD_BATCH_DIRECTIONAL_FLAT_ACCUMULATOR_HPP
+#endif // QUADRA_HAD_BATCH_DIRECTIONAL_FLAT_ACCUMULATOR_HPP

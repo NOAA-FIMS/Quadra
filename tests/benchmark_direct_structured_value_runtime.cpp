@@ -17,16 +17,17 @@ using quadra::laplace::TridiagonalValues;
 
 using Clock = std::chrono::high_resolution_clock;
 
-double ms_between(const Clock::time_point& a, const Clock::time_point& b) {
+double ms_between(const Clock::time_point &a, const Clock::time_point &b) {
   return std::chrono::duration<double, std::milli>(b - a).count();
 }
 
-std::vector<int> parse_lengths(const std::string& s) {
+std::vector<int> parse_lengths(const std::string &s) {
   std::vector<int> out;
   std::stringstream ss(s);
   std::string item;
   while (std::getline(ss, item, ',')) {
-    if (!item.empty()) out.push_back(std::stoi(item));
+    if (!item.empty())
+      out.push_back(std::stoi(item));
   }
   return out;
 }
@@ -68,10 +69,10 @@ BandedValues make_banded(const int n, const int bandwidth, const double scale) {
     double diag = scale * (10.0 + 0.001 * i);
     for (int d = 1; d <= bandwidth; ++d) {
       const int j = i - d;
-      if (j < 0) continue;
+      if (j < 0)
+        continue;
       const double e =
-          scale * (((d % 2 == 0) ? 0.015 : -0.025) /
-                   static_cast<double>(d));
+          scale * (((d % 2 == 0) ? 0.015 : -0.025) / static_cast<double>(d));
       H.lower_bands[static_cast<std::size_t>(d - 1)][j] = e;
       diag += 2.0 * std::abs(e);
     }
@@ -90,11 +91,8 @@ struct Result {
 };
 
 template <class Maker>
-Result bench_case(const std::string& name,
-                  const int n,
-                  const int band,
-                  const int reps,
-                  Maker maker) {
+Result bench_case(const std::string &name, const int n, const int band,
+                  const int reps, Maker maker) {
   volatile double acc = 0.0;
 
   const auto c0 = Clock::now();
@@ -130,56 +128,50 @@ Result bench_case(const std::string& name,
   return out;
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   int reps = 20;
   std::vector<int> lengths = {100, 500, 1000, 5000};
 
-  if (argc > 1) reps = std::stoi(argv[1]);
-  if (argc > 2) lengths = parse_lengths(argv[2]);
+  if (argc > 1)
+    reps = std::stoi(argv[1]);
+  if (argc > 2)
+    lengths = parse_lengths(argv[2]);
 
   std::cout << std::fixed << std::setprecision(6);
   std::cout << "Direct structured value runtime benchmark\n";
   std::cout << "reps per case = " << reps << "\n\n";
 
-  std::cout << std::setw(14) << "case"
-            << std::setw(8) << "n"
-            << std::setw(8) << "band"
-            << std::setw(16) << "construct_ms"
-            << std::setw(18) << "direct_update_ms"
-            << std::setw(14) << "logdet"
-            << "\n";
+  std::cout << std::setw(14) << "case" << std::setw(8) << "n" << std::setw(8)
+            << "band" << std::setw(16) << "construct_ms" << std::setw(18)
+            << "direct_update_ms" << std::setw(14) << "logdet" << "\n";
 
   for (const int n : lengths) {
-    const Result d = bench_case(
-        "diagonal", n, 0, reps,
-        [](int n_, int, double scale) { return make_diag(n_, scale); });
-    const Result t = bench_case(
-        "tridiagonal", n, 1, reps,
-        [](int n_, int, double scale) { return make_tri(n_, scale); });
-    const Result b2 = bench_case(
-        "banded2", n, 2, reps,
-        [](int n_, int band_, double scale) {
+    const Result d =
+        bench_case("diagonal", n, 0, reps, [](int n_, int, double scale) {
+          return make_diag(n_, scale);
+        });
+    const Result t =
+        bench_case("tridiagonal", n, 1, reps, [](int n_, int, double scale) {
+          return make_tri(n_, scale);
+        });
+    const Result b2 =
+        bench_case("banded2", n, 2, reps, [](int n_, int band_, double scale) {
           return make_banded(n_, band_, scale);
         });
-    const Result b5 = bench_case(
-        "banded5", n, 5, reps,
-        [](int n_, int band_, double scale) {
+    const Result b5 =
+        bench_case("banded5", n, 5, reps, [](int n_, int band_, double scale) {
           return make_banded(n_, band_, scale);
         });
-    const Result b10 = bench_case(
-        "banded10", n, 10, reps,
-        [](int n_, int band_, double scale) {
-          return make_banded(n_, band_, scale);
-        });
+    const Result b10 = bench_case("banded10", n, 10, reps,
+                                  [](int n_, int band_, double scale) {
+                                    return make_banded(n_, band_, scale);
+                                  });
 
-    for (const auto& r : {d, t, b2, b5, b10}) {
-      std::cout << std::setw(14) << r.name
-                << std::setw(8) << r.n
-                << std::setw(8) << r.band
-                << std::setw(16) << r.construct_ms
-                << std::setw(18) << r.direct_update_ms
-                << std::setw(14) << r.logdet
-                << "\n";
+    for (const auto &r : {d, t, b2, b5, b10}) {
+      std::cout << std::setw(14) << r.name << std::setw(8) << r.n
+                << std::setw(8) << r.band << std::setw(16) << r.construct_ms
+                << std::setw(18) << r.direct_update_ms << std::setw(14)
+                << r.logdet << "\n";
     }
   }
 

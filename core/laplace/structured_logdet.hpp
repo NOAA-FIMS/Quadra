@@ -19,9 +19,9 @@ struct StructuredLogDetResult {
   int nnz = 0;
 };
 
-inline StructuredLogDetResult ComputeStructuredLogDet(
-    const Eigen::SparseMatrix<double>& H,
-    const BackendRecommendation& rec) {
+inline StructuredLogDetResult
+ComputeStructuredLogDet(const Eigen::SparseMatrix<double> &H,
+                        const BackendRecommendation &rec) {
   StructuredLogDetResult out;
   out.structure = rec.structure;
   out.backend = rec.backend;
@@ -35,35 +35,35 @@ inline StructuredLogDetResult ComputeStructuredLogDet(
   return out;
 }
 
-inline StructuredLogDetResult ComputeStructuredLogDet(
-    const Eigen::SparseMatrix<double>& H,
-    const LaplaceBackendKind backend,
-    const int bandwidth = 0) {
+inline StructuredLogDetResult
+ComputeStructuredLogDet(const Eigen::SparseMatrix<double> &H,
+                        const LaplaceBackendKind backend,
+                        const int bandwidth = 0) {
   BackendRecommendation rec;
   rec.backend = backend;
   rec.bandwidth = bandwidth;
 
   switch (backend) {
-    case LaplaceBackendKind::Diagonal:
-      rec.structure = HessianStructure::Diagonal;
-      break;
-    case LaplaceBackendKind::Tridiagonal:
-      rec.structure = HessianStructure::Tridiagonal;
-      rec.bandwidth = 1;
-      break;
-    case LaplaceBackendKind::Banded:
-      rec.structure = HessianStructure::Banded;
-      break;
-    case LaplaceBackendKind::SparseLDLT:
-      rec.structure = HessianStructure::SparsePattern;
-      break;
-    case LaplaceBackendKind::DenseLDLT:
-      rec.structure = HessianStructure::Dense;
-      break;
+  case LaplaceBackendKind::Diagonal:
+    rec.structure = HessianStructure::Diagonal;
+    break;
+  case LaplaceBackendKind::Tridiagonal:
+    rec.structure = HessianStructure::Tridiagonal;
+    rec.bandwidth = 1;
+    break;
+  case LaplaceBackendKind::Banded:
+    rec.structure = HessianStructure::Banded;
+    break;
+  case LaplaceBackendKind::SparseLDLT:
+    rec.structure = HessianStructure::SparsePattern;
+    break;
+  case LaplaceBackendKind::DenseLDLT:
+    rec.structure = HessianStructure::Dense;
+    break;
   }
 
   return ComputeStructuredLogDet(H, rec);
 }
 
-}  // namespace laplace
-}  // namespace quadra
+} // namespace laplace
+} // namespace quadra

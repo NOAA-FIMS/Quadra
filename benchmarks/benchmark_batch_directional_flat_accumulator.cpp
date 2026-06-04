@@ -12,7 +12,7 @@ namespace {
 
 using Clock = std::chrono::steady_clock;
 
-double ms_between(const Clock::time_point& a, const Clock::time_point& b) {
+double ms_between(const Clock::time_point &a, const Clock::time_point &b) {
   return std::chrono::duration<double, std::milli>(b - a).count();
 }
 
@@ -42,9 +42,8 @@ Row run_case(int slots, int K, int updates, int reps) {
     update_value[static_cast<std::size_t>(i)] = val_dist(rng);
   }
 
-  had::BatchDirectionalFlatAccumulator flat(
-      static_cast<std::size_t>(K),
-      static_cast<std::size_t>(slots));
+  had::BatchDirectionalFlatAccumulator flat(static_cast<std::size_t>(K),
+                                            static_cast<std::size_t>(slots));
 
   std::vector<std::map<int, double>> mapped(static_cast<std::size_t>(K));
 
@@ -53,16 +52,17 @@ Row run_case(int slots, int K, int updates, int reps) {
     flat.Clear();
 
     for (int i = 0; i < updates; ++i) {
-      flat.Add(static_cast<std::size_t>(update_dir[static_cast<std::size_t>(i)]),
-               static_cast<std::size_t>(update_slot[static_cast<std::size_t>(i)]),
-               update_value[static_cast<std::size_t>(i)]);
+      flat.Add(
+          static_cast<std::size_t>(update_dir[static_cast<std::size_t>(i)]),
+          static_cast<std::size_t>(update_slot[static_cast<std::size_t>(i)]),
+          update_value[static_cast<std::size_t>(i)]);
     }
   }
   const auto f1 = Clock::now();
 
   const auto m0 = Clock::now();
   for (int r = 0; r < reps; ++r) {
-    for (auto& tree : mapped) {
+    for (auto &tree : mapped) {
       tree.clear();
     }
 
@@ -101,9 +101,9 @@ Row run_case(int slots, int K, int updates, int reps) {
   return row;
 }
 
-}  // namespace
+} // namespace
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   int reps = 100;
   if (argc > 1) {
     reps = std::stoi(argv[1]);
@@ -112,14 +112,10 @@ int main(int argc, char** argv) {
   std::cout << "Batch directional flat accumulator benchmark\n";
   std::cout << "reps per case = " << reps << "\n\n";
 
-  std::cout << std::setw(10) << "slots"
-            << std::setw(8) << "K"
-            << std::setw(12) << "updates"
-            << std::setw(14) << "flat ms"
-            << std::setw(14) << "map ms"
-            << std::setw(14) << "speedup"
-            << std::setw(14) << "max diff"
-            << "\n";
+  std::cout << std::setw(10) << "slots" << std::setw(8) << "K" << std::setw(12)
+            << "updates" << std::setw(14) << "flat ms" << std::setw(14)
+            << "map ms" << std::setw(14) << "speedup" << std::setw(14)
+            << "max diff" << "\n";
 
   std::cout << std::scientific << std::setprecision(6);
 
@@ -130,14 +126,10 @@ int main(int argc, char** argv) {
     const int updates = 12 * slots;
     const Row row = run_case(slots, K, updates, reps);
 
-    std::cout << std::setw(10) << row.slots
-              << std::setw(8) << row.K
-              << std::setw(12) << row.updates
-              << std::setw(14) << row.flat_ms
-              << std::setw(14) << row.map_ms
-              << std::setw(14) << row.speedup
-              << std::setw(14) << row.max_diff
-              << "\n";
+    std::cout << std::setw(10) << row.slots << std::setw(8) << row.K
+              << std::setw(12) << row.updates << std::setw(14) << row.flat_ms
+              << std::setw(14) << row.map_ms << std::setw(14) << row.speedup
+              << std::setw(14) << row.max_diff << "\n";
   }
 
   std::cout << "\nBenchmark complete.\n";

@@ -21,15 +21,14 @@ namespace {
 using Clock = std::chrono::steady_clock;
 using had::AReal;
 
-double ms_between(const Clock::time_point& a, const Clock::time_point& b) {
+double ms_between(const Clock::time_point &a, const Clock::time_point &b) {
   return std::chrono::duration<double, std::milli>(b - a).count();
 }
 
 struct SparseRw1Objective {
   int m;
 
-  template <class T>
-  T operator()(const std::vector<T>& x) const {
+  template <class T> T operator()(const std::vector<T> &x) const {
     const T mu = x[0];
     const T log_sigma = x[1];
     const T log_lambda0 = x[2];
@@ -73,8 +72,8 @@ Eigen::VectorXd make_y(int m) {
   return y;
 }
 
-Eigen::SparseMatrix<double> Huu_sparse_direct(const Eigen::VectorXd& theta,
-                                              const Eigen::VectorXd& u) {
+Eigen::SparseMatrix<double> Huu_sparse_direct(const Eigen::VectorXd &theta,
+                                              const Eigen::VectorXd &u) {
   const int m = static_cast<int>(u.size());
   const double inv_sigma2 = std::exp(-2.0 * theta[1]);
   const double lambda0 = std::exp(theta[2]);
@@ -86,8 +85,10 @@ Eigen::SparseMatrix<double> Huu_sparse_direct(const Eigen::VectorXd& theta,
 
   for (int i = 0; i < m; ++i) {
     double diag = inv_sigma2 + lambda0 + beta * std::exp(u[i]);
-    if (i > 0) diag += lambda_rw;
-    if (i + 1 < m) diag += lambda_rw;
+    if (i > 0)
+      diag += lambda_rw;
+    if (i + 1 < m)
+      diag += lambda_rw;
     triplets.emplace_back(i, i, diag);
   }
 
@@ -102,8 +103,8 @@ Eigen::SparseMatrix<double> Huu_sparse_direct(const Eigen::VectorXd& theta,
   return H;
 }
 
-Eigen::VectorXd random_gradient(const Eigen::VectorXd& theta,
-                                const Eigen::VectorXd& u) {
+Eigen::VectorXd random_gradient(const Eigen::VectorXd &theta,
+                                const Eigen::VectorXd &u) {
   const int m = static_cast<int>(u.size());
   const double mu = theta[0];
   const double inv_sigma2 = std::exp(-2.0 * theta[1]);
@@ -128,12 +129,13 @@ Eigen::VectorXd random_gradient(const Eigen::VectorXd& theta,
   return g;
 }
 
-Eigen::VectorXd solve_uhat(const Eigen::VectorXd& theta, int m) {
+Eigen::VectorXd solve_uhat(const Eigen::VectorXd &theta, int m) {
   Eigen::VectorXd u = Eigen::VectorXd::Zero(m);
 
   for (int iter = 0; iter < 80; ++iter) {
     const Eigen::VectorXd g = random_gradient(theta, u);
-    Eigen::LDLT<Eigen::MatrixXd> ldlt(Eigen::MatrixXd(Huu_sparse_direct(theta, u)));
+    Eigen::LDLT<Eigen::MatrixXd> ldlt(
+        Eigen::MatrixXd(Huu_sparse_direct(theta, u)));
     const Eigen::VectorXd step = ldlt.solve(g);
     u -= step;
 
@@ -145,9 +147,8 @@ Eigen::VectorXd solve_uhat(const Eigen::VectorXd& theta, int m) {
   return u;
 }
 
-Eigen::VectorXd f_u_theta_column(const Eigen::VectorXd& theta,
-                                 const Eigen::VectorXd& uhat,
-                                 int theta_index) {
+Eigen::VectorXd f_u_theta_column(const Eigen::VectorXd &theta,
+                                 const Eigen::VectorXd &uhat, int theta_index) {
   const int m = static_cast<int>(uhat.size());
   const double inv_sigma2 = std::exp(-2.0 * theta[1]);
   const double lambda0 = std::exp(theta[2]);
@@ -171,7 +172,8 @@ Eigen::VectorXd f_u_theta_column(const Eigen::VectorXd& theta,
   }
 
   if (theta_index == 2) {
-    for (int i = 0; i < m; ++i) col[i] = lambda0 * uhat[i];
+    for (int i = 0; i < m; ++i)
+      col[i] = lambda0 * uhat[i];
     return col;
   }
 
@@ -185,7 +187,8 @@ Eigen::VectorXd f_u_theta_column(const Eigen::VectorXd& theta,
   }
 
   if (theta_index == 4) {
-    for (int i = 0; i < m; ++i) col[i] = beta * std::exp(uhat[i]);
+    for (int i = 0; i < m; ++i)
+      col[i] = beta * std::exp(uhat[i]);
     return col;
   }
 
@@ -197,19 +200,21 @@ struct SelectedTridiagonalInverse {
   Eigen::VectorXd subdiag;
 
   double operator()(int row, int col) const {
-    if (row == col) return diag[row];
+    if (row == col)
+      return diag[row];
 
     const int hi = std::max(row, col);
     const int lo = std::min(row, col);
 
-    if (hi == lo + 1) return subdiag[hi - 1];
+    if (hi == lo + 1)
+      return subdiag[hi - 1];
 
     return 0.0;
   }
 };
 
 SelectedTridiagonalInverse compute_selected_inverse(
-    Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>>& ldlt, int m) {
+    Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> &ldlt, int m) {
   SelectedTridiagonalInverse out;
   out.diag = Eigen::VectorXd::Zero(m);
   out.subdiag = Eigen::VectorXd::Zero(std::max(0, m - 1));
@@ -221,7 +226,8 @@ SelectedTridiagonalInverse compute_selected_inverse(
     rhs[j] = 1.0;
     const Eigen::VectorXd col = ldlt.solve(rhs);
     out.diag[j] = col[j];
-    if (j > 0) out.subdiag[j - 1] = col[j - 1];
+    if (j > 0)
+      out.subdiag[j - 1] = col[j - 1];
   }
 
   return out;
@@ -235,30 +241,32 @@ struct BTreeTraceResult {
   std::uint64_t inserts = 0;
 };
 
-BTreeTraceResult btree_hdot_traces(int m,
-                                   int K,
-                                   const Eigen::VectorXd& theta,
-                                   const Eigen::VectorXd& uhat,
-                                   const SelectedTridiagonalInverse& selected,
-                                   quadra::laplace::SparseHuuFactorization& factor) {
+BTreeTraceResult
+btree_hdot_traces(int m, int K, const Eigen::VectorXd &theta,
+                  const Eigen::VectorXd &uhat,
+                  const SelectedTridiagonalInverse &selected,
+                  quadra::laplace::SparseHuuFactorization &factor) {
   quadra::laplace::ExactGradientWorkspace workspace;
   std::vector<AReal> theta_vars(5);
   std::vector<AReal> random_vars(static_cast<std::size_t>(m));
 
   workspace.Build(
       [&]() {
-        for (int j = 0; j < 5; ++j) theta_vars[j] = AReal(theta[j]);
-        for (int i = 0; i < m; ++i) random_vars[static_cast<std::size_t>(i)] = AReal(uhat[i]);
+        for (int j = 0; j < 5; ++j)
+          theta_vars[j] = AReal(theta[j]);
+        for (int i = 0; i < m; ++i)
+          random_vars[static_cast<std::size_t>(i)] = AReal(uhat[i]);
 
         std::vector<AReal> x;
         x.reserve(static_cast<std::size_t>(5 + m));
-        for (auto& v : theta_vars) x.push_back(v);
-        for (auto& v : random_vars) x.push_back(v);
+        for (auto &v : theta_vars)
+          x.push_back(v);
+        for (auto &v : random_vars)
+          x.push_back(v);
 
         return SparseRw1Objective{m}(x);
       },
-      &theta_vars,
-      &random_vars);
+      &theta_vars, &random_vars);
 
   workspace.ResizeDirectionalBatch(static_cast<std::size_t>(K));
 
@@ -268,9 +276,8 @@ BTreeTraceResult btree_hdot_traces(int m,
 
   workspace.SeedTotalDirections(
       static_cast<std::size_t>(K),
-      [&](std::size_t k,
-          Eigen::VectorXd& theta_direction,
-          Eigen::VectorXd& random_direction) {
+      [&](std::size_t k, Eigen::VectorXd &theta_direction,
+          Eigen::VectorXd &random_direction) {
         const int theta_index = static_cast<int>(k % 5);
         theta_direction = Eigen::VectorXd::Zero(5);
         theta_direction[theta_index] = 1.0;
@@ -288,16 +295,16 @@ BTreeTraceResult btree_hdot_traces(int m,
     double trace = 0.0;
 
     for (int i = 0; i < m; ++i) {
-      trace += selected(i, i) *
-               had::GetAdjointDotBatch(random_vars[static_cast<std::size_t>(i)],
-                                        random_vars[static_cast<std::size_t>(i)],
-                                        k);
+      trace +=
+          selected(i, i) *
+          had::GetAdjointDotBatch(random_vars[static_cast<std::size_t>(i)],
+                                  random_vars[static_cast<std::size_t>(i)], k);
 
       if (i > 0) {
         trace += 2.0 * selected(i, i - 1) *
-                 had::GetAdjointDotBatch(random_vars[static_cast<std::size_t>(i)],
-                                          random_vars[static_cast<std::size_t>(i - 1)],
-                                          k);
+                 had::GetAdjointDotBatch(
+                     random_vars[static_cast<std::size_t>(i)],
+                     random_vars[static_cast<std::size_t>(i - 1)], k);
       }
     }
 
@@ -320,19 +327,16 @@ struct FlatTraceResult {
   double ms = 0.0;
 };
 
-FlatTraceResult flat_accumulator_hdot_traces(
-    int m,
-    int K,
-    const Eigen::VectorXd& theta,
-    const Eigen::VectorXd& uhat,
-    const SelectedTridiagonalInverse& selected,
-    quadra::laplace::SparseHuuFactorization& factor) {
+FlatTraceResult
+flat_accumulator_hdot_traces(int m, int K, const Eigen::VectorXd &theta,
+                             const Eigen::VectorXd &uhat,
+                             const SelectedTridiagonalInverse &selected,
+                             quadra::laplace::SparseHuuFactorization &factor) {
   const auto t0 = Clock::now();
 
   // 2*m-1 slots: diag entries and subdiag entries.
   had::BatchDirectionalFlatAccumulator accumulator(
-      static_cast<std::size_t>(K),
-      static_cast<std::size_t>(2 * m - 1));
+      static_cast<std::size_t>(K), static_cast<std::size_t>(2 * m - 1));
 
   accumulator.Clear();
 
@@ -355,19 +359,17 @@ FlatTraceResult flat_accumulator_hdot_traces(
         hdot_diag += lambda0 * theta_direction[2];
       }
 
-      hdot_diag += beta * std::exp(uhat[i]) *
-                   (theta_direction[4] + u_direction[i]);
+      hdot_diag +=
+          beta * std::exp(uhat[i]) * (theta_direction[4] + u_direction[i]);
 
-      accumulator.Add(static_cast<std::size_t>(k),
-                      static_cast<std::size_t>(i),
+      accumulator.Add(static_cast<std::size_t>(k), static_cast<std::size_t>(i),
                       hdot_diag);
 
       if (i > 0) {
         const int subdiag_slot = m + i - 1;
         const double hdot_subdiag = 0.0;
         accumulator.Add(static_cast<std::size_t>(k),
-                        static_cast<std::size_t>(subdiag_slot),
-                        hdot_subdiag);
+                        static_cast<std::size_t>(subdiag_slot), hdot_subdiag);
       }
     }
   }
@@ -378,9 +380,8 @@ FlatTraceResult flat_accumulator_hdot_traces(
     double trace = 0.0;
 
     for (int i = 0; i < m; ++i) {
-      trace += selected(i, i) *
-               accumulator(static_cast<std::size_t>(k),
-                           static_cast<std::size_t>(i));
+      trace += selected(i, i) * accumulator(static_cast<std::size_t>(k),
+                                            static_cast<std::size_t>(i));
 
       if (i > 0) {
         const int subdiag_slot = m + i - 1;
@@ -429,12 +430,13 @@ Row run_case(int m, int K, int reps) {
 
   for (int r = 0; r < reps; ++r) {
     const auto btree = btree_hdot_traces(m, K, theta, uhat, selected, factor);
-    const auto flat = flat_accumulator_hdot_traces(m, K, theta, uhat, selected, factor);
+    const auto flat =
+        flat_accumulator_hdot_traces(m, K, theta, uhat, selected, factor);
 
     row.btree_ms += btree.ms;
     row.flat_ms += flat.ms;
-    row.trace_diff = std::max(row.trace_diff,
-                              (btree.traces - flat.traces).cwiseAbs().maxCoeff());
+    row.trace_diff = std::max(
+        row.trace_diff, (btree.traces - flat.traces).cwiseAbs().maxCoeff());
     row.queries = btree.queries;
     row.pushdots = btree.pushdots;
     row.inserts = btree.inserts;
@@ -447,11 +449,12 @@ Row run_case(int m, int K, int reps) {
   return row;
 }
 
-}  // namespace
+} // namespace
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   int reps = 10;
-  if (argc > 1) reps = std::stoi(argv[1]);
+  if (argc > 1)
+    reps = std::stoi(argv[1]);
 
   const int K = 5;
 
@@ -459,14 +462,10 @@ int main(int argc, char** argv) {
   std::cout << "reps per case = " << reps << "\n";
   std::cout << "K = " << K << "\n\n";
 
-  std::cout << std::setw(8) << "m"
-            << std::setw(14) << "btree ms"
-            << std::setw(14) << "flat ms"
-            << std::setw(14) << "speedup"
-            << std::setw(14) << "trace diff"
-            << std::setw(14) << "queries"
-            << std::setw(14) << "pushdots"
-            << std::setw(14) << "inserts"
+  std::cout << std::setw(8) << "m" << std::setw(14) << "btree ms"
+            << std::setw(14) << "flat ms" << std::setw(14) << "speedup"
+            << std::setw(14) << "trace diff" << std::setw(14) << "queries"
+            << std::setw(14) << "pushdots" << std::setw(14) << "inserts"
             << "\n";
 
   std::cout << std::scientific << std::setprecision(6);
@@ -474,14 +473,10 @@ int main(int argc, char** argv) {
   for (int m : {100, 250, 500}) {
     const Row row = run_case(m, K, reps);
 
-    std::cout << std::setw(8) << row.m
-              << std::setw(14) << row.btree_ms
-              << std::setw(14) << row.flat_ms
-              << std::setw(14) << row.speedup
-              << std::setw(14) << row.trace_diff
-              << std::setw(14) << row.queries
-              << std::setw(14) << row.pushdots
-              << std::setw(14) << row.inserts
+    std::cout << std::setw(8) << row.m << std::setw(14) << row.btree_ms
+              << std::setw(14) << row.flat_ms << std::setw(14) << row.speedup
+              << std::setw(14) << row.trace_diff << std::setw(14) << row.queries
+              << std::setw(14) << row.pushdots << std::setw(14) << row.inserts
               << "\n";
   }
 

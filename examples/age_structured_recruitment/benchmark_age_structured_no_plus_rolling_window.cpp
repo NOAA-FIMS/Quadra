@@ -15,23 +15,22 @@ using Clock = std::chrono::high_resolution_clock;
 
 namespace {
 
-double ms_between(const Clock::time_point& a, const Clock::time_point& b) {
+double ms_between(const Clock::time_point &a, const Clock::time_point &b) {
   return std::chrono::duration<double, std::milli>(b - a).count();
 }
 
-std::vector<int> parse_lengths(const std::string& s) {
+std::vector<int> parse_lengths(const std::string &s) {
   std::vector<int> out;
   std::stringstream ss_in(s);
   std::string item;
   while (std::getline(ss_in, item, ',')) {
-    if (!item.empty()) out.push_back(std::stoi(item));
+    if (!item.empty())
+      out.push_back(std::stoi(item));
   }
   return out;
 }
 
-double logistic(const double x) {
-  return 1.0 / (1.0 + std::exp(-x));
-}
+double logistic(const double x) { return 1.0 / (1.0 + std::exp(-x)); }
 
 double normal_nll(const double residual, const double sigma) {
   const double z = residual / sigma;
@@ -63,7 +62,7 @@ struct Derived {
   double inv_var_index = 0.0;
 };
 
-Derived transform(const Parameters& par) {
+Derived transform(const Parameters &par) {
   Derived d;
   d.R0 = std::exp(par.log_R0);
   d.M = std::exp(par.log_M);
@@ -85,9 +84,8 @@ std::vector<double> selectivity(const int n_ages) {
   return sel;
 }
 
-std::vector<double> simulate_index(const int n_years,
-                                   const int n_ages,
-                                   const Parameters& par) {
+std::vector<double> simulate_index(const int n_years, const int n_ages,
+                                   const Parameters &par) {
   const Derived p = transform(par);
   const std::vector<double> sel = selectivity(n_ages);
 
@@ -102,16 +100,15 @@ std::vector<double> simulate_index(const int n_years,
   for (int y = 0; y < n_years; ++y) {
     double vulnerable = 0.0;
     for (int a = 0; a < n_ages; ++a) {
-      vulnerable += sel[static_cast<std::size_t>(a)] *
-                    N[static_cast<std::size_t>(a)];
+      vulnerable +=
+          sel[static_cast<std::size_t>(a)] * N[static_cast<std::size_t>(a)];
     }
 
     const double obs_error =
         0.04 * std::sin(2.0 * M_PI * static_cast<double>(y) / 13.0) +
         0.02 * std::cos(2.0 * M_PI * static_cast<double>(y) / 7.0);
 
-    index[static_cast<std::size_t>(y)] =
-        p.q * vulnerable * std::exp(obs_error);
+    index[static_cast<std::size_t>(y)] = p.q * vulnerable * std::exp(obs_error);
 
     std::vector<double> N_next(static_cast<std::size_t>(n_ages), 0.0);
     const double recruitment_dev =
@@ -129,7 +126,7 @@ std::vector<double> simulate_index(const int n_years,
   return index;
 }
 
-Data make_data(const int n_years, const int n_ages, const Parameters& par) {
+Data make_data(const int n_years, const int n_ages, const Parameters &par) {
   Data data;
   data.n_years = n_years;
   data.n_ages = n_ages;
@@ -144,11 +141,11 @@ struct EvalAll {
 };
 
 struct ActiveCohort {
-  int k = -1;              // recruitment deviation index
-  int age_index = -1;      // zero-based age slot currently occupied
-  double N = 0.0;          // abundance contribution
-  double dN = 0.0;         // d abundance / dx_k
-  double ddN = 0.0;        // d2 abundance / dx_k^2
+  int k = -1;         // recruitment deviation index
+  int age_index = -1; // zero-based age slot currently occupied
+  double N = 0.0;     // abundance contribution
+  double dN = 0.0;    // d abundance / dx_k
+  double ddN = 0.0;   // d2 abundance / dx_k^2
 };
 
 struct PairKey {
@@ -160,7 +157,8 @@ static inline long long pack_key(const int i, const int j) {
   return (static_cast<long long>(i) << 32) ^ static_cast<unsigned int>(j);
 }
 
-EvalAll eval_all_rolling(const Data& data, const Parameters& par, const Eigen::VectorXd& x) {
+EvalAll eval_all_rolling(const Data &data, const Parameters &par,
+                         const Eigen::VectorXd &x) {
   const Derived p = transform(par);
   const std::vector<double> sel = selectivity(data.n_ages);
 
@@ -190,7 +188,8 @@ EvalAll eval_all_rolling(const Data& data, const Parameters& par, const Eigen::V
   Hmap.reserve(static_cast<std::size_t>(n * (2 * A + 1)));
 
   auto add_H = [&](int i, int j, double value) {
-    if (i > j) std::swap(i, j);
+    if (i > j)
+      std::swap(i, j);
     Hmap[pack_key(i, j)] += value;
   };
 
@@ -203,7 +202,7 @@ EvalAll eval_all_rolling(const Data& data, const Parameters& par, const Eigen::V
                     fixed_N[static_cast<std::size_t>(a)];
     }
 
-    for (const auto& c : active) {
+    for (const auto &c : active) {
       vulnerable += sel[static_cast<std::size_t>(c.age_index)] * c.N;
     }
 
@@ -215,7 +214,7 @@ EvalAll eval_all_rolling(const Data& data, const Parameters& par, const Eigen::V
     dV.reserve(active.size());
     ddV.reserve(active.size());
 
-    for (const auto& c : active) {
+    for (const auto &c : active) {
       keys.push_back(c.k);
       const double s = sel[static_cast<std::size_t>(c.age_index)];
       dV.push_back(s * c.dN);
@@ -253,7 +252,7 @@ EvalAll eval_all_rolling(const Data& data, const Parameters& par, const Eigen::V
 
     // Age fixed initial population one year. No plus group.
     std::vector<double> fixed_next(static_cast<std::size_t>(A), 0.0);
-    fixed_next[0] = 0.0;  // current recruitment handled as active cohort
+    fixed_next[0] = 0.0; // current recruitment handled as active cohort
     for (int a = 1; a < A; ++a) {
       fixed_next[static_cast<std::size_t>(a)] =
           fixed_N[static_cast<std::size_t>(a - 1)] * p.survival;
@@ -264,7 +263,7 @@ EvalAll eval_all_rolling(const Data& data, const Parameters& par, const Eigen::V
     std::vector<ActiveCohort> next_active;
     next_active.reserve(static_cast<std::size_t>(A));
 
-    for (const auto& c : active) {
+    for (const auto &c : active) {
       if (c.age_index + 1 < A) {
         ActiveCohort nc = c;
         nc.age_index += 1;
@@ -284,7 +283,7 @@ EvalAll eval_all_rolling(const Data& data, const Parameters& par, const Eigen::V
 
   out.objective = nll;
 
-  for (const auto& kv : Hmap) {
+  for (const auto &kv : Hmap) {
     const long long key = kv.first;
     const int i = static_cast<int>(key >> 32);
     const int j = static_cast<int>(key & 0xffffffffu);
@@ -292,7 +291,8 @@ EvalAll eval_all_rolling(const Data& data, const Parameters& par, const Eigen::V
 
     if (std::abs(v) > 1e-12) {
       triplets.emplace_back(i, j, v);
-      if (i != j) triplets.emplace_back(j, i, v);
+      if (i != j)
+        triplets.emplace_back(j, i, v);
     }
   }
 
@@ -303,21 +303,21 @@ EvalAll eval_all_rolling(const Data& data, const Parameters& par, const Eigen::V
 }
 
 class ObjX {
- public:
-  ObjX(const Data& data, const Parameters& par) : data_(data), par_(par) {}
+public:
+  ObjX(const Data &data, const Parameters &par) : data_(data), par_(par) {}
 
-  double operator()(const Eigen::VectorXd& x, Eigen::VectorXd& grad) {
+  double operator()(const Eigen::VectorXd &x, Eigen::VectorXd &grad) {
     const EvalAll e = eval_all_rolling(data_, par_, x);
     grad = e.gradient;
     return e.objective;
   }
 
- private:
-  const Data& data_;
-  const Parameters& par_;
+private:
+  const Data &data_;
+  const Parameters &par_;
 };
 
-Eigen::VectorXd optimize_x(const Data& data, const Parameters& par) {
+Eigen::VectorXd optimize_x(const Data &data, const Parameters &par) {
   Eigen::VectorXd x = Eigen::VectorXd::Zero(data.n_years);
 
   double f = eval_all_rolling(data, par, x).objective;
@@ -327,7 +327,8 @@ Eigen::VectorXd optimize_x(const Data& data, const Parameters& par) {
     f = e.objective;
 
     const double gnorm = e.gradient.norm();
-    if (gnorm < 1e-8) break;
+    if (gnorm < 1e-8)
+      break;
 
     Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> ldlt;
     ldlt.compute(e.hessian);
@@ -345,7 +346,8 @@ Eigen::VectorXd optimize_x(const Data& data, const Parameters& par) {
 
     for (int ls = 0; ls < 30; ++ls) {
       const Eigen::VectorXd candidate = x - step * dx;
-      const double f_candidate = eval_all_rolling(data, par, candidate).objective;
+      const double f_candidate =
+          eval_all_rolling(data, par, candidate).objective;
 
       if (std::isfinite(f_candidate) && f_candidate < f) {
         x = candidate;
@@ -358,7 +360,8 @@ Eigen::VectorXd optimize_x(const Data& data, const Parameters& par) {
     }
 
     if (!accepted) {
-      if (gnorm < 1e-5) break;
+      if (gnorm < 1e-5)
+        break;
       throw std::runtime_error("Newton line search failed");
     }
   }
@@ -366,7 +369,7 @@ Eigen::VectorXd optimize_x(const Data& data, const Parameters& par) {
   return x;
 }
 
-double sparse_logdet_ldlt(const Eigen::SparseMatrix<double>& H) {
+double sparse_logdet_ldlt(const Eigen::SparseMatrix<double> &H) {
   Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> ldlt;
   ldlt.compute(H);
 
@@ -374,7 +377,7 @@ double sparse_logdet_ldlt(const Eigen::SparseMatrix<double>& H) {
     throw std::runtime_error("sparse LDLT failed");
   }
 
-  const auto& D = ldlt.vectorD();
+  const auto &D = ldlt.vectorD();
   double logdet = 0.0;
 
   for (int i = 0; i < D.size(); ++i) {
@@ -395,7 +398,7 @@ struct EvalResult {
   int nnz = 0;
 };
 
-EvalResult eval_laplace(const Data& data, const Parameters& par) {
+EvalResult eval_laplace(const Data &data, const Parameters &par) {
   const Eigen::VectorXd xhat = optimize_x(data, par);
   const EvalAll e = eval_all_rolling(data, par, xhat);
 
@@ -406,37 +409,37 @@ EvalResult eval_laplace(const Data& data, const Parameters& par) {
   out.logdet = sparse_logdet_ldlt(e.hessian);
 
   const double n_x = static_cast<double>(xhat.size());
-  out.marginal = out.joint + 0.5 * out.logdet -
-                 0.5 * n_x * std::log(2.0 * M_PI);
+  out.marginal =
+      out.joint + 0.5 * out.logdet - 0.5 * n_x * std::log(2.0 * M_PI);
 
   return out;
 }
 
-}  // namespace
+} // namespace
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   int reps = 10;
   std::vector<int> lengths = {25, 50, 100, 250, 500, 1000};
   int n_ages = 10;
 
-  if (argc > 1) reps = std::stoi(argv[1]);
-  if (argc > 2) lengths = parse_lengths(argv[2]);
-  if (argc > 3) n_ages = std::stoi(argv[3]);
+  if (argc > 1)
+    reps = std::stoi(argv[1]);
+  if (argc > 2)
+    lengths = parse_lengths(argv[2]);
+  if (argc > 3)
+    n_ages = std::stoi(argv[3]);
 
   const Parameters par;
 
   std::cout << std::fixed << std::setprecision(6);
-  std::cout << "Quadra no-plus age-structured rolling-window analytic Laplace benchmark\n";
+  std::cout << "Quadra no-plus age-structured rolling-window analytic Laplace "
+               "benchmark\n";
   std::cout << "reps per n = " << reps << ", ages = " << n_ages << "\n\n";
 
-  std::cout << std::setw(8) << "n"
-            << std::setw(14) << "objective"
-            << std::setw(14) << "joint"
-            << std::setw(14) << "logdet"
-            << std::setw(14) << "nnz"
-            << std::setw(14) << "grad_norm"
-            << std::setw(14) << "avg_ms"
-            << "\n";
+  std::cout << std::setw(8) << "n" << std::setw(14) << "objective"
+            << std::setw(14) << "joint" << std::setw(14) << "logdet"
+            << std::setw(14) << "nnz" << std::setw(14) << "grad_norm"
+            << std::setw(14) << "avg_ms" << "\n";
 
   for (const int n : lengths) {
     const Data data = make_data(n, n_ages, par);
@@ -450,14 +453,10 @@ int main(int argc, char** argv) {
 
     const double avg_ms = ms_between(t0, t1) / static_cast<double>(reps);
 
-    std::cout << std::setw(8) << n
-              << std::setw(14) << last.marginal
-              << std::setw(14) << last.joint
-              << std::setw(14) << last.logdet
-              << std::setw(14) << last.nnz
-              << std::setw(14) << last.grad_norm
-              << std::setw(14) << avg_ms
-              << "\n";
+    std::cout << std::setw(8) << n << std::setw(14) << last.marginal
+              << std::setw(14) << last.joint << std::setw(14) << last.logdet
+              << std::setw(14) << last.nnz << std::setw(14) << last.grad_norm
+              << std::setw(14) << avg_ms << "\n";
   }
 
   return 0;

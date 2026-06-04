@@ -1,5 +1,5 @@
-#include "../core/laplace/persistent_structured_runtime.hpp"
 #include "../core/laplace/hessian_structure.hpp"
+#include "../core/laplace/persistent_structured_runtime.hpp"
 
 #include <Eigen/Sparse>
 
@@ -13,13 +13,12 @@ using quadra::laplace::LogDetSparseLDLT;
 using quadra::laplace::PersistentStructuredLaplaceRuntime;
 using quadra::laplace::StructureDetectorOptions;
 
-void expect_close(const double a, const double b, const char* msg) {
+void expect_close(const double a, const double b, const char *msg) {
   const double diff = std::abs(a - b);
   const double scale = 1.0 + std::max(std::abs(a), std::abs(b));
 
   if (diff > 1e-9 * scale) {
-    std::cerr << msg << ": a=" << a << " b=" << b
-              << " diff=" << diff << "\n";
+    std::cerr << msg << ": a=" << a << " b=" << b << " diff=" << diff << "\n";
     throw std::runtime_error(msg);
   }
 }
@@ -53,8 +52,7 @@ Eigen::SparseMatrix<double> make_tridiagonal_scaled(const int n,
   return H;
 }
 
-Eigen::SparseMatrix<double> make_banded_scaled(const int n,
-                                               const int bandwidth,
+Eigen::SparseMatrix<double> make_banded_scaled(const int n, const int bandwidth,
                                                const double scale) {
   std::vector<Eigen::Triplet<double>> t;
 
@@ -62,11 +60,11 @@ Eigen::SparseMatrix<double> make_banded_scaled(const int n,
     double diag = scale * (10.0 + 0.01 * i);
 
     for (int d = 1; d <= bandwidth; ++d) {
-      if (i - d < 0) continue;
+      if (i - d < 0)
+        continue;
 
       const double e =
-          scale * (((d % 2 == 0) ? 0.015 : -0.025) /
-                   static_cast<double>(d));
+          scale * (((d % 2 == 0) ? 0.015 : -0.025) / static_cast<double>(d));
 
       t.emplace_back(i, i - d, e);
       t.emplace_back(i - d, i, e);
