@@ -110,6 +110,135 @@ inline StructuredValues extract_structured_values(
   throw std::invalid_argument("Unknown backend recommendation");
 }
 
+inline void update_diagonal_values_from_hessian(
+    DiagonalValues& values,
+    const Eigen::SparseMatrix<double>& H) {
+  if (H.rows() != H.cols()) {
+    throw std::invalid_argument("Diagonal value update requires square matrix");
+  }
+
+  const int n = static_cast<int>(H.rows());
+
+  if (values.diag.size() != n) {
+    values.diag = Eigen::VectorXd::Zero(n);
+  }
+
+  for (int i = 0; i < n; ++i) {
+    values.diag[i] = H.coeff(i, i);
+  }
+}
+
+inline void update_tridiagonal_values_from_hessian(
+    TridiagonalValues& values,
+    const Eigen::SparseMatrix<double>& H) {
+  if (H.rows() != H.cols()) {
+    throw std::invalid_argument("Tridiagonal value update requires square matrix");
+  }
+
+  const int n = static_cast<int>(H.rows());
+
+  if (values.diag.size() != n) {
+    values.diag = Eigen::VectorXd::Zero(n);
+  }
+
+  if (values.offdiag.size() != std::max(0, n - 1)) {
+    values.offdiag = Eigen::VectorXd::Zero(std::max(0, n - 1));
+  }
+
+  for (int i = 0; i < n; ++i) {
+    values.diag[i] = H.coeff(i, i);
+
+    if (i > 0) {
+      values.offdiag[i - 1] = H.coeff(i, i - 1);
+    }
+  }
+}
+
+inline void update_banded_values_from_hessian(
+    BandedValues& values,
+    const Eigen::SparseMatrix<double>& H,
+    const int bandwidth) {
+  if (H.rows() != H.cols()) {
+    throw std::invalid_argument("Banded value update requires square matrix");
+  }
+
+  if (bandwidth < 0) {
+    throw std::invalid_argument("Banded value update requires non-negative bandwidth");
+  }
+
+  const int n = static_cast<int>(H.rows());
+  const int bw = std::min(bandwidth, std::max(0, n - 1));
+
+  values.bandwidth = bw;
+
+  if (values.diag.size() != n) {
+    values.diag = Eigen::VectorXd::Zero(n);
+  }
+
+  if (static_cast<int>(values.lower_bands.size()) != bw) {
+    values.lower_bands.resize(static_cast<std::size_t>(bw));
+  }
+
+  for (int d = 1; d <= bw; ++d) {
+    const int expected = std::max(0, n - d);
+    Eigen::VectorXd& band = values.lower_bands[static_cast<std::size_t>(d - 1)];
+
+    if (band.size() != expected) {
+      band = Eigen::VectorXd::Zero(expected);
+    }
+  }
+
+  for (int i = 0; i < n; ++i) {
+    values.diag[i] = H.coeff(i, i);
+
+    for (int d = 1; d <= bw; ++d) {
+      const int j = i - d;
+      if (j < 0) continue;
+
+      values.lower_bands[static_cast<std::size_t>(d - 1)][j] =
+          H.coeff(i, j);
+    }
+  }
+}
+
+inline void update_structured_values_from_hessian(
+    StructuredValues& values,
+    const Eigen::SparseMatrix<double>& H,
+    const BackendRecommendation& rec) {
+  switch (rec.backend) {
+    case LaplaceBackendKind::Diagonal:
+      if (!std::holds_alternative<DiagonalValues>(values)) {
+        values = DiagonalValues();
+      }
+      update_diagonal_values_from_hessian(
+          std::get<DiagonalValues>(values), H);
+      return;
+
+    case LaplaceBackendKind::Tridiagonal:
+      if (!std::holds_alternative<TridiagonalValues>(values)) {
+        values = TridiagonalValues();
+      }
+      update_tridiagonal_values_from_hessian(
+          std::get<TridiagonalValues>(values), H);
+      return;
+
+    case LaplaceBackendKind::Banded:
+      if (!std::holds_alternative<BandedValues>(values)) {
+        values = BandedValues();
+      }
+      update_banded_values_from_hessian(
+          std::get<BandedValues>(values), H, rec.bandwidth);
+      return;
+
+    case LaplaceBackendKind::SparseLDLT:
+    case LaplaceBackendKind::DenseLDLT:
+      throw std::invalid_argument(
+          "Structured value update is not implemented for requested backend");
+  }
+
+  throw std::invalid_argument("Unknown backend recommendation");
+}
+
 inline double logdet_structured_values(const StructuredValues& values) {
   return std::visit(
       [](const auto& v) -> double {
