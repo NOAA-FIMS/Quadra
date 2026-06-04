@@ -203,6 +203,14 @@ Quadra is currently experimental and under active development.
 Interfaces, APIs, benchmark structure, and numerical methods may evolve rapidly
 during the V1 development cycle.
 
+<!-- QUADRA_BENCHMARK_STUDIES_START -->
+
+## Benchmark studies
+
+- [Projection memory scaling study](benchmarks/studies/projection_memory_scaling.md): evaluates memory and runtime scaling for long-horizon latent-state projection workloads using a structure-aware Laplace runtime.
+
+<!-- QUADRA_BENCHMARK_STUDIES_END -->
+
 <!-- QUADRA_BENCHMARKS_START -->
 
 ## Performance Highlights
