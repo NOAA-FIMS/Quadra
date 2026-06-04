@@ -31,6 +31,23 @@ class PersistentLatentStateRuntime {
     return random_effects_;
   }
 
+  template <class ModelContext, class SolverPolicy>
+  auto solve_random_effects(ModelContext& context, SolverPolicy& solver) {
+    Eigen::VectorXd initial_x;
+
+    if (random_effects_.initialized()) {
+      initial_x = random_effects_.xhat();
+    } else {
+      initial_x = solver.initial_x(context);
+    }
+
+    auto result = solver.solve(context, initial_x);
+
+    random_effects_.update_xhat(result.xhat, result.status);
+
+    return result;
+  }
+
   PersistentStructuredRuntimeState& structured() {
     return structured_;
   }

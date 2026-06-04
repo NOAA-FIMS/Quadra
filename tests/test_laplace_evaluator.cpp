@@ -1,114 +1,132 @@
+#include "../core/laplace/laplace_evaluator.hpp"
+#include "../core/laplace/structured_value_backend.hpp"
+
+#include <Eigen/Dense>
+
 #include <cmath>
 #include <iostream>
-#include <string>
-#include <vector>
+#include <stdexcept>
 
-#include "../core/laplace/laplace_evaluator.hpp"
-#include "../core/model/quadra_model.hpp"
+using quadra::laplace::BandedValues;
+using quadra::laplace::LaplaceEvaluator;
+using quadra::laplace::NewtonSolveStatus;
+using quadra::laplace::PersistentStructuredRuntimeState;
+using quadra::laplace::TridiagonalValues;
 
-DECLARE_ADGRAPH();
-
-class CorrelatedRandomInterceptModel
-    : public quadra::QuadraModel<CorrelatedRandomInterceptModel> {
-public:
-  CorrelatedRandomInterceptModel(std::vector<double> y, std::vector<int> group,
-                                 int n_groups)
-      : y_m(std::move(y)), group_m(std::move(group)), n_groups_m(n_groups) {
-    parameters_m.add("mu", 0.0, quadra::ParameterTransform::Identity, false);
-
-    for (int g = 0; g < n_groups_m; ++g) {
-      parameters_m.add("u_" + std::to_string(g), 0.0,
-                       quadra::ParameterTransform::Identity, true);
-    }
-  }
-
-  std::vector<std::string> parameter_names_impl() const {
-    return parameters_m.names();
-  }
-
-  const quadra::ParameterSet &parameters() const { return parameters_m; }
-
-  template <typename Type>
-  Type evaluate_impl(const std::vector<Type> &p,
-                     quadra::ModelReportContext &) const {
-    Type mu = p[0];
-    Type nll = Type(0.0);
-
-    for (size_t i = 0; i < y_m.size(); ++i) {
-      const int g = group_m[i];
-      Type u = p[1 + g];
-
-      Type r = Type(y_m[i]) - (mu + u);
-      nll += Type(0.5) * r * r;
-    }
-
-    Type u0 = p[1];
-    nll += Type(0.5) * u0 * u0;
-
-    const double rho = 0.8;
-
-    for (int g = 1; g < n_groups_m; ++g) {
-      Type ug = p[1 + g];
-      Type up = p[1 + g - 1];
-
-      Type diff = ug - Type(rho) * up;
-      nll += Type(0.5) * diff * diff;
-    }
-
-    return nll;
-  }
-
-private:
-  std::vector<double> y_m;
-  std::vector<int> group_m;
-  int n_groups_m;
-  quadra::ParameterSet parameters_m;
+struct ToyContext {
+  Eigen::VectorXd target;
 };
 
-int main() {
-  std::cout << "Testing LaplaceEvaluator\n";
+struct ToySolveResult {
+  Eigen::VectorXd xhat;
+  NewtonSolveStatus status;
+};
 
-  const int G = 10;
-  const int m = 5;
+struct ToySolverPolicy {
+  int initial_calls = 0;
+  int solve_calls = 0;
 
-  std::vector<double> y;
-  std::vector<int> group;
-
-  for (int g = 0; g < G; ++g) {
-    for (int i = 0; i < m; ++i) {
-      y.push_back(5.0 + 0.1 * std::sin(static_cast<double>(g)));
-      group.push_back(g);
-    }
+  Eigen::VectorXd initial_x(ToyContext& ctx) {
+    ++initial_calls;
+    return Eigen::VectorXd::Zero(ctx.target.size());
   }
 
-  CorrelatedRandomInterceptModel model(y, group, G);
+  ToySolveResult solve(ToyContext& ctx, const Eigen::VectorXd& initial_x) {
+    ++solve_calls;
 
-  quadra::LaplaceEvaluator<CorrelatedRandomInterceptModel> evaluator(
-      model, model.parameters(), std::vector<double>(G, 0.0));
+    ToySolveResult out;
+    out.xhat = ctx.target;
+    out.status.iterations = 1;
+    out.status.objective = (ctx.target - initial_x).squaredNorm();
+    out.status.grad_norm = 0.0;
+    out.status.converged = true;
+    return out;
+  }
+};
 
-  auto r1 = evaluator.evaluate({4.9});
-  auto r2 = evaluator.evaluate({5.0});
+struct ToyEvalResult {
+  double objective = 0.0;
+  double logdet = 0.0;
+};
 
-  std::cout << "r1 converged = " << r1.converged_m << "\n";
-  std::cout << "r2 converged = " << r2.converged_m << "\n";
-  std::cout << "evaluations = " << evaluator.evaluations() << "\n";
-  std::cout << "cache analyzed = " << evaluator.cache_state().analyzed_m
-            << "\n";
-  std::cout << "nnz = " << r2.hessian_random_m.nonZeros() << "\n";
-  std::cout << "random start size = " << evaluator.random_start().size()
-            << "\n";
+struct ToyEvaluationPolicy {
+  ToyEvalResult evaluate(ToyContext& ctx,
+                         const Eigen::VectorXd& xhat,
+                         PersistentStructuredRuntimeState& structured) {
+    TridiagonalValues H;
+    const int n = static_cast<int>(xhat.size());
+    H.diag = Eigen::VectorXd::Constant(n, 4.0);
+    H.offdiag = Eigen::VectorXd::Constant(std::max(0, n - 1), -0.2);
 
-  if (!r1.converged_m || !r1.logdet_ok_m)
-    return 1;
-  if (!r2.converged_m || !r2.logdet_ok_m)
-    return 1;
-  if (evaluator.evaluations() != 2)
-    return 1;
-  if (!evaluator.cache_state().analyzed_m)
-    return 1;
-  if (evaluator.random_start().size() != static_cast<size_t>(G))
-    return 1;
+    structured.update_direct(H);
 
-  std::cout << "PASS\n";
+    ToyEvalResult out;
+    out.logdet = structured.logdet();
+    out.objective = (xhat - ctx.target).squaredNorm() + out.logdet;
+    return out;
+  }
+};
+
+void test_laplace_evaluator_owns_runtime() {
+  ToyContext ctx;
+  ctx.target = Eigen::VectorXd::Zero(3);
+  ctx.target << 1.0, 2.0, 3.0;
+
+  LaplaceEvaluator<ToyContext, ToySolverPolicy, ToyEvaluationPolicy> evaluator;
+
+  const ToyEvalResult first = evaluator.evaluate(ctx);
+
+  if (!evaluator.runtime().has_random_effects()) {
+    throw std::runtime_error("evaluator did not cache random effects");
+  }
+
+  if (!evaluator.runtime().has_structure()) {
+    throw std::runtime_error("evaluator did not cache structure");
+  }
+
+  if (!(first.logdet > 0.0)) {
+    throw std::runtime_error("unexpected first logdet");
+  }
+
+  ctx.target << 1.5, 2.5, 3.5;
+
+  const ToyEvalResult second = evaluator.evaluate(ctx);
+
+  if (!(second.logdet > 0.0)) {
+    throw std::runtime_error("unexpected second logdet");
+  }
+
+  if (evaluator.solver_policy().initial_calls != 1) {
+    throw std::runtime_error("solver initial_x should only be called once");
+  }
+
+  if (evaluator.solver_policy().solve_calls != 2) {
+    throw std::runtime_error("solver solve call count mismatch");
+  }
+}
+
+void test_clear_resets_runtime() {
+  ToyContext ctx;
+  ctx.target = Eigen::VectorXd::Ones(2);
+
+  LaplaceEvaluator<ToyContext, ToySolverPolicy, ToyEvaluationPolicy> evaluator;
+  (void)evaluator.evaluate(ctx);
+
+  evaluator.clear();
+
+  if (evaluator.runtime().has_random_effects()) {
+    throw std::runtime_error("clear did not reset random effects");
+  }
+
+  if (evaluator.runtime().has_structure()) {
+    throw std::runtime_error("clear did not reset structure");
+  }
+}
+
+int main() {
+  test_laplace_evaluator_owns_runtime();
+  test_clear_resets_runtime();
+
+  std::cout << "laplace evaluator tests passed\n";
   return 0;
 }
