@@ -256,6 +256,12 @@ LaplaceResult<Model> laplace_eval_at_u_star_persistent_structured(
   return res;
 }
 
+
+struct LBFGSConvergedByGradient : public std::runtime_error {
+  LBFGSConvergedByGradient()
+      : std::runtime_error("Quadra LBFGS reached requested gradient tolerance") {}
+};
+
 template <typename Model> class LBFGSObjective {
   void print(int iter, double fx, double gnorm) {
     const bool converged = std::isfinite(gnorm) && gnorm <= epsilon;
@@ -288,6 +294,24 @@ public:
   Eigen::VectorXd last_grad;
   Eigen::VectorXd last_x;
   std::vector<double> last_u_star;
+  Eigen::VectorXd best_converged_x;
+  Eigen::VectorXd best_converged_grad;
+  std::vector<double> best_converged_u_star;
+  double best_converged_fx = std::numeric_limits<double>::quiet_NaN();
+  int best_converged_iter = 0;
+  bool has_best_converged = false;
+
+  // Best finite point seen by the optimizer, independent of the final
+  // line-search bookkeeping state.
+  double best_fx = std::numeric_limits<double>::infinity();
+  double best_grad_norm = std::numeric_limits<double>::infinity();
+  Eigen::VectorXd best_x;
+  Eigen::VectorXd best_grad;
+  std::vector<double> best_u_star;
+  bool best_available = false;
+
+  // Best point satisfying the configured fixed-effect gradient tolerance.
+  double best_converged_grad_norm = std::numeric_limits<double>::infinity();
   laplace::PersistentStructuredRuntimeState structured_runtime;
 
   LBFGSObjective(Model &m, ParameterVector &p, std::vector<int> fixed,
@@ -364,7 +388,22 @@ public:
 
     const double gnorm = safe_eigen_norm(grad);
 
-    if (gnorm <= epsilon || (iter % print_every) == 0 || iter == 1) {
+    if (std::isfinite(gnorm) && gnorm <= epsilon) {
+      if (!has_best_converged || !std::isfinite(best_converged_fx) ||
+          res.value < best_converged_fx) {
+        best_converged_x = x;
+        best_converged_grad = grad;
+        best_converged_u_star = u_star;
+        best_converged_fx = res.value;
+        best_converged_iter = iter;
+        has_best_converged = true;
+      }
+
+      print(iter, res.value, gnorm);
+      throw LBFGSConvergedByGradient();
+    }
+
+    if ((iter % print_every) == 0 || iter == 1) {
       print(iter, res.value, gnorm);
     }
 
@@ -403,7 +442,6 @@ optimize_lbfgs(Model &model, ParameterVector &params,
   fun.epsilon = param.epsilon;
 
   LBFGSSolver<double> solver(param);
-
   double fx = std::numeric_limits<double>::quiet_NaN();
   int niter = 0;
 
@@ -443,6 +481,15 @@ optimize_lbfgs(Model &model, ParameterVector &params,
                       : "stopped before requested gradient tolerance; inspect "
                         "LBFGS status/max iterations/line search")
               << std::endl;
+  } catch (const LBFGSConvergedByGradient &) {
+    if (fun.has_best_converged) {
+
+      std::cout << "L-BFGS: stopped at first iterate satisfying requested "
+                   "fixed-effect gradient tolerance."
+                << std::endl;
+    } else {
+      throw;
+    }
   } catch (const std::runtime_error &e) {
     const double gnorm = safe_eigen_norm(fun.last_grad);
     const double max_grad = (fun.last_grad.size() > 0)
@@ -454,7 +501,11 @@ optimize_lbfgs(Model &model, ParameterVector &params,
         msg.find("line search") != std::string::npos ||
         msg.find("Line search") != std::string::npos;
 
-    const double convergence_like_grad = 2e-3;
+    // LBFGSpp may throw a line-search failure after the objective has
+    // effectively plateaued. For public examples and diagnostic workflows,
+    // return the best finite iterate instead of aborting, while keeping
+    // result.converged honest via the stricter param.epsilon check below.
+    const double convergence_like_grad = 2e-2;
 
     if (gnorm <= param.epsilon) {
       std::cout << "L-BFGS: optimization reached convergence criterion "
@@ -468,7 +519,8 @@ optimize_lbfgs(Model &model, ParameterVector &params,
       niter = fun.iter;
     } else if (line_search_failed && max_grad < convergence_like_grad) {
       std::cout
-          << "L-BFGS: line search failed after convergence-like gradient. "
+          << "L-BFGS: line search failed after a small fixed-effect gradient. "
+          << "Returning the last finite iterate as a non-converged result. "
           << "max|grad| = " << max_grad << std::endl;
 
       if (fun.last_x.size() == x.size()) {
@@ -482,29 +534,46 @@ optimize_lbfgs(Model &model, ParameterVector &params,
     }
   }
 
-  for (size_t k = 0; k < fixed_idx.size(); ++k) {
-    params.params[static_cast<size_t>(fixed_idx[k])].value =
-        x[static_cast<Eigen::Index>(k)];
-  }
-
   OptResult result;
 
-  if (fun.last_x.size() == x.size()) {
-    result.par.assign(fun.last_x.data(), fun.last_x.data() + fun.last_x.size());
+  Eigen::VectorXd selected_x;
+  std::vector<double> selected_u_hat;
+  double selected_fx = std::numeric_limits<double>::quiet_NaN();
+  double selected_grad_norm = std::numeric_limits<double>::infinity();
+
+  if (fun.has_best_converged) {
+    selected_grad_norm = fun.best_converged_grad_norm;
+  } else if (fun.best_available) {
+    selected_x = fun.best_x;
+    selected_u_hat = fun.best_u_star;
+    selected_fx = fun.best_fx;
+    selected_grad_norm = fun.best_grad_norm;
+  } else if (fun.last_x.size() == x.size()) {
+    selected_x = fun.last_x;
+    selected_u_hat = fun.last_u_star;
+    selected_fx = std::isfinite(fun.last_fx) ? fun.last_fx : fx;
+    selected_grad_norm = safe_eigen_norm(fun.last_grad);
   } else {
-    result.par.assign(x.data(), x.data() + x.size());
+    selected_x = x;
+    selected_u_hat = fun.last_u_star;
+    selected_fx = fx;
+    selected_grad_norm = safe_eigen_norm(fun.last_grad);
   }
 
-  result.u_hat = fun.last_u_star;
+  for (size_t k = 0; k < fixed_idx.size(); ++k) {
+    params.params[static_cast<size_t>(fixed_idx[k])].value =
+        selected_x[static_cast<Eigen::Index>(k)];
+  }
+
+  result.par.assign(selected_x.data(), selected_x.data() + selected_x.size());
+  result.u_hat = selected_u_hat;
   result.fixed_index = fixed_idx;
   result.random_index = random_idx;
 
-  result.value = std::isfinite(fun.last_fx) ? fun.last_fx : fx;
+  result.value = selected_fx;
   result.iterations = niter;
-
-  const double final_grad_norm = safe_eigen_norm(fun.last_grad);
-  result.grad_norm = std::isfinite(final_grad_norm)
-                         ? final_grad_norm
+  result.grad_norm = std::isfinite(selected_grad_norm)
+                         ? selected_grad_norm
                          : std::numeric_limits<double>::infinity();
 
   result.converged =
@@ -515,12 +584,7 @@ optimize_lbfgs(Model &model, ParameterVector &params,
           ? "converged to requested fixed-effect gradient tolerance"
           : "stopped before requested fixed-effect gradient tolerance";
 
-  Eigen::VectorXd pattern_x;
-  if (fun.last_x.size() == x.size()) {
-    pattern_x = fun.last_x;
-  } else {
-    pattern_x = x;
-  }
+  Eigen::VectorXd pattern_x = selected_x;
 
   result.pattern = analyze_final_random_effect_pattern(
       model, params, pattern_x, result.u_hat, fixed_idx, random_idx, options);
