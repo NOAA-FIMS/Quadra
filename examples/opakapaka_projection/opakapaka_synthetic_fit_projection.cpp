@@ -73,7 +73,7 @@ double unbounded_from_value(const double x, const double lo, const double hi) {
   return std::log(p / (1.0 - p));
 }
 
-FixedParameters theta_to_par(const Eigen::VectorXd& theta) {
+FixedParameters theta_to_par(const Eigen::VectorXd &theta) {
   if (theta.size() != 3) {
     throw std::runtime_error("theta must have length 3");
   }
@@ -91,30 +91,27 @@ FixedParameters theta_to_par(const Eigen::VectorXd& theta) {
   return par;
 }
 
-Eigen::VectorXd par_to_theta(const FixedParameters& par) {
+Eigen::VectorXd par_to_theta(const FixedParameters &par) {
   Eigen::VectorXd theta(3);
   theta << unbounded_from_value(par.r, 0.05, 0.80),
-           unbounded_from_value(par.K, 400.0, 2000.0),
-           unbounded_from_value(par.q, 0.0002, 0.0050);
+      unbounded_from_value(par.K, 400.0, 2000.0),
+      unbounded_from_value(par.q, 0.0002, 0.0050);
   return theta;
 }
 
-double B0(const FixedParameters& par) {
-  return par.B0_frac * par.K;
-}
+double B0(const FixedParameters &par) { return par.B0_frac * par.K; }
 
-double inv_var_process(const FixedParameters& par) {
+double inv_var_process(const FixedParameters &par) {
   return 1.0 / (par.sigma_process * par.sigma_process);
 }
 
-double inv_var_index(const FixedParameters& par) {
+double inv_var_index(const FixedParameters &par) {
   return 1.0 / (par.sigma_index * par.sigma_index);
 }
 
-LogPredDerivatives log_pred_derivatives(
-    const double log_B,
-    const double catch_t,
-    const FixedParameters& par) {
+LogPredDerivatives log_pred_derivatives(const double log_B,
+                                        const double catch_t,
+                                        const FixedParameters &par) {
   const double B = std::exp(log_B);
   const double production = par.r * B * (1.0 - B / par.K);
   const double pred = std::max(B + production - catch_t, 1e-9);
@@ -157,9 +154,8 @@ Data make_synthetic_data() {
   double B = B0(true_par);
 
   for (int t = 0; t < n; ++t) {
-    const double index_noise =
-        0.030 * std::sin(0.7 * static_cast<double>(t)) +
-        0.018 * std::cos(0.23 * static_cast<double>(t));
+    const double index_noise = 0.030 * std::sin(0.7 * static_cast<double>(t)) +
+                               0.018 * std::cos(0.23 * static_cast<double>(t));
     data.index[t] = true_par.q * B * std::exp(index_noise);
 
     const double process_noise =
@@ -172,9 +168,8 @@ Data make_synthetic_data() {
   return data;
 }
 
-Eigen::VectorXd deterministic_initial_x(
-    const Data& data,
-    const FixedParameters& par) {
+Eigen::VectorXd deterministic_initial_x(const Data &data,
+                                        const FixedParameters &par) {
   const int n_state = static_cast<int>(data.catch_mt.size()) - 1;
   Eigen::VectorXd x(n_state);
   double B = B0(par);
@@ -188,10 +183,8 @@ Eigen::VectorXd deterministic_initial_x(
   return x;
 }
 
-double joint_x(
-    const Data& data,
-    const FixedParameters& par,
-    const Eigen::VectorXd& x) {
+double joint_x(const Data &data, const FixedParameters &par,
+               const Eigen::VectorXd &x) {
   const int n_state = static_cast<int>(x.size());
   const double ivp = inv_var_process(par);
   const double ivi = inv_var_index(par);
@@ -211,18 +204,15 @@ double joint_x(
 
   for (int k = 0; k < n_state; ++k) {
     const int t = k + 1;
-    const double obs =
-        std::log(data.index[t]) - std::log(par.q) - x[k];
+    const double obs = std::log(data.index[t]) - std::log(par.q) - x[k];
     nll += 0.5 * obs * obs * ivi + std::log(par.sigma_index);
   }
 
   return nll;
 }
 
-Eigen::VectorXd grad_x(
-    const Data& data,
-    const FixedParameters& par,
-    const Eigen::VectorXd& x) {
+Eigen::VectorXd grad_x(const Data &data, const FixedParameters &par,
+                       const Eigen::VectorXd &x) {
   const int n_state = static_cast<int>(x.size());
   const double ivp = inv_var_process(par);
   const double ivi = inv_var_index(par);
@@ -236,8 +226,7 @@ Eigen::VectorXd grad_x(
     g[k] += e_k * ivp;
 
     const int t = k + 1;
-    const double obs =
-        std::log(data.index[t]) - std::log(par.q) - x[k];
+    const double obs = std::log(data.index[t]) - std::log(par.q) - x[k];
     g[k] += -obs * ivi;
 
     if (k + 1 < n_state) {
@@ -251,12 +240,9 @@ Eigen::VectorXd grad_x(
   return g;
 }
 
-void hessian_tridiagonal(
-    const Data& data,
-    const FixedParameters& par,
-    const Eigen::VectorXd& x,
-    Eigen::VectorXd& diag,
-    Eigen::VectorXd& offdiag) {
+void hessian_tridiagonal(const Data &data, const FixedParameters &par,
+                         const Eigen::VectorXd &x, Eigen::VectorXd &diag,
+                         Eigen::VectorXd &offdiag) {
   const int n_state = static_cast<int>(x.size());
   const double ivp = inv_var_process(par);
   const double ivi = inv_var_index(par);
@@ -279,10 +265,9 @@ void hessian_tridiagonal(
   }
 }
 
-Eigen::VectorXd solve_tridiagonal_ldlt(
-    const Eigen::VectorXd& diag,
-    const Eigen::VectorXd& offdiag,
-    const Eigen::VectorXd& rhs) {
+Eigen::VectorXd solve_tridiagonal_ldlt(const Eigen::VectorXd &diag,
+                                       const Eigen::VectorXd &offdiag,
+                                       const Eigen::VectorXd &rhs) {
   const int n = static_cast<int>(diag.size());
 
   Eigen::VectorXd D(n);
@@ -315,19 +300,21 @@ Eigen::VectorXd solve_tridiagonal_ldlt(
   return x;
 }
 
-double logdet_tridiagonal(
-    const Eigen::VectorXd& diag,
-    const Eigen::VectorXd& offdiag) {
+double logdet_tridiagonal(const Eigen::VectorXd &diag,
+                          const Eigen::VectorXd &offdiag) {
   const int n = static_cast<int>(diag.size());
-  if (n == 0) return 0.0;
+  if (n == 0)
+    return 0.0;
 
   double d_prev = diag[0];
-  if (!(d_prev > 0.0)) return std::numeric_limits<double>::quiet_NaN();
+  if (!(d_prev > 0.0))
+    return std::numeric_limits<double>::quiet_NaN();
 
   double logdet = std::log(d_prev);
   for (int i = 1; i < n; ++i) {
     const double d = diag[i] - offdiag[i - 1] * offdiag[i - 1] / d_prev;
-    if (!(d > 0.0)) return std::numeric_limits<double>::quiet_NaN();
+    if (!(d > 0.0))
+      return std::numeric_limits<double>::quiet_NaN();
     logdet += std::log(d);
     d_prev = d;
   }
@@ -335,10 +322,8 @@ double logdet_tridiagonal(
   return logdet;
 }
 
-NewtonResult optimize_x_newton(
-    const Data& data,
-    const FixedParameters& par,
-    const Eigen::VectorXd& initial_x) {
+NewtonResult optimize_x_newton(const Data &data, const FixedParameters &par,
+                               const Eigen::VectorXd &initial_x) {
   NewtonResult out;
   out.xhat = initial_x;
 
@@ -390,12 +375,9 @@ NewtonResult optimize_x_newton(
   return out;
 }
 
-double laplace_objective(
-    const Data& data,
-    const FixedParameters& par,
-    const Eigen::VectorXd& xhat,
-    double* out_joint,
-    double* out_logdet) {
+double laplace_objective(const Data &data, const FixedParameters &par,
+                         const Eigen::VectorXd &xhat, double *out_joint,
+                         double *out_logdet) {
   Eigen::VectorXd diag;
   Eigen::VectorXd offdiag;
   hessian_tridiagonal(data, par, xhat, diag, offdiag);
@@ -404,17 +386,16 @@ double laplace_objective(
   const double logdet = logdet_tridiagonal(diag, offdiag);
   const double n = static_cast<double>(xhat.size());
 
-  if (out_joint) *out_joint = joint;
-  if (out_logdet) *out_logdet = logdet;
+  if (out_joint)
+    *out_joint = joint;
+  if (out_logdet)
+    *out_logdet = logdet;
 
   return joint + 0.5 * logdet - 0.5 * n * std::log(2.0 * M_PI);
 }
 
-
-double estimate_q_from_x(
-    const Data& data,
-    const FixedParameters& par_without_q,
-    const Eigen::VectorXd& xhat) {
+double estimate_q_from_x(const Data &data, const FixedParameters &par_without_q,
+                         const Eigen::VectorXd &xhat) {
   std::vector<double> log_biomass;
   log_biomass.reserve(data.index.size());
 
@@ -441,12 +422,12 @@ double estimate_q_from_x(
 }
 
 struct OuterObjective {
-  const Data& data;
+  const Data &data;
   Eigen::VectorXd cached_x;
   int inner_iterations_total = 0;
   int evals = 0;
 
-  double value(const Eigen::VectorXd& theta) {
+  double value(const Eigen::VectorXd &theta) {
     ++evals;
 
     const FixedParameters par = theta_to_par(theta);
@@ -461,7 +442,7 @@ struct OuterObjective {
     return laplace_objective(data, par, nr.xhat, nullptr, nullptr);
   }
 
-  double operator()(const Eigen::VectorXd& theta, Eigen::VectorXd& grad) {
+  double operator()(const Eigen::VectorXd &theta, Eigen::VectorXd &grad) {
     const double f0 = value(theta);
     grad = Eigen::VectorXd::Zero(theta.size());
 
@@ -478,7 +459,7 @@ struct OuterObjective {
   }
 };
 
-FitResult fit_model(const Data& data) {
+FitResult fit_model(const Data &data) {
   // Stable public example:
   // Fit q and latent biomass states while holding biological/process
   // quantities fixed near the synthetic generating values.
@@ -505,8 +486,7 @@ FitResult fit_model(const Data& data) {
     par.q = estimate_q_from_x(data, par, x);
     par.q = std::min(0.0050, std::max(0.0002, par.q));
 
-    const double rel_change =
-        std::abs(par.q - old_q) / std::max(old_q, 1e-12);
+    const double rel_change = std::abs(par.q - old_q) / std::max(old_q, 1e-12);
 
     if (rel_change < 1e-10 && nr.grad_norm < 1e-6) {
       break;
@@ -535,17 +515,13 @@ FitResult fit_model(const Data& data) {
   return out;
 }
 
-double project_next_biomass(
-    const double B,
-    const double catch_mt,
-    const FixedParameters& par) {
+double project_next_biomass(const double B, const double catch_mt,
+                            const FixedParameters &par) {
   const double production = par.r * B * (1.0 - B / par.K);
   return std::max(B + production - catch_mt, 1e-9);
 }
 
-void write_fit_summary(
-    const std::string& path,
-    const FitResult& fit) {
+void write_fit_summary(const std::string &path, const FitResult &fit) {
   std::ofstream out(path);
   out << "quantity,value\n";
   out << "objective," << fit.objective << "\n";
@@ -563,29 +539,24 @@ void write_fit_summary(
   out << "B0," << B0(fit.par) << "\n";
 }
 
-void write_fit_trajectory(
-    const std::string& path,
-    const Data& data,
-    const FitResult& fit) {
+void write_fit_trajectory(const std::string &path, const Data &data,
+                          const FitResult &fit) {
   std::ofstream out(path);
   out << "year,phase,catch_mt,index,biomass_hat,index_hat\n";
-  out << 1 << ",history," << data.catch_mt[0] << ","
-      << data.index[0] << "," << B0(fit.par) << ","
-      << fit.par.q * B0(fit.par) << "\n";
+  out << 1 << ",history," << data.catch_mt[0] << "," << data.index[0] << ","
+      << B0(fit.par) << "," << fit.par.q * B0(fit.par) << "\n";
 
   for (int k = 0; k < fit.xhat.size(); ++k) {
     const int year = k + 2;
     const double B = std::exp(fit.xhat[k]);
     out << year << ",history," << data.catch_mt[static_cast<std::size_t>(k + 1)]
-        << "," << data.index[static_cast<std::size_t>(k + 1)]
-        << "," << B << "," << fit.par.q * B << "\n";
+        << "," << data.index[static_cast<std::size_t>(k + 1)] << "," << B << ","
+        << fit.par.q * B << "\n";
   }
 }
 
-void write_projection_scenarios(
-    const std::string& path,
-    const FitResult& fit,
-    const int years) {
+void write_projection_scenarios(const std::string &path, const FitResult &fit,
+                                const int years) {
   const double last_B = std::exp(fit.xhat[fit.xhat.size() - 1]);
 
   struct Scenario {
@@ -602,23 +573,23 @@ void write_projection_scenarios(
   std::ofstream out(path);
   out << "scenario,projection_year,catch_mt,biomass,biomass_frac_K\n";
 
-  for (const auto& scenario : scenarios) {
+  for (const auto &scenario : scenarios) {
     double B = last_B;
     for (int y = 1; y <= years; ++y) {
       B = project_next_biomass(B, scenario.catch_mt, fit.par);
-      out << scenario.name << "," << y << ","
-          << scenario.catch_mt << "," << B << ","
-          << B / fit.par.K << "\n";
+      out << scenario.name << "," << y << "," << scenario.catch_mt << "," << B
+          << "," << B / fit.par.K << "\n";
     }
   }
 }
 
-}  // namespace
+} // namespace
 
 int main() {
   std::cout << "Synthetic opakapaka-style fit + projection example\n";
   std::cout << "==================================================\n\n";
-  std::cout << "Synthetic and public-data-safe. Not an official assessment.\n\n";
+  std::cout
+      << "Synthetic and public-data-safe. Not an official assessment.\n\n";
 
   const Data data = make_synthetic_data();
   const FitResult fit = fit_model(data);
@@ -646,7 +617,8 @@ int main() {
   const std::string outdir = "examples/opakapaka_projection/outputs";
   write_fit_summary(outdir + "/synthetic_fit_summary.csv", fit);
   write_fit_trajectory(outdir + "/synthetic_fit_trajectory.csv", data, fit);
-  write_projection_scenarios(outdir + "/synthetic_projection_scenarios.csv", fit, 20);
+  write_projection_scenarios(outdir + "/synthetic_projection_scenarios.csv",
+                             fit, 20);
 
   std::cout << "Wrote outputs:\n";
   std::cout << "  " << outdir << "/synthetic_fit_summary.csv\n";

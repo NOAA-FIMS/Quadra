@@ -87,8 +87,10 @@ int main() {
   std::cout << "---------------------\n";
   std::cout << "Converged:          " << (fit.converged ? "yes" : "no") << "\n";
   std::cout << "Message:            " << fit.message << "\n";
-  std::cout << "Random effects:     " << fit.pattern.random_effect_count << "\n";
-  std::cout << "Pattern available:  " << (fit.pattern.available ? "yes" : "no") << "\n";
+  std::cout << "Random effects:     " << fit.pattern.random_effect_count
+            << "\n";
+  std::cout << "Pattern available:  " << (fit.pattern.available ? "yes" : "no")
+            << "\n";
   std::cout << "Detected structure: " << fit.pattern.detected_structure << "\n";
   std::cout << "Laplace backend:    " << fit.pattern.backend << "\n";
   std::cout << "Random solver:      " << fit.pattern.solver << "\n";

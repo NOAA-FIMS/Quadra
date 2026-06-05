@@ -58,7 +58,8 @@ struct OptResult {
   // Random-effect Hessian / backend diagnostic payload.
   //
   // v1 fills the random-effect count and leaves detailed structure as unknown.
-  // The next patch should wire this to the structure detector / backend factory.
+  // The next patch should wire this to the structure detector / backend
+  // factory.
   OptPatternInfo pattern;
 };
 
@@ -232,9 +233,8 @@ LaplaceResult<Model> laplace_eval_at_u_star_persistent_structured(
 
   const auto &pattern = get_pattern(scope, p_full, random_idx);
 
-  Eigen::SparseMatrix<double> H =
-      extract_sparse_hessian(scope, p_full, random_idx, pattern,
-                             options.hessian_drop_tol);
+  Eigen::SparseMatrix<double> H = extract_sparse_hessian(
+      scope, p_full, random_idx, pattern, options.hessian_drop_tol);
 
   // Persistent structured bridge:
   //   First call: detect structure and choose backend.
@@ -522,10 +522,8 @@ optimize_lbfgs(Model &model, ParameterVector &params,
     pattern_x = x;
   }
 
-  result.pattern =
-      analyze_final_random_effect_pattern(
-          model, params, pattern_x, result.u_hat, fixed_idx, random_idx,
-          options);
+  result.pattern = analyze_final_random_effect_pattern(
+      model, params, pattern_x, result.u_hat, fixed_idx, random_idx, options);
 
   return result;
 }
