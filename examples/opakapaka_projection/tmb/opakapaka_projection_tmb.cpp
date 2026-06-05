@@ -1,8 +1,6 @@
 #include <TMB.hpp>
 
-template<class Type>
-Type objective_function<Type>::operator() ()
-{
+template <class Type> Type objective_function<Type>::operator()() {
   DATA_VECTOR(index_obs);
   DATA_VECTOR(catch_obs);
   DATA_INTEGER(n_years);
@@ -32,7 +30,8 @@ Type objective_function<Type>::operator() ()
 
       // Stable positive floor. Avoids log(<=0) under bad trial points.
       const Type floor = Type(1.0);
-      const Type B_next_pred = CppAD::CondExpGt(raw_next, floor, raw_next, floor);
+      const Type B_next_pred =
+          CppAD::CondExpGt(raw_next, floor, raw_next, floor);
 
       nll -= dnorm(log_B(y + 1), log(B_next_pred), sigma_process, true);
     }

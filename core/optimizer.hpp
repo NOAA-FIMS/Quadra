@@ -256,10 +256,10 @@ LaplaceResult<Model> laplace_eval_at_u_star_persistent_structured(
   return res;
 }
 
-
 struct LBFGSConvergedByGradient : public std::runtime_error {
   LBFGSConvergedByGradient()
-      : std::runtime_error("Quadra LBFGS reached requested gradient tolerance") {}
+      : std::runtime_error(
+            "Quadra LBFGS reached requested gradient tolerance") {}
 };
 
 template <typename Model> class LBFGSObjective {

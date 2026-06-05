@@ -1,15 +1,16 @@
 #include "opakapaka_model.hpp"
 
+#include <chrono>
 #include <iomanip>
 #include <iostream>
-#include <chrono>
 
 int main() {
   using namespace opakapaka_example;
 
   std::cout << "Synthetic opakapaka-style fit + projection example\n";
   std::cout << "==================================================\n\n";
-  std::cout << "Synthetic and public-data-safe. Not an official assessment.\n\n";
+  std::cout
+      << "Synthetic and public-data-safe. Not an official assessment.\n\n";
 
   auto data = make_synthetic_opakapaka_data();
 
@@ -45,8 +46,7 @@ int main() {
   std::cout << "grad_norm          " << fit.grad_norm << "\n";
   std::cout << "runtime_ms         " << fit_runtime_ms << "\n";
   std::cout << "iterations         " << fit.iterations << "\n";
-  std::cout << "converged          " << (fit.converged ? "yes" : "no")
-            << "\n";
+  std::cout << "converged          " << (fit.converged ? "yes" : "no") << "\n";
   std::cout << "message            " << fit.message << "\n";
   std::cout << "log_q              " << fit.par.at(0) << "\n";
   std::cout << "q                  " << std::exp(fit.par.at(0)) << "\n";
@@ -71,16 +71,16 @@ int main() {
     if (printed >= 12) {
       break;
     }
-    std::cout << row.scenario << "," << row.year << "," << row.catch_mt
-              << "," << row.biomass << "," << row.index << "\n";
+    std::cout << row.scenario << "," << row.year << "," << row.catch_mt << ","
+              << row.biomass << "," << row.index << "\n";
     ++printed;
   }
 
   write_fit_summary_csv(
       "examples/opakapaka_projection/outputs/synthetic_fit_summary.csv", fit);
-  write_projection_csv(
-      "examples/opakapaka_projection/outputs/synthetic_projection_scenarios.csv",
-      projection);
+  write_projection_csv("examples/opakapaka_projection/outputs/"
+                       "synthetic_projection_scenarios.csv",
+                       projection);
 
   std::cout << "\nWrote outputs:\n";
   std::cout << "  examples/opakapaka_projection/outputs/"

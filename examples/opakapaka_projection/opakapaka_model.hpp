@@ -39,16 +39,13 @@ struct ProjectionOptions {
 
 inline double square(double x) { return x * x; }
 
-inline double safe_log(double x) {
-  return std::log(std::max(x, 1.0e-12));
-}
+inline double safe_log(double x) { return std::log(std::max(x, 1.0e-12)); }
 
 inline void add_parameter(quadra::ParameterVector &params,
                           const std::string &name, double value,
                           bool is_random) {
-  params.add(quadra::Parameter(name, value,
-                               quadra::ParameterTransform::Identity,
-                               is_random));
+  params.add(quadra::Parameter(
+      name, value, quadra::ParameterTransform::Identity, is_random));
 }
 
 inline std::vector<Observation> make_synthetic_opakapaka_data() {
@@ -71,8 +68,8 @@ inline std::vector<Observation> make_synthetic_opakapaka_data() {
         18.0 + 3.0 * std::sin(0.40 * i) + 1.5 * std::cos(0.17 * i);
 
     // Public-safe synthetic observation noise.
-    const double noise = std::exp(0.055 * std::sin(0.73 * i) -
-                                  0.035 * std::cos(0.31 * i));
+    const double noise =
+        std::exp(0.055 * std::sin(0.73 * i) - 0.035 * std::cos(0.31 * i));
     const double index = q * biomass * noise;
 
     data.push_back({year, catch_mt, index});
@@ -130,8 +127,7 @@ public:
     // Biomass state prior.
     const T log_B0_expected = log(T(0.82) * K);
     const T log_B0 = par[1];
-    nll += T(0.5) * square((log_B0 - log_B0_expected) / T(0.15)) +
-           log(T(0.15));
+    nll += T(0.5) * square((log_B0 - log_B0_expected) / T(0.15)) + log(T(0.15));
 
     for (int t = 0; t < n; ++t) {
       const T log_Bt = par[1 + t];
@@ -140,8 +136,7 @@ public:
       // Index likelihood.
       const T pred_index = q * Bt;
       const T obs_index = T(data_[static_cast<std::size_t>(t)].index);
-      nll += T(0.5) *
-                 square((log(obs_index) - log(pred_index)) / sigma_index) +
+      nll += T(0.5) * square((log(obs_index) - log(pred_index)) / sigma_index) +
              log(sigma_index);
 
       // Process equation for next biomass.
@@ -154,9 +149,8 @@ public:
             sqrt(B_next_pred * B_next_pred + T(1.0e-8));
 
         const T log_B_next = par[1 + t + 1];
-        nll += T(0.5) *
-                   square((log_B_next - log(guarded_B_next_pred)) /
-                          sigma_process) +
+        nll += T(0.5) * square((log_B_next - log(guarded_B_next_pred)) /
+                               sigma_process) +
                log(sigma_process);
       }
     }
@@ -164,9 +158,8 @@ public:
     return nll;
   }
 
-  std::vector<ProjectionRow>
-  project(const quadra::OptResult &fit,
-          const ProjectionOptions &options) const {
+  std::vector<ProjectionRow> project(const quadra::OptResult &fit,
+                                     const ProjectionOptions &options) const {
     if (fit.u_hat.empty()) {
       throw std::runtime_error("Projection requires fit.u_hat");
     }
@@ -202,8 +195,7 @@ public:
         biomass = biomass + r * biomass * (1.0 - biomass / K) - catch_mt;
         biomass = std::max(1.0, biomass);
 
-        rows.push_back(
-            {scenario.name, year, catch_mt, biomass, q * biomass});
+        rows.push_back({scenario.name, year, catch_mt, biomass, q * biomass});
       }
     }
 
