@@ -17,6 +17,7 @@
 #include "autodiff.hpp"
 #include "laplace.hpp"
 #include "laplace/model_analysis_report.hpp"
+#include "laplace/persistent_structured_runtime.hpp"
 
 namespace quadra {
 
@@ -175,6 +176,86 @@ OptPatternInfo analyze_final_random_effect_pattern(
   }
 }
 
+template <typename Model>
+LaplaceResult<Model> laplace_eval_at_u_star_persistent_structured(
+    Model &model, ParameterVector &params, const std::vector<int> &fixed_idx,
+    const std::vector<int> &random_idx, const Eigen::VectorXd &x,
+    const std::vector<double> &u_star, had::ADGraph &graph,
+    laplace::PersistentStructuredRuntimeState &structured_runtime,
+    const LaplaceOptions &options = default_laplace_options()) {
+  ADScope scope(graph);
+
+  using Result = LaplaceResult<Model>;
+  Result res;
+
+  std::vector<AD> p_full;
+  p_full.reserve(params.size());
+
+  for (int i = 0; i < params.size(); ++i) {
+    p_full.emplace_back(AD(0.0));
+  }
+
+  inject_fixed_params(x, p_full, fixed_idx);
+  inject_random_params(u_star, p_full, random_idx);
+
+  AD nll = model(p_full);
+
+  scope.backward(nll);
+
+  res.grad_x.resize(fixed_idx.size());
+  for (size_t k = 0; k < fixed_idx.size(); ++k) {
+    res.grad_x[k] = scope.grad(p_full[fixed_idx[k]]);
+  }
+
+  // Keep the existing exact logdet-gradient path for fixed effects.
+  {
+    Eigen::Map<const Eigen::VectorXd> u_star_eigen(
+        u_star.data(), static_cast<Eigen::Index>(u_star.size()));
+
+    Eigen::VectorXd g_logdet =
+        laplace_logdet_gradient_exact(model, params, x, u_star_eigen, options);
+
+    // laplace_logdet_gradient_exact builds temporary AD graphs.
+    // Restore the graph for this outer evaluation before any further
+    // grad/hess access through scope.
+    had::g_ADGraph = &scope.graph;
+
+    for (size_t k = 0; k < fixed_idx.size(); ++k) {
+      res.grad_x[k] += g_logdet[static_cast<Eigen::Index>(k)];
+    }
+  }
+
+  res.grad_u.resize(random_idx.size());
+  for (size_t k = 0; k < random_idx.size(); ++k) {
+    res.grad_u[k] = scope.grad(p_full[random_idx[k]]);
+  }
+
+  const auto &pattern = get_pattern(scope, p_full, random_idx);
+
+  Eigen::SparseMatrix<double> H =
+      extract_sparse_hessian(scope, p_full, random_idx, pattern,
+                             options.hessian_drop_tol);
+
+  // Persistent structured bridge:
+  //   First call: detect structure and choose backend.
+  //   Later calls: update structured values only and reuse recommendation.
+  laplace::StructureDetectorOptions detector_options;
+  detector_options.prefer_dense_for_small_matrices = false;
+  detector_options.dense_size_cutoff = 0;
+
+  if (!structured_runtime.initialized) {
+    structured_runtime.update_from_hessian(H, detector_options);
+  } else {
+    structured_runtime.update_values_only(H);
+  }
+
+  const double logdet = structured_runtime.logdet();
+
+  res.value = value_of(nll) + 0.5 * logdet;
+
+  return res;
+}
+
 template <typename Model> class LBFGSObjective {
   void print(int iter, double fx, double gnorm) {
     const bool converged = std::isfinite(gnorm) && gnorm <= epsilon;
@@ -207,6 +288,7 @@ public:
   Eigen::VectorXd last_grad;
   Eigen::VectorXd last_x;
   std::vector<double> last_u_star;
+  laplace::PersistentStructuredRuntimeState structured_runtime;
 
   LBFGSObjective(Model &m, ParameterVector &p, std::vector<int> fixed,
                  std::vector<int> random,
@@ -247,8 +329,9 @@ public:
     Result res;
 
     try {
-      res = laplace_eval_at_u_star(model, params, fixed_idx, random_idx, x,
-                                   u_star, graph, options);
+      res = laplace_eval_at_u_star_persistent_structured(
+          model, params, fixed_idx, random_idx, x, u_star, graph,
+          structured_runtime, options);
     } catch (const std::exception &e) {
       std::cerr
           << "L-BFGS: Laplace evaluation failed; returning penalty. reason="
