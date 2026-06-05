@@ -1,5 +1,6 @@
 
 #include "test_common.hpp"
+#include <cassert>
 
 DECLARE_ADGRAPH();
 
@@ -65,6 +66,20 @@ int main() {
 
   auto opts = quadra_tests::default_test_options();
   auto fit = optimize_lbfgs(model, params, opts);
+  // optimizer_result_contract_ar1_random_walk_v1
+  assert(fit.converged);
+  assert(!fit.par.empty());
+  assert(!fit.u_hat.empty());
+  assert(!fit.fixed_index.empty());
+  assert(!fit.random_index.empty());
+  assert(fit.u_hat.size() == fit.random_index.size());
+  assert(fit.pattern.random_effect_count == fit.random_index.size());
+  assert(fit.pattern.available);
+  assert(fit.pattern.rows == fit.random_index.size());
+  assert(fit.pattern.cols == fit.random_index.size());
+  assert(fit.pattern.nonzeros > 0);
+  assert(fit.pattern.detected_structure == "tridiagonal");
+  assert(fit.pattern.backend == "tridiagonal");
 
   std::cout << "fit.value = " << fit.value << "\n";
   std::cout << "mu_hat = " << fit.par[0] << "\n";
