@@ -1,13 +1,13 @@
 field,value
-objective,-58.6796
-grad_norm,4.53972e-05
-iterations,71
+objective,40.774
+grad_norm,5.30963e-05
+iterations,0
 converged,yes
-message,converged to requested fixed-effect gradient tolerance
-random_effects,30
+message,accepted safeguarded one-dimensional log_q polish after line-search stall
+random_effects,20
 detected_structure,tridiagonal
 backend,tridiagonal
 solver,Newton
 complexity,O(n)
 bandwidth,1
-hessian_nonzeros,88
+hessian_nonzeros,58
