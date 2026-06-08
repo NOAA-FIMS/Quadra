@@ -79,6 +79,25 @@ int main() {
 
   auto fit = optimize_lbfgs(model, params, opts);
 
+  // Optimizer result diagnostics.
+  //
+  // The example does not manually inspect Hessians or select a backend.
+  // Quadra returns these diagnostics through the public fit object.
+  std::cout << "\nOptimizer diagnostics\n";
+  std::cout << "---------------------\n";
+  std::cout << "Converged:          " << (fit.converged ? "yes" : "no") << "\n";
+  std::cout << "Message:            " << fit.message << "\n";
+  std::cout << "Random effects:     " << fit.pattern.random_effect_count
+            << "\n";
+  std::cout << "Pattern available:  " << (fit.pattern.available ? "yes" : "no")
+            << "\n";
+  std::cout << "Detected structure: " << fit.pattern.detected_structure << "\n";
+  std::cout << "Laplace backend:    " << fit.pattern.backend << "\n";
+  std::cout << "Random solver:      " << fit.pattern.solver << "\n";
+  std::cout << "Expected complexity:" << fit.pattern.complexity << "\n";
+  std::cout << "Bandwidth:          " << fit.pattern.bandwidth << "\n";
+  std::cout << "Hessian nonzeros:   " << fit.pattern.nonzeros << "\n";
+
   std::cout << "fit.value = " << fit.value << "\n";
   std::cout << "log_q_hat = " << fit.par[0] << "\n";
 

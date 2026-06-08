@@ -1,3 +1,5 @@
+#include "../../core/laplace/laplace_backend.hpp"
+#include "../../core/laplace/laplace_backend_factory.hpp"
 #include "state_space_surplus_production.hpp"
 
 #include <Eigen/Dense>
@@ -238,7 +240,22 @@ EvalResult latent_tridiagonal_laplace_eval(const ss::Data &data,
   const Eigen::SparseMatrix<double> H =
       fd_tridiagonal_hessian_xx(data, par, xhat);
   out.nnz = static_cast<int>(H.nonZeros());
-  out.logdet = sparse_logdet_ldlt(H);
+
+  static std::unique_ptr<quadra::laplace::LaplaceBackend> backend;
+  static quadra::laplace::BackendRecommendation recommendation;
+
+  if (!backend) {
+    backend =
+        quadra::laplace::CreateLaplaceBackendForHessian(H, &recommendation);
+  }
+
+  backend->factorize(H);
+
+  if (!backend->is_spd()) {
+    throw std::runtime_error("Laplace backend reported non-SPD Hessian");
+  }
+
+  out.logdet = backend->logdet();
 
   const double n_x = static_cast<double>(xhat.size());
   out.correction = 0.5 * out.logdet - 0.5 * n_x * std::log(2.0 * M_PI);

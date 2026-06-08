@@ -1,0 +1,106 @@
+Flat intermediate backend verification
+timestamp: 20260601_211002
+
+
+================================================================================
+RUN: ./run_had_quadra_nonzero_batch_directional_test.sh
+================================================================================
++ c++ -std=c++17 -O2 -Iexternal/Eigen -I. tests/test_had_quadra_nonzero_batch_directional.cpp -o build/tests/test_had_quadra_nonzero_batch_directional
++ ./build/tests/test_had_quadra_nonzero_batch_directional
+After seeding batch directions:
+x varId=0 val=0.7 dot=0 vertex.dot=0 areal.dotBatch[0]=1 vertex.dotBatch[0]=1 wDotBatch[0]=0 e1.dwBatch[0]=0 e2.dwBatch[0]=0
+y varId=1 val=-0.4 dot=0 vertex.dot=0 areal.dotBatch[0]=0 vertex.dotBatch[0]=0 wDotBatch[0]=0 e1.dwBatch[0]=0 e2.dwBatch[0]=0
+f varId=8 val=0.170365 dot=0 vertex.dot=0 vertex.dotBatch[0]=0 wDotBatch[0]=0 e1.dwBatch[0]=0 e2.dwBatch[0]=0
+
+After PropagateAdjointDirectionalBatch:
+x varId=0 val=0.7 dot=0 vertex.dot=0 areal.dotBatch[0]=1 vertex.dotBatch[0]=1 wDotBatch[0]=-0.679075 e1.dwBatch[0]=0 e2.dwBatch[0]=0
+y varId=1 val=-0.4 dot=0 vertex.dot=0 areal.dotBatch[0]=0 vertex.dotBatch[0]=0 wDotBatch[0]=1.94416 e1.dwBatch[0]=0 e2.dwBatch[0]=0
+f varId=8 val=0.170365 dot=0 vertex.dot=0 vertex.dotBatch[0]=-0.862313 wDotBatch[0]=0 e1.dwBatch[0]=0 e2.dwBatch[0]=0
+
+Batch Hdot readout:
+direction 0: hxx_dot=-0.0483702 hxy_dot=-0.519979 hyy_dot=0.909964
+direction 1: hxx_dot=-0.519979 hxy_dot=0.909964 hyy_dot=0.259234
+
+had_quadra nonzero batch directional diagnostic passed
+
+================================================================================
+RUN: ./run_had_quadra_directional_batch_propagation_test.sh
+================================================================================
++ c++ -std=c++17 -O2 -Iexternal/Eigen -I. tests/test_had_quadra_directional_batch_propagation.cpp -o build/tests/test_had_quadra_directional_batch_propagation
++ ./build/tests/test_had_quadra_directional_batch_propagation
+direction 0 scalar=0 batch=0 diff=0
+direction 1 scalar=0 batch=0 diff=0
+direction 2 scalar=0 batch=0 diff=0
+had_quadra directional batch propagation tests passed
+
+================================================================================
+RUN: ./run_had_graph_workspace_test.sh
+================================================================================
++ c++ -std=c++17 -O2 -Iexternal/Eigen -I. tests/test_had_graph_workspace.cpp -o build/tests/test_had_graph_workspace
++ ./build/tests/test_had_graph_workspace
+had graph workspace tests passed
+vertices = 8
+hxy scalar = 0.544164
+hxy batch 0 = -0.909964
+hxy batch 1 = 0.519979
+
+================================================================================
+RUN: ./run_exact_gradient_workspace_test.sh
+================================================================================
++ c++ -std=c++17 -O2 -Iexternal/Eigen -I. tests/test_exact_gradient_workspace.cpp -o build/tests/test_exact_gradient_workspace
++ ./build/tests/test_exact_gradient_workspace
+exact gradient workspace tests passed
+vertices = 55
+trace 0 = 0
+trace 1 = 4.85225
+triplets = 10
+
+================================================================================
+RUN: ./run_laplace_exact_gradient_evaluator_test.sh
+================================================================================
++ c++ -std=c++17 -O2 -Iexternal/Eigen -I. tests/test_laplace_exact_gradient_evaluator.cpp -o build/tests/test_laplace_exact_gradient_evaluator
++ ./build/tests/test_laplace_exact_gradient_evaluator
+laplace exact-gradient evaluator tests passed
+objective = 13.125
+gradient =       0 2.42612
+trace_terms =       0 4.85225
+
+================================================================================
+RUN: ./run_sparse_rw1_exact_gradient_graph_reuse_benchmark.sh 10
+================================================================================
++ c++ -std=c++17 -O3 -DNDEBUG -g -Iexternal/Eigen -Iexternal/LBFGSpp/include -I. benchmarks/benchmark_sparse_rw1_exact_gradient_graph_reuse.cpp -o build/benchmarks/benchmark_sparse_rw1_exact_gradient_graph_reuse
++ ./build/benchmarks/benchmark_sparse_rw1_exact_gradient_graph_reuse 10
+Sparse RW1 exact-gradient graph reuse benchmark
+reps per case = 10
+K = 5
+
+       m    vertices      rebuild ms        reuse ms       speedup          base          seed       reverse      assemble       queries      pushdots       inserts       grad diff        obj diff
+     100        2606    6.676908e+00    1.076913e+00  6.200047e+00  2.054666e-01  6.856670e-02  8.018541e-01  1.000000e-03  2.995000e+03  1.228900e+04  4.191000e+03    0.000000e+00    0.000000e+00
+     250        6506    2.881628e+01    4.628046e+00  6.226447e+00  8.870877e-01  1.654582e-01  3.572708e+00  2.741700e-03  7.495000e+03  3.073900e+04  1.049100e+04    0.000000e+00    0.000000e+00
+flat intermediate: read_hit=27500 read_miss=14995 write_hit=59990 write_miss=0
+flat intermediate read miss samples: (13003,13000) (13003,13000) (13003,13000) (13003,13000) (13003,13000) (12997,12994) (12997,12994) (12997,12994) (12997,12994) (12997,12994) (12991,12988) (12991,12988)
+flat intermediate write miss samples:
+     500       13006    8.675523e+01    1.492883e+01  5.811253e+00  3.114463e+00  3.347500e-01  1.147365e+01  5.945800e-03  1.499500e+04  6.148900e+04  2.099100e+04    0.000000e+00    0.000000e+00
+
+Benchmark complete.
+
+================================================================================
+RUN: ./run_sparse_rw1_flat_accumulator_trace_check.sh 10
+================================================================================
++ c++ -std=c++17 -O3 -DNDEBUG -g -Iexternal/Eigen -Iexternal/LBFGSpp/include -I. benchmarks/benchmark_sparse_rw1_flat_accumulator_trace_check.cpp -o build/benchmarks/benchmark_sparse_rw1_flat_accumulator_trace_check
++ ./build/benchmarks/benchmark_sparse_rw1_flat_accumulator_trace_check 10
+Sparse RW1 flat accumulator trace check
+reps per case = 10
+K = 5
+
+       m      btree ms       flat ms       speedup    trace diff       queries      pushdots       inserts
+     100  4.983012e+00  1.306250e-02  3.814746e+02  0.000000e+00          2995         12289          4191
+     250  2.251645e+01  2.460820e-02  9.149977e+02  0.000000e+00          7495         30739         10491
+     500  7.362420e+01  5.064590e-02  1.453705e+03  3.552714e-15         14995         61489         20991
+
+Benchmark complete.
+
+================================================================================
+Verification suite completed.
+Log: flat_intermediate_backend_verification_20260601_211002.log
+================================================================================

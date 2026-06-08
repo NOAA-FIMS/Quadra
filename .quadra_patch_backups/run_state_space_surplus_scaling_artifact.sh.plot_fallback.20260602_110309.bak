@@ -1,0 +1,117 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+REPS="${1:-10}"
+LENGTHS="${2:-25,50,100,250}"
+
+OUTDIR="benchmarks/state_space_surplus_scaling"
+mkdir -p "$OUTDIR"
+
+QUADRA_LOG="$OUTDIR/quadra_raw.txt"
+TMB_LOG="$OUTDIR/tmb_raw.txt"
+CSV="$OUTDIR/results.csv"
+PLOT="$OUTDIR/scaling_plot.png"
+
+echo "Running Quadra benchmark..."
+./run_quadra_scaled_analytic_latent_tridiagonal_benchmark.sh "$REPS" "$LENGTHS" | tee "$QUADRA_LOG"
+
+echo
+echo "Running TMB benchmark..."
+./run_tmb_scaled_fixed_theta_benchmark.sh "$REPS" "$LENGTHS" | tee "$TMB_LOG"
+
+python3 - <<'PYEOF'
+from pathlib import Path
+import csv
+import re
+
+outdir = Path("benchmarks/state_space_surplus_scaling")
+quadra_log = outdir / "quadra_raw.txt"
+tmb_log = outdir / "tmb_raw.txt"
+csv_path = outdir / "results.csv"
+
+quadra = {}
+tmb = {}
+
+q_line = re.compile(
+    r"^\s*(\d+)\s+([-+0-9.eE]+)\s+([-+0-9.eE]+)\s+([-+0-9.eE]+)\s+(\d+)\s+([-+0-9.eE]+)\s+([-+0-9.eE]+)\s*$"
+)
+
+t_line = re.compile(
+    r"^\s*(\d+)\s+([-+0-9.eE]+)\s+([-+0-9.eE]+)\s*$"
+)
+
+for line in quadra_log.read_text().splitlines():
+    m = q_line.match(line)
+    if not m:
+        continue
+    n = int(m.group(1))
+    quadra[n] = {
+        "objective": float(m.group(2)),
+        "joint": float(m.group(3)),
+        "logdet": float(m.group(4)),
+        "nnz": int(m.group(5)),
+        "grad_norm": float(m.group(6)),
+        "quadra_ms": float(m.group(7)),
+    }
+
+for line in tmb_log.read_text().splitlines():
+    m = t_line.match(line)
+    if not m:
+        continue
+    n = int(m.group(1))
+    tmb[n] = {
+        "tmb_objective": float(m.group(2)),
+        "tmb_ms": float(m.group(3)),
+    }
+
+ns = sorted(set(quadra) & set(tmb))
+
+with csv_path.open("w", newline="") as f:
+    fieldnames = [
+        "n",
+        "quadra_objective",
+        "tmb_objective",
+        "objective_diff",
+        "quadra_ms",
+        "tmb_ms",
+        "quadra_speedup",
+        "joint",
+        "logdet",
+        "nnz",
+        "grad_norm",
+    ]
+    writer = csv.DictWriter(f, fieldnames=fieldnames)
+    writer.writeheader()
+
+    for n in ns:
+        q = quadra[n]
+        t = tmb[n]
+        qms = q["quadra_ms"]
+        tms = t["tmb_ms"]
+        writer.writerow({
+            "n": n,
+            "quadra_objective": q["objective"],
+            "tmb_objective": t["tmb_objective"],
+            "objective_diff": q["objective"] - t["tmb_objective"],
+            "quadra_ms": qms,
+            "tmb_ms": tms,
+            "quadra_speedup": tms / qms if qms > 0 else "",
+            "joint": q["joint"],
+            "logdet": q["logdet"],
+            "nnz": q["nnz"],
+            "grad_norm": q["grad_norm"],
+        })
+
+print(f"wrote {csv_path}")
+PYEOF
+
+if command -v python3 >/dev/null 2>&1; then
+  python3 "$OUTDIR/make_scaling_plot.py" "$CSV" "$PLOT" || {
+    echo "Plot generation failed; CSV is still available: $CSV"
+  }
+fi
+
+echo
+echo "Benchmark artifact complete."
+echo "CSV:  $CSV"
+echo "Plot: $PLOT"

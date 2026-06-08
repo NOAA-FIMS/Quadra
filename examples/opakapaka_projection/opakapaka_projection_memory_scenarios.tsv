@@ -1,0 +1,8 @@
+scenario	history_years	projection_years	latent_states	quadra_warm_ms	quadra_rss_mb	generic_ad_laplace_ms	generic_ad_laplace_rss_mb	rss_reduction_x
+short_projection	30	30	60	0.005613	1.297	0.800000	191.500	147.648
+moderate_projection	100	100	200	0.025100	1.297	9.100000	313.453	241.675
+long_history_short_projection	300	100	400	0.033646	1.359	40.400000	663.234	488.031
+long_history_long_projection	300	300	600	0.038004	1.531	101.900000	1319.531	861.875
+stress_2k	1000	1000	2000	0.135108	1.938	1947.000000	8267.062	4265.770
+stress_20k	10000	10000	20000	1.290508	6.562	NA	NA	NA
+stress_100k	50000	50000	100000	6.645117	57.609	NA	NA	NA
