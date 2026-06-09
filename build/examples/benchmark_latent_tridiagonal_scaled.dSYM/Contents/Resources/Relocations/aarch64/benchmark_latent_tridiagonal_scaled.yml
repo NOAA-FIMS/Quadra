@@ -1,0 +1,5 @@
+---
+triple:          'arm64-apple-darwin'
+binary-path:     'build/examples/benchmark_latent_tridiagonal_scaled'
+relocations:     []
+...

@@ -1,0 +1,5 @@
+---
+triple:          'arm64-apple-darwin'
+binary-path:     'build/examples/laplace_cache_age_structured_no_plus_demo'
+relocations:     []
+...

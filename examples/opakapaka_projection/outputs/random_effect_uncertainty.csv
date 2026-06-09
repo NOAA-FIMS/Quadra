@@ -1,21 +1,21 @@
 effect,mode,conditional_se,conditional_variance,note
-log_B[0],6.54022,,,pending selected-inverse/random-effect covariance extraction
-log_B[1],6.50108,,,pending selected-inverse/random-effect covariance extraction
-log_B[2],6.48149,,,pending selected-inverse/random-effect covariance extraction
-log_B[3],6.46964,,,pending selected-inverse/random-effect covariance extraction
-log_B[4],6.45954,,,pending selected-inverse/random-effect covariance extraction
-log_B[5],6.44833,,,pending selected-inverse/random-effect covariance extraction
-log_B[6],6.44173,,,pending selected-inverse/random-effect covariance extraction
-log_B[7],6.44532,,,pending selected-inverse/random-effect covariance extraction
-log_B[8],6.4526,,,pending selected-inverse/random-effect covariance extraction
-log_B[9],6.46253,,,pending selected-inverse/random-effect covariance extraction
-log_B[10],6.4725,,,pending selected-inverse/random-effect covariance extraction
-log_B[11],6.48196,,,pending selected-inverse/random-effect covariance extraction
-log_B[12],6.49227,,,pending selected-inverse/random-effect covariance extraction
-log_B[13],6.50375,,,pending selected-inverse/random-effect covariance extraction
-log_B[14],6.51294,,,pending selected-inverse/random-effect covariance extraction
-log_B[15],6.52039,,,pending selected-inverse/random-effect covariance extraction
-log_B[16],6.5263,,,pending selected-inverse/random-effect covariance extraction
-log_B[17],6.53083,,,pending selected-inverse/random-effect covariance extraction
-log_B[18],6.53345,,,pending selected-inverse/random-effect covariance extraction
-log_B[19],6.52846,,,pending selected-inverse/random-effect covariance extraction
+log_B[0],6.54022,0.062813,0.00394547,selected_inverse_diagonal
+log_B[1],6.50108,0.0592927,0.00351563,selected_inverse_diagonal
+log_B[2],6.48149,0.0589209,0.00347167,selected_inverse_diagonal
+log_B[3],6.46964,0.0589278,0.00347249,selected_inverse_diagonal
+log_B[4],6.45954,0.0587769,0.00345473,selected_inverse_diagonal
+log_B[5],6.44833,0.0586612,0.00344114,selected_inverse_diagonal
+log_B[6],6.44173,0.0586751,0.00344277,selected_inverse_diagonal
+log_B[7],6.44532,0.058757,0.00345238,selected_inverse_diagonal
+log_B[8],6.4526,0.0588219,0.00346002,selected_inverse_diagonal
+log_B[9],6.46253,0.0589007,0.00346929,selected_inverse_diagonal
+log_B[10],6.4725,0.0589502,0.00347512,selected_inverse_diagonal
+log_B[11],6.48196,0.0590094,0.00348211,selected_inverse_diagonal
+log_B[12],6.49227,0.0590681,0.00348904,selected_inverse_diagonal
+log_B[13],6.50375,0.0591296,0.00349631,selected_inverse_diagonal
+log_B[14],6.51294,0.0591779,0.00350203,selected_inverse_diagonal
+log_B[15],6.52039,0.0592089,0.0035057,selected_inverse_diagonal
+log_B[16],6.5263,0.0592412,0.00350952,selected_inverse_diagonal
+log_B[17],6.53083,0.0593105,0.00351773,selected_inverse_diagonal
+log_B[18],6.53345,0.0598503,0.00358205,selected_inverse_diagonal
+log_B[19],6.52846,0.0657274,0.00432009,selected_inverse_diagonal
