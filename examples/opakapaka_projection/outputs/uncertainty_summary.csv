@@ -1,0 +1,9 @@
+field,value
+objective,59.1528
+fd_step,0.000750537
+fd_gradient_log_q,-1.42007e-11
+fd_hessian_log_q,85.669
+covariance_log_q,0.0116728
+se_log_q,0.108041
+se_q,0.000161564
+hessian_positive,yes

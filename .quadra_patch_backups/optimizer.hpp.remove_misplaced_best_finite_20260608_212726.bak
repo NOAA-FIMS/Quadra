@@ -497,6 +497,24 @@ optimize_lbfgs(Model &model, ParameterVector &params,
                                 : std::numeric_limits<double>::infinity();
 
     const std::string msg = e.what();
+    
+    // QUADRA_RETURN_BEST_FINITE_ON_LINE_SEARCH_FAILURE_V1
+    if ((msg.find("line search") != std::string::npos ||
+         msg.find("sufficiently decrease") != std::string::npos) &&
+        best_finite_seen) {
+      OptResult out;
+      out.par = eigen_to_std_vector(best_finite_x);
+      out.value = best_finite_fx;
+      out.grad_norm = best_finite_grad_norm;
+      out.converged = best_finite_grad_norm < opts.fixed_grad_tol;
+      out.iterations = iterations;
+      out.message =
+          out.converged
+              ? "accepted best finite iterate after LBFGS line-search failure"
+              : "stopped before requested fixed-effect gradient tolerance";
+      out.u_hat = best_finite_u_hat;
+      return out;
+    }
 
 const bool line_search_failed =
         msg.find("line search") != std::string::npos ||
