@@ -617,6 +617,272 @@ inline void write_random_effect_uncertainty_csv(
 }
 
 
+
+// QUADRA_OPAKAPAKA_DERIVED_QUANTITY_UNCERTAINTY_V1
+inline void write_derived_quantity_uncertainty_csv(
+    const std::string& path,
+    const std::vector<opakapaka_example::Observation>& data,
+    const std::vector<double>& u_hat,
+    double q_hat,
+    const quadra::uncertainty::SelectedInverseDiagonalResult& u_cov,
+    const Eigen::SparseMatrix<double>& h_uu)
+{
+  std::ofstream out(path);
+  out << "year,quantity,estimate,se,lwr_95,upr_95,note\n";
+
+  if (u_hat.empty() || data.empty()) {
+    return;
+  }
+
+  const double b0 = std::exp(u_hat.front());
+  const double var_log_b0 =
+      (u_cov.success && !u_cov.variance.empty()) ? u_cov.variance.front()
+                                                 : std::numeric_limits<double>::quiet_NaN();
+
+  // QUADRA_OPAKAPAKA_DEPLETION_COVARIANCE_PAIRS_V1
+  // Request Cov(log_B[t], log_B[0]) so depletion uncertainty uses:
+  // Var(log(B_t/B_0)) = Var(log_B_t) + Var(log_B_0) - 2 Cov(log_B_t, log_B_0).
+  std::vector<std::pair<int, int>> depletion_covariance_pairs;
+  depletion_covariance_pairs.reserve(u_hat.size());
+  for (std::size_t i = 0; i < u_hat.size(); ++i) {
+    depletion_covariance_pairs.emplace_back(static_cast<int>(i), 0);
+  }
+
+  const auto depletion_covariances =
+      quadra::uncertainty::selected_inverse_entries_from_spd_hessian(
+          h_uu, depletion_covariance_pairs);
+
+  for (std::size_t i = 0; i < data.size() && i < u_hat.size(); ++i) {
+    const double log_b = u_hat[i];
+    const double biomass = std::exp(log_b);
+    const double index_hat = q_hat * biomass;
+    const double depletion = b0 > 0.0 ? biomass / b0 : std::numeric_limits<double>::quiet_NaN();
+    const double f_proxy = biomass > 0.0 ? data[i].catch_mt / biomass
+                                         : std::numeric_limits<double>::quiet_NaN();
+
+    const double var_log_b =
+        (u_cov.success && i < u_cov.variance.size()) ? u_cov.variance[i]
+                                                     : std::numeric_limits<double>::quiet_NaN();
+
+    const double se_biomass =
+        (std::isfinite(var_log_b) && var_log_b >= 0.0)
+            ? biomass * std::sqrt(var_log_b)
+            : std::numeric_limits<double>::quiet_NaN();
+
+    const double se_index =
+        (std::isfinite(var_log_b) && var_log_b >= 0.0)
+            ? index_hat * std::sqrt(var_log_b)
+            : std::numeric_limits<double>::quiet_NaN();
+
+    double cov_log_b_i_b0 = std::numeric_limits<double>::quiet_NaN();
+    if (depletion_covariances.success &&
+        i < depletion_covariances.entries.size()) {
+      cov_log_b_i_b0 = depletion_covariances.entries[i].covariance;
+    }
+
+    const double var_log_depletion =
+        (std::isfinite(var_log_b) && std::isfinite(var_log_b0) &&
+         std::isfinite(cov_log_b_i_b0))
+            ? var_log_b + var_log_b0 - 2.0 * cov_log_b_i_b0
+            : std::numeric_limits<double>::quiet_NaN();
+
+    const double se_depletion =
+        (std::isfinite(var_log_depletion) && var_log_depletion >= 0.0)
+            ? depletion * std::sqrt(var_log_depletion)
+            : std::numeric_limits<double>::quiet_NaN();
+
+    const double se_f_proxy =
+        (std::isfinite(var_log_b) && var_log_b >= 0.0)
+            ? f_proxy * std::sqrt(var_log_b)
+            : std::numeric_limits<double>::quiet_NaN();
+
+    auto write_row = [&](const char* quantity, double estimate, double se,
+                         const char* note) {
+      const double lwr = std::isfinite(se) ? estimate - 1.96 * se
+                                           : std::numeric_limits<double>::quiet_NaN();
+      const double upr = std::isfinite(se) ? estimate + 1.96 * se
+                                           : std::numeric_limits<double>::quiet_NaN();
+      out << data[i].year << "," << quantity << "," << estimate << ","
+          << se << "," << lwr << "," << upr << "," << note << "\n";
+    };
+
+    write_row("biomass", biomass, se_biomass,
+              "level1_delta_method_conditional_random_effect_diagonal");
+    write_row("index_hat", index_hat, se_index,
+              "level1_delta_method_conditional_random_effect_diagonal");
+    write_row("depletion", depletion, se_depletion,
+              "level1_delta_method_selected_inverse_cov_logBt_logB0");
+    write_row("F_proxy", f_proxy, se_f_proxy,
+              "level1_delta_method_conditional_random_effect_diagonal");
+  }
+}
+
+
+
+// QUADRA_OPAKAPAKA_DERIVED_QUANTITY_CORRELATION_V1
+inline void write_derived_quantity_correlation_csv(
+    const std::string& path,
+    const std::vector<opakapaka_example::Observation>& data,
+    const quadra::uncertainty::SelectedInverseDiagonalResult& u_cov,
+    const quadra::uncertainty::SelectedInverseEntriesResult& depletion_covariances)
+{
+  std::ofstream out(path);
+  out << "year,variance_logB0,variance_logBt,covariance_logBt_logB0,"
+      << "correlation_logBt_logB0,note\n";
+
+  const double var_log_b0 =
+      (u_cov.success && !u_cov.variance.empty()) ? u_cov.variance.front()
+                                                 : std::numeric_limits<double>::quiet_NaN();
+
+  const std::size_t n = std::min(data.size(), u_cov.variance.size());
+
+  for (std::size_t i = 0; i < n; ++i) {
+    const double var_log_bt = u_cov.variance[i];
+
+    double cov_log_bt_b0 = std::numeric_limits<double>::quiet_NaN();
+    if (depletion_covariances.success &&
+        i < depletion_covariances.entries.size()) {
+      cov_log_bt_b0 = depletion_covariances.entries[i].covariance;
+    }
+
+    double corr = std::numeric_limits<double>::quiet_NaN();
+    if (std::isfinite(var_log_b0) && std::isfinite(var_log_bt) &&
+        std::isfinite(cov_log_bt_b0) && var_log_b0 > 0.0 &&
+        var_log_bt > 0.0) {
+      corr = cov_log_bt_b0 / std::sqrt(var_log_b0 * var_log_bt);
+
+      // Guard tiny numerical drift outside [-1, 1].
+      if (corr > 1.0 && corr < 1.0 + 1.0e-10) corr = 1.0;
+      if (corr < -1.0 && corr > -1.0 - 1.0e-10) corr = -1.0;
+    }
+
+    out << data[i].year << ","
+        << var_log_b0 << ","
+        << var_log_bt << ","
+        << cov_log_bt_b0 << ","
+        << corr << ","
+        << "selected_inverse_covariance_diagnostic_logBt_logB0\n";
+  }
+}
+
+
+
+// QUADRA_OPAKAPAKA_BIOMASS_COVARIANCE_MATRIX_V1
+inline void write_biomass_covariance_matrix_csv(
+    const std::string& path,
+    const std::vector<opakapaka_example::Observation>& data,
+    const std::vector<double>& u_hat,
+    const Eigen::SparseMatrix<double>& h_uu)
+{
+  std::ofstream out(path);
+
+  const std::size_t n = std::min(data.size(), u_hat.size());
+  if (n == 0) {
+    out << "year\n";
+    return;
+  }
+
+  std::vector<int> indices;
+  indices.reserve(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    indices.push_back(static_cast<int>(i));
+  }
+
+  const auto log_b_cov =
+      quadra::uncertainty::selected_inverse_submatrix_from_spd_hessian(
+          h_uu, indices);
+
+  out << "year";
+  for (std::size_t j = 0; j < n; ++j) {
+    out << ",B_year_" << data[j].year;
+  }
+  out << "\n";
+
+  for (std::size_t i = 0; i < n; ++i) {
+    out << data[i].year;
+
+    const double b_i = std::exp(u_hat[i]);
+
+    for (std::size_t j = 0; j < n; ++j) {
+      double cov_biomass = std::numeric_limits<double>::quiet_NaN();
+
+      if (log_b_cov.success &&
+          i < static_cast<std::size_t>(log_b_cov.covariance.rows()) &&
+          j < static_cast<std::size_t>(log_b_cov.covariance.cols())) {
+        const double b_j = std::exp(u_hat[j]);
+        cov_biomass = b_i * b_j * log_b_cov.covariance(
+            static_cast<Eigen::Index>(i), static_cast<Eigen::Index>(j));
+      }
+
+      out << "," << cov_biomass;
+    }
+
+    out << "\n";
+  }
+}
+
+inline void write_biomass_correlation_matrix_csv(
+    const std::string& path,
+    const std::vector<opakapaka_example::Observation>& data,
+    const std::vector<double>& u_hat,
+    const Eigen::SparseMatrix<double>& h_uu)
+{
+  std::ofstream out(path);
+
+  const std::size_t n = std::min(data.size(), u_hat.size());
+  if (n == 0) {
+    out << "year\n";
+    return;
+  }
+
+  std::vector<int> indices;
+  indices.reserve(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    indices.push_back(static_cast<int>(i));
+  }
+
+  const auto log_b_cov =
+      quadra::uncertainty::selected_inverse_submatrix_from_spd_hessian(
+          h_uu, indices);
+
+  out << "year";
+  for (std::size_t j = 0; j < n; ++j) {
+    out << ",B_year_" << data[j].year;
+  }
+  out << "\n";
+
+  for (std::size_t i = 0; i < n; ++i) {
+    out << data[i].year;
+
+    for (std::size_t j = 0; j < n; ++j) {
+      double corr = std::numeric_limits<double>::quiet_NaN();
+
+      if (log_b_cov.success &&
+          i < static_cast<std::size_t>(log_b_cov.covariance.rows()) &&
+          j < static_cast<std::size_t>(log_b_cov.covariance.cols())) {
+        const double vii = log_b_cov.covariance(
+            static_cast<Eigen::Index>(i), static_cast<Eigen::Index>(i));
+        const double vjj = log_b_cov.covariance(
+            static_cast<Eigen::Index>(j), static_cast<Eigen::Index>(j));
+        const double vij = log_b_cov.covariance(
+            static_cast<Eigen::Index>(i), static_cast<Eigen::Index>(j));
+
+        if (std::isfinite(vii) && std::isfinite(vjj) &&
+            std::isfinite(vij) && vii > 0.0 && vjj > 0.0) {
+          corr = vij / std::sqrt(vii * vjj);
+          if (corr > 1.0 && corr < 1.0 + 1.0e-10) corr = 1.0;
+          if (corr < -1.0 && corr > -1.0 - 1.0e-10) corr = -1.0;
+        }
+      }
+
+      out << "," << corr;
+    }
+
+    out << "\n";
+  }
+}
+
+
 int main()
 {
   using namespace opakapaka_example;
@@ -746,7 +1012,36 @@ int main()
       "examples/opakapaka_projection/outputs/random_effect_uncertainty.csv",
       fit.u_hat, final_h_uu);
   write_derived_quantities_csv("examples/opakapaka_projection/outputs/derived_quantities.csv", data, fit.u_hat, std::exp(fit.par.at(0)));
-  write_pending_quantity_uncertainty_csv("examples/opakapaka_projection/outputs/derived_quantity_uncertainty.csv", data);
+  const auto random_effect_covariance_diag =
+      quadra::uncertainty::selected_inverse_diagonal_from_spd_hessian(final_h_uu);
+  write_derived_quantity_uncertainty_csv(
+      "examples/opakapaka_projection/outputs/derived_quantity_uncertainty.csv",
+      data, fit.u_hat, std::exp(fit.par.at(0)), random_effect_covariance_diag,
+      final_h_uu);
+
+  {
+    std::vector<std::pair<int, int>> depletion_covariance_pairs;
+    depletion_covariance_pairs.reserve(fit.u_hat.size());
+    for (std::size_t i = 0; i < fit.u_hat.size(); ++i) {
+      depletion_covariance_pairs.emplace_back(static_cast<int>(i), 0);
+    }
+
+    const auto depletion_covariances =
+        quadra::uncertainty::selected_inverse_entries_from_spd_hessian(
+            final_h_uu, depletion_covariance_pairs);
+
+    write_derived_quantity_correlation_csv(
+        "examples/opakapaka_projection/outputs/derived_quantity_correlation.csv",
+        data, random_effect_covariance_diag, depletion_covariances);
+  }
+
+  write_biomass_covariance_matrix_csv(
+      "examples/opakapaka_projection/outputs/biomass_covariance_matrix.csv",
+      data, fit.u_hat, final_h_uu);
+
+  write_biomass_correlation_matrix_csv(
+      "examples/opakapaka_projection/outputs/biomass_correlation_matrix.csv",
+      data, fit.u_hat, final_h_uu);
   write_projection_uncertainty_csv("examples/opakapaka_projection/outputs/projection_uncertainty.csv", projection);
   write_runtime_memory_summary_csv("examples/opakapaka_projection/outputs/runtime_memory_summary.csv", std::numeric_limits<double>::quiet_NaN(), fit.u_hat.size(), 58);
 
