@@ -1,5 +1,0 @@
----
-triple:          'arm64-apple-darwin'
-binary-path:     'build/tests/test_persistent_cache_backend_integration'
-relocations:     []
-...

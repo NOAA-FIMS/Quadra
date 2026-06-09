@@ -1,5 +1,0 @@
----
-triple:          'arm64-apple-darwin'
-binary-path:     'build/benchmarks/benchmark_batch_directional_flat_accumulator'
-relocations:     []
-...

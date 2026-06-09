@@ -13,4 +13,18 @@ examples/normal_mean
 # macOS
 .DS_Store
 
+# Quadra build artifacts
+build/
+
+# Patch backups
+.quadra_patch_backups/
+
+# Example outputs
+examples/*/outputs/
+
+# Temporary patch scripts
+patch_*.sh
+repair_*.sh
+inspect_*.sh
+remove_*.sh
 # Editors

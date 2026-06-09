@@ -1,5 +1,0 @@
----
-triple:          'arm64-apple-darwin'
-binary-path:     'build/examples/analyze_state_space_latent_pattern'
-relocations:     []
-...
