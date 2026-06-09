@@ -1,0 +1,11 @@
+metric,value,note
+n,20,matrix dimension
+finite_all,yes,all entries finite
+positive_diagonal,yes,all diagonal variances positive
+valid_covariance,yes,finite positive-diagonal symmetric positive-semidefinite check
+ldlt_success,yes,dense LDLT check
+max_abs_asymmetry,1.77636e-15,maximum absolute covariance asymmetry
+min_variance,1355.58,minimum diagonal variance
+max_variance,2023.22,maximum diagonal variance
+min_eigenvalue,769.072,self-adjoint eigenvalue diagnostic
+max_eigenvalue,2860.52,self-adjoint eigenvalue diagnostic

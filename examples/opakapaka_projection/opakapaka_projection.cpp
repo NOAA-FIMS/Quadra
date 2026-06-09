@@ -1,5 +1,7 @@
 #include "opakapaka_model.hpp"
 #include "../../core/uncertainty/selected_inverse_diagonal.hpp"
+#include "../../core/uncertainty/reporting.hpp"
+// QUADRA_OPAKAPAKA_USE_CORE_UNCERTAINTY_REPORTING_ROBUST_V2
 
 #include <algorithm>
 #include <chrono>
@@ -883,6 +885,425 @@ inline void write_biomass_correlation_matrix_csv(
 }
 
 
+
+// QUADRA_OPAKAPAKA_PROJECTION_UNCERTAINTY_ENVELOPES_V1
+struct ProjectionEnvelopeRow {
+  std::string scenario;
+  int year = 0;
+  std::string quantity;
+  double estimate = std::numeric_limits<double>::quiet_NaN();
+  double mean = std::numeric_limits<double>::quiet_NaN();
+  double median = std::numeric_limits<double>::quiet_NaN();
+  double lwr_95 = std::numeric_limits<double>::quiet_NaN();
+  double upr_95 = std::numeric_limits<double>::quiet_NaN();
+  double se = std::numeric_limits<double>::quiet_NaN();
+  std::string note;
+};
+
+inline double opakapaka_quantile_sorted(const std::vector<double>& sorted, double p) {
+  if (sorted.empty()) return std::numeric_limits<double>::quiet_NaN();
+  if (sorted.size() == 1) return sorted.front();
+
+  const double x = p * static_cast<double>(sorted.size() - 1);
+  const std::size_t lo = static_cast<std::size_t>(std::floor(x));
+  const std::size_t hi = std::min<std::size_t>(lo + 1, sorted.size() - 1);
+  const double w = x - static_cast<double>(lo);
+  return (1.0 - w) * sorted[lo] + w * sorted[hi];
+}
+
+inline ProjectionEnvelopeRow summarize_projection_samples(
+    const std::string& scenario,
+    int year,
+    const std::string& quantity,
+    double estimate,
+    std::vector<double> samples,
+    const std::string& note) {
+  ProjectionEnvelopeRow row;
+  row.scenario = scenario;
+  row.year = year;
+  row.quantity = quantity;
+  row.estimate = estimate;
+  row.note = note;
+
+  samples.erase(std::remove_if(samples.begin(), samples.end(),
+                               [](double x) { return !std::isfinite(x); }),
+                samples.end());
+
+  if (samples.empty()) {
+    return row;
+  }
+
+  const double sum = std::accumulate(samples.begin(), samples.end(), 0.0);
+  row.mean = sum / static_cast<double>(samples.size());
+
+  double ss = 0.0;
+  if (samples.size() > 1) {
+    for (double x : samples) {
+      const double d = x - row.mean;
+      ss += d * d;
+    }
+    row.se = std::sqrt(ss / static_cast<double>(samples.size() - 1));
+  } else {
+    row.se = 0.0;
+  }
+
+  std::sort(samples.begin(), samples.end());
+  row.median = opakapaka_quantile_sorted(samples, 0.50);
+  row.lwr_95 = opakapaka_quantile_sorted(samples, 0.025);
+  row.upr_95 = opakapaka_quantile_sorted(samples, 0.975);
+
+  return row;
+}
+
+inline void write_projection_uncertainty_envelopes_csv(
+    const std::string& path,
+    const std::vector<opakapaka_example::ProjectionRow>& deterministic_projection,
+    const std::vector<double>& fitted_log_b,
+    double q_hat,
+    double terminal_log_b_variance,
+    int n_samples = 1000,
+    unsigned seed = 8675309u) {
+  std::ofstream out(path);
+  out << "scenario,year,quantity,estimate,mean,median,lwr_95,upr_95,se,n_samples,note\n";
+
+  if (deterministic_projection.empty() || fitted_log_b.empty() ||
+      !std::isfinite(terminal_log_b_variance) || terminal_log_b_variance < 0.0 ||
+      n_samples <= 1) {
+    for (const auto& r : deterministic_projection) {
+      out << r.scenario << "," << r.year << ",biomass," << r.biomass
+          << ",,,,,," << n_samples
+          << ",projection_envelope_unavailable_invalid_terminal_variance\n";
+      out << r.scenario << "," << r.year << ",index," << r.index
+          << ",,,,,," << n_samples
+          << ",projection_envelope_unavailable_invalid_terminal_variance\n";
+    }
+    return;
+  }
+
+  const double terminal_log_b_hat = fitted_log_b.back();
+  const double terminal_sd = std::sqrt(terminal_log_b_variance);
+
+  // Infer projection dynamics from deterministic rows. This keeps the envelope
+  // writer independent of assessment-specific model internals:
+  //   B_{t+1} = B_t + deterministic_increment_t
+  // where deterministic_increment_t is read from the point projection.
+  std::map<std::string, std::vector<opakapaka_example::ProjectionRow>> by_scenario;
+  for (const auto& r : deterministic_projection) {
+    by_scenario[r.scenario].push_back(r);
+  }
+
+  std::mt19937 rng(seed);
+  std::normal_distribution<double> zdist(0.0, 1.0);
+
+  for (auto& kv : by_scenario) {
+    auto& rows = kv.second;
+    std::sort(rows.begin(), rows.end(),
+              [](const auto& a, const auto& b) { return a.year < b.year; });
+
+    std::vector<std::vector<double>> biomass_samples(rows.size());
+    std::vector<std::vector<double>> index_samples(rows.size());
+
+    for (int s = 0; s < n_samples; ++s) {
+      double sampled_b = std::exp(terminal_log_b_hat + terminal_sd * zdist(rng));
+
+      for (std::size_t t = 0; t < rows.size(); ++t) {
+        const double previous_point_b =
+            (t == 0) ? std::exp(terminal_log_b_hat) : rows[t - 1].biomass;
+        const double deterministic_increment = rows[t].biomass - previous_point_b;
+
+        sampled_b = std::max(1.0e-12, sampled_b + deterministic_increment);
+        const double sampled_index = q_hat * sampled_b;
+
+        biomass_samples[t].push_back(sampled_b);
+        index_samples[t].push_back(sampled_index);
+      }
+    }
+
+    for (std::size_t t = 0; t < rows.size(); ++t) {
+      auto b_row = summarize_projection_samples(
+          rows[t].scenario, rows[t].year, "biomass", rows[t].biomass,
+          biomass_samples[t],
+          "terminal_state_parametric_envelope_selected_inverse_delta");
+      auto i_row = summarize_projection_samples(
+          rows[t].scenario, rows[t].year, "index", rows[t].index,
+          index_samples[t],
+          "terminal_state_parametric_envelope_selected_inverse_delta");
+
+      auto emit = [&](const ProjectionEnvelopeRow& r) {
+        out << r.scenario << "," << r.year << "," << r.quantity << ","
+            << r.estimate << "," << r.mean << "," << r.median << ","
+            << r.lwr_95 << "," << r.upr_95 << "," << r.se << ","
+            << n_samples << "," << r.note << "\n";
+      };
+
+      emit(b_row);
+      emit(i_row);
+    }
+  }
+}
+
+
+
+// QUADRA_OPAKAPAKA_BIOMASS_COVARIANCE_DIAGNOSTICS_V1
+inline Eigen::MatrixXd compute_log_b_covariance_submatrix(
+    const std::vector<opakapaka_example::Observation>& data,
+    const std::vector<double>& u_hat,
+    const Eigen::SparseMatrix<double>& h_uu)
+{
+  const std::size_t n = std::min(data.size(), u_hat.size());
+  if (n == 0) {
+    return Eigen::MatrixXd();
+  }
+
+  std::vector<int> indices;
+  indices.reserve(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    indices.push_back(static_cast<int>(i));
+  }
+
+  const auto log_b_cov =
+      quadra::uncertainty::selected_inverse_submatrix_from_spd_hessian(
+          h_uu, indices);
+
+  if (!log_b_cov.success) {
+    return Eigen::MatrixXd::Constant(
+        static_cast<Eigen::Index>(n), static_cast<Eigen::Index>(n),
+        std::numeric_limits<double>::quiet_NaN());
+  }
+
+  return log_b_cov.covariance;
+}
+
+inline Eigen::MatrixXd log_cov_to_biomass_cov(
+    const Eigen::MatrixXd& log_b_cov,
+    const std::vector<double>& u_hat)
+{
+  const Eigen::Index n = log_b_cov.rows();
+  Eigen::MatrixXd biomass_cov =
+      Eigen::MatrixXd::Constant(n, n, std::numeric_limits<double>::quiet_NaN());
+
+  for (Eigen::Index i = 0; i < n; ++i) {
+    const double b_i = std::exp(u_hat[static_cast<std::size_t>(i)]);
+    for (Eigen::Index j = 0; j < n; ++j) {
+      const double b_j = std::exp(u_hat[static_cast<std::size_t>(j)]);
+      biomass_cov(i, j) = b_i * b_j * log_b_cov(i, j);
+    }
+  }
+
+  return biomass_cov;
+}
+
+inline Eigen::MatrixXd covariance_to_correlation(const Eigen::MatrixXd& cov)
+{
+  const Eigen::Index n = cov.rows();
+  Eigen::MatrixXd corr =
+      Eigen::MatrixXd::Constant(n, n, std::numeric_limits<double>::quiet_NaN());
+
+  for (Eigen::Index i = 0; i < n; ++i) {
+    for (Eigen::Index j = 0; j < n; ++j) {
+      const double vii = cov(i, i);
+      const double vjj = cov(j, j);
+      const double vij = cov(i, j);
+
+      if (std::isfinite(vii) && std::isfinite(vjj) &&
+          std::isfinite(vij) && vii > 0.0 && vjj > 0.0) {
+        double c = vij / std::sqrt(vii * vjj);
+        if (c > 1.0 && c < 1.0 + 1.0e-10) c = 1.0;
+        if (c < -1.0 && c > -1.0 - 1.0e-10) c = -1.0;
+        corr(i, j) = c;
+      }
+    }
+  }
+
+  return corr;
+}
+
+inline void write_biomass_covariance_diagnostics_csv(
+    const std::string& path,
+    const std::vector<opakapaka_example::Observation>& data,
+    const std::vector<double>& u_hat,
+    const Eigen::SparseMatrix<double>& h_uu)
+{
+  std::ofstream out(path);
+  out << "metric,value,note\n";
+
+  const Eigen::MatrixXd log_b_cov =
+      compute_log_b_covariance_submatrix(data, u_hat, h_uu);
+  const Eigen::MatrixXd biomass_cov = log_cov_to_biomass_cov(log_b_cov, u_hat);
+  const Eigen::MatrixXd biomass_corr = quadra::uncertainty::covariance_to_correlation_matrix(biomass_cov);
+
+  const Eigen::Index n = biomass_cov.rows();
+
+  bool finite_all = true;
+  bool positive_diag = true;
+  double min_diag = std::numeric_limits<double>::infinity();
+  double max_diag = -std::numeric_limits<double>::infinity();
+
+  for (Eigen::Index i = 0; i < n; ++i) {
+    const double v = biomass_cov(i, i);
+    if (!std::isfinite(v)) finite_all = false;
+    if (!(v > 0.0)) positive_diag = false;
+    if (std::isfinite(v)) {
+      min_diag = std::min(min_diag, v);
+      max_diag = std::max(max_diag, v);
+    }
+
+    for (Eigen::Index j = 0; j < n; ++j) {
+      if (!std::isfinite(biomass_cov(i, j))) finite_all = false;
+    }
+  }
+
+  double max_abs_asymmetry = 0.0;
+  if (n > 0) {
+    max_abs_asymmetry =
+        (biomass_cov - biomass_cov.transpose()).cwiseAbs().maxCoeff();
+  }
+
+  bool ldlt_success = false;
+  double min_eigenvalue = std::numeric_limits<double>::quiet_NaN();
+  double max_eigenvalue = std::numeric_limits<double>::quiet_NaN();
+
+  if (n > 0 && finite_all) {
+    Eigen::LDLT<Eigen::MatrixXd> ldlt(biomass_cov);
+    ldlt_success = (ldlt.info() == Eigen::Success &&
+                    (ldlt.vectorD().array() > -1.0e-10).all());
+
+    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> eig(
+        0.5 * (biomass_cov + biomass_cov.transpose()));
+    if (eig.info() == Eigen::Success) {
+      min_eigenvalue = eig.eigenvalues().minCoeff();
+      max_eigenvalue = eig.eigenvalues().maxCoeff();
+    }
+  }
+
+  double mean_nearest_neighbor_corr = std::numeric_limits<double>::quiet_NaN();
+  double min_nearest_neighbor_corr = std::numeric_limits<double>::quiet_NaN();
+  double max_nearest_neighbor_corr = std::numeric_limits<double>::quiet_NaN();
+
+  if (n > 1) {
+    double sum = 0.0;
+    int count = 0;
+    min_nearest_neighbor_corr = std::numeric_limits<double>::infinity();
+    max_nearest_neighbor_corr = -std::numeric_limits<double>::infinity();
+
+    for (Eigen::Index i = 0; i + 1 < n; ++i) {
+      const double c = biomass_corr(i, i + 1);
+      if (std::isfinite(c)) {
+        sum += c;
+        ++count;
+        min_nearest_neighbor_corr = std::min(min_nearest_neighbor_corr, c);
+        max_nearest_neighbor_corr = std::max(max_nearest_neighbor_corr, c);
+      }
+    }
+
+    if (count > 0) {
+      mean_nearest_neighbor_corr = sum / static_cast<double>(count);
+    }
+  }
+
+  double mean_lag2_corr = std::numeric_limits<double>::quiet_NaN();
+  if (n > 2) {
+    double sum = 0.0;
+    int count = 0;
+    for (Eigen::Index i = 0; i + 2 < n; ++i) {
+      const double c = biomass_corr(i, i + 2);
+      if (std::isfinite(c)) {
+        sum += c;
+        ++count;
+      }
+    }
+    if (count > 0) mean_lag2_corr = sum / static_cast<double>(count);
+  }
+
+  double mean_lag5_corr = std::numeric_limits<double>::quiet_NaN();
+  if (n > 5) {
+    double sum = 0.0;
+    int count = 0;
+    for (Eigen::Index i = 0; i + 5 < n; ++i) {
+      const double c = biomass_corr(i, i + 5);
+      if (std::isfinite(c)) {
+        sum += c;
+        ++count;
+      }
+    }
+    if (count > 0) mean_lag5_corr = sum / static_cast<double>(count);
+  }
+
+  const bool valid_covariance =
+      finite_all && positive_diag && max_abs_asymmetry < 1.0e-8 &&
+      ldlt_success && std::isfinite(min_eigenvalue) &&
+      min_eigenvalue > -1.0e-8;
+
+  auto emit = [&](const std::string& metric, const auto& value,
+                  const std::string& note) {
+    out << metric << "," << value << "," << note << "\n";
+  };
+
+  emit("n_years", n, "number of fitted biomass states in covariance block");
+  emit("finite_all", finite_all ? "yes" : "no", "all covariance entries finite");
+  emit("positive_diagonal", positive_diag ? "yes" : "no", "all variances positive");
+  emit("valid_covariance", valid_covariance ? "yes" : "no",
+       "finite positive-diagonal symmetric positive-semidefinite check");
+  emit("ldlt_success", ldlt_success ? "yes" : "no",
+       "dense LDLT check on biomass covariance matrix");
+  emit("max_abs_asymmetry", max_abs_asymmetry,
+       "max absolute covariance asymmetry");
+  emit("min_variance", min_diag, "minimum biomass variance");
+  emit("max_variance", max_diag, "maximum biomass variance");
+  emit("min_eigenvalue", min_eigenvalue, "self-adjoint eigenvalue diagnostic");
+  emit("max_eigenvalue", max_eigenvalue, "self-adjoint eigenvalue diagnostic");
+  emit("mean_nearest_neighbor_corr", mean_nearest_neighbor_corr,
+       "average Corr(B_t,B_tplus1)");
+  emit("min_nearest_neighbor_corr", min_nearest_neighbor_corr,
+       "minimum Corr(B_t,B_tplus1)");
+  emit("max_nearest_neighbor_corr", max_nearest_neighbor_corr,
+       "maximum Corr(B_t,B_tplus1)");
+  emit("mean_lag2_corr", mean_lag2_corr, "average Corr(B_t,B_tplus2)");
+  emit("mean_lag5_corr", mean_lag5_corr, "average Corr(B_t,B_tplus5)");
+}
+
+inline void write_biomass_correlation_decay_csv(
+    const std::string& path,
+    const std::vector<opakapaka_example::Observation>& data,
+    const std::vector<double>& u_hat,
+    const Eigen::SparseMatrix<double>& h_uu)
+{
+  std::ofstream out(path);
+  out << "lag,count,mean_correlation,min_correlation,max_correlation\n";
+
+  const Eigen::MatrixXd log_b_cov =
+      compute_log_b_covariance_submatrix(data, u_hat, h_uu);
+  const Eigen::MatrixXd biomass_cov = log_cov_to_biomass_cov(log_b_cov, u_hat);
+  const Eigen::MatrixXd biomass_corr = quadra::uncertainty::covariance_to_correlation_matrix(biomass_cov);
+
+  const Eigen::Index n = biomass_corr.rows();
+
+  for (Eigen::Index lag = 0; lag < n; ++lag) {
+    double sum = 0.0;
+    double min_corr = std::numeric_limits<double>::infinity();
+    double max_corr = -std::numeric_limits<double>::infinity();
+    int count = 0;
+
+    for (Eigen::Index i = 0; i + lag < n; ++i) {
+      const double c = biomass_corr(i, i + lag);
+      if (std::isfinite(c)) {
+        sum += c;
+        min_corr = std::min(min_corr, c);
+        max_corr = std::max(max_corr, c);
+        ++count;
+      }
+    }
+
+    const double mean_corr =
+        count > 0 ? sum / static_cast<double>(count)
+                  : std::numeric_limits<double>::quiet_NaN();
+
+    out << lag << "," << count << "," << mean_corr << ","
+        << min_corr << "," << max_corr << "\n";
+  }
+}
+
+
 int main()
 {
   using namespace opakapaka_example;
@@ -1042,7 +1463,57 @@ int main()
   write_biomass_correlation_matrix_csv(
       "examples/opakapaka_projection/outputs/biomass_correlation_matrix.csv",
       data, fit.u_hat, final_h_uu);
-  write_projection_uncertainty_csv("examples/opakapaka_projection/outputs/projection_uncertainty.csv", projection);
+
+  write_biomass_covariance_diagnostics_csv(
+      "examples/opakapaka_projection/outputs/biomass_covariance_diagnostics.csv",
+      data, fit.u_hat, final_h_uu);
+
+  write_biomass_correlation_decay_csv(
+      "examples/opakapaka_projection/outputs/biomass_correlation_decay.csv",
+      data, fit.u_hat, final_h_uu);
+
+  // Core uncertainty reporting parity outputs.
+  {
+    const std::size_t n = std::min(data.size(), fit.u_hat.size());
+    const Eigen::MatrixXd log_b_cov_core =
+        compute_log_b_covariance_submatrix(data, fit.u_hat, final_h_uu);
+    Eigen::VectorXd log_b_core(static_cast<Eigen::Index>(n));
+    for (std::size_t i = 0; i < n; ++i) {
+      log_b_core[static_cast<Eigen::Index>(i)] = fit.u_hat[i];
+    }
+
+    const Eigen::MatrixXd biomass_cov_core =
+        quadra::uncertainty::lognormal_delta_covariance(
+            log_b_core, log_b_cov_core);
+    const Eigen::MatrixXd biomass_corr_core =
+        quadra::uncertainty::covariance_to_correlation_matrix(
+            biomass_cov_core);
+
+    const auto biomass_cov_diag_core =
+        quadra::uncertainty::diagnose_covariance_matrix(
+            biomass_cov_core);
+    quadra::uncertainty::write_covariance_diagnostics_csv(
+        "examples/opakapaka_projection/outputs/biomass_covariance_diagnostics_core.csv",
+        biomass_cov_diag_core);
+
+    const auto biomass_decay_core =
+        quadra::uncertainty::correlation_decay_summary(
+            biomass_corr_core);
+    quadra::uncertainty::write_correlation_decay_csv(
+        "examples/opakapaka_projection/outputs/biomass_correlation_decay_core.csv",
+        biomass_decay_core);
+  }
+  {
+    const double terminal_log_b_variance =
+        (!random_effect_covariance_diag.variance.empty())
+            ? random_effect_covariance_diag.variance.back()
+            : std::numeric_limits<double>::quiet_NaN();
+
+    write_projection_uncertainty_envelopes_csv(
+        "examples/opakapaka_projection/outputs/projection_uncertainty.csv",
+        projection, fit.u_hat, std::exp(fit.par.at(0)),
+        terminal_log_b_variance, 1000);
+  }
   write_runtime_memory_summary_csv("examples/opakapaka_projection/outputs/runtime_memory_summary.csv", std::numeric_limits<double>::quiet_NaN(), fit.u_hat.size(), 58);
 
   write_projection_csv("examples/opakapaka_projection/outputs/"
