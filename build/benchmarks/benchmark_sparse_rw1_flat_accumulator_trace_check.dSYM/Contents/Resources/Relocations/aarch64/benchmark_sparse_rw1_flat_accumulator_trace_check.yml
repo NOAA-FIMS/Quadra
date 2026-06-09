@@ -1,5 +1,0 @@
----
-triple:          'arm64-apple-darwin'
-binary-path:     'build/benchmarks/benchmark_sparse_rw1_flat_accumulator_trace_check'
-relocations:     []
-...

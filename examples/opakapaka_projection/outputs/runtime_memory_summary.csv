@@ -1,6 +1,0 @@
-field,value
-fit_runtime_ms,nan
-random_effects,20
-hessian_nonzeros,58
-peak_rss_mb,
-note,peak RSS is captured by benchmark runner rather than model executable

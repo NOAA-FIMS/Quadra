@@ -1,5 +1,0 @@
----
-triple:          'arm64-apple-darwin'
-binary-path:     'build/examples/laplace_state_space_surplus_dense'
-relocations:     []
-...

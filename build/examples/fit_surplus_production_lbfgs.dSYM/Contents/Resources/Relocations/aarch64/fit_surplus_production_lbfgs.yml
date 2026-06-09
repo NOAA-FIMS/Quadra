@@ -1,5 +1,0 @@
----
-triple:          'arm64-apple-darwin'
-binary-path:     'build/examples/fit_surplus_production_lbfgs'
-relocations:     []
-...
