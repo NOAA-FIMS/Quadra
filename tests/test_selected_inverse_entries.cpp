@@ -46,14 +46,14 @@ int main() {
   for (std::size_t i = 0; i < pairs.size(); ++i) {
     const double got = result.entries[i].covariance;
     if (std::abs(got - expected[i]) > 1.0e-10) {
-      std::cerr << "entry mismatch at " << i << ": got " << got
-                << ", expected " << expected[i] << "\n";
+      std::cerr << "entry mismatch at " << i << ": got " << got << ", expected "
+                << expected[i] << "\n";
       return 1;
     }
   }
 
   std::cout << "selected_inverse_entries_test_passed\n";
-  for (const auto& e : result.entries) {
+  for (const auto &e : result.entries) {
     std::cout << e.row << "," << e.col << "," << e.covariance << "\n";
   }
 

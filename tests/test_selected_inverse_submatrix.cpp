@@ -32,18 +32,17 @@ int main() {
 
   const std::vector<int> indices = {0, 2};
   const auto result =
-      quadra::uncertainty::selected_inverse_submatrix_from_spd_hessian(
-          h, indices);
+      quadra::uncertainty::selected_inverse_submatrix_from_spd_hessian(h,
+                                                                       indices);
 
   if (!result.success) {
-    std::cerr << "selected inverse submatrix failed: "
-              << result.message << "\n";
+    std::cerr << "selected inverse submatrix failed: " << result.message
+              << "\n";
     return 1;
   }
 
   Eigen::MatrixXd expected(2, 2);
-  expected << 0.75, 0.25,
-              0.25, 0.75;
+  expected << 0.75, 0.25, 0.25, 0.75;
 
   const double max_abs_diff =
       (result.covariance - expected).cwiseAbs().maxCoeff();

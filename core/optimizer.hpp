@@ -498,7 +498,7 @@ optimize_lbfgs(Model &model, ParameterVector &params,
 
     const std::string msg = e.what();
 
-const bool line_search_failed =
+    const bool line_search_failed =
         msg.find("line search") != std::string::npos ||
         msg.find("Line search") != std::string::npos;
 
