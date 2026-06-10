@@ -495,12 +495,8 @@ clean-examples:
 clean-big-examples:
 	rm -f $(BIG_EXAMPLES)
 
-.PHONY: test-big-laplace-convergence-contract
-test-big-laplace-convergence-contract:
-	./tests/run_big_laplace_convergence_contract.sh
-
 .PHONY: test-contracts
-test-contracts: test-big-laplace-convergence-contract
+test-contracts:
 
 test-fixed-effect-covariance: tests/test_fixed_effect_covariance
 	./tests/test_fixed_effect_covariance

@@ -13,7 +13,7 @@ public:
   std::vector<std::string> parameter_names() const override { return {"mu"}; }
 
   double evaluate(const std::vector<double> &parameters,
-                  quadra::ModelContext &ctx) override {
+                  quadra::ModelReportContext &ctx) override {
     double mu = parameters[0];
     double nll = 0.0;
 
