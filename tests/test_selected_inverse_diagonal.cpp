@@ -47,9 +47,11 @@ int main() {
 
   std::cout << "selected_inverse_diagonal_test_passed\n";
   std::cout << "variance:";
-  for (double v : result.variance) std::cout << " " << v;
+  for (double v : result.variance)
+    std::cout << " " << v;
   std::cout << "\nstandard_error:";
-  for (double se : result.standard_error) std::cout << " " << se;
+  for (double se : result.standard_error)
+    std::cout << " " << se;
   std::cout << "\n";
   return 0;
 }

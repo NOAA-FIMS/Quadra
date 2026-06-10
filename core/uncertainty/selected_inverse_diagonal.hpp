@@ -1,8 +1,8 @@
 #pragma once
 
 #include <Eigen/Core>
-#include <Eigen/SparseCore>
 #include <Eigen/SparseCholesky>
+#include <Eigen/SparseCore>
 
 #include <cmath>
 #include <limits>
@@ -29,8 +29,7 @@ struct SelectedInverseDiagonalResult {
 // This is deliberately simple and validation-friendly. Later, this can be
 // replaced with a true selected-inverse algorithm for very large models.
 inline SelectedInverseDiagonalResult selected_inverse_diagonal_from_spd_hessian(
-    const Eigen::SparseMatrix<double>& hessian,
-    double min_variance = 0.0) {
+    const Eigen::SparseMatrix<double> &hessian, double min_variance = 0.0) {
   SelectedInverseDiagonalResult out;
 
   const int n = static_cast<int>(hessian.rows());
@@ -82,8 +81,9 @@ inline SelectedInverseDiagonalResult selected_inverse_diagonal_from_spd_hessian(
 
     out.variance[static_cast<std::size_t>(i)] = v;
     out.standard_error[static_cast<std::size_t>(i)] =
-        (std::isfinite(v) && v >= 0.0) ? std::sqrt(v)
-                                       : std::numeric_limits<double>::quiet_NaN();
+        (std::isfinite(v) && v >= 0.0)
+            ? std::sqrt(v)
+            : std::numeric_limits<double>::quiet_NaN();
   }
 
   out.success = true;
@@ -110,8 +110,8 @@ struct SelectedInverseEntriesResult {
 // entries from the solution. It is enough for derived quantities like:
 //   Cov(log_B[t], log_B[0]).
 inline SelectedInverseEntriesResult selected_inverse_entries_from_spd_hessian(
-    const Eigen::SparseMatrix<double>& hessian,
-    const std::vector<std::pair<int, int>>& requested_pairs) {
+    const Eigen::SparseMatrix<double> &hessian,
+    const std::vector<std::pair<int, int>> &requested_pairs) {
   SelectedInverseEntriesResult out;
   out.entries.reserve(requested_pairs.size());
 
@@ -121,7 +121,7 @@ inline SelectedInverseEntriesResult selected_inverse_entries_from_spd_hessian(
     return out;
   }
 
-  for (const auto& rc : requested_pairs) {
+  for (const auto &rc : requested_pairs) {
     if (rc.first < 0 || rc.second < 0 || rc.first >= n || rc.second >= n) {
       out.message = "Requested inverse entry is out of range";
       return out;
@@ -176,7 +176,6 @@ inline SelectedInverseEntriesResult selected_inverse_entries_from_spd_hessian(
   return out;
 }
 
-
 struct SelectedInverseSubmatrixResult {
   Eigen::MatrixXd covariance;
   std::vector<int> indices;
@@ -190,9 +189,10 @@ struct SelectedInverseSubmatrixResult {
 // requested column and reads the requested rows. It avoids forming the full
 // inverse while producing a dense covariance block suitable for trajectory
 // uncertainty, projection simulation, and reporting diagnostics.
-inline SelectedInverseSubmatrixResult selected_inverse_submatrix_from_spd_hessian(
-    const Eigen::SparseMatrix<double>& hessian,
-    const std::vector<int>& indices) {
+inline SelectedInverseSubmatrixResult
+selected_inverse_submatrix_from_spd_hessian(
+    const Eigen::SparseMatrix<double> &hessian,
+    const std::vector<int> &indices) {
   SelectedInverseSubmatrixResult out;
   out.indices = indices;
 
@@ -256,6 +256,5 @@ inline SelectedInverseSubmatrixResult selected_inverse_submatrix_from_spd_hessia
   return out;
 }
 
-
-}  // namespace uncertainty
-}  // namespace quadra
+} // namespace uncertainty
+} // namespace quadra

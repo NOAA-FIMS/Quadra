@@ -2,8 +2,8 @@
 
 #include "selected_inverse_diagonal.hpp"
 
-#include <Eigen/Core>
 #include <Eigen/Cholesky>
+#include <Eigen/Core>
 #include <Eigen/Eigenvalues>
 #include <Eigen/SparseCore>
 
@@ -22,9 +22,11 @@ namespace uncertainty {
 
 // QUADRA_UNCERTAINTY_REPORTING_CORE_V1
 
-inline double quantile_sorted(const std::vector<double>& sorted, double p) {
-  if (sorted.empty()) return std::numeric_limits<double>::quiet_NaN();
-  if (sorted.size() == 1) return sorted.front();
+inline double quantile_sorted(const std::vector<double> &sorted, double p) {
+  if (sorted.empty())
+    return std::numeric_limits<double>::quiet_NaN();
+  if (sorted.size() == 1)
+    return sorted.front();
 
   const double x = p * static_cast<double>(sorted.size() - 1);
   const std::size_t lo = static_cast<std::size_t>(std::floor(x));
@@ -33,12 +35,11 @@ inline double quantile_sorted(const std::vector<double>& sorted, double p) {
   return (1.0 - w) * sorted[lo] + w * sorted[hi];
 }
 
-inline Eigen::MatrixXd covariance_to_correlation_matrix(
-    const Eigen::MatrixXd& covariance) {
+inline Eigen::MatrixXd
+covariance_to_correlation_matrix(const Eigen::MatrixXd &covariance) {
   const Eigen::Index n = covariance.rows();
-  Eigen::MatrixXd correlation =
-      Eigen::MatrixXd::Constant(n, covariance.cols(),
-                                std::numeric_limits<double>::quiet_NaN());
+  Eigen::MatrixXd correlation = Eigen::MatrixXd::Constant(
+      n, covariance.cols(), std::numeric_limits<double>::quiet_NaN());
 
   if (covariance.rows() != covariance.cols()) {
     return correlation;
@@ -50,11 +51,13 @@ inline Eigen::MatrixXd covariance_to_correlation_matrix(
       const double vjj = covariance(j, j);
       const double vij = covariance(i, j);
 
-      if (std::isfinite(vii) && std::isfinite(vjj) &&
-          std::isfinite(vij) && vii > 0.0 && vjj > 0.0) {
+      if (std::isfinite(vii) && std::isfinite(vjj) && std::isfinite(vij) &&
+          vii > 0.0 && vjj > 0.0) {
         double c = vij / std::sqrt(vii * vjj);
-        if (c > 1.0 && c < 1.0 + 1.0e-10) c = 1.0;
-        if (c < -1.0 && c > -1.0 - 1.0e-10) c = -1.0;
+        if (c > 1.0 && c < 1.0 + 1.0e-10)
+          c = 1.0;
+        if (c < -1.0 && c > -1.0 - 1.0e-10)
+          c = -1.0;
         correlation(i, j) = c;
       }
     }
@@ -63,9 +66,9 @@ inline Eigen::MatrixXd covariance_to_correlation_matrix(
   return correlation;
 }
 
-inline Eigen::MatrixXd lognormal_delta_covariance(
-    const Eigen::VectorXd& log_estimates,
-    const Eigen::MatrixXd& log_covariance) {
+inline Eigen::MatrixXd
+lognormal_delta_covariance(const Eigen::VectorXd &log_estimates,
+                           const Eigen::MatrixXd &log_covariance) {
   const Eigen::Index n = log_estimates.size();
 
   Eigen::MatrixXd out =
@@ -99,10 +102,10 @@ struct CovarianceDiagnostics {
   double max_eigenvalue = std::numeric_limits<double>::quiet_NaN();
 };
 
-inline CovarianceDiagnostics diagnose_covariance_matrix(
-    const Eigen::MatrixXd& covariance,
-    double symmetry_tol = 1.0e-8,
-    double psd_tol = 1.0e-8) {
+inline CovarianceDiagnostics
+diagnose_covariance_matrix(const Eigen::MatrixXd &covariance,
+                           double symmetry_tol = 1.0e-8,
+                           double psd_tol = 1.0e-8) {
   CovarianceDiagnostics d;
   d.n = static_cast<int>(covariance.rows());
 
@@ -120,8 +123,10 @@ inline CovarianceDiagnostics diagnose_covariance_matrix(
 
   for (Eigen::Index i = 0; i < n; ++i) {
     const double v = covariance(i, i);
-    if (!std::isfinite(v)) d.finite_all = false;
-    if (!(v > 0.0)) d.positive_diagonal = false;
+    if (!std::isfinite(v))
+      d.finite_all = false;
+    if (!(v > 0.0))
+      d.positive_diagonal = false;
 
     if (std::isfinite(v)) {
       min_diag = std::min(min_diag, v);
@@ -129,7 +134,8 @@ inline CovarianceDiagnostics diagnose_covariance_matrix(
     }
 
     for (Eigen::Index j = 0; j < n; ++j) {
-      if (!std::isfinite(covariance(i, j))) d.finite_all = false;
+      if (!std::isfinite(covariance(i, j)))
+        d.finite_all = false;
     }
   }
 
@@ -153,11 +159,11 @@ inline CovarianceDiagnostics diagnose_covariance_matrix(
     }
   }
 
-  d.valid_covariance =
-      d.finite_all && d.positive_diagonal &&
-      std::isfinite(d.max_abs_asymmetry) &&
-      d.max_abs_asymmetry < symmetry_tol && d.ldlt_success &&
-      std::isfinite(d.min_eigenvalue) && d.min_eigenvalue > -psd_tol;
+  d.valid_covariance = d.finite_all && d.positive_diagonal &&
+                       std::isfinite(d.max_abs_asymmetry) &&
+                       d.max_abs_asymmetry < symmetry_tol && d.ldlt_success &&
+                       std::isfinite(d.min_eigenvalue) &&
+                       d.min_eigenvalue > -psd_tol;
 
   return d;
 }
@@ -170,8 +176,8 @@ struct CorrelationDecayRow {
   double max_correlation = std::numeric_limits<double>::quiet_NaN();
 };
 
-inline std::vector<CorrelationDecayRow> correlation_decay_summary(
-    const Eigen::MatrixXd& correlation) {
+inline std::vector<CorrelationDecayRow>
+correlation_decay_summary(const Eigen::MatrixXd &correlation) {
   std::vector<CorrelationDecayRow> rows;
 
   if (correlation.rows() != correlation.cols()) {
@@ -211,21 +217,20 @@ inline std::vector<CorrelationDecayRow> correlation_decay_summary(
   return rows;
 }
 
-inline void write_dense_matrix_csv(const std::string& path,
-                                   const Eigen::MatrixXd& matrix,
-                                   const std::vector<std::string>& labels) {
+inline void write_dense_matrix_csv(const std::string &path,
+                                   const Eigen::MatrixXd &matrix,
+                                   const std::vector<std::string> &labels) {
   std::ofstream out(path);
   out << "label";
-  for (const auto& label : labels) {
+  for (const auto &label : labels) {
     out << "," << label;
   }
   out << "\n";
 
   for (Eigen::Index i = 0; i < matrix.rows(); ++i) {
-    const std::string row_label =
-        static_cast<std::size_t>(i) < labels.size()
-            ? labels[static_cast<std::size_t>(i)]
-            : std::to_string(i);
+    const std::string row_label = static_cast<std::size_t>(i) < labels.size()
+                                      ? labels[static_cast<std::size_t>(i)]
+                                      : std::to_string(i);
     out << row_label;
     for (Eigen::Index j = 0; j < matrix.cols(); ++j) {
       out << "," << matrix(i, j);
@@ -234,9 +239,8 @@ inline void write_dense_matrix_csv(const std::string& path,
   }
 }
 
-inline void write_covariance_diagnostics_csv(
-    const std::string& path,
-    const CovarianceDiagnostics& d) {
+inline void write_covariance_diagnostics_csv(const std::string &path,
+                                             const CovarianceDiagnostics &d) {
   std::ofstream out(path);
   out << "metric,value,note\n";
   out << "n," << d.n << ",matrix dimension\n";
@@ -258,12 +262,12 @@ inline void write_covariance_diagnostics_csv(
       << ",self-adjoint eigenvalue diagnostic\n";
 }
 
-inline void write_correlation_decay_csv(
-    const std::string& path,
-    const std::vector<CorrelationDecayRow>& rows) {
+inline void
+write_correlation_decay_csv(const std::string &path,
+                            const std::vector<CorrelationDecayRow> &rows) {
   std::ofstream out(path);
   out << "lag,count,mean_correlation,min_correlation,max_correlation\n";
-  for (const auto& r : rows) {
+  for (const auto &r : rows) {
     out << r.lag << "," << r.count << "," << r.mean_correlation << ","
         << r.min_correlation << "," << r.max_correlation << "\n";
   }
@@ -283,13 +287,10 @@ struct ProjectionEnvelopeRow {
   std::string note;
 };
 
-inline ProjectionEnvelopeRow summarize_samples(
-    const std::string& scenario,
-    int year,
-    const std::string& quantity,
-    double estimate,
-    std::vector<double> samples,
-    const std::string& note) {
+inline ProjectionEnvelopeRow
+summarize_samples(const std::string &scenario, int year,
+                  const std::string &quantity, double estimate,
+                  std::vector<double> samples, const std::string &note) {
   ProjectionEnvelopeRow row;
   row.scenario = scenario;
   row.year = year;
@@ -330,20 +331,20 @@ inline ProjectionEnvelopeRow summarize_samples(
   return row;
 }
 
-inline void write_projection_envelopes_csv(
-    const std::string& path,
-    const std::vector<ProjectionEnvelopeRow>& rows) {
+inline void
+write_projection_envelopes_csv(const std::string &path,
+                               const std::vector<ProjectionEnvelopeRow> &rows) {
   std::ofstream out(path);
   out << "scenario,year,quantity,estimate,mean,median,lwr_95,upr_95,se,"
       << "n_samples,note\n";
 
-  for (const auto& r : rows) {
-    out << r.scenario << "," << r.year << "," << r.quantity << ","
-        << r.estimate << "," << r.mean << "," << r.median << ","
-        << r.lwr_95 << "," << r.upr_95 << "," << r.se << ","
-        << r.n_samples << "," << r.note << "\n";
+  for (const auto &r : rows) {
+    out << r.scenario << "," << r.year << "," << r.quantity << "," << r.estimate
+        << "," << r.mean << "," << r.median << "," << r.lwr_95 << ","
+        << r.upr_95 << "," << r.se << "," << r.n_samples << "," << r.note
+        << "\n";
   }
 }
 
-}  // namespace uncertainty
-}  // namespace quadra
+} // namespace uncertainty
+} // namespace quadra
