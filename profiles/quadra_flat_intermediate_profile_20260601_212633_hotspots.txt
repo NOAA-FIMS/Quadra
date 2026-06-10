@@ -1,7 +1,0 @@
-Hotspot grep summary for quadra_flat_intermediate_profile_20260601_212633.xml
-
-== Core reverse / flat backend symbols ==
-
-== C++ library / allocator / memory movement ==
-
-== Eigen / sparse factorization symbols ==
