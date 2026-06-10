@@ -5,8 +5,8 @@ reps <- if (length(args) >= 1) as.integer(args[[1]]) else 10L
 lengths <- if (length(args) >= 2) as.integer(strsplit(args[[2]], ",")[[1]]) else c(25L, 50L, 100L, 250L, 500L, 1000L)
 n_ages <- if (length(args) >= 3) as.integer(args[[3]]) else 10L
 
-cat("TMB no-plus age-structured recruitment benchmark\n")
-cat("================================================\n")
+cat("TMB age-structured recruitment deviation benchmark\n")
+cat("==================================================\n")
 cat("reps per n =", reps, ", ages =", n_ages, "\n\n")
 
 if (!requireNamespace("TMB", quietly = TRUE)) {
@@ -16,11 +16,11 @@ if (!requireNamespace("TMB", quietly = TRUE)) {
 
 library(TMB)
 
-template <- file.path("examples", "tmb_age_structured_recruitment", "age_structured_recruitment_no_plus_tmb.cpp")
-dynlib_name <- "age_structured_recruitment_no_plus_tmb"
+template <- file.path("examples", "age_structured_recruitment", "tmb", "age_structured_recruitment_tmb.cpp")
+dynlib_name <- "age_structured_recruitment_tmb"
 
 TMB::compile(template, flags = "-O2")
-dyn.load(TMB::dynlib(file.path("examples", "tmb_age_structured_recruitment", dynlib_name)))
+dyn.load(TMB::dynlib(file.path("examples", "age_structured_recruitment", "tmb", dynlib_name)))
 
 logistic <- function(x) 1 / (1 + exp(-x))
 
@@ -50,9 +50,7 @@ make_index <- function(n_years, n_ages) {
     for (a in 2:n_ages) {
       N_next[a] <- N[a - 1] * exp(-M)
     }
-
-    # No plus group.
-
+    N_next[n_ages] <- N_next[n_ages] + N[n_ages] * exp(-M)
     N <- N_next
   }
 

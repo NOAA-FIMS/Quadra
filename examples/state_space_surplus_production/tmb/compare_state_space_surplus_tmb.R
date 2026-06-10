@@ -11,7 +11,7 @@ if (!requireNamespace("TMB", quietly = TRUE)) {
 
 library(TMB)
 
-template <- file.path("examples", "tmb_state_space_surplus", "state_space_surplus_tmb.cpp")
+template <- file.path("examples", "state_space_surplus_production", "tmb", "state_space_surplus_tmb.cpp")
 dynlib_name <- "state_space_surplus_tmb"
 
 catch_observed <- c(
@@ -41,7 +41,7 @@ data <- list(
 
 cat("Compiling TMB template...\n")
 TMB::compile(template, flags = "-O2")
-dyn.load(TMB::dynlib(file.path("examples", "tmb_state_space_surplus", dynlib_name)))
+dyn.load(TMB::dynlib(file.path("examples", "state_space_surplus_production", "tmb", dynlib_name)))
 
 cat("Building objective with u as random effects...\n")
 obj <- TMB::MakeADFun(
