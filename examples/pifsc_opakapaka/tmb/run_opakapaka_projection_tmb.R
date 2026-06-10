@@ -6,7 +6,7 @@ cat("Synthetic and public-data-safe. Not an official assessment.\n\n")
 
 # Shared synthetic/public-data-safe dataset used by the Quadra example.
 # This keeps the TMB and Quadra objective comparisons apples-to-apples.
-data_csv <- read.csv("examples/opakapaka_projection/synthetic_opakapaka_projection_data.csv")
+data_csv <- read.csv("examples/pifsc_opakapaka/data/synthetic_opakapaka_projection_data.csv")
 
 data_csv$index <- as.numeric(data_csv$index)
 data_csv$catch_mt <- as.numeric(data_csv$catch_mt)
@@ -32,11 +32,11 @@ sigma_index <- 0.08
 sigma_initial <- 0.15
 
 
-cpp <- "examples/opakapaka_projection/tmb/opakapaka_projection_tmb.cpp"
+cpp <- "examples/pifsc_opakapaka/tmb/opakapaka_projection_tmb.cpp"
 dyn <- sub("\\.cpp$", "", basename(cpp))
 
 compile(cpp, flags = "-O2 -DNDEBUG")
-dyn.load(dynlib(file.path("examples/opakapaka_projection/tmb", dyn)))
+dyn.load(dynlib(file.path("examples/pifsc_opakapaka/tmb", dyn)))
 
 data <- list(
   index_obs = index_obs,
@@ -129,7 +129,7 @@ cat(sprintf("q_hat                 %.9f\n", exp(fit$par[["log_q"]])))
 last_random <- obj$env$last.par.best[obj$env$random]
 last_B <- exp(tail(last_random, 1L))
 
-outdir <- "examples/opakapaka_projection/outputs"
+outdir <- "examples/pifsc_opakapaka/outputs"
 dir.create(outdir, recursive = TRUE, showWarnings = FALSE)
 
 write.csv(
@@ -184,5 +184,5 @@ write.csv(
 )
 
 cat("\nWrote outputs:\n")
-cat("  examples/opakapaka_projection/outputs/tmb_synthetic_fit_summary.csv\n")
-cat("  examples/opakapaka_projection/outputs/tmb_synthetic_projection_scenarios.csv\n")
+cat("  examples/pifsc_opakapaka/outputs/tmb_synthetic_fit_summary.csv\n")
+cat("  examples/pifsc_opakapaka/outputs/tmb_synthetic_projection_scenarios.csv\n")

@@ -34,8 +34,8 @@ random-effect modes, convergence diagnostics, and structure/backend metadata.
 Outputs are written to:
 
 ```text
-examples/opakapaka_projection/outputs/synthetic_fit_summary.csv
-examples/opakapaka_projection/outputs/synthetic_projection_scenarios.csv
+examples/pifsc_opakapaka/outputs/synthetic_fit_summary.csv
+examples/pifsc_opakapaka/outputs/synthetic_projection_scenarios.csv
 ```
 
 ## Opakapaka Projection Validation
