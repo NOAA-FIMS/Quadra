@@ -396,6 +396,7 @@ public:
         best_converged_u_star = u_star;
         best_converged_fx = res.value;
         best_converged_iter = iter;
+        best_converged_grad_norm = gnorm;
         has_best_converged = true;
       }
 
@@ -483,10 +484,12 @@ optimize_lbfgs(Model &model, ParameterVector &params,
               << std::endl;
   } catch (const LBFGSConvergedByGradient &) {
     if (fun.has_best_converged) {
-
       std::cout << "L-BFGS: stopped at first iterate satisfying requested "
                    "fixed-effect gradient tolerance."
                 << std::endl;
+      fx = fun.best_converged_fx;
+      x = fun.best_converged_x;
+      niter = fun.best_converged_iter;
     } else {
       throw;
     }
@@ -543,6 +546,9 @@ optimize_lbfgs(Model &model, ParameterVector &params,
   double selected_grad_norm = std::numeric_limits<double>::infinity();
 
   if (fun.has_best_converged) {
+    selected_x = fun.best_converged_x;
+    selected_u_hat = fun.best_converged_u_star;
+    selected_fx = fun.best_converged_fx;
     selected_grad_norm = fun.best_converged_grad_norm;
   } else if (fun.best_available) {
     selected_x = fun.best_x;
@@ -587,8 +593,17 @@ optimize_lbfgs(Model &model, ParameterVector &params,
 
   Eigen::VectorXd pattern_x = selected_x;
 
-  result.pattern = analyze_final_random_effect_pattern(
-      model, params, pattern_x, result.u_hat, fixed_idx, random_idx, options);
+  if (!random_idx.empty()) {
+    result.pattern = analyze_final_random_effect_pattern(
+        model, params, pattern_x, result.u_hat, fixed_idx, random_idx, options);
+  } else {
+    result.pattern.available = false;
+    result.pattern.detected_structure = "none";
+    result.pattern.backend = "none";
+    result.pattern.solver = "none";
+    result.pattern.complexity = "none";
+    result.pattern.random_effect_count = 0;
+  }
 
   return result;
 }
