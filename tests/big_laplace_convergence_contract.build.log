@@ -1,0 +1,31 @@
+examples/big/catch_at_age_laplace.cpp:45:3: error: no template named 'LaplaceEvaluator' in namespace 'quadra'; did you mean 'quadra::laplace::LaplaceEvaluator'?
+   45 |   quadra::LaplaceEvaluator<example::CatchAtAgeLaplaceModel> evaluator(
+      |   ^~~~~~~~~~~~~~~~~~~~~~~~
+      |   quadra::laplace::LaplaceEvaluator
+examples/big/../../core/laplace/laplace_evaluator.hpp:9:7: note: 'quadra::laplace::LaplaceEvaluator' declared here
+    9 | class LaplaceEvaluator {
+      |       ^
+examples/big/catch_at_age_laplace.cpp:45:11: error: too few template arguments for class template 'LaplaceEvaluator'
+   45 |   quadra::LaplaceEvaluator<example::CatchAtAgeLaplaceModel> evaluator(
+      |           ^
+examples/big/../../core/laplace/laplace_evaluator.hpp:9:7: note: template is declared here
+    8 | template <class ModelContext, class SolverPolicy, class EvaluationPolicy>
+      | ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    9 | class LaplaceEvaluator {
+      |       ^
+examples/big/catch_at_age_laplace.cpp:82:5: error: no template named 'LaplaceEvaluator' in namespace 'quadra'; did you mean 'quadra::laplace::LaplaceEvaluator'?
+   82 |     quadra::LaplaceEvaluator<example::CatchAtAgeLaplaceModel> cov_evaluator(
+      |     ^~~~~~~~~~~~~~~~~~~~~~~~
+      |     quadra::laplace::LaplaceEvaluator
+examples/big/../../core/laplace/laplace_evaluator.hpp:9:7: note: 'quadra::laplace::LaplaceEvaluator' declared here
+    9 | class LaplaceEvaluator {
+      |       ^
+examples/big/catch_at_age_laplace.cpp:82:13: error: too few template arguments for class template 'LaplaceEvaluator'
+   82 |     quadra::LaplaceEvaluator<example::CatchAtAgeLaplaceModel> cov_evaluator(
+      |             ^
+examples/big/../../core/laplace/laplace_evaluator.hpp:9:7: note: template is declared here
+    8 | template <class ModelContext, class SolverPolicy, class EvaluationPolicy>
+      | ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    9 | class LaplaceEvaluator {
+      |       ^
+4 errors generated.
