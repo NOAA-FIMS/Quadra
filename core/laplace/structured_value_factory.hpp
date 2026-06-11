@@ -236,8 +236,8 @@ update_structured_values_from_hessian(StructuredValues &values,
 
   case LaplaceBackendKind::SparseLDLT:
   case LaplaceBackendKind::DenseLDLT:
-    throw std::invalid_argument(
-        "Structured value update is not implemented for requested backend");
+    values = extract_structured_values(H, rec);
+    return;
   }
 
   throw std::invalid_argument("Unknown backend recommendation");

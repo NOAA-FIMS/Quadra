@@ -492,7 +492,7 @@ std::vector<double> solve_random_effects_laplace(
     }
 
     if (g.norm() < tol) {
-      std::cout << "Newton: " << "inner iter = " << std::setw(3) << iter + 1
+      if (false) std::cout << "Newton: " << "inner iter = " << std::setw(3) << iter + 1
                 << ", fx = " << std::setw(14) << std::fixed
                 << std::setprecision(6) << nll.val
                 << ", |grad| = " << std::setw(12) << std::fixed
@@ -528,7 +528,7 @@ std::vector<double> solve_random_effects_laplace(
       throw std::runtime_error(
           "Sparse Hessian solve failed in solve_random_effects_laplace");
     }
-    std::cout << "Newton: " << "inner iter = " << std::setw(3) << iter + 1
+    if (false) std::cout << "Newton: " << "inner iter = " << std::setw(3) << iter + 1
               << ", fx = " << std::setw(14) << std::fixed
               << std::setprecision(6) << nll.val
               << ", |grad| = " << std::setw(12) << std::fixed

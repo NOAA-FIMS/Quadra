@@ -236,18 +236,37 @@ LaplaceResult<Model> laplace_eval_at_u_star_persistent_structured(
   Eigen::SparseMatrix<double> H = extract_sparse_hessian(
       scope, p_full, random_idx, pattern, options.hessian_drop_tol);
 
+  // Correctness-first dense fallback while structured values support is incomplete.
+  {
+    Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> ldlt;
+    ldlt.compute(H);
+    if (ldlt.info() != Eigen::Success) {
+      throw std::runtime_error("Dense fallback sparse LDLT failed in Laplace evaluation");
+    }
+
+    const auto d = ldlt.vectorD();
+    double logdet = 0.0;
+    for (Eigen::Index i = 0; i < d.size(); ++i) {
+      logdet += std::log(std::max(std::abs(d[i]), 1.0e-300));
+    }
+
+    res.value = static_cast<double>(nll.val) + 0.5 * logdet;
+    return res;
+  }
+
   // Persistent structured bridge:
   //   First call: detect structure and choose backend.
   //   Later calls: update structured values only and reuse recommendation.
   laplace::StructureDetectorOptions detector_options;
-  detector_options.prefer_dense_for_small_matrices = false;
-  detector_options.dense_size_cutoff = 0;
+  // Correctness-first fallback while structured values-only updates are incomplete.
+  detector_options.prefer_dense_for_small_matrices = true;
+  detector_options.dense_size_cutoff = std::numeric_limits<int>::max();
 
-  if (!structured_runtime.initialized) {
-    structured_runtime.update_from_hessian(H, detector_options);
-  } else {
-    structured_runtime.update_values_only(H);
-  }
+  // Temporary correctness-first path.
+  // Some structured backends can analyze/factor from a fresh Hessian but do not
+  // yet implement values-only updates across optimizer evaluations.
+  structured_runtime = laplace::PersistentStructuredRuntimeState{};
+  structured_runtime.update_from_hessian(H, detector_options);
 
   const double logdet = structured_runtime.logdet();
 
@@ -362,7 +381,8 @@ public:
           << e.what() << std::endl;
 
       grad.resize(x.size());
-      grad.setZero();
+     // grad.setZero();
+      grad.setConstant(1.0e100);
       last_grad = grad;
       last_x = x;
       last_fx = std::numeric_limits<double>::max() / 1.0e100;

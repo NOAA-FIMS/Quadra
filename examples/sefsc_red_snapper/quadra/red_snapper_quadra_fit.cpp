@@ -76,7 +76,7 @@ class RedSnapperQuadraObjective
     template <class T>
     T operator()(const std::vector<T> &par) const
     {
-      if (par.size() < 5)
+      if (par.size() < 5 + observations_.size())
       {
         throw std::runtime_error(
             "RedSnapperQuadraObjective expected parameters: log_r0, log_fbar, log_q");
@@ -97,7 +97,8 @@ class RedSnapperQuadraObjective
 
       const T sigma_log_index = T(0.20);
       const T sigma_log_catch = T(0.15);
-    const double age_comp_effective_n = 2.0;
+    
+      const T sigma_rec_dev = T(0.35);const double age_comp_effective_n = 2.0;
       const double min_positive = 1.0e-12;
 
       const auto weight = default_weight_at_age();
@@ -134,8 +135,16 @@ class RedSnapperQuadraObjective
       nll = nll + normal_prior(sel_a50, 4.0, 0.75);
       nll = nll + normal_prior(log_sel_slope, std::log(1.2), 0.35);
 
-      for (const auto &obs : observations_)
-      {
+      for (std::size_t t = 0; t < observations_.size(); ++t) {
+
+
+        const auto& obs = observations_[t];
+
+
+        const T rec_dev = par[5 + t];
+
+
+        nll = nll + T(0.5) * square_t(rec_dev / sigma_rec_dev);
         T biomass = T(0.0);
         for (int a = 0; a < kAges; ++a)
         {
@@ -190,7 +199,7 @@ class RedSnapperQuadraObjective
                                age_comp_effective_n, min_positive);
 
       std::array<T, kAges> next{};
-        next[0] = r0;
+        next[0] = r0 * exp_t(rec_dev);
 
         for (int a = 1; a < kAges; ++a)
         {
@@ -231,6 +240,8 @@ class RedSnapperQuadraObjective
     out << "iterations," << fit.iterations << "\n";
     out << "converged," << (fit.converged ? "yes" : "no") << "\n";
     out << "message," << fit.message << "\n";
+  out << "laplace,yes\n";
+  out << "random_effects," << fit.u_hat.size() << "\n";
 
     if (fit.par.size() >= 3)
     {
@@ -372,6 +383,40 @@ void write_residual_diagnostics(
   out << "max_abs_index_log_residual," << d.max_abs_index_log_residual << ",maximum absolute log index residual\n";
 }
 
+
+void write_selectivity_at_age(const std::string& path,
+                              const quadra::OptResult& fit) {
+  if (fit.par.size() < 5) {
+    return;
+  }
+
+  const double a50 = 1.0 + 9.0 / (1.0 + std::exp(-fit.par[3]));
+  const double slope = std::exp(fit.par[4]);
+
+  std::ofstream out(path);
+  out << "age,selectivity\n";
+
+  for (int age = 1; age <= sefsc_red_snapper::kAges; ++age) {
+    const double sel = 1.0 / (1.0 + std::exp(-slope * (age - a50)));
+    out << age << "," << sel << "\n";
+  }
+}
+
+
+
+void write_recruitment_deviations(const std::string& path,
+                                  const quadra::OptResult& fit) {
+  std::ofstream out(path);
+  out << "year,log_rec_dev,rec_multiplier\n";
+  out << std::setprecision(12);
+
+  for (std::size_t i = 0; i < fit.u_hat.size(); ++i) {
+    const double u = fit.u_hat[i];
+    out << (i + 1) << "," << u << "," << std::exp(u) << "\n";
+  }
+}
+
+
 int main()
 {
   const std::string input_path =
@@ -382,6 +427,10 @@ int main()
       "examples/sefsc_red_snapper/outputs/quadra_fitted_trajectory.csv";
   const std::string residual_diagnostics_path =
       "examples/sefsc_red_snapper/outputs/quadra_fit_residual_diagnostics.csv";
+  const std::string selectivity_path =
+      "examples/sefsc_red_snapper/outputs/selectivity_at_age.csv";
+  const std::string recruitment_deviations_path =
+      "examples/sefsc_red_snapper/outputs/recruitment_deviations.csv";
 
   const auto observations = sefsc_red_snapper::read_observations(input_path);
 
@@ -394,6 +443,13 @@ int main()
   params.add({"logit_sel_a50", 0.0, quadra::ParameterTransform::Identity, false});
   params.add({"log_sel_slope", std::log(1.2), quadra::ParameterTransform::Identity, false});
 
+  for (std::size_t t = 0; t < observations.size(); ++t) {
+    params.add({"log_rec_dev_" + std::to_string(t + 1),
+                0.0,
+                quadra::ParameterTransform::Identity,
+                true});
+  }
+
   quadra::LaplaceOptions opts;
 
   auto fit = quadra::optimize_lbfgs(objective, params, opts);
@@ -401,8 +457,10 @@ int main()
   sefsc_red_snapper::write_fit_summary(summary_path, fit);
   write_fitted_trajectory(trajectory_path, observations, fit);
   write_residual_diagnostics(residual_diagnostics_path, observations, fit);
+  write_selectivity_at_age(selectivity_path, fit);
+  write_recruitment_deviations(recruitment_deviations_path, fit);
 
-  std::cout << "SEFSC red-snapper-style Quadra fixed-effect fit\n";
+  std::cout << "SEFSC red-snapper-style Quadra Laplace recruitment-deviation fit\n";
   std::cout << "objective:  " << fit.value << "\n";
   std::cout << "grad_norm:  " << fit.grad_norm << "\n";
   std::cout << "converged:  " << (fit.converged ? "yes" : "no") << "\n";
@@ -410,6 +468,8 @@ int main()
   std::cout << "wrote:      " << summary_path << "\n";
   std::cout << "wrote:      " << trajectory_path << "\n";
   std::cout << "wrote:      " << residual_diagnostics_path << "\n";
+  std::cout << "wrote:      " << selectivity_path << "\n";
+  std::cout << "wrote:      " << recruitment_deviations_path << "\n";
 
   return 0;
 }
