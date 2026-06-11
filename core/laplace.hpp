@@ -446,11 +446,15 @@ template <typename Model>
 std::vector<double> solve_random_effects_laplace(
     Model &model, ParameterVector &params, const Eigen::VectorXd &x,
     const std::vector<int> &fixed_idx, const std::vector<int> &random_idx,
-    had::ADGraph &graph) {
+    had::ADGraph &graph,
+    const std::vector<double>* u_init_override = nullptr) {
   const int max_iter = 20;
   const double tol = 1e-8;
 
-  std::vector<double> u(random_idx.size(), 0.0);
+  std::vector<double> u =
+      (u_init_override != nullptr && u_init_override->size() == random_idx.size())
+          ? *u_init_override
+          : std::vector<double>(random_idx.size(), 0.0);
 
   for (int iter = 0; iter < max_iter; ++iter) {
 

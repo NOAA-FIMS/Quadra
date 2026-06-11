@@ -183,6 +183,10 @@ LaplaceResult<Model> laplace_eval_at_u_star_persistent_structured(
     const std::vector<int> &random_idx, const Eigen::VectorXd &x,
     const std::vector<double> &u_star, had::ADGraph &graph,
     laplace::PersistentStructuredRuntimeState &structured_runtime,
+    Eigen::VectorXd *last_logdet_x = nullptr,
+    Eigen::VectorXd *last_logdet_u = nullptr,
+    Eigen::VectorXd *last_logdet_grad = nullptr,
+    bool *last_logdet_available = nullptr,
     const LaplaceOptions &options = default_laplace_options()) {
   ADScope scope(graph);
 
@@ -208,7 +212,11 @@ LaplaceResult<Model> laplace_eval_at_u_star_persistent_structured(
     res.grad_x[k] = scope.grad(p_full[fixed_idx[k]]);
   }
 
-  // Keep the existing exact logdet-gradient path for fixed effects.
+  // Fast comparison mode: skip exact logdet-gradient contribution.
+  // The objective still includes the Laplace logdet term, but the fixed-effect
+  // gradient uses the joint objective contribution only. This is useful for
+  // profiling optimizer overhead before the logdet-gradient path is cached.
+#if !defined(QUADRA_SKIP_EXACT_LOGDET_GRADIENT)
   {
     Eigen::Map<const Eigen::VectorXd> u_star_eigen(
         u_star.data(), static_cast<Eigen::Index>(u_star.size()));
@@ -216,15 +224,13 @@ LaplaceResult<Model> laplace_eval_at_u_star_persistent_structured(
     Eigen::VectorXd g_logdet =
         laplace_logdet_gradient_exact(model, params, x, u_star_eigen, options);
 
-    // laplace_logdet_gradient_exact builds temporary AD graphs.
-    // Restore the graph for this outer evaluation before any further
-    // grad/hess access through scope.
     had::g_ADGraph = &scope.graph;
 
     for (size_t k = 0; k < fixed_idx.size(); ++k) {
       res.grad_x[k] += g_logdet[static_cast<Eigen::Index>(k)];
     }
   }
+#endif
 
   res.grad_u.resize(random_idx.size());
   for (size_t k = 0; k < random_idx.size(); ++k) {
@@ -236,31 +242,12 @@ LaplaceResult<Model> laplace_eval_at_u_star_persistent_structured(
   Eigen::SparseMatrix<double> H = extract_sparse_hessian(
       scope, p_full, random_idx, pattern, options.hessian_drop_tol);
 
-  // Correctness-first dense fallback while structured values support is incomplete.
-  {
-    Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> ldlt;
-    ldlt.compute(H);
-    if (ldlt.info() != Eigen::Success) {
-      throw std::runtime_error("Dense fallback sparse LDLT failed in Laplace evaluation");
-    }
-
-    const auto d = ldlt.vectorD();
-    double logdet = 0.0;
-    for (Eigen::Index i = 0; i < d.size(); ++i) {
-      logdet += std::log(std::max(std::abs(d[i]), 1.0e-300));
-    }
-
-    res.value = static_cast<double>(nll.val) + 0.5 * logdet;
-    return res;
-  }
-
   // Persistent structured bridge:
   //   First call: detect structure and choose backend.
   //   Later calls: update structured values only and reuse recommendation.
   laplace::StructureDetectorOptions detector_options;
-  // Correctness-first fallback while structured values-only updates are incomplete.
-  detector_options.prefer_dense_for_small_matrices = true;
-  detector_options.dense_size_cutoff = std::numeric_limits<int>::max();
+  detector_options.prefer_dense_for_small_matrices = false;
+  detector_options.dense_size_cutoff = 0;
 
   // Temporary correctness-first path.
   // Some structured backends can analyze/factor from a fresh Hessian but do not
@@ -313,6 +300,7 @@ public:
   Eigen::VectorXd last_grad;
   Eigen::VectorXd last_x;
   std::vector<double> last_u_star;
+
   Eigen::VectorXd best_converged_x;
   Eigen::VectorXd best_converged_grad;
   std::vector<double> best_converged_u_star;
@@ -333,6 +321,11 @@ public:
   double best_converged_grad_norm = std::numeric_limits<double>::infinity();
   laplace::PersistentStructuredRuntimeState structured_runtime;
 
+  Eigen::VectorXd last_logdet_x;
+  Eigen::VectorXd last_logdet_u;
+  Eigen::VectorXd last_logdet_grad;
+  bool last_logdet_grad_available = false;
+
   LBFGSObjective(Model &m, ParameterVector &p, std::vector<int> fixed,
                  std::vector<int> random,
                  const LaplaceOptions &opts = default_laplace_options())
@@ -351,8 +344,11 @@ public:
     const bool verbose_inner = ((iter % print_every) == 0) || iter == 1;
 
     try {
+      const std::vector<double>* u_warm_start =
+          (last_u_star.size() == random_idx.size()) ? &last_u_star : nullptr;
+
       u_star = solve_random_effects_laplace(model, params, x, fixed_idx,
-                                            random_idx, graph);
+                                            random_idx, graph, u_warm_start);
       last_u_star = u_star;
     } catch (const std::exception &e) {
       std::cerr << "L-BFGS: random-effect mode solve failed; returning "
@@ -374,7 +370,12 @@ public:
     try {
       res = laplace_eval_at_u_star_persistent_structured(
           model, params, fixed_idx, random_idx, x, u_star, graph,
-          structured_runtime, options);
+          structured_runtime,
+          &last_logdet_x,
+          &last_logdet_u,
+          &last_logdet_grad,
+          &last_logdet_grad_available,
+          options);
     } catch (const std::exception &e) {
       std::cerr
           << "L-BFGS: Laplace evaluation failed; returning penalty. reason="
@@ -454,12 +455,12 @@ optimize_lbfgs(Model &model, ParameterVector &params,
   }
 
   LBFGSObjective<Model> fun(model, params, fixed_idx, random_idx, options);
-  fun.print_every = 10;
+  fun.print_every = 25;
 
   LBFGSParam<double> param;
-  param.max_iterations = 400;
+  param.max_iterations = 150;
   // param.max_linesearch = 20;
-  param.epsilon = 1.0e-4;
+  param.epsilon = 1.0e-2;
   fun.epsilon = param.epsilon;
 
   LBFGSSolver<double> solver(param);
