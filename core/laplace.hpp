@@ -1232,6 +1232,8 @@ Eigen::VectorXd random_hessian_trace_terms_exact_workspace(
 
   workspace.Build(builder, &fixed_effects, &random_effects);
 
+  workspace.PropagateBaseAdjoint();
+
   workspace.SeedTotalDirections(
       static_cast<std::size_t>(theta.size()),
       [&](std::size_t k, Eigen::VectorXd &theta_direction,
@@ -1511,7 +1513,10 @@ LaplaceResult<Model> laplace_eval_at_u_star(
   // Or, if vectorD() is unavailable:
   // double logdet = sparse_logdet_llt(H);
 
-  res.value = value_of(nll) + 0.5 * logdet;
+  const double laplace_constant =
+      0.5 * static_cast<double>(random_idx.size()) * std::log(2.0 * M_PI);
+
+  res.value = value_of(nll) + 0.5 * logdet - laplace_constant;
 
   return res;
 }

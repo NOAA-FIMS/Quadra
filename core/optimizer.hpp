@@ -292,7 +292,10 @@ LaplaceResult<Model> laplace_eval_at_u_star_persistent_structured(
             .count();
   }
 
-  res.value = value_of(nll) + 0.5 * logdet;
+  const double laplace_constant =
+      0.5 * static_cast<double>(random_idx.size()) * std::log(2.0 * M_PI);
+
+  res.value = value_of(nll) + 0.5 * logdet - laplace_constant;
 
   return res;
 }
@@ -530,8 +533,9 @@ optimize_lbfgs(Model &model, ParameterVector &params,
   fun.print_every = 25;
 
   LBFGSParam<double> param;
-  param.max_iterations = 150;
-  // param.max_linesearch = 20;
+  param.max_iterations = 100;
+  param.m = 20;
+  param.max_linesearch = 50;
   param.epsilon = 1.0e-2;
   fun.epsilon = param.epsilon;
 
