@@ -1,3 +1,4 @@
+#include "laplace/exact_gradient_workspace.hpp"
 #include <algorithm>
 #include <random>
 #ifndef QUADRA_LAPLACE_HPP
@@ -1177,6 +1178,76 @@ std::vector<Eigen::SparseMatrix<double>> random_hessian_directional_exact_all(
   return out;
 }
 
+
+template <typename Model, typename SelectedInverseAccessor>
+Eigen::VectorXd random_hessian_trace_terms_exact_workspace(
+    Model &model, ParameterVector &params, const Eigen::VectorXd &theta,
+    const Eigen::VectorXd &u_hat, const Eigen::MatrixXd &du_dtheta,
+    const SparseHessianPattern &pattern,
+    SelectedInverseAccessor &&selected_inverse) {
+  const auto fixed_idx = build_fixed_index(params);
+  const auto random_idx = build_random_index(params);
+
+  if (du_dtheta.rows() != u_hat.size() || du_dtheta.cols() != theta.size()) {
+    throw std::invalid_argument(
+        "random_hessian_trace_terms_exact_workspace: du_dtheta has wrong shape");
+  }
+
+  std::vector<laplace::SparseHdotPatternEntry> workspace_pattern;
+  workspace_pattern.reserve(pattern.size());
+  for (const auto &[i, j] : pattern) {
+    workspace_pattern.emplace_back(i, j);
+  }
+
+  laplace::ExactGradientWorkspace workspace;
+  std::vector<had::AReal> fixed_effects;
+  std::vector<had::AReal> random_effects;
+
+  auto builder = [&]() {
+    fixed_effects.clear();
+    random_effects.clear();
+
+    for (Eigen::Index i = 0; i < theta.size(); ++i) {
+      fixed_effects.emplace_back(theta[i]);
+    }
+    for (Eigen::Index i = 0; i < u_hat.size(); ++i) {
+      random_effects.emplace_back(u_hat[i]);
+    }
+
+    std::vector<AD> p_full;
+    p_full.reserve(static_cast<std::size_t>(params.size()));
+    for (int ip = 0; ip < params.size(); ++ip) {
+      p_full.emplace_back(AD(0.0));
+    }
+
+    for (std::size_t k = 0; k < fixed_idx.size(); ++k) {
+      p_full[static_cast<std::size_t>(fixed_idx[k])] = fixed_effects[k];
+    }
+    for (std::size_t k = 0; k < random_idx.size(); ++k) {
+      p_full[static_cast<std::size_t>(random_idx[k])] = random_effects[k];
+    }
+
+    return model(p_full);
+  };
+
+  workspace.Build(builder, &fixed_effects, &random_effects);
+
+  workspace.SeedTotalDirections(
+      static_cast<std::size_t>(theta.size()),
+      [&](std::size_t k, Eigen::VectorXd &theta_direction,
+          Eigen::VectorXd &random_direction) {
+        theta_direction = Eigen::VectorXd::Zero(theta.size());
+        random_direction = du_dtheta.col(static_cast<Eigen::Index>(k));
+        theta_direction[static_cast<Eigen::Index>(k)] = 1.0;
+      });
+
+  workspace.PropagateDirectionalBatch();
+
+  return workspace.TraceTermsSelectedInverse(
+      std::forward<SelectedInverseAccessor>(selected_inverse),
+      workspace_pattern);
+}
+
 //==================================================
 // Exact Laplace log-determinant gradient contribution
 //
@@ -1292,6 +1363,35 @@ Eigen::VectorXd laplace_logdet_gradient_exact(
   }
 
   const auto timing_hdot_end = std::chrono::steady_clock::now();
+
+#ifdef QUADRA_VALIDATE_EXACT_GRADIENT_WORKSPACE
+  auto selected_inverse = [&](int row, int col) -> double {
+    Eigen::VectorXd e = Eigen::VectorXd::Zero(H.rows());
+    e[col] = 1.0;
+    Eigen::VectorXd x = solver.solve(e);
+    return x[row];
+  };
+
+  const Eigen::VectorXd workspace_trace =
+      random_hessian_trace_terms_exact_workspace(
+          model, params, theta, u_hat, dU, get_pattern_for_logdet,
+          selected_inverse);
+
+  Eigen::VectorXd trusted_trace = Eigen::VectorXd::Zero(theta.size());
+  for (Eigen::Index ii = 0; ii < theta.size(); ++ii) {
+    trusted_trace[ii] = 2.0 * grad[ii];
+  }
+
+  const double workspace_rel_err =
+      (workspace_trace - trusted_trace).norm() /
+      std::max(1.0e-12, trusted_trace.norm());
+
+  std::cout << "ExactGradientWorkspace trace rel_err="
+            << workspace_rel_err
+            << " workspace_norm=" << workspace_trace.norm()
+            << " trusted_norm=" << trusted_trace.norm()
+            << "\n";
+#endif
 
   // Restore baseline state for caller hygiene.
   inject_fixed_params(theta, params, fixed_idx);
