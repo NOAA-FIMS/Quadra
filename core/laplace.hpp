@@ -988,6 +988,8 @@ Eigen::SparseMatrix<double> random_hessian_directional_fd(
   Eigen::SparseMatrix<double> Hminus =
       compute_random_hessian_sparse(model, params);
 
+  const auto timing_hdot_end = std::chrono::steady_clock::now();
+
   // Restore baseline state for caller hygiene.
   inject_fixed_params(theta, params, fixed_idx);
   inject_random_params(u, params, random_idx);
@@ -1120,6 +1122,7 @@ Eigen::VectorXd laplace_logdet_gradient_exact(
     Model &model, ParameterVector &params, const Eigen::VectorXd &theta,
     const Eigen::VectorXd &u_hat,
     const LaplaceOptions &options = default_laplace_options()) {
+  const auto timing_logdet_exact_start = std::chrono::steady_clock::now();
   const auto fixed_idx = build_fixed_index(params);
   const auto random_idx = build_random_index(params);
 
@@ -1136,6 +1139,8 @@ Eigen::VectorXd laplace_logdet_gradient_exact(
   //   2. the baseline H_uu numeric values,
   //   3. the matrix used for log-det trace solves.
   // --------------------------------------------------
+  const auto timing_baseline_start = std::chrono::steady_clock::now();
+
   had::ADGraph pattern_graph;
   ADScope pattern_scope(pattern_graph);
 
@@ -1160,15 +1165,21 @@ Eigen::VectorXd laplace_logdet_gradient_exact(
       extract_sparse_hessian(pattern_scope, p_pattern, random_idx,
                              get_pattern_for_logdet, options.hessian_drop_tol);
 
+  const auto timing_baseline_end = std::chrono::steady_clock::now();
+
   // --------------------------------------------------
   // Factorize H_uu.
   //
   // Adaptive jitter is applied only if the unmodified H fails.
   // --------------------------------------------------
+  const auto timing_factor_start = std::chrono::steady_clock::now();
+
   Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> solver;
 
   Eigen::SparseMatrix<double> H_factor = factorize_with_adaptive_jitter(
       H, solver, "laplace_logdet_gradient_exact", options);
+
+  const auto timing_factor_end = std::chrono::steady_clock::now();
 
   // --------------------------------------------------
   // Compute all implicit random-effect sensitivities:
@@ -1177,49 +1188,61 @@ Eigen::VectorXd laplace_logdet_gradient_exact(
   //
   // Reuse the same H_uu factorization used for trace solves.
   // --------------------------------------------------
+  const auto timing_du_start = std::chrono::steady_clock::now();
+
   Eigen::MatrixXd dU =
       implicit_du_dtheta_all(model, params, theta, u_hat, &H_factor, &solver);
+
+  const auto timing_du_end = std::chrono::steady_clock::now();
+
+  const auto timing_hdot_start = std::chrono::steady_clock::now();
 
   Eigen::VectorXd grad = Eigen::VectorXd::Zero(theta.size());
 
   for (Eigen::Index i = 0; i < theta.size(); ++i) {
-    // Exact directional Hessian:
-    //
-    //     Hdot = D H_uu(theta, u*) [e_i, du*/dtheta_i]
-    //
     Eigen::SparseMatrix<double> Hdot = random_hessian_directional_exact(
         model, params, theta, u_hat, i, dU.col(i), get_pattern_for_logdet);
-
-#ifdef QUADRA_VALIDATE_HDOT
-    if (options.validate_hdot) {
-      constexpr double validation_eps = 1e-5;
-
-      Eigen::SparseMatrix<double> Hdot_fd =
-          random_hessian_directional_implicit_fd_with_du(
-              model, params, theta, u_hat, i, dU.col(i), validation_eps);
-
-      Eigen::SparseMatrix<double> diff = Hdot - Hdot_fd;
-
-      const double fd_norm = Hdot_fd.norm();
-
-      const double rel_err = diff.norm() / std::max(1e-12, fd_norm);
-
-      std::cout << "Quadra Hdot validation: fixed index " << i
-                << ", rel_err = " << rel_err << ", exact_norm = " << Hdot.norm()
-                << ", fd_norm = " << fd_norm
-                << ", exact nnz = " << Hdot.nonZeros()
-                << ", fd nnz = " << Hdot_fd.nonZeros() << "\n";
-    }
-#endif
 
     grad[i] =
         0.5 * logdet_directional_derivative_from_hdot(solver, Hdot, options);
   }
 
+  const auto timing_hdot_end = std::chrono::steady_clock::now();
+
   // Restore baseline state for caller hygiene.
   inject_fixed_params(theta, params, fixed_idx);
   inject_random_params(u, params, random_idx);
 
+  const auto timing_logdet_exact_end = std::chrono::steady_clock::now();
+  const double total_ms =
+      std::chrono::duration<double, std::milli>(
+          timing_logdet_exact_end - timing_logdet_exact_start)
+          .count();
+  const double baseline_ms =
+      std::chrono::duration<double, std::milli>(
+          timing_baseline_end - timing_baseline_start)
+          .count();
+  const double factor_ms =
+      std::chrono::duration<double, std::milli>(
+          timing_factor_end - timing_factor_start)
+          .count();
+  const double du_ms =
+      std::chrono::duration<double, std::milli>(
+          timing_du_end - timing_du_start)
+          .count();
+  const double hdot_ms =
+      std::chrono::duration<double, std::milli>(
+          timing_hdot_end - timing_hdot_start)
+          .count();
+
+#ifdef QUADRA_PROFILE_LAPLACE_LOGDET_GRADIENT
+  std::cout << "laplace_logdet_gradient_exact ms = " << total_ms
+            << " baseline=" << baseline_ms
+            << " factor=" << factor_ms
+            << " du=" << du_ms
+            << " hdot_trace=" << hdot_ms
+            << "\n";
+#endif
   return grad;
 }
 

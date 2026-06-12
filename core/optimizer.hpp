@@ -2,6 +2,7 @@
 #define OPTIMIZER_HPP
 #pragma once
 
+#include <chrono>
 #include <cmath>
 #include <exception>
 #include <iomanip>
@@ -187,6 +188,10 @@ LaplaceResult<Model> laplace_eval_at_u_star_persistent_structured(
     Eigen::VectorXd *last_logdet_u = nullptr,
     Eigen::VectorXd *last_logdet_grad = nullptr,
     bool *last_logdet_available = nullptr,
+    double *timing_joint_ad_ms = nullptr,
+    double *timing_logdet_gradient_ms = nullptr,
+    double *timing_hessian_extract_ms = nullptr,
+    double *timing_structured_logdet_ms = nullptr,
     const LaplaceOptions &options = default_laplace_options()) {
   ADScope scope(graph);
 
@@ -203,9 +208,19 @@ LaplaceResult<Model> laplace_eval_at_u_star_persistent_structured(
   inject_fixed_params(x, p_full, fixed_idx);
   inject_random_params(u_star, p_full, random_idx);
 
+  const auto timing_joint_start = std::chrono::steady_clock::now();
+
   AD nll = model(p_full);
 
   scope.backward(nll);
+
+  const auto timing_joint_end = std::chrono::steady_clock::now();
+  if (timing_joint_ad_ms != nullptr) {
+    *timing_joint_ad_ms +=
+        std::chrono::duration<double, std::milli>(
+            timing_joint_end - timing_joint_start)
+            .count();
+  }
 
   res.grad_x.resize(fixed_idx.size());
   for (size_t k = 0; k < fixed_idx.size(); ++k) {
@@ -237,10 +252,20 @@ LaplaceResult<Model> laplace_eval_at_u_star_persistent_structured(
     res.grad_u[k] = scope.grad(p_full[random_idx[k]]);
   }
 
+  const auto timing_hessian_start = std::chrono::steady_clock::now();
+
   const auto &pattern = get_pattern(scope, p_full, random_idx);
 
   Eigen::SparseMatrix<double> H = extract_sparse_hessian(
       scope, p_full, random_idx, pattern, options.hessian_drop_tol);
+
+  const auto timing_hessian_end = std::chrono::steady_clock::now();
+  if (timing_hessian_extract_ms != nullptr) {
+    *timing_hessian_extract_ms +=
+        std::chrono::duration<double, std::milli>(
+            timing_hessian_end - timing_hessian_start)
+            .count();
+  }
 
   // Persistent structured bridge:
   //   First call: detect structure and choose backend.
@@ -249,13 +274,23 @@ LaplaceResult<Model> laplace_eval_at_u_star_persistent_structured(
   detector_options.prefer_dense_for_small_matrices = false;
   detector_options.dense_size_cutoff = 0;
 
-  // Temporary correctness-first path.
-  // Some structured backends can analyze/factor from a fresh Hessian but do not
-  // yet implement values-only updates across optimizer evaluations.
-  structured_runtime = laplace::PersistentStructuredRuntimeState{};
-  structured_runtime.update_from_hessian(H, detector_options);
+  const auto timing_structured_start = std::chrono::steady_clock::now();
+
+  if (!structured_runtime.initialized) {
+    structured_runtime.update_from_hessian(H, detector_options);
+  } else {
+    structured_runtime.update_values_only(H);
+  }
 
   const double logdet = structured_runtime.logdet();
+
+  const auto timing_structured_end = std::chrono::steady_clock::now();
+  if (timing_structured_logdet_ms != nullptr) {
+    *timing_structured_logdet_ms +=
+        std::chrono::duration<double, std::milli>(
+            timing_structured_end - timing_structured_start)
+            .count();
+  }
 
   res.value = value_of(nll) + 0.5 * logdet;
 
@@ -295,6 +330,15 @@ public:
 
   int iter = 0;
   int print_every = 10;
+
+  double timing_total_ms = 0.0;
+  double timing_mode_solve_ms = 0.0;
+  double timing_laplace_eval_ms = 0.0;
+  double timing_joint_ad_ms = 0.0;
+  double timing_logdet_gradient_ms = 0.0;
+  double timing_hessian_extract_ms = 0.0;
+  double timing_structured_logdet_ms = 0.0;
+  int timing_eval_count = 0;
 
   double last_fx = std::numeric_limits<double>::quiet_NaN();
   Eigen::VectorXd last_grad;
@@ -339,17 +383,27 @@ public:
     had::ADGraph &graph = tape.graph;
 
     ++iter;
+    ++timing_eval_count;
+    const auto timing_eval_start = std::chrono::steady_clock::now();
 
     std::vector<double> u_star;
     const bool verbose_inner = ((iter % print_every) == 0) || iter == 1;
 
     try {
+      const auto timing_mode_start = std::chrono::steady_clock::now();
+
       const std::vector<double>* u_warm_start =
           (last_u_star.size() == random_idx.size()) ? &last_u_star : nullptr;
 
       u_star = solve_random_effects_laplace(model, params, x, fixed_idx,
                                             random_idx, graph, u_warm_start);
       last_u_star = u_star;
+
+      const auto timing_mode_end = std::chrono::steady_clock::now();
+      timing_mode_solve_ms +=
+          std::chrono::duration<double, std::milli>(
+              timing_mode_end - timing_mode_start)
+              .count();
     } catch (const std::exception &e) {
       std::cerr << "L-BFGS: random-effect mode solve failed; returning "
                    "penalty. reason="
@@ -368,6 +422,8 @@ public:
     Result res;
 
     try {
+      const auto timing_laplace_start = std::chrono::steady_clock::now();
+
       res = laplace_eval_at_u_star_persistent_structured(
           model, params, fixed_idx, random_idx, x, u_star, graph,
           structured_runtime,
@@ -375,7 +431,17 @@ public:
           &last_logdet_u,
           &last_logdet_grad,
           &last_logdet_grad_available,
+          &timing_joint_ad_ms,
+          &timing_logdet_gradient_ms,
+          &timing_hessian_extract_ms,
+          &timing_structured_logdet_ms,
           options);
+
+      const auto timing_laplace_end = std::chrono::steady_clock::now();
+      timing_laplace_eval_ms +=
+          std::chrono::duration<double, std::milli>(
+              timing_laplace_end - timing_laplace_start)
+              .count();
     } catch (const std::exception &e) {
       std::cerr
           << "L-BFGS: Laplace evaluation failed; returning penalty. reason="
@@ -428,6 +494,12 @@ public:
     if ((iter % print_every) == 0 || iter == 1) {
       print(iter, res.value, gnorm);
     }
+
+    const auto timing_eval_end = std::chrono::steady_clock::now();
+    timing_total_ms +=
+        std::chrono::duration<double, std::milli>(
+            timing_eval_end - timing_eval_start)
+            .count();
 
     return res.value;
   }
@@ -522,6 +594,10 @@ optimize_lbfgs(Model &model, ParameterVector &params,
 
     const std::string msg = e.what();
 
+    std::cout << "L-BFGS runtime_error caught: " << msg << "\n";
+    std::cout << "  gnorm = " << gnorm << "\n";
+    std::cout << "  max|grad| = " << max_grad << "\n";
+
     const bool line_search_failed =
         msg.find("line search") != std::string::npos ||
         msg.find("Line search") != std::string::npos;
@@ -558,6 +634,23 @@ optimize_lbfgs(Model &model, ParameterVector &params,
       throw;
     }
   }
+
+#ifdef QUADRA_PROFILE_OPTIMIZER_TIMING
+  std::cout << "Quadra timing summary\n";
+  std::cout << "  objective evals:       " << fun.timing_eval_count << "\n";
+  std::cout << "  total eval ms:         " << fun.timing_total_ms << "\n";
+  std::cout << "  mode solve ms:         " << fun.timing_mode_solve_ms << "\n";
+  std::cout << "  laplace eval ms:       " << fun.timing_laplace_eval_ms << "\n";
+  std::cout << "    joint AD ms:         " << fun.timing_joint_ad_ms << "\n";
+  std::cout << "    logdet gradient ms:  " << fun.timing_logdet_gradient_ms << "\n";
+  std::cout << "    Hessian extract ms:  " << fun.timing_hessian_extract_ms << "\n";
+  std::cout << "    structured logdet ms:" << fun.timing_structured_logdet_ms << "\n";
+  std::cout << "  other eval ms:         "
+            << (fun.timing_total_ms - fun.timing_mode_solve_ms -
+                fun.timing_laplace_eval_ms)
+            << "\n";
+
+#endif
 
   OptResult result;
 
