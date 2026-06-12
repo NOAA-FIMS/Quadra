@@ -1096,6 +1096,87 @@ Eigen::SparseMatrix<double> random_hessian_directional_exact(
   return Hdot;
 }
 
+template <typename Model>
+std::vector<Eigen::SparseMatrix<double>> random_hessian_directional_exact_all(
+    Model &model, ParameterVector &params, const Eigen::VectorXd &theta,
+    const Eigen::VectorXd &u_hat, const Eigen::MatrixXd &du_dtheta,
+    const SparseHessianPattern &pattern) {
+  const auto fixed_idx = build_fixed_index(params);
+  const auto random_idx = build_random_index(params);
+
+  if (du_dtheta.rows() != u_hat.size() || du_dtheta.cols() != theta.size()) {
+    throw std::invalid_argument(
+        "random_hessian_directional_exact_all: du_dtheta has wrong shape");
+  }
+
+  had::ADGraph graph;
+  ADScope scope(graph);
+
+  std::vector<AD> p_full;
+  p_full.reserve(static_cast<size_t>(params.size()));
+
+  for (int i = 0; i < params.size(); ++i) {
+    p_full.emplace_back(AD(0.0));
+  }
+
+  std::vector<double> u(u_hat.data(), u_hat.data() + u_hat.size());
+
+  inject_fixed_params(theta, p_full, fixed_idx);
+  inject_random_params(u, p_full, random_idx);
+
+  AD nll = model(p_full);
+
+  had::g_ADGraph = &scope.graph;
+
+  const int n = static_cast<int>(random_idx.size());
+  std::vector<Eigen::SparseMatrix<double>> out(
+      static_cast<size_t>(theta.size()));
+
+  for (Eigen::Index theta_i = 0; theta_i < theta.size(); ++theta_i) {
+    // Reset primal tangents.
+    for (size_t k = 0; k < fixed_idx.size(); ++k) {
+      const double d = (static_cast<Eigen::Index>(k) == theta_i) ? 1.0 : 0.0;
+      p_full[static_cast<size_t>(fixed_idx[k])].dot = d;
+      graph.vertices[p_full[static_cast<size_t>(fixed_idx[k])].varId].dot = d;
+    }
+
+    for (size_t r = 0; r < random_idx.size(); ++r) {
+      const double d =
+          du_dtheta(static_cast<Eigen::Index>(r), theta_i);
+      p_full[static_cast<size_t>(random_idx[r])].dot = d;
+      graph.vertices[p_full[static_cast<size_t>(random_idx[r])].varId].dot = d;
+    }
+
+    laplace::reset_had_quadra_directional_reverse_state(graph);
+    laplace::retangent_had_quadra_graph(graph);
+
+    had::SetAdjoint(nll, 1.0);
+    had::PropagateAdjointDirectional();
+
+    std::vector<Eigen::Triplet<double>> triplets;
+    triplets.reserve(pattern.size());
+
+    for (const auto &[i, j] : pattern) {
+      const double hij_dot =
+          had::GetAdjointDot(
+              p_full[static_cast<size_t>(random_idx[static_cast<size_t>(i)])],
+              p_full[static_cast<size_t>(random_idx[static_cast<size_t>(j)])]);
+
+      if (std::abs(hij_dot) > 1e-12) {
+        triplets.emplace_back(i, j, hij_dot);
+      }
+    }
+
+    Eigen::SparseMatrix<double> Hdot(n, n);
+    Hdot.setFromTriplets(triplets.begin(), triplets.end());
+    Hdot.makeCompressed();
+
+    out[static_cast<size_t>(theta_i)] = std::move(Hdot);
+  }
+
+  return out;
+}
+
 //==================================================
 // Exact Laplace log-determinant gradient contribution
 //
@@ -1199,9 +1280,12 @@ Eigen::VectorXd laplace_logdet_gradient_exact(
 
   Eigen::VectorXd grad = Eigen::VectorXd::Zero(theta.size());
 
+  const auto Hdots = random_hessian_directional_exact_all(
+      model, params, theta, u_hat, dU, get_pattern_for_logdet);
+
   for (Eigen::Index i = 0; i < theta.size(); ++i) {
-    Eigen::SparseMatrix<double> Hdot = random_hessian_directional_exact(
-        model, params, theta, u_hat, i, dU.col(i), get_pattern_for_logdet);
+    const Eigen::SparseMatrix<double> &Hdot =
+        Hdots[static_cast<std::size_t>(i)];
 
     grad[i] =
         0.5 * logdet_directional_derivative_from_hdot(solver, Hdot, options);
