@@ -21,7 +21,6 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include "laplace/laplace_gradient_diagnostics.hpp"
 
 namespace quadra {
 
@@ -1348,7 +1347,41 @@ Eigen::VectorXd laplace_logdet_gradient_exact(
   Eigen::MatrixXd dU =
       implicit_du_dtheta_all(model, params, theta, u_hat, &H_factor, &solver);
 
-  laplace::diagnostics::print_du_dtheta_summary(dU);
+#ifdef QUADRA_DEBUG_DU_DTHETA_NORMS
+  {
+    std::cout << "Quadra dU diagnostic\n";
+    std::cout << "  dU_col_norms = ";
+    for (Eigen::Index j = 0; j < dU.cols(); ++j) {
+      std::cout << dU.col(j).norm();
+      if (j + 1 < dU.cols()) {
+        std::cout << " ";
+      }
+    }
+    std::cout << "\n";
+
+    std::cout << "  dU_col_maxabs = ";
+    for (Eigen::Index j = 0; j < dU.cols(); ++j) {
+      std::cout << dU.col(j).cwiseAbs().maxCoeff();
+      if (j + 1 < dU.cols()) {
+        std::cout << " ";
+      }
+    }
+    std::cout << "\n";
+
+    std::cout << "  dU_first_rows =";
+    const Eigen::Index nprint = std::min<Eigen::Index>(5, dU.rows());
+    for (Eigen::Index r = 0; r < nprint; ++r) {
+      std::cout << "\n    row " << r << ": ";
+      for (Eigen::Index j = 0; j < dU.cols(); ++j) {
+        std::cout << dU(r, j);
+        if (j + 1 < dU.cols()) {
+          std::cout << " ";
+        }
+      }
+    }
+    std::cout << "\n";
+  }
+#endif
 
   const auto timing_du_end = std::chrono::steady_clock::now();
 
@@ -1383,8 +1416,13 @@ Eigen::VectorXd laplace_logdet_gradient_exact(
                     options);
     }
 
-    laplace::diagnostics::print_theta_only_vs_total_logdet_gradient(
-        theta_only, grad);
+    std::cout << "Quadra logdet Hdot diagnostic\n";
+    std::cout << "  theta_only_logdet_grad = "
+              << theta_only.transpose() << "\n";
+    std::cout << "  total_logdet_grad      = "
+              << grad.transpose() << "\n";
+    std::cout << "  implicit_u_contribution= "
+              << (grad - theta_only).transpose() << "\n";
   }
 #endif
 
@@ -1415,8 +1453,15 @@ Eigen::VectorXd laplace_logdet_gradient_exact(
           diff.norm() / std::max(1.0e-12, Hdot_fd.norm());
     }
 
-    laplace::diagnostics::print_hdot_exact_vs_fd_trace(
-        exact_trace, fd_trace, rel_hdot_err);
+    std::cout << "Quadra Hdot exact-vs-FD trace diagnostic\n";
+    std::cout << "  exact_total_logdet_grad = "
+              << exact_trace.transpose() << "\n";
+    std::cout << "  fd_total_logdet_grad    = "
+              << fd_trace.transpose() << "\n";
+    std::cout << "  exact_minus_fd          = "
+              << (exact_trace - fd_trace).transpose() << "\n";
+    std::cout << "  rel_Hdot_matrix_err     = "
+              << rel_hdot_err.transpose() << "\n";
   }
 #endif
 

@@ -4,7 +4,7 @@ set -euo pipefail
 echo "== Add science-center validation roadmap and SEFSC red-snapper scaffold =="
 
 mkdir -p docs/validation
-mkdir -p examples/sefsc_red_snapper/{data,quadra,tmb,outputs,validation}
+mkdir -p examples/NMFS/sefsc_red_snapper/{data,quadra,tmb,outputs,validation}
 
 cat > docs/validation/science-center-example-roadmap.md <<'MD'
 # Science Center Example Validation Roadmap
@@ -66,7 +66,7 @@ examples/<example_name>/
 6. Repeat for the remaining science centers.
 MD
 
-cat > examples/sefsc_red_snapper/README.md <<'MD'
+cat > examples/NMFS/sefsc_red_snapper/README.md <<'MD'
 # SEFSC Red-Snapper-Style Assessment Example
 
 This directory is a placeholder for a synthetic, public-data-safe red-snapper-style assessment example.
@@ -118,7 +118,7 @@ The first milestone is a minimal working model with:
 6. Level-1 uncertainty outputs.
 MD
 
-cat > examples/sefsc_red_snapper/validation/validation_plan.md <<'MD'
+cat > examples/NMFS/sefsc_red_snapper/validation/validation_plan.md <<'MD'
 # SEFSC Red-Snapper-Style Validation Plan
 
 ## Level 0: deterministic fit
@@ -156,7 +156,7 @@ cat > examples/sefsc_red_snapper/validation/validation_plan.md <<'MD'
 This example should remain synthetic or public-data-safe. It should not be presented as an official red snapper assessment.
 MD
 
-cat > examples/sefsc_red_snapper/data/README.md <<'MD'
+cat > examples/NMFS/sefsc_red_snapper/data/README.md <<'MD'
 # Data
 
 Synthetic or public-data-safe input files will live here.
@@ -164,19 +164,19 @@ Synthetic or public-data-safe input files will live here.
 Do not commit generated outputs or confidential assessment data.
 MD
 
-cat > examples/sefsc_red_snapper/quadra/README.md <<'MD'
+cat > examples/NMFS/sefsc_red_snapper/quadra/README.md <<'MD'
 # Quadra Implementation
 
 Quadra model source files for the SEFSC red-snapper-style example will live here.
 MD
 
-cat > examples/sefsc_red_snapper/tmb/README.md <<'MD'
+cat > examples/NMFS/sefsc_red_snapper/tmb/README.md <<'MD'
 # TMB Reference Implementation
 
 TMB comparison files for the SEFSC red-snapper-style example will live here.
 MD
 
-cat > examples/sefsc_red_snapper/outputs/.gitignore <<'EOF'
+cat > examples/NMFS/sefsc_red_snapper/outputs/.gitignore <<'EOF'
 *
 !.gitignore
 EOF
@@ -184,8 +184,8 @@ EOF
 echo
 echo "Created:"
 echo "  docs/validation/science-center-example-roadmap.md"
-echo "  examples/sefsc_red_snapper/"
+echo "  examples/NMFS/sefsc_red_snapper/"
 echo
 echo "Next:"
-echo "  git add docs/validation/science-center-example-roadmap.md examples/sefsc_red_snapper"
+echo "  git add docs/validation/science-center-example-roadmap.md examples/NMFS/sefsc_red_snapper"
 echo "  git commit -m \"Add science center validation roadmap and SEFSC scaffold\""

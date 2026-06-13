@@ -1,0 +1,96 @@
+ M add_science_center_validation_roadmap_v1.sh
+ M core/laplace.hpp
+ M core/laplace/exact_gradient_workspace.hpp
+ M core/optimizer.hpp
+ D examples/pifsc_opakapaka/README.md
+ D examples/pifsc_opakapaka/data/synthetic_opakapaka_projection_data.csv
+ D examples/pifsc_opakapaka/had_implementation.cpp
+ D examples/pifsc_opakapaka/quadra/opakapaka_adgraph_global.cpp
+ D examples/pifsc_opakapaka/quadra/opakapaka_model.hpp
+ D examples/pifsc_opakapaka/quadra/opakapaka_projection.cpp
+ D examples/pifsc_opakapaka/quadra/opakapaka_projection_structure_demo.cpp
+ D examples/pifsc_opakapaka/tmb/opakapaka_projection_tmb.cpp
+ D examples/pifsc_opakapaka/tmb/run_opakapaka_projection_tmb.R
+ D examples/pifsc_opakapaka/validation/opakapaka_projection_memory_scenarios.tsv
+ D examples/pifsc_opakapaka/validation/validation_plan.md
+ D examples/sefsc_red_snapper/README.md
+ D examples/sefsc_red_snapper/compare_quadra_tmb_fit.py
+ D examples/sefsc_red_snapper/data/README.md
+ D examples/sefsc_red_snapper/data/red_snapper_projection_scenarios.csv
+ D examples/sefsc_red_snapper/data/synthetic_red_snapper_observations.csv
+ D examples/sefsc_red_snapper/quadra/README.md
+ D examples/sefsc_red_snapper/quadra/evaluate_red_snapper_objective
+ D examples/sefsc_red_snapper/quadra/evaluate_red_snapper_objective.cpp
+ D examples/sefsc_red_snapper/quadra/red_snapper_adgraph_global.cpp
+ D examples/sefsc_red_snapper/quadra/red_snapper_age_structured
+ D examples/sefsc_red_snapper/quadra/red_snapper_age_structured.cpp
+ D examples/sefsc_red_snapper/quadra/red_snapper_age_structured.hpp
+ D examples/sefsc_red_snapper/quadra/red_snapper_level0
+ D examples/sefsc_red_snapper/quadra/red_snapper_level0.cpp
+ D examples/sefsc_red_snapper/quadra/red_snapper_model.hpp
+ D examples/sefsc_red_snapper/quadra/red_snapper_objective.hpp
+ D examples/sefsc_red_snapper/quadra/red_snapper_quadra_fit
+ D examples/sefsc_red_snapper/quadra/red_snapper_quadra_fit.cpp
+ D examples/sefsc_red_snapper/run_quadra_vs_tmb_comparison.sh
+ D examples/sefsc_red_snapper/run_red_snapper_age_structured.sh
+ D examples/sefsc_red_snapper/run_red_snapper_level0.sh
+ D examples/sefsc_red_snapper/run_red_snapper_objective.sh
+ D examples/sefsc_red_snapper/run_red_snapper_quadra_fit.sh
+ D examples/sefsc_red_snapper/tmb/README.md
+ D examples/sefsc_red_snapper/tmb/red_snapper_tmb.cpp
+ D examples/sefsc_red_snapper/tmb/run_red_snapper_tmb_fit.R
+ D examples/sefsc_red_snapper/validation/age_composition_likelihood_checklist.md
+ D examples/sefsc_red_snapper/validation/age_structured_deterministic_checklist.md
+ D examples/sefsc_red_snapper/validation/level0_checklist.md
+ D examples/sefsc_red_snapper/validation/objective_checklist.md
+ D examples/sefsc_red_snapper/validation/quadra_fit_checklist.md
+ D examples/sefsc_red_snapper/validation/selectivity_estimation_checklist.md
+ D examples/sefsc_red_snapper/validation/validation_plan.md
+?? a.out
+?? a.out.dSYM/
+?? add_laplace_result_component_fields.sh
+?? add_sefsc_red_snapper_age_comp_likelihood_v1.sh
+?? add_sefsc_red_snapper_age_structured_v1.sh
+?? add_sefsc_red_snapper_fitted_trajectory_v1.sh
+?? add_sefsc_red_snapper_level0_scaffold_v1.sh
+?? add_sefsc_red_snapper_objective_v1.sh
+?? add_sefsc_red_snapper_quadra_fit_v1.sh
+?? add_sefsc_red_snapper_recruitment_devs_v1.sh
+?? add_sefsc_red_snapper_residual_diagnostics_v1.sh
+?? add_sefsc_red_snapper_selectivity_estimation_v1.sh
+?? add_sefsc_red_snapper_selectivity_output_v1.sh
+?? add_sefsc_red_snapper_tmb_comparison_v1.sh
+?? bad_laplace_tail_removed.txt
+?? cleanup_laplace_diagnostics_to_header.sh
+?? core/laplace.hpp.backup_force_remove_bad_laplace_tail_block_20260613_111035
+?? core/laplace.hpp.bad-gradient-diagnostic.20260613_110931.bak
+?? core/laplace.hpp.bad_gradient_diagnostics.20260613_110717
+?? core/laplace.hpp.bak.gradient_diagnostics.20260613_110318
+?? core/laplace.hpp.before_diagnostics_header_cleanup.20260613_170558
+?? core/laplace.hpp.before_du_dtheta_norm_diagnostic.20260613_144107
+?? core/laplace.hpp.before_hdot_exact_vs_fd_trace_diagnostic.20260613_142755
+?? core/laplace.hpp.before_laplace_result_component_fields.20260613_113223
+?? core/laplace.hpp.before_logdet_theta_only_diagnostic.20260613_142400
+?? core/laplace.hpp.broken_after_bad_cleanup.20260613_111249
+?? core/laplace.hpp.broken_after_bad_cleanup.20260613_112529
+?? core/laplace.hpp.pre_bad_tail_cleanup.20260613_111124.bak
+?? core/laplace.hpp.saved_before_git_restore.20260613_112952
+?? core/laplace/laplace_gradient_diagnostics.hpp
+?? docs/exact_laplace_gradient_validation.md
+?? examples/NMFS/
+?? force_remove_bad_laplace_tail_block.sh
+?? git_restore_laplace_hpp_clean.sh
+?? install_du_dtheta_norm_diagnostic.sh
+?? install_hdot_exact_vs_fd_trace_diagnostic.sh
+?? install_logdet_theta_only_vs_total_diagnostic.sh
+?? install_quadra_gradient_diagnostics.sh
+?? install_tmb_manual_profiled_logdet_fd_diagnostic.sh
+?? install_tmb_profiled_logdet_fd_diagnostic.sh
+?? move_assessment_examples_to_nmfs.sh
+?? move_pifsc_opakapaka_to_nmfs.sh
+?? nmfs_example_move_changed_files_20260613_173133.txt
+?? pifsc_opakapaka_nmfs_move_changed_files_20260613_173652.txt
+?? restore_laplace_hpp_safely.sh
+?? restore_laplace_hpp_safely_macos.sh
+?? restore_quadra_laplace_before_gradient_diagnostics.sh
+?? tests/test_hdot_validation
