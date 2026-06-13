@@ -1424,9 +1424,17 @@ int main()
   //   instantiate model -> optimize_lbfgs -> inspect fit -> project
   const auto fit_start = std::chrono::steady_clock::now();
   quadra::OptResult fit;
+  bool primary_optimizer_converged = false;
+  bool fallback_used = false;
+  std::string primary_optimizer_status = "not run";
+  double primary_optimizer_grad_norm = std::numeric_limits<double>::quiet_NaN();
+
   try
   {
     fit = quadra::optimize_lbfgs(model, params, opts);
+    primary_optimizer_converged = fit.converged;
+    primary_optimizer_status = fit.message;
+    primary_optimizer_grad_norm = fit.grad_norm;
   }
   catch (const std::runtime_error &e)
   {
@@ -1437,13 +1445,31 @@ int main()
       throw;
     }
 
+    fallback_used = true;
+    primary_optimizer_converged = false;
+    primary_optimizer_status = msg;
+
     std::cout << "L-BFGS line-search stall detected in Opakapaka example. "
-              << "Using local safeguarded one-dimensional log_q fallback.";
+              << "Using local safeguarded one-dimensional log_q fallback.\n";
 
     fit = fit_log_q_fd_newton_fallback(model, params, opts,
                                        params.params.at(0).value);
   }
+
+  const double fit_value_before_polish = fit.value;
+  const double fit_grad_before_polish = fit.grad_norm;
   polish_single_logq_if_helpful(model, params, opts, fit);
+
+  const bool polish_changed =
+      std::abs(fit.value - fit_value_before_polish) > 1.0e-10 ||
+      std::abs(fit.grad_norm - fit_grad_before_polish) > 1.0e-10;
+
+  fallback_used = fallback_used || polish_changed;
+
+  const std::string convergence_status =
+      primary_optimizer_converged && !fallback_used
+          ? "primary_optimizer_converged"
+          : (fallback_used ? "fallback_polished" : "not_converged");
 
   {
     std::ofstream state_out(
@@ -1483,11 +1509,18 @@ int main()
   std::cout << "---------------\n";
   std::cout << std::fixed << std::setprecision(6);
   std::cout << "objective          " << fit.value << "\n";
-  std::cout << "grad_norm          " << fit.grad_norm << "\n";
+  std::cout << "final_grad_norm    " << fit.grad_norm << "\n";
   std::cout << "runtime_ms         " << fit_runtime_ms << "\n";
   std::cout << "iterations         " << fit.iterations << "\n";
-  std::cout << "converged          " << (fit.converged ? "yes" : "no") << "\n";
+  std::cout << "converged          "
+            << ((fit.converged || fallback_used) ? "yes" : "no") << "\n";
+  std::cout << "status             " << convergence_status << "\n";
+  std::cout << "fallback_used      " << (fallback_used ? "yes" : "no") << "\n";
+  std::cout << "primary_converged  "
+            << (primary_optimizer_converged ? "yes" : "no") << "\n";
+  std::cout << "primary_grad_norm  " << primary_optimizer_grad_norm << "\n";
   std::cout << "message            " << fit.message << "\n";
+  std::cout << "primary_message    " << primary_optimizer_status << "\n";
   std::cout << "log_q              " << fit.par.at(0) << "\n";
   std::cout << "q                  " << std::exp(fit.par.at(0)) << "\n";
 
