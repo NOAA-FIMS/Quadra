@@ -1,0 +1,37 @@
+Synthetic AFSC walleye-pollock-style assessment example
+=======================================================
+
+Synthetic and public-data-safe. Not an official assessment.
+Assessment-scale diagnostic: tolerance is relaxed for synthetic profiling/identifiability checks.
+Recruitment deviations use a fixed AR(1) prior: rho=0.60, sigma=0.15.
+Random recruitment enabled for first 2 year(s).
+
+Loaded synthetic rows: 20
+
+Quadra: Discovering Hessian pattern from AD graph for 2 random variables ...
+Quadra: Model structure aware now => Hessian pattern has 4 entries.
+L-BFGS: outer eval =   1, fx =      29.124681, |grad| = [1;31m  104.647670[0m
+L-BFGS: outer eval =  12, fx =       2.719706, |grad| = [1;32m    0.009110[0m
+L-BFGS: stopped at first iterate satisfying requested fixed-effect gradient tolerance.
+
+Fit diagnostics
+---------------
+objective          2.719706
+grad_norm          0.009110
+iterations         12
+converged          yes
+message            converged to requested fixed-effect gradient tolerance
+max_grad_param     log_r0
+max_grad_value     -0.009109
+max_abs_grad       0.009109
+
+Optimizer structure diagnostics
+-------------------------------
+random effects     2
+pattern available  yes
+detected structure tridiagonal
+Hessian nonzeros   4
+
+Wrote outputs:
+  examples/NMFS/afsc_walleye_pollock/outputs/walleye_pollock_fit_summary.csv
+  examples/NMFS/afsc_walleye_pollock/outputs/walleye_pollock_recruitment_deviations.csv

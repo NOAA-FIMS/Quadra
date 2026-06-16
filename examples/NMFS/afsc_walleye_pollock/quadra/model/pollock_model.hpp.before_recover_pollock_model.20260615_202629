@@ -1,0 +1,17 @@
+#pragma once
+
+// Pollock model extraction placeholder.
+//
+// Current safe stop-point:
+//   - walleye_pollock.cpp remains behavior-preserving.
+//   - reporting/data/path utilities are split into readable headers.
+//   - next pass can move the biological model class here without changing
+//     diagnostics or output behavior.
+//
+// Intended final layout:
+//   pollock_model.hpp      model states, parameters, likelihood
+//   pollock_data.hpp       data row structs and loading
+//   pollock_reports.hpp    CSV/text/markdown outputs
+//   pollock_utilities.hpp  paths, names, small helpers
+
+namespace pollock_example {}  // namespace pollock_example

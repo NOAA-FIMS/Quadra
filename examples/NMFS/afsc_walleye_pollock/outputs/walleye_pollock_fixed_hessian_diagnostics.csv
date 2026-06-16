@@ -1,0 +1,13 @@
+field,value
+fixed_effects,2
+available,yes
+fd_step,0.0001
+profile_objective,-14.386867585475
+min_diagonal,0.271912625748882
+max_diagonal,134.948869856544
+eigen_success,yes
+min_eigenvalue,0.258341875865381
+max_eigenvalue,134.962440606427
+positive_definite,yes
+condition_number_abs,522.417978712652
+eigenvalues,0.258341875865381;134.962440606427

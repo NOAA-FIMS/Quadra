@@ -1,0 +1,17 @@
+field,value
+random_effects,20
+fd_tol,1e-08
+quadra_pattern_available,yes
+quadra_pattern_detected_structure,dense
+quadra_pattern_nonzeros_reported,364
+available,yes
+fd_nonzeros_all,364
+fd_nonzeros_upper_including_diag,192
+fd_nonzeros_diag,20
+fd_nonzeros_offdiag_all,344
+fd_nonzeros_offdiag_upper,172
+fd_density_all,0.91
+fd_density_upper,0.914286
+max_abs_fd,61.5961
+min_abs_fd_nonzero,0.00319442
+note,OptPatternInfo does not currently expose individual pattern entries; this compares reported Quadra count to finite-difference numerical sparsity.
