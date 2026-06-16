@@ -1,0 +1,16 @@
+scenario,projection_year,catch_mt
+zero_catch,21,0
+zero_catch,22,0
+zero_catch,23,0
+zero_catch,24,0
+zero_catch,25,0
+status_quo,21,265
+status_quo,22,265
+status_quo,23,265
+status_quo,24,265
+status_quo,25,265
+high_catch,21,340
+high_catch,22,340
+high_catch,23,340
+high_catch,24,340
+high_catch,25,340

@@ -1,0 +1,12 @@
+field,value
+random_effects,20
+available,yes
+pattern_entries,364
+hessian_nonzeros,364
+min_diagonal,44.4444444444444
+max_diagonal,61.5960549055631
+eigen_success,yes
+min_eigenvalue,10.218388968671
+max_eigenvalue,112.23903204398
+positive_definite,yes
+condition_number_abs,10.9840242320094

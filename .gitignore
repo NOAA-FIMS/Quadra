@@ -27,4 +27,6 @@ patch_*.sh
 repair_*.sh
 inspect_*.sh
 remove_*.sh
+#logs
+examples/NMFS/*/outputs/*.log
 # Editors

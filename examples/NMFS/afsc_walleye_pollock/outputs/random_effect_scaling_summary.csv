@@ -1,0 +1,7 @@
+random_effects,exit_code,objective,grad_norm,converged,max_grad_param,max_grad_value,max_abs_grad,message
+0,0,4.50715427008526,0.000390386819284328,yes,log_r0,-0.000287929677760686,0.00028793,converged to requested fixed-effect gradient tolerance
+1,0,3.60648055858289,0.0051618556189938,yes,log_r0,-0.00513839544761058,0.0051384,converged to requested fixed-effect gradient tolerance
+2,0,2.71970593968494,0.00911009377293731,yes,log_r0,-0.00910888327532164,0.00910888,converged to requested fixed-effect gradient tolerance
+5,0,0.0758352782119642,0.0049615019647371,yes,log_r0,-0.00496143705959104,0.00496144,converged to requested fixed-effect gradient tolerance
+10,0,-4.75367184554796,0.00476630837072591,yes,log_r0,0.00476517435115792,0.00476517,converged to requested fixed-effect gradient tolerance
+20,0,-14.3868374903643,0.00522172190975378,yes,log_r0,0.00522172081699299,0.00522172,converged to requested fixed-effect gradient tolerance

@@ -1,3 +1,4 @@
+#include "laplace/exact_gradient_workspace.hpp"
 #include <algorithm>
 #include <random>
 #ifndef QUADRA_LAPLACE_HPP
@@ -11,6 +12,7 @@
 #include "autodiff.hpp"
 #include "evaluation.hpp"
 #include "laplace/laplace_evaluator_exact_gradient_integration.hpp"
+#include "laplace/laplace_gradient_diagnostics.hpp"
 #include <cassert>
 #include <cmath>
 #include <iomanip>
@@ -446,11 +448,14 @@ template <typename Model>
 std::vector<double> solve_random_effects_laplace(
     Model &model, ParameterVector &params, const Eigen::VectorXd &x,
     const std::vector<int> &fixed_idx, const std::vector<int> &random_idx,
-    had::ADGraph &graph) {
+    had::ADGraph &graph, const std::vector<double> *u_init_override = nullptr) {
   const int max_iter = 20;
   const double tol = 1e-8;
 
-  std::vector<double> u(random_idx.size(), 0.0);
+  std::vector<double> u = (u_init_override != nullptr &&
+                           u_init_override->size() == random_idx.size())
+                              ? *u_init_override
+                              : std::vector<double>(random_idx.size(), 0.0);
 
   for (int iter = 0; iter < max_iter; ++iter) {
 
@@ -492,11 +497,12 @@ std::vector<double> solve_random_effects_laplace(
     }
 
     if (g.norm() < tol) {
-      std::cout << "Newton: " << "inner iter = " << std::setw(3) << iter + 1
-                << ", fx = " << std::setw(14) << std::fixed
-                << std::setprecision(6) << nll.val
-                << ", |grad| = " << std::setw(12) << std::fixed
-                << std::setprecision(6) << g.norm() << "\n";
+      if (false)
+        std::cout << "Newton: " << "inner iter = " << std::setw(3) << iter + 1
+                  << ", fx = " << std::setw(14) << std::fixed
+                  << std::setprecision(6) << nll.val
+                  << ", |grad| = " << std::setw(12) << std::fixed
+                  << std::setprecision(6) << g.norm() << "\n";
       return u;
     }
 
@@ -528,11 +534,12 @@ std::vector<double> solve_random_effects_laplace(
       throw std::runtime_error(
           "Sparse Hessian solve failed in solve_random_effects_laplace");
     }
-    std::cout << "Newton: " << "inner iter = " << std::setw(3) << iter + 1
-              << ", fx = " << std::setw(14) << std::fixed
-              << std::setprecision(6) << nll.val
-              << ", |grad| = " << std::setw(12) << std::fixed
-              << std::setprecision(6) << g.norm() << "\n";
+    if (false)
+      std::cout << "Newton: " << "inner iter = " << std::setw(3) << iter + 1
+                << ", fx = " << std::setw(14) << std::fixed
+                << std::setprecision(6) << nll.val
+                << ", |grad| = " << std::setw(12) << std::fixed
+                << std::setprecision(6) << g.norm() << "\n";
     // --------------------------------------------------
     // Newton update
     // --------------------------------------------------
@@ -984,6 +991,8 @@ Eigen::SparseMatrix<double> random_hessian_directional_fd(
   Eigen::SparseMatrix<double> Hminus =
       compute_random_hessian_sparse(model, params);
 
+  const auto timing_hdot_end = std::chrono::steady_clock::now();
+
   // Restore baseline state for caller hygiene.
   inject_fixed_params(theta, params, fixed_idx);
   inject_random_params(u, params, random_idx);
@@ -1090,6 +1099,156 @@ Eigen::SparseMatrix<double> random_hessian_directional_exact(
   return Hdot;
 }
 
+template <typename Model>
+std::vector<Eigen::SparseMatrix<double>> random_hessian_directional_exact_all(
+    Model &model, ParameterVector &params, const Eigen::VectorXd &theta,
+    const Eigen::VectorXd &u_hat, const Eigen::MatrixXd &du_dtheta,
+    const SparseHessianPattern &pattern) {
+  const auto fixed_idx = build_fixed_index(params);
+  const auto random_idx = build_random_index(params);
+
+  if (du_dtheta.rows() != u_hat.size() || du_dtheta.cols() != theta.size()) {
+    throw std::invalid_argument(
+        "random_hessian_directional_exact_all: du_dtheta has wrong shape");
+  }
+
+  had::ADGraph graph;
+  ADScope scope(graph);
+
+  std::vector<AD> p_full;
+  p_full.reserve(static_cast<size_t>(params.size()));
+
+  for (int i = 0; i < params.size(); ++i) {
+    p_full.emplace_back(AD(0.0));
+  }
+
+  std::vector<double> u(u_hat.data(), u_hat.data() + u_hat.size());
+
+  inject_fixed_params(theta, p_full, fixed_idx);
+  inject_random_params(u, p_full, random_idx);
+
+  AD nll = model(p_full);
+
+  had::g_ADGraph = &scope.graph;
+
+  const int n = static_cast<int>(random_idx.size());
+  std::vector<Eigen::SparseMatrix<double>> out(
+      static_cast<size_t>(theta.size()));
+
+  for (Eigen::Index theta_i = 0; theta_i < theta.size(); ++theta_i) {
+    // Reset primal tangents.
+    for (size_t k = 0; k < fixed_idx.size(); ++k) {
+      const double d = (static_cast<Eigen::Index>(k) == theta_i) ? 1.0 : 0.0;
+      p_full[static_cast<size_t>(fixed_idx[k])].dot = d;
+      graph.vertices[p_full[static_cast<size_t>(fixed_idx[k])].varId].dot = d;
+    }
+
+    for (size_t r = 0; r < random_idx.size(); ++r) {
+      const double d = du_dtheta(static_cast<Eigen::Index>(r), theta_i);
+      p_full[static_cast<size_t>(random_idx[r])].dot = d;
+      graph.vertices[p_full[static_cast<size_t>(random_idx[r])].varId].dot = d;
+    }
+
+    laplace::reset_had_quadra_directional_reverse_state(graph);
+    laplace::retangent_had_quadra_graph(graph);
+
+    had::SetAdjoint(nll, 1.0);
+    had::PropagateAdjointDirectional();
+
+    std::vector<Eigen::Triplet<double>> triplets;
+    triplets.reserve(pattern.size());
+
+    for (const auto &[i, j] : pattern) {
+      const double hij_dot = had::GetAdjointDot(
+          p_full[static_cast<size_t>(random_idx[static_cast<size_t>(i)])],
+          p_full[static_cast<size_t>(random_idx[static_cast<size_t>(j)])]);
+
+      if (std::abs(hij_dot) > 1e-12) {
+        triplets.emplace_back(i, j, hij_dot);
+      }
+    }
+
+    Eigen::SparseMatrix<double> Hdot(n, n);
+    Hdot.setFromTriplets(triplets.begin(), triplets.end());
+    Hdot.makeCompressed();
+
+    out[static_cast<size_t>(theta_i)] = std::move(Hdot);
+  }
+
+  return out;
+}
+
+template <typename Model, typename SelectedInverseAccessor>
+Eigen::VectorXd random_hessian_trace_terms_exact_workspace(
+    Model &model, ParameterVector &params, const Eigen::VectorXd &theta,
+    const Eigen::VectorXd &u_hat, const Eigen::MatrixXd &du_dtheta,
+    const SparseHessianPattern &pattern,
+    SelectedInverseAccessor &&selected_inverse) {
+  const auto fixed_idx = build_fixed_index(params);
+  const auto random_idx = build_random_index(params);
+
+  if (du_dtheta.rows() != u_hat.size() || du_dtheta.cols() != theta.size()) {
+    throw std::invalid_argument("random_hessian_trace_terms_exact_workspace: "
+                                "du_dtheta has wrong shape");
+  }
+
+  std::vector<laplace::SparseHdotPatternEntry> workspace_pattern;
+  workspace_pattern.reserve(pattern.size());
+  for (const auto &[i, j] : pattern) {
+    workspace_pattern.emplace_back(i, j);
+  }
+
+  laplace::ExactGradientWorkspace workspace;
+  std::vector<had::AReal> fixed_effects;
+  std::vector<had::AReal> random_effects;
+
+  auto builder = [&]() {
+    fixed_effects.clear();
+    random_effects.clear();
+
+    for (Eigen::Index i = 0; i < theta.size(); ++i) {
+      fixed_effects.emplace_back(theta[i]);
+    }
+    for (Eigen::Index i = 0; i < u_hat.size(); ++i) {
+      random_effects.emplace_back(u_hat[i]);
+    }
+
+    std::vector<AD> p_full;
+    p_full.reserve(static_cast<std::size_t>(params.size()));
+    for (int ip = 0; ip < params.size(); ++ip) {
+      p_full.emplace_back(AD(0.0));
+    }
+
+    for (std::size_t k = 0; k < fixed_idx.size(); ++k) {
+      p_full[static_cast<std::size_t>(fixed_idx[k])] = fixed_effects[k];
+    }
+    for (std::size_t k = 0; k < random_idx.size(); ++k) {
+      p_full[static_cast<std::size_t>(random_idx[k])] = random_effects[k];
+    }
+
+    return model(p_full);
+  };
+
+  workspace.Build(builder, &fixed_effects, &random_effects);
+
+  workspace.PropagateBaseAdjoint();
+
+  workspace.SeedTotalDirections(
+      static_cast<std::size_t>(theta.size()),
+      [&](std::size_t k, Eigen::VectorXd &theta_direction,
+          Eigen::VectorXd &random_direction) {
+        theta_direction = Eigen::VectorXd::Zero(theta.size());
+        random_direction = du_dtheta.col(static_cast<Eigen::Index>(k));
+        theta_direction[static_cast<Eigen::Index>(k)] = 1.0;
+      });
+
+  workspace.PropagateDirectionalBatch();
+
+  return workspace.TraceTermsSelectedInverse(
+      std::forward<SelectedInverseAccessor>(selected_inverse),
+      workspace_pattern);
+}
+
 //==================================================
 // Exact Laplace log-determinant gradient contribution
 //
@@ -1116,6 +1275,7 @@ Eigen::VectorXd laplace_logdet_gradient_exact(
     Model &model, ParameterVector &params, const Eigen::VectorXd &theta,
     const Eigen::VectorXd &u_hat,
     const LaplaceOptions &options = default_laplace_options()) {
+  const auto timing_logdet_exact_start = std::chrono::steady_clock::now();
   const auto fixed_idx = build_fixed_index(params);
   const auto random_idx = build_random_index(params);
 
@@ -1132,6 +1292,8 @@ Eigen::VectorXd laplace_logdet_gradient_exact(
   //   2. the baseline H_uu numeric values,
   //   3. the matrix used for log-det trace solves.
   // --------------------------------------------------
+  const auto timing_baseline_start = std::chrono::steady_clock::now();
+
   had::ADGraph pattern_graph;
   ADScope pattern_scope(pattern_graph);
 
@@ -1156,15 +1318,21 @@ Eigen::VectorXd laplace_logdet_gradient_exact(
       extract_sparse_hessian(pattern_scope, p_pattern, random_idx,
                              get_pattern_for_logdet, options.hessian_drop_tol);
 
+  const auto timing_baseline_end = std::chrono::steady_clock::now();
+
   // --------------------------------------------------
   // Factorize H_uu.
   //
   // Adaptive jitter is applied only if the unmodified H fails.
   // --------------------------------------------------
+  const auto timing_factor_start = std::chrono::steady_clock::now();
+
   Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> solver;
 
   Eigen::SparseMatrix<double> H_factor = factorize_with_adaptive_jitter(
       H, solver, "laplace_logdet_gradient_exact", options);
+
+  const auto timing_factor_end = std::chrono::steady_clock::now();
 
   // --------------------------------------------------
   // Compute all implicit random-effect sensitivities:
@@ -1173,49 +1341,134 @@ Eigen::VectorXd laplace_logdet_gradient_exact(
   //
   // Reuse the same H_uu factorization used for trace solves.
   // --------------------------------------------------
+  const auto timing_du_start = std::chrono::steady_clock::now();
+
   Eigen::MatrixXd dU =
       implicit_du_dtheta_all(model, params, theta, u_hat, &H_factor, &solver);
 
+  laplace::diagnostics::print_du_dtheta_summary(dU);
+
+  const auto timing_du_end = std::chrono::steady_clock::now();
+
+  const auto timing_hdot_start = std::chrono::steady_clock::now();
+
   Eigen::VectorXd grad = Eigen::VectorXd::Zero(theta.size());
 
+  const auto Hdots = random_hessian_directional_exact_all(
+      model, params, theta, u_hat, dU, get_pattern_for_logdet);
+
   for (Eigen::Index i = 0; i < theta.size(); ++i) {
-    // Exact directional Hessian:
-    //
-    //     Hdot = D H_uu(theta, u*) [e_i, du*/dtheta_i]
-    //
-    Eigen::SparseMatrix<double> Hdot = random_hessian_directional_exact(
-        model, params, theta, u_hat, i, dU.col(i), get_pattern_for_logdet);
-
-#ifdef QUADRA_VALIDATE_HDOT
-    if (options.validate_hdot) {
-      constexpr double validation_eps = 1e-5;
-
-      Eigen::SparseMatrix<double> Hdot_fd =
-          random_hessian_directional_implicit_fd_with_du(
-              model, params, theta, u_hat, i, dU.col(i), validation_eps);
-
-      Eigen::SparseMatrix<double> diff = Hdot - Hdot_fd;
-
-      const double fd_norm = Hdot_fd.norm();
-
-      const double rel_err = diff.norm() / std::max(1e-12, fd_norm);
-
-      std::cout << "Quadra Hdot validation: fixed index " << i
-                << ", rel_err = " << rel_err << ", exact_norm = " << Hdot.norm()
-                << ", fd_norm = " << fd_norm
-                << ", exact nnz = " << Hdot.nonZeros()
-                << ", fd nnz = " << Hdot_fd.nonZeros() << "\n";
-    }
-#endif
+    const Eigen::SparseMatrix<double> &Hdot =
+        Hdots[static_cast<std::size_t>(i)];
 
     grad[i] =
         0.5 * logdet_directional_derivative_from_hdot(solver, Hdot, options);
   }
 
+#ifdef QUADRA_DEBUG_LOGDET_THETA_ONLY_VS_TOTAL
+  {
+    const Eigen::MatrixXd zero_dU =
+        Eigen::MatrixXd::Zero(u_hat.size(), theta.size());
+
+    const auto Hdots_theta_only = random_hessian_directional_exact_all(
+        model, params, theta, u_hat, zero_dU, get_pattern_for_logdet);
+
+    Eigen::VectorXd theta_only = Eigen::VectorXd::Zero(theta.size());
+    for (Eigen::Index i = 0; i < theta.size(); ++i) {
+      theta_only[i] =
+          0.5 *
+          logdet_directional_derivative_from_hdot(
+              solver, Hdots_theta_only[static_cast<std::size_t>(i)], options);
+    }
+
+    laplace::diagnostics::print_theta_only_vs_total_logdet_gradient(theta_only,
+                                                                    grad);
+  }
+#endif
+
+#ifdef QUADRA_DEBUG_HDOT_EXACT_VS_FD_TRACE
+  {
+    Eigen::VectorXd fd_trace = Eigen::VectorXd::Zero(theta.size());
+    Eigen::VectorXd exact_trace = Eigen::VectorXd::Zero(theta.size());
+    Eigen::VectorXd rel_hdot_err = Eigen::VectorXd::Zero(theta.size());
+
+    for (Eigen::Index i = 0; i < theta.size(); ++i) {
+      const Eigen::SparseMatrix<double> Hdot_fd =
+          random_hessian_directional_implicit_fd_with_du(
+              model, params, theta, u_hat, i, dU.col(i), 1.0e-5);
+
+      const Eigen::SparseMatrix<double> &Hdot_exact =
+          Hdots[static_cast<std::size_t>(i)];
+
+      fd_trace[i] = 0.5 * logdet_directional_derivative_from_hdot(
+                              solver, Hdot_fd, options);
+      exact_trace[i] = 0.5 * logdet_directional_derivative_from_hdot(
+                                 solver, Hdot_exact, options);
+
+      const Eigen::SparseMatrix<double> diff = Hdot_exact - Hdot_fd;
+      rel_hdot_err[i] = diff.norm() / std::max(1.0e-12, Hdot_fd.norm());
+    }
+
+    laplace::diagnostics::print_hdot_exact_vs_fd_trace(exact_trace, fd_trace,
+                                                       rel_hdot_err);
+  }
+#endif
+
+  const auto timing_hdot_end = std::chrono::steady_clock::now();
+
+#ifdef QUADRA_VALIDATE_EXACT_GRADIENT_WORKSPACE
+  auto selected_inverse = [&](int row, int col) -> double {
+    Eigen::VectorXd e = Eigen::VectorXd::Zero(H.rows());
+    e[col] = 1.0;
+    Eigen::VectorXd x = solver.solve(e);
+    return x[row];
+  };
+
+  const Eigen::VectorXd workspace_trace =
+      random_hessian_trace_terms_exact_workspace(model, params, theta, u_hat,
+                                                 dU, get_pattern_for_logdet,
+                                                 selected_inverse);
+
+  Eigen::VectorXd trusted_trace = Eigen::VectorXd::Zero(theta.size());
+  for (Eigen::Index ii = 0; ii < theta.size(); ++ii) {
+    trusted_trace[ii] = 2.0 * grad[ii];
+  }
+
+  const double workspace_rel_err = (workspace_trace - trusted_trace).norm() /
+                                   std::max(1.0e-12, trusted_trace.norm());
+
+  std::cout << "ExactGradientWorkspace trace rel_err=" << workspace_rel_err
+            << " workspace_norm=" << workspace_trace.norm()
+            << " trusted_norm=" << trusted_trace.norm() << "\n";
+#endif
+
   // Restore baseline state for caller hygiene.
   inject_fixed_params(theta, params, fixed_idx);
   inject_random_params(u, params, random_idx);
 
+  const auto timing_logdet_exact_end = std::chrono::steady_clock::now();
+  const double total_ms =
+      std::chrono::duration<double, std::milli>(timing_logdet_exact_end -
+                                                timing_logdet_exact_start)
+          .count();
+  const double baseline_ms = std::chrono::duration<double, std::milli>(
+                                 timing_baseline_end - timing_baseline_start)
+                                 .count();
+  const double factor_ms = std::chrono::duration<double, std::milli>(
+                               timing_factor_end - timing_factor_start)
+                               .count();
+  const double du_ms =
+      std::chrono::duration<double, std::milli>(timing_du_end - timing_du_start)
+          .count();
+  const double hdot_ms = std::chrono::duration<double, std::milli>(
+                             timing_hdot_end - timing_hdot_start)
+                             .count();
+
+#ifdef QUADRA_PROFILE_LAPLACE_LOGDET_GRADIENT
+  std::cout << "laplace_logdet_gradient_exact ms = " << total_ms
+            << " baseline=" << baseline_ms << " factor=" << factor_ms
+            << " du=" << du_ms << " hdot_trace=" << hdot_ms << "\n";
+#endif
   return grad;
 }
 
@@ -1232,6 +1485,17 @@ Eigen::VectorXd laplace_logdet_gradient_fd(Model &model,
 }
 
 template <typename Model> struct LaplaceResult {
+
+  // Component breakdown of the Laplace objective:
+  //
+  //   value = joint_objective + 0.5 * laplace_logdet - laplace_constant
+  //
+  // These are intentionally stored for diagnostics/reporting and for
+  // optimizer-side bookkeeping. They do not change the objective math.
+  double joint_objective = 0.0;
+  double laplace_logdet = 0.0;
+  double laplace_constant = 0.0;
+
   double value;
   std::vector<double> grad_x;
   std::vector<double> grad_u;
@@ -1300,7 +1564,10 @@ LaplaceResult<Model> laplace_eval_at_u_star(
   // Or, if vectorD() is unavailable:
   // double logdet = sparse_logdet_llt(H);
 
-  res.value = value_of(nll) + 0.5 * logdet;
+  const double laplace_constant =
+      0.5 * static_cast<double>(random_idx.size()) * std::log(2.0 * M_PI);
+
+  res.value = value_of(nll) + 0.5 * logdet - laplace_constant;
 
   return res;
 }

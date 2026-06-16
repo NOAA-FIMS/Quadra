@@ -20,6 +20,10 @@ struct TridiagonalValues {
   Eigen::VectorXd offdiag; // offdiag[i - 1] = H(i, i - 1)
 };
 
+struct SparseMatrixValues {
+  Eigen::SparseMatrix<double> H;
+};
+
 struct BandedValues {
   int bandwidth = 0;
   Eigen::VectorXd diag;
@@ -92,6 +96,29 @@ inline double lower_band_value(const BandedValues &H, const int i,
   if (j < 0 || j >= band.size())
     return 0.0;
   return band[j];
+}
+
+inline double logdet_sparse_matrix_values_ldlt(const SparseMatrixValues &H) {
+  Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> solver;
+  solver.compute(H.H);
+
+  if (solver.info() != Eigen::Success) {
+    throw std::runtime_error("SparseMatrixValues LDLT factorization failed");
+  }
+
+  const auto d = solver.vectorD();
+  double logdet = 0.0;
+
+  for (Eigen::Index i = 0; i < d.size(); ++i) {
+    const double di = std::abs(d[i]);
+    if (!(di > 0.0) || !std::isfinite(di)) {
+      throw std::runtime_error(
+          "SparseMatrixValues Hessian has invalid LDLT diagonal");
+    }
+    logdet += std::log(di);
+  }
+
+  return logdet;
 }
 
 inline double logdet_banded_values_ldlt(const BandedValues &H) {

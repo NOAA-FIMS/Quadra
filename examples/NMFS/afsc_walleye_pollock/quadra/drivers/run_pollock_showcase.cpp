@@ -1,0 +1,26 @@
+// Clean Pollock showcase driver
+// =============================
+//
+// This file intentionally keeps the public entry point small. The current
+// implementation still lives in ../quadra/walleye_pollock.cpp while the model
+// is being migrated into model/, data/, reports/, and diagnostics/.
+//
+// Why include the implementation file directly?
+//   - It keeps the current demo behavior unchanged.
+//   - It gives reviewers a clean entry point today.
+//   - It lets us move internals gradually without destabilizing the example.
+//
+// Final target:
+//
+//   #include "../model/pollock_model.hpp"
+//   #include "../data/pollock_data.hpp"
+//   #include "../reports/pollock_reports.hpp"
+//
+//   int main() {
+//     auto data = pollock_example::load_pollock_data(...);
+//     auto model = pollock_example::make_pollock_model(data);
+//     auto fit = quadra::optimize_lbfgs(model, params, opts);
+//     pollock_example::write_pollock_reports(...);
+//   }
+
+#include "../walleye_pollock.cpp"

@@ -11,8 +11,8 @@
 namespace quadra {
 namespace laplace {
 
-using StructuredValues =
-    std::variant<DiagonalValues, TridiagonalValues, BandedValues>;
+using StructuredValues = std::variant<DiagonalValues, TridiagonalValues,
+                                      BandedValues, SparseMatrixValues>;
 
 inline DiagonalValues
 extract_diagonal_values(const Eigen::SparseMatrix<double> &H) {
@@ -105,9 +105,11 @@ extract_structured_values(const Eigen::SparseMatrix<double> &H,
     return extract_banded_values(H, rec.bandwidth);
 
   case LaplaceBackendKind::SparseLDLT:
-  case LaplaceBackendKind::DenseLDLT:
-    throw std::invalid_argument(
-        "Structured value extraction is not implemented for requested backend");
+  case LaplaceBackendKind::DenseLDLT: {
+    SparseMatrixValues values;
+    values.H = H;
+    return values;
+  }
   }
 
   throw std::invalid_argument("Unknown backend recommendation");
@@ -236,8 +238,11 @@ update_structured_values_from_hessian(StructuredValues &values,
 
   case LaplaceBackendKind::SparseLDLT:
   case LaplaceBackendKind::DenseLDLT:
-    throw std::invalid_argument(
-        "Structured value update is not implemented for requested backend");
+    if (!std::holds_alternative<SparseMatrixValues>(values)) {
+      values = SparseMatrixValues();
+    }
+    std::get<SparseMatrixValues>(values).H = H;
+    return;
   }
 
   throw std::invalid_argument("Unknown backend recommendation");
@@ -254,6 +259,8 @@ inline double logdet_structured_values(const StructuredValues &values) {
           return logdet_tridiagonal_values_ldlt(v);
         } else if constexpr (std::is_same_v<T, BandedValues>) {
           return logdet_banded_values_ldlt(v);
+        } else if constexpr (std::is_same_v<T, SparseMatrixValues>) {
+          return logdet_sparse_matrix_values_ldlt(v);
         } else {
           throw std::invalid_argument("Unsupported structured value type");
         }

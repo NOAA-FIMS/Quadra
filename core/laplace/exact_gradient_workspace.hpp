@@ -217,11 +217,7 @@ public:
             (*random_effects_)[static_cast<std::size_t>(entry.col)],
             static_cast<int>(k));
 
-        if (entry.row == entry.col) {
-          trace += Hinv(entry.row, entry.col) * hdot;
-        } else {
-          trace += 2.0 * Hinv(entry.row, entry.col) * hdot;
-        }
+        trace += Hinv(entry.row, entry.col) * hdot;
       }
 
       traces[static_cast<int>(k)] = trace;
@@ -254,12 +250,7 @@ public:
             static_cast<int>(k));
 
         const double hinv = selected_inverse(entry.row, entry.col);
-
-        if (entry.row == entry.col) {
-          trace += hinv * hdot;
-        } else {
-          trace += 2.0 * hinv * hdot;
-        }
+        trace += hinv * hdot;
       }
 
       traces[static_cast<int>(k)] = trace;
