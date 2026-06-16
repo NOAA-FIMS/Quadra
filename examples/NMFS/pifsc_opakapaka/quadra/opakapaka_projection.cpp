@@ -136,6 +136,8 @@ void polish_single_logq_if_helpful(Model &model,
                                    quadra::LaplaceOptions &opts,
                                    quadra::OptResult &fit)
 {
+  constexpr double OPAKAPAKA_POLISH_MIN_MEANINGFUL_STEP = 1.0e-8;
+  constexpr double OPAKAPAKA_POLISH_MIN_MEANINGFUL_DECREASE = 1.0e-10;
   if (fit.par.size() != 1)
   {
     return;
@@ -193,7 +195,11 @@ void polish_single_logq_if_helpful(Model &model,
   }
 
   double step = -g / curv;
-  const double max_step = 0.05;
+    if (std::abs(step) < OPAKAPAKA_POLISH_MIN_MEANINGFUL_STEP)
+  {
+    return;
+  }
+const double max_step = 0.05;
   if (step > max_step)
     step = max_step;
   if (step < -max_step)
@@ -1426,9 +1432,29 @@ int main()
   quadra::OptResult fit;
   bool primary_optimizer_converged = false;
   bool fallback_used = false;
+  std::string primary_optimizer_name = "profiled scalar Laplace";
   std::string primary_optimizer_status = "not run";
   double primary_optimizer_grad_norm = std::numeric_limits<double>::quiet_NaN();
 
+#ifndef OPAKAPAKA_USE_LBFGS_PRIMARY
+  // Opakapaka has one fixed effect and twenty random effects. For this
+  // geometry, the safeguarded profiled scalar Laplace optimizer is the
+  // appropriate primary optimizer: it directly optimizes log_q while profiling
+  // over the random effects and avoids quasi-Newton line-search pathologies.
+  fit = fit_log_q_fd_newton_fallback(model, params, opts,
+                                     params.params.at(0).value);
+
+  if (fit.converged)
+  {
+    fit.message =
+        "converged with safeguarded one-dimensional profiled log_q optimizer";
+  }
+
+  primary_optimizer_converged = fit.converged;
+  primary_optimizer_status = fit.message;
+  primary_optimizer_grad_norm = fit.grad_norm;
+#else
+  primary_optimizer_name = "L-BFGS";
   try
   {
     fit = quadra::optimize_lbfgs(model, params, opts);
@@ -1455,6 +1481,7 @@ int main()
     fit = fit_log_q_fd_newton_fallback(model, params, opts,
                                        params.params.at(0).value);
   }
+#endif
 
   const double fit_value_before_polish = fit.value;
   const double fit_grad_before_polish = fit.grad_norm;
@@ -1464,7 +1491,16 @@ int main()
       std::abs(fit.value - fit_value_before_polish) > 1.0e-10 ||
       std::abs(fit.grad_norm - fit_grad_before_polish) > 1.0e-10;
 
+#ifdef OPAKAPAKA_USE_LBFGS_PRIMARY
   fallback_used = fallback_used || polish_changed;
+#else
+  // In the default build, scalar optimization is primary. Optional scalar
+  // polishing is still part of that primary scalar workflow, not a fallback.
+  fallback_used = false;
+  primary_optimizer_converged = fit.converged;
+  primary_optimizer_status = fit.message;
+  primary_optimizer_grad_norm = fit.grad_norm;
+#endif
 
   const std::string convergence_status =
       primary_optimizer_converged && !fallback_used
@@ -1515,6 +1551,7 @@ int main()
   std::cout << "converged          "
             << ((fit.converged || fallback_used) ? "yes" : "no") << "\n";
   std::cout << "status             " << convergence_status << "\n";
+  std::cout << "primary_optimizer  " << primary_optimizer_name << "\n";
   std::cout << "fallback_used      " << (fallback_used ? "yes" : "no") << "\n";
   std::cout << "primary_converged  "
             << (primary_optimizer_converged ? "yes" : "no") << "\n";

@@ -1,6 +1,6 @@
 #include "red_snapper_age_structured.hpp"
 
-#include "../../../core/optimizer.hpp"
+#include "../../../../core/optimizer.hpp"
 
 #include <cmath>
 #include <fstream>

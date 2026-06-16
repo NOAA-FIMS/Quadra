@@ -1,19 +1,13 @@
 #pragma once
 
 #include "pollock_constants.hpp"
+#include "../../data/pollock_data.hpp"
 
 #include <cmath>
 #include <cstddef>
 #include <utility>
 #include <vector>
 
-struct Obs
-{
-  int year;
-  double catch_mt;
-  double index;
-  std::vector<double> age;
-};
 
 struct PollockModel
 {

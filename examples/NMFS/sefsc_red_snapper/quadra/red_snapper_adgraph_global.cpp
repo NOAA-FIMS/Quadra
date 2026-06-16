@@ -1,5 +1,6 @@
-#include "../../../core/had_quadra.hpp"
+#include "../../../../core/had_quadra.hpp"
 
-namespace had {
-threadDefine ADGraph* g_ADGraph = nullptr;
+namespace had
+{
+    threadDefine ADGraph *g_ADGraph = nullptr;
 }

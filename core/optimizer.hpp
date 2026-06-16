@@ -41,6 +41,12 @@ namespace quadra
 
   struct OptResult
   {
+    Eigen::VectorXd x;  // fitted fixed-effect vector
+    // Final fixed-effect gradient diagnostics for optimizer troubleshooting.
+    // Entries correspond to fixed_index and fixed_gradient_names.
+    std::vector<std::string> fixed_gradient_names;
+    std::vector<double> fixed_gradient;
+
     // Backward-compatible fixed-effect estimate.
     std::vector<double> par;
 
@@ -631,122 +637,219 @@ namespace quadra
     param.max_iterations = 100;
     param.m = 20;
     param.max_linesearch = 50;
+#ifdef QUADRA_LBFGS_GRAD_TOL
+    param.epsilon = QUADRA_LBFGS_GRAD_TOL;
+#else
     param.epsilon = 1.0e-4;
+#endif
     fun.epsilon = param.epsilon;
 
     LBFGSSolver<double> solver(param);
     double fx = std::numeric_limits<double>::quiet_NaN();
     int niter = 0;
 
-    try
-    {
-      niter = solver.minimize(fun, x, fx);
+    int line_search_recovery_attempts = 0;
+    bool line_search_recovery_used = false;
+    std::string line_search_recovery_message;
 
-      // quadra_lbfgs_honest_convergence_report_v1
-      double quadra_final_fixed_grad_norm =
-          std::numeric_limits<double>::quiet_NaN();
-      if (fun.last_grad.size() > 0)
+    constexpr int max_line_search_recovery_attempts = 2;
+    constexpr double recovery_step_initial = 1.0e-3;
+    constexpr double recovery_step_shrink = 0.5;
+    constexpr double recovery_step_min = 1.0e-12;
+
+    while (true)
+    {
+      try
       {
-        quadra_final_fixed_grad_norm = 0.0;
-        for (int quadra_i = 0; quadra_i < fun.last_grad.size(); ++quadra_i)
+        niter = solver.minimize(fun, x, fx);
+
+        // quadra_lbfgs_honest_convergence_report_v1
+        double quadra_final_fixed_grad_norm =
+            std::numeric_limits<double>::quiet_NaN();
+        if (fun.last_grad.size() > 0)
         {
-          quadra_final_fixed_grad_norm +=
-              fun.last_grad[quadra_i] * fun.last_grad[quadra_i];
+          quadra_final_fixed_grad_norm = 0.0;
+          for (int quadra_i = 0; quadra_i < fun.last_grad.size(); ++quadra_i)
+          {
+            quadra_final_fixed_grad_norm +=
+                fun.last_grad[quadra_i] * fun.last_grad[quadra_i];
+          }
+          quadra_final_fixed_grad_norm = std::sqrt(quadra_final_fixed_grad_norm);
         }
-        quadra_final_fixed_grad_norm = std::sqrt(quadra_final_fixed_grad_norm);
-      }
 
-      const bool quadra_requested_tol_met =
-          std::isfinite(quadra_final_fixed_grad_norm) &&
-          quadra_final_fixed_grad_norm <= 1.0e-4;
+        const bool quadra_requested_tol_met =
+            std::isfinite(quadra_final_fixed_grad_norm) &&
+            quadra_final_fixed_grad_norm <= 1.0e-4;
 
-      std::cout << "L-BFGS minimize status report" << std::endl;
-      std::cout << "  iterations returned by solver: " << niter << std::endl;
-      std::cout << "  final objective returned by solver: " << fx << std::endl;
-      std::cout << "  final fixed-gradient norm: " << quadra_final_fixed_grad_norm
-                << std::endl;
-      std::cout << "  requested gradient tolerance: " << std::scientific << 1.0e-4
-                << std::defaultfloat << std::endl;
-      std::cout << "  configured max-iteration field: " << 400
-                << " (LBFGSpp max_iterations)" << std::endl;
-      std::cout << "  requested tolerance met: "
-                << (quadra_requested_tol_met ? "yes" : "no") << std::endl;
-      std::cout << "  outer convergence interpretation: "
-                << (quadra_requested_tol_met
-                        ? "converged to requested gradient tolerance"
-                        : "stopped before requested gradient tolerance; inspect "
-                          "LBFGS status/max iterations/line search")
-                << std::endl;
-    }
-    catch (const LBFGSConvergedByGradient &)
-    {
-      if (fun.has_best_converged)
-      {
-        std::cout << "L-BFGS: stopped at first iterate satisfying requested "
-                     "fixed-effect gradient tolerance."
+        std::cout << "L-BFGS minimize status report" << std::endl;
+        std::cout << "  iterations returned by solver: " << niter << std::endl;
+        std::cout << "  final objective returned by solver: " << fx << std::endl;
+        std::cout << "  final fixed-gradient norm: "
+                  << quadra_final_fixed_grad_norm << std::endl;
+        std::cout << "  requested gradient tolerance: " << std::scientific
+                  << 1.0e-4 << std::defaultfloat << std::endl;
+        std::cout << "  configured max-iteration field: " << 400
+                  << " (LBFGSpp max_iterations)" << std::endl;
+        std::cout << "  requested tolerance met: "
+                  << (quadra_requested_tol_met ? "yes" : "no") << std::endl;
+        std::cout << "  outer convergence interpretation: "
+                  << (quadra_requested_tol_met
+                          ? "converged to requested gradient tolerance"
+                          : "stopped before requested gradient tolerance; inspect "
+                            "LBFGS status/max iterations/line search")
                   << std::endl;
-        fx = fun.best_converged_fx;
-        x = fun.best_converged_x;
-        niter = fun.best_converged_iter;
+        break;
       }
-      else
+      catch (const LBFGSConvergedByGradient &)
       {
-        throw;
-      }
-    }
-    catch (const std::runtime_error &e)
-    {
-      const double gnorm = safe_eigen_norm(fun.last_grad);
-      const double max_grad = (fun.last_grad.size() > 0)
-                                  ? fun.last_grad.cwiseAbs().maxCoeff()
-                                  : std::numeric_limits<double>::infinity();
-
-      const std::string msg = e.what();
-
-      std::cout << "L-BFGS runtime_error caught: " << msg << "\n";
-      std::cout << "  gnorm = " << gnorm << "\n";
-      std::cout << "  max|grad| = " << max_grad << "\n";
-
-      const bool line_search_failed =
-          msg.find("line search") != std::string::npos ||
-          msg.find("Line search") != std::string::npos;
-
-      // LBFGSpp may throw a line-search failure after the objective has
-      // effectively plateaued. For public examples and diagnostic workflows,
-      // return the best finite iterate instead of aborting, while keeping
-      // result.converged honest via the stricter param.epsilon check below.
-      const double convergence_like_grad = 2e-2;
-
-      if (gnorm <= param.epsilon)
-      {
-        std::cout << "L-BFGS: optimization reached convergence criterion "
-                  << "(|grad| <= epsilon). max|grad| = " << max_grad << std::endl;
-
-        if (fun.last_x.size() == x.size())
+        if (fun.has_best_converged)
         {
-          x = fun.last_x;
+          std::cout << "L-BFGS: stopped at first iterate satisfying requested "
+                       "fixed-effect gradient tolerance."
+                    << std::endl;
+          fx = fun.best_converged_fx;
+          x = fun.best_converged_x;
+          niter = fun.best_converged_iter;
+          break;
+        }
+        else
+        {
+          throw;
+        }
+      }
+      catch (const std::runtime_error &e)
+      {
+        const double gnorm = safe_eigen_norm(fun.last_grad);
+        const double max_grad = (fun.last_grad.size() > 0)
+                                    ? fun.last_grad.cwiseAbs().maxCoeff()
+                                    : std::numeric_limits<double>::infinity();
+
+        const std::string msg = e.what();
+
+        std::cout << "L-BFGS runtime_error caught: " << msg << "\n";
+        std::cout << "  gnorm = " << gnorm << "\n";
+        std::cout << "  max|grad| = " << max_grad << "\n";
+
+        const bool line_search_failed =
+            msg.find("line search") != std::string::npos ||
+            msg.find("Line search") != std::string::npos ||
+            msg.find("sufficiently decrease") != std::string::npos;
+
+        const double convergence_like_grad = 2e-2;
+
+        if (gnorm <= param.epsilon)
+        {
+          std::cout << "L-BFGS: optimization reached convergence criterion "
+                    << "(|grad| <= epsilon). max|grad| = " << max_grad
+                    << std::endl;
+
+          if (fun.last_x.size() == x.size())
+          {
+            x = fun.last_x;
+          }
+
+          fx = fun.last_fx;
+          niter = fun.iter;
+          break;
         }
 
-        fx = fun.last_fx;
-        niter = fun.iter;
-      }
-      else if (line_search_failed && max_grad < convergence_like_grad)
-      {
-        std::cout
-            << "L-BFGS: line search failed after a small fixed-effect gradient. "
-            << "Returning the last finite iterate as a non-converged result. "
-            << "max|grad| = " << max_grad << std::endl;
-
-        if (fun.last_x.size() == x.size())
+        if (line_search_failed &&
+            line_search_recovery_attempts < max_line_search_recovery_attempts &&
+            fun.last_x.size() == x.size() &&
+            fun.last_grad.size() == x.size() &&
+            std::isfinite(fun.last_fx) &&
+            fun.last_grad.allFinite() &&
+            safe_eigen_norm(fun.last_grad) > 0.0)
         {
-          x = fun.last_x;
+          ++line_search_recovery_attempts;
+          line_search_recovery_used = true;
+          line_search_recovery_message =
+              "L-BFGS line search stalled; recovered with gradient restart.";
+
+          const Eigen::VectorXd x0 = fun.last_x;
+          const Eigen::VectorXd g = fun.last_grad;
+          const double f0 = fun.last_fx;
+
+          bool accepted = false;
+          double alpha = recovery_step_initial;
+          const double min_meaningful_decrease =
+              1.0e-10 * std::max(1.0, std::abs(f0));
+
+          while (alpha >= recovery_step_min)
+          {
+            Eigen::VectorXd trial = x0 - alpha * g;
+            Eigen::VectorXd trial_grad;
+            const double f_trial = fun(trial, trial_grad);
+
+            if (std::isfinite(f_trial) &&
+                f_trial < f0 - min_meaningful_decrease)
+            {
+              x = trial;
+              fx = f_trial;
+              accepted = true;
+              break;
+            }
+
+            alpha *= recovery_step_shrink;
+          }
+
+          if (accepted)
+          {
+            std::cout
+                << "L-BFGS: line-search recovery accepted gradient restart "
+                << "step. attempt = " << line_search_recovery_attempts
+                << ", alpha = " << alpha << ", fx = " << fx << std::endl;
+
+            // LBFGSSolver stores param by reference and is not assignable.
+            // Calling minimize() again from the accepted recovery point
+            // rebuilds the quasi-Newton history inside LBFGSpp.
+            continue;
+          }
+
+          std::cout
+              << "L-BFGS: line-search recovery failed to find a decreasing "
+              << "gradient step." << std::endl;
         }
 
-        fx = fun.last_fx;
-        niter = fun.iter;
-      }
-      else
-      {
+        if (line_search_failed && max_grad < convergence_like_grad)
+        {
+          std::cout
+              << "L-BFGS: line search failed after a small fixed-effect gradient. "
+              << "Returning the last finite iterate as a non-converged result. "
+              << "max|grad| = " << max_grad << std::endl;
+
+          if (fun.last_x.size() == x.size())
+          {
+            x = fun.last_x;
+          }
+
+          fx = fun.last_fx;
+          niter = fun.iter;
+          break;
+        }
+
+        if (line_search_failed && fun.last_x.size() == x.size() &&
+            std::isfinite(fun.last_fx))
+        {
+          std::cout
+              << "L-BFGS: line search failed after recovery attempts. "
+              << "Returning the best finite iterate as a non-converged result "
+              << "so callers can inspect diagnostics. max|grad| = "
+              << max_grad << std::endl;
+
+          x = fun.last_x;
+          fx = fun.last_fx;
+          niter = fun.iter;
+
+          if (line_search_recovery_message.empty())
+          {
+            line_search_recovery_message =
+                "L-BFGS line search failed; returned best finite iterate.";
+          }
+
+          break;
+        }
+
         throw;
       }
     }
@@ -815,6 +918,22 @@ namespace quadra
     result.fixed_index = fixed_idx;
     result.random_index = random_idx;
 
+    result.fixed_gradient_names.clear();
+    result.fixed_gradient.clear();
+    result.fixed_gradient_names.reserve(fixed_idx.size());
+
+    for (size_t k = 0; k < fixed_idx.size(); ++k)
+    {
+      const auto idx = static_cast<size_t>(fixed_idx[k]);
+      result.fixed_gradient_names.push_back(params.params[idx].name);
+    }
+
+    if (fun.last_grad.size() == static_cast<Eigen::Index>(fixed_idx.size()))
+    {
+      result.fixed_gradient.assign(fun.last_grad.data(),
+                                   fun.last_grad.data() + fun.last_grad.size());
+    }
+
     result.value = selected_fx;
     result.joint_objective = fun.last_joint_objective;
 
@@ -862,6 +981,14 @@ namespace quadra
             ? "converged to requested fixed-effect gradient tolerance"
             : "stopped before requested fixed-effect gradient tolerance";
 
+    if (line_search_recovery_used)
+    {
+      result.message += "; ";
+      result.message += line_search_recovery_message;
+      result.message += " attempts=";
+      result.message += std::to_string(line_search_recovery_attempts);
+    }
+
     Eigen::VectorXd pattern_x = selected_x;
 
     if (!random_idx.empty())
@@ -879,6 +1006,7 @@ namespace quadra
       result.pattern.random_effect_count = 0;
     }
 
+    result.x = x;
     return result;
   }
 

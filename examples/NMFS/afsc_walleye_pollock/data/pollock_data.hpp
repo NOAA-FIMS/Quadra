@@ -6,6 +6,14 @@
 #include <string>
 #include <vector>
 
+struct Obs
+{
+  int year;
+  double catch_mt;
+  double index;
+  std::vector<double> age;
+};
+
 namespace pollock_example {
 
 struct PollockDataRow {
