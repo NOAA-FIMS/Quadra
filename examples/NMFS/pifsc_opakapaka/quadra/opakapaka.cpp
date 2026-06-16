@@ -1,11 +1,11 @@
 #include "../../../../core/uncertainty/reporting.hpp"
 #include "../../../../core/uncertainty/selected_inverse_diagonal.hpp"
-#include "opakapaka_model.hpp"
 #include "../data/opakapaka_io.hpp"
-#include "../diagnostics/opakapaka_logq_diagnostics.hpp"
-#include "../diagnostics/opakapaka_random_effect_diagnostics.hpp"
-#include "../diagnostics/opakapaka_projection_uncertainty.hpp"
 #include "../diagnostics/opakapaka_biomass_covariance_diagnostics.hpp"
+#include "../diagnostics/opakapaka_logq_diagnostics.hpp"
+#include "../diagnostics/opakapaka_projection_uncertainty.hpp"
+#include "../diagnostics/opakapaka_random_effect_diagnostics.hpp"
+#include "opakapaka_model.hpp"
 
 // QUADRA_OPAKAPAKA_USE_CORE_UNCERTAINTY_REPORTING_ROBUST_V2
 
@@ -21,33 +21,28 @@
 #include <string>
 #include <vector>
 
-namespace
-{
+namespace {
 
 // QUADRA_OPAKAPAKA_LOGQ_POLISH_V1
 template <class Model>
 void polish_single_logq_if_helpful(Model &model,
                                    quadra::ParameterVector &params,
                                    quadra::LaplaceOptions &opts,
-                                   quadra::OptResult &fit)
-{
+                                   quadra::OptResult &fit) {
   constexpr double OPAKAPAKA_POLISH_MIN_MEANINGFUL_STEP = 1.0e-8;
   constexpr double OPAKAPAKA_POLISH_MIN_MEANINGFUL_DECREASE = 1.0e-10;
-  if (fit.par.size() != 1)
-  {
+  if (fit.par.size() != 1) {
     return;
   }
 
   const std::vector<int> fixed_idx = {0};
   std::vector<int> random_idx;
-  for (std::size_t i = 1; i < params.size(); ++i)
-  {
+  for (std::size_t i = 1; i < params.size(); ++i) {
     random_idx.push_back(static_cast<int>(i));
   }
 
   auto eval_at = [&](double theta,
-                     std::vector<double> *out_u_hat = nullptr) -> double
-  {
+                     std::vector<double> *out_u_hat = nullptr) -> double {
     auto tmp = params;
     tmp.params.at(0).value = theta;
 
@@ -61,8 +56,7 @@ void polish_single_logq_if_helpful(Model &model,
     auto res = quadra::laplace_eval_at_u_star(model, tmp, fixed_idx, random_idx,
                                               x, u_hat, graph, opts);
 
-    if (out_u_hat != nullptr)
-    {
+    if (out_u_hat != nullptr) {
       *out_u_hat = u_hat;
     }
 
@@ -76,22 +70,19 @@ void polish_single_logq_if_helpful(Model &model,
   const double fm = eval_at(theta0 - h);
   const double fp = eval_at(theta0 + h);
 
-  if (!std::isfinite(fm) || !std::isfinite(fp) || !std::isfinite(f0))
-  {
+  if (!std::isfinite(fm) || !std::isfinite(fp) || !std::isfinite(f0)) {
     return;
   }
 
   const double g = (fp - fm) / (2.0 * h);
   const double curv = (fp - 2.0 * f0 + fm) / (h * h);
 
-  if (!std::isfinite(g) || !std::isfinite(curv) || curv <= 0.0)
-  {
+  if (!std::isfinite(g) || !std::isfinite(curv) || curv <= 0.0) {
     return;
   }
 
   double step = -g / curv;
-  if (std::abs(step) < OPAKAPAKA_POLISH_MIN_MEANINGFUL_STEP)
-  {
+  if (std::abs(step) < OPAKAPAKA_POLISH_MIN_MEANINGFUL_STEP) {
     return;
   }
   const double max_step = 0.05;
@@ -100,8 +91,7 @@ void polish_single_logq_if_helpful(Model &model,
   if (step < -max_step)
     step = -max_step;
 
-  if (!std::isfinite(step) || std::abs(step) < 1.0e-12)
-  {
+  if (!std::isfinite(step) || std::abs(step) < 1.0e-12) {
     return;
   }
 
@@ -109,8 +99,7 @@ void polish_single_logq_if_helpful(Model &model,
   const double theta1 = theta0 + step;
   const double f1 = eval_at(theta1, &polished_u_hat);
 
-  if (!std::isfinite(f1) || f1 >= f0)
-  {
+  if (!std::isfinite(f1) || f1 >= f0) {
     std::cout << "Opakapaka log_q polish rejected: " << "step = " << step
               << ", f0 = " << f0 << ", f1 = " << f1 << ", fd_grad = " << g
               << ", fd_curvature = " << curv << "\n";
@@ -121,16 +110,14 @@ void polish_single_logq_if_helpful(Model &model,
   const double fm2 = eval_at(theta1 - h2);
   const double fp2 = eval_at(theta1 + h2);
   double g2 = std::numeric_limits<double>::quiet_NaN();
-  if (std::isfinite(fm2) && std::isfinite(fp2))
-  {
+  if (std::isfinite(fm2) && std::isfinite(fp2)) {
     g2 = (fp2 - fm2) / (2.0 * h2);
   }
 
   fit.par.at(0) = theta1;
   fit.u_hat = polished_u_hat;
   fit.value = f1;
-  if (std::isfinite(g2))
-  {
+  if (std::isfinite(g2)) {
     fit.grad_norm = std::abs(g2);
   }
   fit.converged = true;
@@ -145,32 +132,15 @@ void polish_single_logq_if_helpful(Model &model,
 
 // QUADRA_LEVEL1_UNCERTAINTY_REPORTING_V3
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 inline void write_derived_quantities_csv(
     const std::string &path,
     const std::vector<opakapaka_example::Observation> &data,
-    const std::vector<double> &u_hat, double q_hat)
-{
+    const std::vector<double> &u_hat, double q_hat) {
   std::ofstream out(path);
   out << "year,biomass,index_hat,depletion,F_proxy\n";
   const double b0 = u_hat.empty() ? std::numeric_limits<double>::quiet_NaN()
                                   : std::exp(u_hat.front());
-  for (std::size_t i = 0; i < data.size() && i < u_hat.size(); ++i)
-  {
+  for (std::size_t i = 0; i < data.size() && i < u_hat.size(); ++i) {
     const double biomass = std::exp(u_hat[i]);
     const double depletion =
         b0 > 0.0 ? biomass / b0 : std::numeric_limits<double>::quiet_NaN();
@@ -184,12 +154,10 @@ inline void write_derived_quantities_csv(
 
 inline void write_pending_quantity_uncertainty_csv(
     const std::string &path,
-    const std::vector<opakapaka_example::Observation> &data)
-{
+    const std::vector<opakapaka_example::Observation> &data) {
   std::ofstream out(path);
   out << "year,quantity,estimate,se,lwr_95,upr_95,note\n";
-  for (const auto &obs : data)
-  {
+  for (const auto &obs : data) {
     out << obs.year << ",biomass,,,,,pending delta-method propagation\n";
     out << obs.year << ",depletion,,,,,pending delta-method propagation\n";
     out << obs.year << ",F_proxy,,,,,pending delta-method propagation\n";
@@ -198,12 +166,10 @@ inline void write_pending_quantity_uncertainty_csv(
 
 inline void write_projection_uncertainty_csv(
     const std::string &path,
-    const std::vector<opakapaka_example::ProjectionRow> &rows)
-{
+    const std::vector<opakapaka_example::ProjectionRow> &rows) {
   std::ofstream out(path);
   out << "scenario,year,quantity,estimate,se,lwr_95,upr_95,note\n";
-  for (const auto &row : rows)
-  {
+  for (const auto &row : rows) {
     out << row.scenario << "," << row.year << ",biomass," << row.biomass
         << ",,,,pending projection covariance/simulation envelope\n";
     out << row.scenario << "," << row.year << ",index," << row.index
@@ -214,8 +180,7 @@ inline void write_projection_uncertainty_csv(
 inline void write_runtime_memory_summary_csv(const std::string &path,
                                              double runtime_ms,
                                              std::size_t random_effects,
-                                             std::size_t hessian_nonzeros)
-{
+                                             std::size_t hessian_nonzeros) {
   std::ofstream out(path);
   out << "field,value\n";
   out << "fit_runtime_ms," << runtime_ms << "\n";
@@ -231,23 +196,19 @@ template <class Model>
 quadra::OptResult fit_log_q_fd_newton_fallback(Model &model,
                                                quadra::ParameterVector &params,
                                                quadra::LaplaceOptions &opts,
-                                               double initial_log_q)
-{
+                                               double initial_log_q) {
   const std::vector<int> fixed_idx = {0};
   std::vector<int> random_idx;
-  for (std::size_t i = 1; i < params.size(); ++i)
-  {
+  for (std::size_t i = 1; i < params.size(); ++i) {
     random_idx.push_back(static_cast<int>(i));
   }
 
-  struct Eval
-  {
+  struct Eval {
     double value = std::numeric_limits<double>::infinity();
     std::vector<double> u_hat;
   };
 
-  auto eval_at = [&](double theta) -> Eval
-  {
+  auto eval_at = [&](double theta) -> Eval {
     auto tmp = params;
     tmp.params.at(0).value = theta;
 
@@ -272,27 +233,23 @@ quadra::OptResult fit_log_q_fd_newton_fallback(Model &model,
   double curv = std::numeric_limits<double>::quiet_NaN();
   int iter = 0;
 
-  for (; iter < 25; ++iter)
-  {
+  for (; iter < 25; ++iter) {
     const double h = std::max(1.0e-5, 1.0e-4 * (1.0 + std::abs(theta)));
     const Eval left = eval_at(theta - h);
     const Eval right = eval_at(theta + h);
 
     if (!std::isfinite(left.value) || !std::isfinite(right.value) ||
-        !std::isfinite(cur.value))
-    {
+        !std::isfinite(cur.value)) {
       break;
     }
 
     grad = (right.value - left.value) / (2.0 * h);
     curv = (right.value - 2.0 * cur.value + left.value) / (h * h);
 
-    if (std::abs(grad) < 1.0e-4)
-    {
+    if (std::abs(grad) < 1.0e-4) {
       break;
     }
-    if (!std::isfinite(curv) || curv <= 0.0)
-    {
+    if (!std::isfinite(curv) || curv <= 0.0) {
       break;
     }
 
@@ -300,12 +257,10 @@ quadra::OptResult fit_log_q_fd_newton_fallback(Model &model,
     step = std::max(-1.0, std::min(1.0, step));
 
     bool accepted = false;
-    for (int bt = 0; bt < 20; ++bt)
-    {
+    for (int bt = 0; bt < 20; ++bt) {
       const double trial_theta = theta + step;
       Eval trial = eval_at(trial_theta);
-      if (std::isfinite(trial.value) && trial.value <= cur.value)
-      {
+      if (std::isfinite(trial.value) && trial.value <= cur.value) {
         theta = trial_theta;
         cur = std::move(trial);
         accepted = true;
@@ -314,8 +269,7 @@ quadra::OptResult fit_log_q_fd_newton_fallback(Model &model,
       step *= 0.5;
     }
 
-    if (!accepted || std::abs(step) < 1.0e-10)
-    {
+    if (!accepted || std::abs(step) < 1.0e-10) {
       break;
     }
   }
@@ -325,8 +279,7 @@ quadra::OptResult fit_log_q_fd_newton_fallback(Model &model,
     const double h = std::max(1.0e-5, 1.0e-4 * (1.0 + std::abs(theta)));
     const Eval left = eval_at(theta - h);
     const Eval right = eval_at(theta + h);
-    if (std::isfinite(left.value) && std::isfinite(right.value))
-    {
+    if (std::isfinite(left.value) && std::isfinite(right.value)) {
       grad = (right.value - left.value) / (2.0 * h);
     }
   }
@@ -349,20 +302,17 @@ quadra::OptResult fit_log_q_fd_newton_fallback(Model &model,
 
 // QUADRA_OPAKAPAKA_RANDOM_EFFECT_SELECTED_INVERSE_V1
 
-
 // QUADRA_OPAKAPAKA_DERIVED_QUANTITY_UNCERTAINTY_V1
 inline void write_derived_quantity_uncertainty_csv(
     const std::string &path,
     const std::vector<opakapaka_example::Observation> &data,
     const std::vector<double> &u_hat, double q_hat,
     const quadra::uncertainty::SelectedInverseDiagonalResult &u_cov,
-    const Eigen::SparseMatrix<double> &h_uu)
-{
+    const Eigen::SparseMatrix<double> &h_uu) {
   std::ofstream out(path);
   out << "year,quantity,estimate,se,lwr_95,upr_95,note\n";
 
-  if (u_hat.empty() || data.empty())
-  {
+  if (u_hat.empty() || data.empty()) {
     return;
   }
 
@@ -376,8 +326,7 @@ inline void write_derived_quantity_uncertainty_csv(
   // Var(log(B_t/B_0)) = Var(log_B_t) + Var(log_B_0) - 2 Cov(log_B_t, log_B_0).
   std::vector<std::pair<int, int>> depletion_covariance_pairs;
   depletion_covariance_pairs.reserve(u_hat.size());
-  for (std::size_t i = 0; i < u_hat.size(); ++i)
-  {
+  for (std::size_t i = 0; i < u_hat.size(); ++i) {
     depletion_covariance_pairs.emplace_back(static_cast<int>(i), 0);
   }
 
@@ -385,8 +334,7 @@ inline void write_derived_quantity_uncertainty_csv(
       quadra::uncertainty::selected_inverse_entries_from_spd_hessian(
           h_uu, depletion_covariance_pairs);
 
-  for (std::size_t i = 0; i < data.size() && i < u_hat.size(); ++i)
-  {
+  for (std::size_t i = 0; i < data.size() && i < u_hat.size(); ++i) {
     const double log_b = u_hat[i];
     const double biomass = std::exp(log_b);
     const double index_hat = q_hat * biomass;
@@ -410,8 +358,7 @@ inline void write_derived_quantity_uncertainty_csv(
 
     double cov_log_b_i_b0 = std::numeric_limits<double>::quiet_NaN();
     if (depletion_covariances.success &&
-        i < depletion_covariances.entries.size())
-    {
+        i < depletion_covariances.entries.size()) {
       cov_log_b_i_b0 = depletion_covariances.entries[i].covariance;
     }
 
@@ -431,8 +378,7 @@ inline void write_derived_quantity_uncertainty_csv(
                                   : std::numeric_limits<double>::quiet_NaN();
 
     auto write_row = [&](const char *quantity, double estimate, double se,
-                         const char *note)
-    {
+                         const char *note) {
       const double lwr = std::isfinite(se)
                              ? estimate - 1.96 * se
                              : std::numeric_limits<double>::quiet_NaN();
@@ -460,8 +406,7 @@ inline void write_derived_quantity_correlation_csv(
     const std::vector<opakapaka_example::Observation> &data,
     const quadra::uncertainty::SelectedInverseDiagonalResult &u_cov,
     const quadra::uncertainty::SelectedInverseEntriesResult
-        &depletion_covariances)
-{
+        &depletion_covariances) {
   std::ofstream out(path);
   out << "year,variance_logB0,variance_logBt,covariance_logBt_logB0,"
       << "correlation_logBt_logB0,note\n";
@@ -472,21 +417,18 @@ inline void write_derived_quantity_correlation_csv(
 
   const std::size_t n = std::min(data.size(), u_cov.variance.size());
 
-  for (std::size_t i = 0; i < n; ++i)
-  {
+  for (std::size_t i = 0; i < n; ++i) {
     const double var_log_bt = u_cov.variance[i];
 
     double cov_log_bt_b0 = std::numeric_limits<double>::quiet_NaN();
     if (depletion_covariances.success &&
-        i < depletion_covariances.entries.size())
-    {
+        i < depletion_covariances.entries.size()) {
       cov_log_bt_b0 = depletion_covariances.entries[i].covariance;
     }
 
     double corr = std::numeric_limits<double>::quiet_NaN();
     if (std::isfinite(var_log_b0) && std::isfinite(var_log_bt) &&
-        std::isfinite(cov_log_bt_b0) && var_log_b0 > 0.0 && var_log_bt > 0.0)
-    {
+        std::isfinite(cov_log_bt_b0) && var_log_b0 > 0.0 && var_log_bt > 0.0) {
       corr = cov_log_bt_b0 / std::sqrt(var_log_b0 * var_log_bt);
 
       // Guard tiny numerical drift outside [-1, 1].
@@ -504,33 +446,13 @@ inline void write_derived_quantity_correlation_csv(
 
 // QUADRA_OPAKAPAKA_BIOMASS_COVARIANCE_MATRIX_V1
 
-
-
-
 // QUADRA_OPAKAPAKA_PROJECTION_UNCERTAINTY_ENVELOPES_V1
-
-
-
-
-
-
-
 
 // QUADRA_OPAKAPAKA_BIOMASS_COVARIANCE_DIAGNOSTICS_V1
 
-
-
-
-
-
-
-
-
-
 } // namespace
 
-int main()
-{
+int main() {
   using namespace opakapaka_example;
 
   std::cout << "Synthetic opakapaka-style fit + projection example\n";
@@ -567,8 +489,7 @@ int main()
   fit = fit_log_q_fd_newton_fallback(model, params, opts,
                                      params.params.at(0).value);
 
-  if (fit.converged)
-  {
+  if (fit.converged) {
     fit.message =
         "converged with safeguarded one-dimensional profiled log_q optimizer";
   }
@@ -578,19 +499,15 @@ int main()
   primary_optimizer_grad_norm = fit.grad_norm;
 #else
   primary_optimizer_name = "L-BFGS";
-  try
-  {
+  try {
     fit = quadra::optimize_lbfgs(model, params, opts);
     primary_optimizer_converged = fit.converged;
     primary_optimizer_status = fit.message;
     primary_optimizer_grad_norm = fit.grad_norm;
-  }
-  catch (const std::runtime_error &e)
-  {
+  } catch (const std::runtime_error &e) {
     const std::string msg = e.what();
     if (msg.find("line search") == std::string::npos &&
-        msg.find("sufficiently decrease") == std::string::npos)
-    {
+        msg.find("sufficiently decrease") == std::string::npos) {
       throw;
     }
 
@@ -636,8 +553,7 @@ int main()
 
     state_out << "index,log_B,B\n";
 
-    for (std::size_t i = 0; i < fit.u_hat.size(); ++i)
-    {
+    for (std::size_t i = 0; i < fit.u_hat.size(); ++i) {
       state_out << i << "," << std::setprecision(15) << fit.u_hat[i] << ","
                 << std::setprecision(15) << std::exp(fit.u_hat[i]) << "\n";
     }
@@ -724,10 +640,8 @@ int main()
   std::cout << "------------------\n";
   std::cout << "scenario,year,catch_mt,biomass,index\n";
   int printed = 0;
-  for (const auto &row : projection)
-  {
-    if (printed >= 12)
-    {
+  for (const auto &row : projection) {
+    if (printed >= 12) {
       break;
     }
     std::cout << row.scenario << "," << row.year << "," << row.catch_mt << ","
@@ -774,8 +688,7 @@ int main()
   {
     std::vector<std::pair<int, int>> depletion_covariance_pairs;
     depletion_covariance_pairs.reserve(fit.u_hat.size());
-    for (std::size_t i = 0; i < fit.u_hat.size(); ++i)
-    {
+    for (std::size_t i = 0; i < fit.u_hat.size(); ++i) {
       depletion_covariance_pairs.emplace_back(static_cast<int>(i), 0);
     }
 
@@ -812,8 +725,7 @@ int main()
     const Eigen::MatrixXd log_b_cov_core =
         compute_log_b_covariance_submatrix(data, fit.u_hat, final_h_uu);
     Eigen::VectorXd log_b_core(static_cast<Eigen::Index>(n));
-    for (std::size_t i = 0; i < n; ++i)
-    {
+    for (std::size_t i = 0; i < n; ++i) {
       log_b_core[static_cast<Eigen::Index>(i)] = fit.u_hat[i];
     }
 
