@@ -19,7 +19,7 @@
 //   Move computation-side functional analysis summaries into core so examples
 //   only provide model, parameters, and fit result.
 
-#include "model_health.hpp"
+#include "../laplace/laplace_structure_report.hpp"
 #include "effective_structure.hpp"
 #include "functional_analysis_markdown.hpp"
-#include "../laplace/laplace_structure_report.hpp"
+#include "model_health.hpp"

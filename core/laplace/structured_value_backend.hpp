@@ -98,8 +98,7 @@ inline double lower_band_value(const BandedValues &H, const int i,
   return band[j];
 }
 
-inline double logdet_sparse_matrix_values_ldlt(
-    const SparseMatrixValues &H) {
+inline double logdet_sparse_matrix_values_ldlt(const SparseMatrixValues &H) {
   Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> solver;
   solver.compute(H.H);
 

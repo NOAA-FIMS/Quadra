@@ -34,15 +34,14 @@ struct DerivedRow {
 // This is intentionally minimal. The next patch should replace this with
 // Quadra AD/Laplace evaluation and recruitment deviations as random effects.
 class RedSnapperModel {
- public:
+public:
   explicit RedSnapperModel(std::vector<Observation> obs)
       : observations_(std::move(obs)) {}
 
-  const std::vector<Observation>& observations() const { return observations_; }
+  const std::vector<Observation> &observations() const { return observations_; }
 
-  std::vector<DerivedRow> deterministic_trajectory(double log_r0,
-                                                    double log_q,
-                                                    double log_f) const {
+  std::vector<DerivedRow> deterministic_trajectory(double log_r0, double log_q,
+                                                   double log_f) const {
     const double r0 = std::exp(log_r0);
     const double q = std::exp(log_q);
     const double f = std::exp(log_f);
@@ -53,8 +52,9 @@ class RedSnapperModel {
     double biomass = r0;
     const double unfished = r0;
 
-    for (const auto& obs : observations_) {
-      biomass = std::max(1.0, biomass + 0.25 * r0 - obs.catch_mt - 0.05 * biomass);
+    for (const auto &obs : observations_) {
+      biomass =
+          std::max(1.0, biomass + 0.25 * r0 - obs.catch_mt - 0.05 * biomass);
       DerivedRow row;
       row.year = obs.year;
       row.biomass = biomass;
@@ -68,8 +68,8 @@ class RedSnapperModel {
     return out;
   }
 
- private:
+private:
   std::vector<Observation> observations_;
 };
 
-}  // namespace sefsc_red_snapper
+} // namespace sefsc_red_snapper

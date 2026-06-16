@@ -23,8 +23,8 @@ inline std::string uncertainty_structure_label(const std::string &avg_degree,
   if (avg <= 2.0 && maxd <= 3.0)
     return "LOCAL";
 
-  if (std::isfinite(n) && std::isfinite(dia) && n > 0.0 &&
-      avg <= 0.25 * n && dia >= 0.25 * n)
+  if (std::isfinite(n) && std::isfinite(dia) && n > 0.0 && avg <= 0.25 * n &&
+      dia >= 0.25 * n)
     return "MODERATE";
 
   if (std::isfinite(n) && n > 0.0 && avg > 0.5 * n)

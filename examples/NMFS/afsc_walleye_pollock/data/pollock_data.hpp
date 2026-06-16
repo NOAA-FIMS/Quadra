@@ -6,8 +6,7 @@
 #include <string>
 #include <vector>
 
-struct Obs
-{
+struct Obs {
   int year;
   double catch_mt;
   double index;
@@ -29,13 +28,15 @@ struct PollockData {
 inline PollockData load_pollock_synthetic_data(const std::string &path) {
   PollockData data;
   std::ifstream in(path);
-  if (!in) throw std::runtime_error("Could not open Pollock data file: " + path);
+  if (!in)
+    throw std::runtime_error("Could not open Pollock data file: " + path);
 
   std::string line;
   std::getline(in, line);
 
   while (std::getline(in, line)) {
-    if (line.empty()) continue;
+    if (line.empty())
+      continue;
     std::stringstream ss(line);
     std::string item;
     PollockDataRow row;
@@ -52,4 +53,4 @@ inline PollockData load_pollock_synthetic_data(const std::string &path) {
   return data;
 }
 
-}  // namespace pollock_example
+} // namespace pollock_example

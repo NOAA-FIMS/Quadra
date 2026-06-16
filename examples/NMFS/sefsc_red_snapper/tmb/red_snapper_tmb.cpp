@@ -1,16 +1,13 @@
 #include <TMB.hpp>
 
-template <class Type>
-Type square(Type x) { return x * x; }
-
+template <class Type> Type square(Type x) { return x * x; }
 
 template <class Type>
 Type logistic_selectivity(Type age, Type a50, Type slope) {
   return Type(1.0) / (Type(1.0) + exp(-slope * (age - a50)));
 }
 
-template <class Type>
-Type objective_function<Type>::operator()() {
+template <class Type> Type objective_function<Type>::operator()() {
   DATA_VECTOR(catch_obs);
   DATA_VECTOR(index_obs);
   DATA_MATRIX(age_comp_obs);
@@ -39,9 +36,9 @@ Type objective_function<Type>::operator()() {
   Type min_positive = Type(1.0e-12);
 
   vector<Type> weight(n_ages);
-  Type weight_values[10] = {
-      Type(0.40), Type(0.85), Type(1.35), Type(1.95), Type(2.60),
-      Type(3.25), Type(3.85), Type(4.35), Type(4.75), Type(5.05)};
+  Type weight_values[10] = {Type(0.40), Type(0.85), Type(1.35), Type(1.95),
+                            Type(2.60), Type(3.25), Type(3.85), Type(4.35),
+                            Type(4.75), Type(5.05)};
   for (int a = 0; a < n_ages; ++a) {
     weight(a) = weight_values[a];
   }
@@ -65,11 +62,15 @@ Type objective_function<Type>::operator()() {
   Type catch_nll = Type(0.0);
   Type age_comp_nll = Type(0.0);
 
-  fixed_prior_nll += Type(0.5) * square((log_r0 - Type(std::log(1200.0))) / Type(1.0));
-  fixed_prior_nll += Type(0.5) * square((log_fbar - Type(std::log(0.025))) / Type(0.75));
-  fixed_prior_nll += Type(0.5) * square((log_q - Type(std::log(0.00005))) / Type(1.0));
+  fixed_prior_nll +=
+      Type(0.5) * square((log_r0 - Type(std::log(1200.0))) / Type(1.0));
+  fixed_prior_nll +=
+      Type(0.5) * square((log_fbar - Type(std::log(0.025))) / Type(0.75));
+  fixed_prior_nll +=
+      Type(0.5) * square((log_q - Type(std::log(0.00005))) / Type(1.0));
   fixed_prior_nll += Type(0.5) * square((sel_a50 - Type(4.0)) / Type(0.75));
-  fixed_prior_nll += Type(0.5) * square((log_sel_slope - Type(std::log(1.2))) / Type(0.35));
+  fixed_prior_nll +=
+      Type(0.5) * square((log_sel_slope - Type(std::log(1.2))) / Type(0.35));
 
   nll += fixed_prior_nll;
 
@@ -98,7 +99,10 @@ Type objective_function<Type>::operator()() {
     Type index_hat = q * total_biomass;
 
     if (index_obs(y) > 0.0) {
-      Type z = (log(Type(index_obs(y))) - log(CppAD::CondExpGt(index_hat, min_positive, index_hat, min_positive))) / sigma_log_index;
+      Type z = (log(Type(index_obs(y))) -
+                log(CppAD::CondExpGt(index_hat, min_positive, index_hat,
+                                     min_positive))) /
+               sigma_log_index;
       {
         Type term = Type(0.5) * z * z;
         index_nll += term;
@@ -107,7 +111,10 @@ Type objective_function<Type>::operator()() {
     }
 
     if (catch_obs(y) > 0.0) {
-      Type z = (log(Type(catch_obs(y))) - log(CppAD::CondExpGt(catch_hat, min_positive, catch_hat, min_positive))) / sigma_log_catch;
+      Type z = (log(Type(catch_obs(y))) -
+                log(CppAD::CondExpGt(catch_hat, min_positive, catch_hat,
+                                     min_positive))) /
+               sigma_log_catch;
       {
         Type term = Type(0.5) * z * z;
         catch_nll += term;
@@ -116,11 +123,15 @@ Type objective_function<Type>::operator()() {
     }
 
     for (int a = 0; a < n_ages; ++a) {
-      pred_age_comp(a) = pred_age_comp(a) / CppAD::CondExpGt(selected_sum, min_positive, selected_sum, min_positive);
+      pred_age_comp(a) =
+          pred_age_comp(a) / CppAD::CondExpGt(selected_sum, min_positive,
+                                              selected_sum, min_positive);
       Type obs = age_comp_obs(y, a);
       if (obs > 0.0) {
         {
-          Type term = -age_comp_effective_n * obs * log(CppAD::CondExpGt(pred_age_comp(a), min_positive, pred_age_comp(a), min_positive));
+          Type term = -age_comp_effective_n * obs *
+                      log(CppAD::CondExpGt(pred_age_comp(a), min_positive,
+                                           pred_age_comp(a), min_positive));
           age_comp_nll += term;
           nll += term;
         }

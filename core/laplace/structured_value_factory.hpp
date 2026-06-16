@@ -11,9 +11,8 @@
 namespace quadra {
 namespace laplace {
 
-using StructuredValues =
-    std::variant<DiagonalValues, TridiagonalValues, BandedValues,
-                 SparseMatrixValues>;
+using StructuredValues = std::variant<DiagonalValues, TridiagonalValues,
+                                      BandedValues, SparseMatrixValues>;
 
 inline DiagonalValues
 extract_diagonal_values(const Eigen::SparseMatrix<double> &H) {

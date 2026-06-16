@@ -9,9 +9,8 @@
 namespace {
 
 void write_objective_summary(
-    const std::string& path,
-    const sefsc_red_snapper::ObjectiveBreakdown& obj,
-    const sefsc_red_snapper::AgeStructuredParams& params) {
+    const std::string &path, const sefsc_red_snapper::ObjectiveBreakdown &obj,
+    const sefsc_red_snapper::AgeStructuredParams &params) {
   std::ofstream out(path);
   if (!out) {
     throw std::runtime_error("Could not open objective summary CSV: " + path);
@@ -36,11 +35,11 @@ void write_objective_summary(
   out << "sel_slope," << params.sel_slope << "\n";
 }
 
-}  // namespace
+} // namespace
 
 int main() {
-  const std::string input_path =
-      "examples/NMFS/sefsc_red_snapper/data/synthetic_red_snapper_observations.csv";
+  const std::string input_path = "examples/NMFS/sefsc_red_snapper/data/"
+                                 "synthetic_red_snapper_observations.csv";
   const std::string summary_path =
       "examples/NMFS/sefsc_red_snapper/outputs/objective_summary.csv";
 
@@ -49,9 +48,8 @@ int main() {
   sefsc_red_snapper::AgeStructuredParams params;
   sefsc_red_snapper::ObjectiveOptions options;
 
-  const auto breakdown =
-      sefsc_red_snapper::evaluate_objective_breakdown(observations, params,
-                                                      options);
+  const auto breakdown = sefsc_red_snapper::evaluate_objective_breakdown(
+      observations, params, options);
 
   write_objective_summary(summary_path, breakdown, params);
 

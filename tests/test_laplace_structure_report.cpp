@@ -37,8 +37,7 @@ void test_diagonal_report() {
                "diagonal: structural_density");
   require(report.eigen_success, "diagonal: eigen_success");
   require(report.positive_definite, "diagonal: positive_definite");
-  require_near(report.min_eigenvalue, 4.0, 1.0e-12,
-               "diagonal: min_eigenvalue");
+  require_near(report.min_eigenvalue, 4.0, 1.0e-12, "diagonal: min_eigenvalue");
   require_near(report.max_eigenvalue, 16.0, 1.0e-12,
                "diagonal: max_eigenvalue");
 
@@ -117,7 +116,7 @@ void test_non_positive_definite_detection() {
   require(report.min_eigenvalue < 0.0, "nonpd: min eigenvalue negative");
 }
 
-}  // namespace
+} // namespace
 
 int main() {
   try {
@@ -125,8 +124,7 @@ int main() {
     test_tridiagonal_effective_bandwidth();
     test_non_positive_definite_detection();
   } catch (const std::exception &e) {
-    std::cerr << "test_laplace_structure_report failed: " << e.what()
-              << "\n";
+    std::cerr << "test_laplace_structure_report failed: " << e.what() << "\n";
     return 1;
   }
 

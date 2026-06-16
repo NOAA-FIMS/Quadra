@@ -16,7 +16,8 @@ inline std::string csv_get_value(const std::string &csv_path,
   std::string line;
 
   while (std::getline(in, line)) {
-    if (line.empty()) continue;
+    if (line.empty())
+      continue;
 
     std::stringstream ss(line);
     std::string a, b, c, d;
@@ -25,8 +26,10 @@ inline std::string csv_get_value(const std::string &csv_path,
     std::getline(ss, c, ',');
     std::getline(ss, d, ',');
 
-    if (a == metric_or_field) return b;
-    if (b == metric_or_field) return d;
+    if (a == metric_or_field)
+      return b;
+    if (b == metric_or_field)
+      return d;
   }
 
   return "";
@@ -45,16 +48,15 @@ struct MarkdownReportConfig {
   std::string effective_bandwidth_95 = "1";
 };
 
-inline void write_functional_analysis_markdown(
-    const MarkdownReportConfig &config) {
+inline void
+write_functional_analysis_markdown(const MarkdownReportConfig &config) {
   const std::string &functional_csv_path = config.functional_csv_path;
 
   const std::string objective =
       csv_get_value(functional_csv_path, "objective_value");
   const std::string grad_norm =
       csv_get_value(functional_csv_path, "gradient_norm");
-  const std::string converged =
-      csv_get_value(functional_csv_path, "converged");
+  const std::string converged = csv_get_value(functional_csv_path, "converged");
   const std::string max_grad_param =
       csv_get_value(functional_csv_path, "max_gradient_parameter");
 
@@ -94,12 +96,9 @@ inline void write_functional_analysis_markdown(
   const std::string diameter =
       csv_get_value(functional_csv_path, "graph_diameter");
 
-  const std::string latent_count =
-      csv_get_value(functional_csv_path, "count");
-  const std::string latent_mean =
-      csv_get_value(functional_csv_path, "mean");
-  const std::string latent_sd =
-      csv_get_value(functional_csv_path, "sd");
+  const std::string latent_count = csv_get_value(functional_csv_path, "count");
+  const std::string latent_mean = csv_get_value(functional_csv_path, "mean");
+  const std::string latent_sd = csv_get_value(functional_csv_path, "sd");
 
   const std::string fixed_effects =
       config.fixed_effects.empty() ? "unknown" : config.fixed_effects;
@@ -112,18 +111,19 @@ inline void write_functional_analysis_markdown(
   const ModelHealthStatus health =
       evaluate_model_health(converged, grad_norm, pd, condition);
 
-  const std::string uncertainty_structure =
-      uncertainty_structure_label(avg_degree, max_degree_graph, diameter,
-                                  random_effects);
+  const std::string uncertainty_structure = uncertainty_structure_label(
+      avg_degree, max_degree_graph, diameter, random_effects);
 
   std::ofstream md(config.output_path);
   md << "# " << config.title << "\n\n";
-  if (!config.subtitle.empty()) md << config.subtitle << "\n\n";
+  if (!config.subtitle.empty())
+    md << config.subtitle << "\n\n";
 
   md << "## Executive Summary\n\n";
   md << "- **Overall status:** `" << health.overall << "`.\n";
   md << "- **Confidence:** `" << health.confidence << "`.\n";
-  md << "- **Optimization quality:** `" << health.optimization_quality << "`.\n";
+  md << "- **Optimization quality:** `" << health.optimization_quality
+     << "`.\n";
   md << "- **Uncertainty structure:** `" << uncertainty_structure << "`.\n";
   md << "- **Optimization:** converged = `" << converged
      << "`, gradient norm = `" << grad_norm << "`.\n";
@@ -141,19 +141,20 @@ inline void write_functional_analysis_markdown(
   md << "## Model Health Assessment\n\n";
   md << "| Check | Status | Evidence |\n";
   md << "|---|---:|---|\n";
-  md << "| Optimization | `" << health.optimization
-     << "` | converged = `" << converged << "` |\n";
-  md << "| Gradient quality | `" << health.gradient
-     << "` | gradient norm = `" << grad_norm << "` |\n";
-  md << "| Curvature | `" << health.curvature
-     << "` | positive definite = `" << pd << "` |\n";
+  md << "| Optimization | `" << health.optimization << "` | converged = `"
+     << converged << "` |\n";
+  md << "| Gradient quality | `" << health.gradient << "` | gradient norm = `"
+     << grad_norm << "` |\n";
+  md << "| Curvature | `" << health.curvature << "` | positive definite = `"
+     << pd << "` |\n";
   md << "| Conditioning | `" << health.conditioning
      << "` | condition number = `" << condition << "` |\n";
   md << "| Overall status | `" << health.overall
      << "` | rule-based v1 diagnostic |\n";
   md << "| Confidence | `" << health.confidence
      << "` | based on convergence, gradient, PD status, and conditioning |\n\n";
-  md << "**Interpretation:** the rule-based health check is intentionally simple. "
+  md << "**Interpretation:** the rule-based health check is intentionally "
+        "simple. "
         "It flags obvious numerical issues quickly, but it does not replace "
         "scientific review or model-specific diagnostics.\n\n";
 
@@ -231,7 +232,8 @@ inline void write_functional_analysis_markdown(
   md << "```text\n";
   std::ifstream txt(config.structure_txt_path);
   std::string line;
-  while (std::getline(txt, line)) md << line << "\n";
+  while (std::getline(txt, line))
+    md << line << "\n";
   md << "```\n";
 }
 
@@ -240,5 +242,5 @@ inline void write_markdown_report(const MarkdownReportConfig &config) {
   write_functional_analysis_markdown(config);
 }
 
-}  // namespace diagnostics
-}  // namespace quadra
+} // namespace diagnostics
+} // namespace quadra

@@ -52,10 +52,8 @@ struct LaplaceStructureReport {
 
 inline std::vector<std::pair<double, std::string>>
 default_laplace_structure_targets() {
-  return {
-      {0.90, "90%"},   {0.95, "95%"},   {0.97, "97%"},
-      {0.98, "98%"},   {0.99, "99%"},   {0.995, "99.5%"},
-      {0.999, "99.9%"}, {1.00, "100%"}};
+  return {{0.90, "90%"}, {0.95, "95%"},    {0.97, "97%"},    {0.98, "98%"},
+          {0.99, "99%"}, {0.995, "99.5%"}, {0.999, "99.9%"}, {1.00, "100%"}};
 }
 
 inline std::size_t banded_square_entry_count(std::size_t n,
@@ -73,8 +71,7 @@ inline std::size_t banded_square_entry_count(std::size_t n,
 }
 
 inline LaplaceStructureReport summarize_laplace_hessian_structure(
-    const Eigen::MatrixXd &H,
-    double nonzero_tol = 1.0e-8,
+    const Eigen::MatrixXd &H, double nonzero_tol = 1.0e-8,
     const std::vector<std::pair<double, std::string>> &targets =
         default_laplace_structure_targets()) {
   LaplaceStructureReport report;
@@ -135,11 +132,10 @@ inline LaplaceStructureReport summarize_laplace_hessian_structure(
     row.curvature_retained = target.first;
     row.label = target.second;
     row.entries_required = entries;
-    row.entry_share =
-        report.total_entries > 0
-            ? static_cast<double>(entries) /
-                  static_cast<double>(report.total_entries)
-            : 0.0;
+    row.entry_share = report.total_entries > 0
+                          ? static_cast<double>(entries) /
+                                static_cast<double>(report.total_entries)
+                          : 0.0;
     row.compression_vs_structural =
         entries > 0 ? static_cast<double>(report.structural_nonzeros) /
                           static_cast<double>(entries)
@@ -203,9 +199,9 @@ inline LaplaceStructureReport summarize_laplace_hessian_structure(
   return report;
 }
 
-inline void write_laplace_structure_report_text(
-    const LaplaceStructureReport &report,
-    std::ostream &out) {
+inline void
+write_laplace_structure_report_text(const LaplaceStructureReport &report,
+                                    std::ostream &out) {
   out << std::setprecision(15);
   out << "Laplace Structure Report\n";
   out << "========================\n\n";
@@ -219,9 +215,9 @@ inline void write_laplace_structure_report_text(
   out << "Matrix size:                 " << report.random_effects << " x "
       << report.random_effects << "\n";
   out << "Total entries:               " << report.total_entries << "\n";
-  out << "Structural nonzeros:         " << report.structural_nonzeros
-      << " / " << report.total_entries << " ("
-      << 100.0 * report.structural_density << "%)\n";
+  out << "Structural nonzeros:         " << report.structural_nonzeros << " / "
+      << report.total_entries << " (" << 100.0 * report.structural_density
+      << "%)\n";
   out << "Nonzero tolerance:           " << report.nonzero_tolerance << "\n";
   out << "Max |H_ij|:                  " << report.max_abs_entry << "\n";
   out << "Positive definite:           "
@@ -236,8 +232,8 @@ inline void write_laplace_structure_report_text(
   out << "curvature_retained,entries_required,entry_share,"
          "compression_vs_structural\n";
   for (const auto &row : report.effective_sparsity) {
-    out << row.label << "," << row.entries_required << ","
-        << row.entry_share << "," << row.compression_vs_structural << "\n";
+    out << row.label << "," << row.entries_required << "," << row.entry_share
+        << "," << row.compression_vs_structural << "\n";
   }
 
   out << "\nEffective bandwidth\n";
@@ -245,9 +241,8 @@ inline void write_laplace_structure_report_text(
   out << "curvature_retained,bandwidth,entry_count_if_banded,"
          "entry_share_if_banded\n";
   for (const auto &row : report.effective_bandwidth) {
-    out << row.label << "," << row.bandwidth << ","
-        << row.entry_count_if_banded << "," << row.entry_share_if_banded
-        << "\n";
+    out << row.label << "," << row.bandwidth << "," << row.entry_count_if_banded
+        << "," << row.entry_share_if_banded << "\n";
   }
 
   out << "\nInterpretation\n";
@@ -258,45 +253,45 @@ inline void write_laplace_structure_report_text(
          "curvature is carried by relatively few entries or bands.\n";
 }
 
-inline void write_laplace_structure_report_text(
-    const LaplaceStructureReport &report,
-    const std::string &path) {
+inline void
+write_laplace_structure_report_text(const LaplaceStructureReport &report,
+                                    const std::string &path) {
   std::ofstream out(path);
   write_laplace_structure_report_text(report, out);
 }
 
-inline void write_laplace_structure_report_csv(
-    const LaplaceStructureReport &report,
-    std::ostream &out) {
+inline void
+write_laplace_structure_report_csv(const LaplaceStructureReport &report,
+                                   std::ostream &out) {
   out << std::setprecision(15);
   out << "metric,target,value,extra\n";
   out << "random_effects,," << report.random_effects << ",\n";
   out << "total_entries,," << report.total_entries << ",\n";
   out << "structural_nonzeros,," << report.structural_nonzeros << ",\n";
   out << "structural_density,," << report.structural_density << ",\n";
-  out << "positive_definite,,"
-      << (report.positive_definite ? "yes" : "no") << ",\n";
+  out << "positive_definite,," << (report.positive_definite ? "yes" : "no")
+      << ",\n";
   out << "min_eigenvalue,," << report.min_eigenvalue << ",\n";
   out << "max_eigenvalue,," << report.max_eigenvalue << ",\n";
   out << "condition_number,," << report.condition_number_abs << ",\n";
 
   for (const auto &row : report.effective_sparsity) {
     out << "effective_sparsity_entries," << row.label << ","
-        << row.entries_required << ",compression_vs_structural="
-        << row.compression_vs_structural << "\n";
+        << row.entries_required
+        << ",compression_vs_structural=" << row.compression_vs_structural
+        << "\n";
   }
 
   for (const auto &row : report.effective_bandwidth) {
-    out << "effective_bandwidth," << row.label << "," << row.bandwidth
-        << ",\n";
+    out << "effective_bandwidth," << row.label << "," << row.bandwidth << ",\n";
   }
 }
 
-inline void write_laplace_structure_report_csv(
-    const LaplaceStructureReport &report,
-    const std::string &path) {
+inline void
+write_laplace_structure_report_csv(const LaplaceStructureReport &report,
+                                   const std::string &path) {
   std::ofstream out(path);
   write_laplace_structure_report_csv(report, out);
 }
 
-}  // namespace quadra
+} // namespace quadra

@@ -35,32 +35,33 @@ inline double lognormal_nll_no_constant(double observed, double predicted,
 }
 
 inline ObjectiveBreakdown evaluate_objective_breakdown(
-    const std::vector<Observation>& observations,
-    const AgeStructuredParams& params,
-    const ObjectiveOptions& options = ObjectiveOptions{}) {
+    const std::vector<Observation> &observations,
+    const AgeStructuredParams &params,
+    const ObjectiveOptions &options = ObjectiveOptions{}) {
   ObjectiveBreakdown out;
 
-  const auto rows = run_deterministic_age_structured_model(observations, params);
+  const auto rows =
+      run_deterministic_age_structured_model(observations, params);
   if (rows.size() != observations.size()) {
     throw std::runtime_error("Objective trajectory/observation size mismatch");
   }
 
   for (std::size_t i = 0; i < observations.size(); ++i) {
-    const auto& obs = observations[i];
-    const auto& pred = rows[i];
+    const auto &obs = observations[i];
+    const auto &pred = rows[i];
 
     if (std::isfinite(obs.index) && obs.index > 0.0) {
-      const double nll = lognormal_nll_no_constant(
-          obs.index, pred.index_hat, options.sigma_log_index,
-          options.min_positive);
+      const double nll = lognormal_nll_no_constant(obs.index, pred.index_hat,
+                                                   options.sigma_log_index,
+                                                   options.min_positive);
       out.index_nll += nll;
       ++out.n_index;
     }
 
     if (std::isfinite(obs.catch_mt) && obs.catch_mt > 0.0) {
-      const double nll = lognormal_nll_no_constant(
-          obs.catch_mt, pred.catch_hat, options.sigma_log_catch,
-          options.min_positive);
+      const double nll = lognormal_nll_no_constant(obs.catch_mt, pred.catch_hat,
+                                                   options.sigma_log_catch,
+                                                   options.min_positive);
       out.catch_nll += nll;
       ++out.n_catch;
     }
@@ -70,11 +71,11 @@ inline ObjectiveBreakdown evaluate_objective_breakdown(
   return out;
 }
 
-inline double evaluate_objective(
-    const std::vector<Observation>& observations,
-    const AgeStructuredParams& params,
-    const ObjectiveOptions& options = ObjectiveOptions{}) {
+inline double
+evaluate_objective(const std::vector<Observation> &observations,
+                   const AgeStructuredParams &params,
+                   const ObjectiveOptions &options = ObjectiveOptions{}) {
   return evaluate_objective_breakdown(observations, params, options).total;
 }
 
-}  // namespace sefsc_red_snapper
+} // namespace sefsc_red_snapper

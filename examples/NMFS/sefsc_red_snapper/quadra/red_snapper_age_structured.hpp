@@ -55,7 +55,7 @@ std::array<double, kAges> default_maturity_at_age() {
   return {0.00, 0.10, 0.35, 0.65, 0.85, 0.95, 1.00, 1.00, 1.00, 1.00};
 }
 
-std::vector<std::string> split_csv_line(const std::string& line) {
+std::vector<std::string> split_csv_line(const std::string &line) {
   std::vector<std::string> out;
   std::stringstream ss(line);
   std::string item;
@@ -65,7 +65,7 @@ std::vector<std::string> split_csv_line(const std::string& line) {
   return out;
 }
 
-std::vector<Observation> read_observations(const std::string& path) {
+std::vector<Observation> read_observations(const std::string &path) {
   std::ifstream in(path);
   if (!in) {
     throw std::runtime_error("Could not open observations CSV: " + path);
@@ -108,8 +108,8 @@ std::vector<Observation> read_observations(const std::string& path) {
   return out;
 }
 
-double biomass_from_numbers(const std::array<double, kAges>& n,
-                            const std::array<double, kAges>& weight) {
+double biomass_from_numbers(const std::array<double, kAges> &n,
+                            const std::array<double, kAges> &weight) {
   double out = 0.0;
   for (int a = 0; a < kAges; ++a) {
     out += n[static_cast<std::size_t>(a)] * weight[static_cast<std::size_t>(a)];
@@ -117,9 +117,9 @@ double biomass_from_numbers(const std::array<double, kAges>& n,
   return out;
 }
 
-double ssb_from_numbers(const std::array<double, kAges>& n,
-                        const std::array<double, kAges>& weight,
-                        const std::array<double, kAges>& maturity) {
+double ssb_from_numbers(const std::array<double, kAges> &n,
+                        const std::array<double, kAges> &weight,
+                        const std::array<double, kAges> &maturity) {
   double out = 0.0;
   for (int a = 0; a < kAges; ++a) {
     out += n[static_cast<std::size_t>(a)] *
@@ -145,8 +145,8 @@ std::array<double, kAges> unfished_equilibrium_numbers(double r0, double m) {
 }
 
 std::vector<AgeStructuredRow> run_deterministic_age_structured_model(
-    const std::vector<Observation>& observations,
-    const AgeStructuredParams& params) {
+    const std::vector<Observation> &observations,
+    const AgeStructuredParams &params) {
   const auto weight = default_weight_at_age();
   const auto maturity = default_maturity_at_age();
 
@@ -157,9 +157,8 @@ std::vector<AgeStructuredRow> run_deterministic_age_structured_model(
 
   std::array<double, kAges> selectivity{};
   for (int a = 0; a < kAges; ++a) {
-    selectivity[static_cast<std::size_t>(a)] =
-        logistic_selectivity(static_cast<double>(a + 1), params.sel_a50,
-                             params.sel_slope);
+    selectivity[static_cast<std::size_t>(a)] = logistic_selectivity(
+        static_cast<double>(a + 1), params.sel_a50, params.sel_slope);
   }
 
   std::array<double, kAges> n = unfished_equilibrium_numbers(r0, m);
@@ -168,7 +167,7 @@ std::vector<AgeStructuredRow> run_deterministic_age_structured_model(
   std::vector<AgeStructuredRow> rows;
   rows.reserve(observations.size());
 
-  for (const auto& obs : observations) {
+  for (const auto &obs : observations) {
     const double biomass = biomass_from_numbers(n, weight);
     const double ssb = ssb_from_numbers(n, weight, maturity);
 
@@ -219,8 +218,8 @@ std::vector<AgeStructuredRow> run_deterministic_age_structured_model(
   return rows;
 }
 
-void write_age_structured_rows(const std::string& path,
-                               const std::vector<AgeStructuredRow>& rows) {
+void write_age_structured_rows(const std::string &path,
+                               const std::vector<AgeStructuredRow> &rows) {
   std::ofstream out(path);
   if (!out) {
     throw std::runtime_error("Could not open output CSV: " + path);
@@ -230,12 +229,12 @@ void write_age_structured_rows(const std::string& path,
       << "catch_obs,catch_hat,index_obs,index_hat\n";
 
   out << std::fixed << std::setprecision(6);
-  for (const auto& row : rows) {
-    out << row.year << "," << row.recruitment << "," << row.total_biomass
-        << "," << row.ssb_proxy << "," << row.depletion << ","
-        << row.fbar << "," << row.catch_obs << "," << row.catch_hat << ","
-        << row.index_obs << "," << row.index_hat << "\n";
+  for (const auto &row : rows) {
+    out << row.year << "," << row.recruitment << "," << row.total_biomass << ","
+        << row.ssb_proxy << "," << row.depletion << "," << row.fbar << ","
+        << row.catch_obs << "," << row.catch_hat << "," << row.index_obs << ","
+        << row.index_hat << "\n";
   }
 }
 
-}  // namespace sefsc_red_snapper
+} // namespace sefsc_red_snapper

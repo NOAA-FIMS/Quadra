@@ -12,7 +12,7 @@
 
 namespace {
 
-std::vector<std::string> split_csv_line(const std::string& line) {
+std::vector<std::string> split_csv_line(const std::string &line) {
   std::vector<std::string> out;
   std::stringstream ss(line);
   std::string item;
@@ -22,18 +22,20 @@ std::vector<std::string> split_csv_line(const std::string& line) {
   return out;
 }
 
-std::vector<sefsc_red_snapper::Observation> read_observations(const std::string& path) {
+std::vector<sefsc_red_snapper::Observation>
+read_observations(const std::string &path) {
   std::ifstream in(path);
   if (!in) {
     throw std::runtime_error("Could not open observations CSV: " + path);
   }
 
   std::string line;
-  std::getline(in, line);  // header
+  std::getline(in, line); // header
 
   std::vector<sefsc_red_snapper::Observation> out;
   while (std::getline(in, line)) {
-    if (line.empty()) continue;
+    if (line.empty())
+      continue;
     const auto fields = split_csv_line(line);
     if (fields.size() != 13) {
       throw std::runtime_error("Expected 13 columns in observations CSV");
@@ -62,22 +64,22 @@ std::vector<sefsc_red_snapper::Observation> read_observations(const std::string&
 }
 
 void write_derived_quantities(
-    const std::string& path,
-    const std::vector<sefsc_red_snapper::DerivedRow>& rows) {
+    const std::string &path,
+    const std::vector<sefsc_red_snapper::DerivedRow> &rows) {
   std::ofstream out(path);
   out << "year,biomass,ssb_proxy,depletion,F_proxy,index_hat\n";
   out << std::fixed << std::setprecision(6);
-  for (const auto& row : rows) {
+  for (const auto &row : rows) {
     out << row.year << "," << row.biomass << "," << row.ssb_proxy << ","
         << row.depletion << "," << row.f_proxy << "," << row.index_hat << "\n";
   }
 }
 
-}  // namespace
+} // namespace
 
 int main() {
-  const std::string input_path =
-      "examples/NMFS/sefsc_red_snapper/data/synthetic_red_snapper_observations.csv";
+  const std::string input_path = "examples/NMFS/sefsc_red_snapper/data/"
+                                 "synthetic_red_snapper_observations.csv";
   const std::string output_path =
       "examples/NMFS/sefsc_red_snapper/outputs/level0_derived_quantities.csv";
 
@@ -97,7 +99,7 @@ int main() {
   std::cout << "wrote: " << output_path << "\n";
 
   if (!trajectory.empty()) {
-    const auto& last = trajectory.back();
+    const auto &last = trajectory.back();
     std::cout << "terminal biomass: " << last.biomass << "\n";
     std::cout << "terminal depletion: " << last.depletion << "\n";
   }

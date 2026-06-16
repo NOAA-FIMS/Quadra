@@ -32,19 +32,26 @@ inline std::string health_pass_fail(const std::string &value,
 
 inline std::string health_gradient_label(const std::string &value) {
   const double x = to_double_or_nan(value);
-  if (!std::isfinite(x)) return "UNKNOWN";
-  if (x < 1.0e-2) return "PASS";
-  if (x < 1.0e-1) return "CAUTION";
+  if (!std::isfinite(x))
+    return "UNKNOWN";
+  if (x < 1.0e-2)
+    return "PASS";
+  if (x < 1.0e-1)
+    return "CAUTION";
   return "CHECK";
 }
 
-inline std::string health_label_from_condition_number(
-    const std::string &value) {
+inline std::string
+health_label_from_condition_number(const std::string &value) {
   const double x = to_double_or_nan(value);
-  if (!std::isfinite(x)) return "UNKNOWN";
-  if (x < 100.0) return "EXCELLENT";
-  if (x < 1000.0) return "GOOD";
-  if (x < 10000.0) return "CAUTION";
+  if (!std::isfinite(x))
+    return "UNKNOWN";
+  if (x < 100.0)
+    return "EXCELLENT";
+  if (x < 1000.0)
+    return "GOOD";
+  if (x < 10000.0)
+    return "CAUTION";
   return "HIGH RISK";
 }
 
@@ -65,15 +72,16 @@ inline std::string optimization_quality_label(const std::string &converged,
     return "GOOD";
   }
 
-  if (converged == "yes") return "REVIEW";
+  if (converged == "yes")
+    return "REVIEW";
 
   return "CHECK";
 }
 
 inline ModelHealthStatus evaluate_model_health(const std::string &converged,
-                                                const std::string &grad_norm,
-                                                const std::string &pd,
-                                                const std::string &condition) {
+                                               const std::string &grad_norm,
+                                               const std::string &pd,
+                                               const std::string &condition) {
   ModelHealthStatus out;
   out.optimization = health_pass_fail(converged);
   out.gradient = health_gradient_label(grad_norm);
@@ -92,11 +100,10 @@ inline ModelHealthStatus evaluate_model_health(const std::string &converged,
       out.curvature == "PASS" && out.conditioning == "EXCELLENT";
 
   out.overall = healthy ? "HEALTHY" : "REVIEW";
-  out.confidence =
-      high_confidence ? "HIGH" : (healthy ? "MODERATE" : "LOW");
+  out.confidence = high_confidence ? "HIGH" : (healthy ? "MODERATE" : "LOW");
 
   return out;
 }
 
-}  // namespace diagnostics
-}  // namespace quadra
+} // namespace diagnostics
+} // namespace quadra

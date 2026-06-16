@@ -8,8 +8,7 @@
 
 namespace pollock_example {
 
-void write_summary(const std::string &path, const quadra::OptResult &fit)
-{
+void write_summary(const std::string &path, const quadra::OptResult &fit) {
   std::ofstream out(path);
   out << std::setprecision(15);
   out << "field,value\n";
@@ -21,8 +20,7 @@ void write_summary(const std::string &path, const quadra::OptResult &fit)
   out << "random_effects," << fit.u_hat.size() << "\n";
 }
 
-
-}  // namespace pollock_example
+} // namespace pollock_example
 
 // Compatibility alias for current walleye_pollock.cpp call sites.
 using pollock_example::write_summary;

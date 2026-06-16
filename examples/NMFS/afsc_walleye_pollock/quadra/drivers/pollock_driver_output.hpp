@@ -13,10 +13,9 @@
 
 namespace pollock_example {
 
-inline void write_recruitment_deviations(
-    const std::string &path,
-    const quadra::OptResult &fit,
-    double rec_rho_report = 0.60) {
+inline void write_recruitment_deviations(const std::string &path,
+                                         const quadra::OptResult &fit,
+                                         double rec_rho_report = 0.60) {
   std::ofstream rec(path);
   rec << "year,log_rec_dev,ar1_rho,innovation\n";
 
@@ -24,8 +23,8 @@ inline void write_recruitment_deviations(
     const double innovation =
         (i == 0) ? fit.u_hat[i]
                  : (fit.u_hat[i] - rec_rho_report * fit.u_hat[i - 1]);
-    rec << (i + 1) << "," << fit.u_hat[i] << ","
-        << rec_rho_report << "," << innovation << "\n";
+    rec << (i + 1) << "," << fit.u_hat[i] << "," << rec_rho_report << ","
+        << innovation << "\n";
   }
 }
 
@@ -46,7 +45,8 @@ inline void print_fit_and_structure_diagnostics(const quadra::OptResult &fit) {
             ? fit.fixed_gradient_names[max_grad_i]
             : ("fixed_" + std::to_string(max_grad_i));
     std::cout << "max_grad_param     " << max_grad_name << "\n";
-    std::cout << "max_grad_value     " << fit.fixed_gradient[max_grad_i] << "\n";
+    std::cout << "max_grad_value     " << fit.fixed_gradient[max_grad_i]
+              << "\n";
     std::cout << "max_abs_grad       "
               << std::abs(fit.fixed_gradient[max_grad_i]) << "\n";
   }
@@ -54,15 +54,20 @@ inline void print_fit_and_structure_diagnostics(const quadra::OptResult &fit) {
   std::cout << "\nOptimizer structure diagnostics\n";
   std::cout << "-------------------------------\n";
   std::cout << "random effects     " << fit.pattern.random_effect_count << "\n";
-  std::cout << "pattern available  " << (fit.pattern.available ? "yes" : "no") << "\n";
+  std::cout << "pattern available  " << (fit.pattern.available ? "yes" : "no")
+            << "\n";
   std::cout << "detected structure " << fit.pattern.detected_structure << "\n";
   std::cout << "Hessian nonzeros   " << fit.pattern.nonzeros << "\n";
 }
 
 inline void print_output_manifest() {
   std::cout << "\nWrote outputs:\n";
-  std::cout << "  examples/NMFS/afsc_walleye_pollock/outputs/walleye_pollock_fit_summary.csv\n";
-  std::cout << "  examples/NMFS/afsc_walleye_pollock/outputs/walleye_pollock_recruitment_deviations.csv\n";
+  std::cout << "  "
+               "examples/NMFS/afsc_walleye_pollock/outputs/"
+               "walleye_pollock_fit_summary.csv\n";
+  std::cout << "  "
+               "examples/NMFS/afsc_walleye_pollock/outputs/"
+               "walleye_pollock_recruitment_deviations.csv\n";
 }
 
-}  // namespace pollock_example
+} // namespace pollock_example

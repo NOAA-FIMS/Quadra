@@ -10,8 +10,7 @@
 
 namespace pollock_example {
 
-std::vector<std::string> split(const std::string &line)
-{
+std::vector<std::string> split(const std::string &line) {
   std::vector<std::string> out;
   std::stringstream ss(line);
   std::string x;
@@ -20,16 +19,14 @@ std::vector<std::string> split(const std::string &line)
   return out;
 }
 
-std::vector<Obs> read_obs(const std::string &path)
-{
+std::vector<Obs> read_obs(const std::string &path) {
   std::ifstream in(path);
   if (!in)
     throw std::runtime_error("could not open " + path);
   std::string line;
   std::getline(in, line);
   std::vector<Obs> rows;
-  while (std::getline(in, line))
-  {
+  while (std::getline(in, line)) {
     if (line.empty())
       continue;
     auto f = split(line);
@@ -41,7 +38,7 @@ std::vector<Obs> read_obs(const std::string &path)
   return rows;
 }
 
-}  // namespace pollock_example
+} // namespace pollock_example
 
 // Compatibility aliases for current walleye_pollock.cpp call sites.
 using pollock_example::read_obs;

@@ -6,10 +6,10 @@
 
 namespace pollock_example {
 
-inline void write_pollock_markdown_report(
-    const std::string &md_path,
-    const std::string &functional_csv_path,
-    const std::string &structure_txt_path) {
+inline void
+write_pollock_markdown_report(const std::string &md_path,
+                              const std::string &functional_csv_path,
+                              const std::string &structure_txt_path) {
   quadra::diagnostics::MarkdownReportConfig config;
   config.title = "Synthetic Walleye Pollock Functional Analysis";
   config.subtitle =
@@ -25,4 +25,4 @@ inline void write_pollock_markdown_report(
   quadra::diagnostics::write_markdown_report(config);
 }
 
-}  // namespace pollock_example
+} // namespace pollock_example

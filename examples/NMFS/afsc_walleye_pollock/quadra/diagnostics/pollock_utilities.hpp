@@ -22,4 +22,4 @@ inline std::vector<std::string> pollock_random_effect_names(std::size_t n) {
   return names;
 }
 
-}  // namespace pollock_example
+} // namespace pollock_example
