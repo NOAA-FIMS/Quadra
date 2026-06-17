@@ -56,13 +56,12 @@ int main()
   // geometry, the safeguarded profiled scalar Laplace optimizer is the
   // appropriate primary optimizer: it directly optimizes log_q while profiling
   // over the random effects and avoids quasi-Newton line-search pathologies.
-  fit = fit_log_q_fd_newton_fallback(model, params, opts,
-                                     params.params.at(0).value);
+  fit = quadra::optimize_lbfgs(model, params, opts);
 
   if (fit.converged)
   {
     fit.message =
-        "converged with safeguarded one-dimensional profiled log_q optimizer";
+        "converged with L-BFGS optimizer";
   }
 
   primary_optimizer_converged = fit.converged;

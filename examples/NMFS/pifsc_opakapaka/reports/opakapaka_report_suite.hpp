@@ -18,6 +18,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include "../reference_points/opakapaka_reference_points.hpp"
 
 namespace opakapaka_example {
 
@@ -226,23 +227,26 @@ inline void write_opakapaka_report_suite(
   write_fit_summary_csv(
       "examples/NMFS/pifsc_opakapaka/outputs/synthetic_fit_summary.csv", fit);
 
-  const auto logq_uncertainty =
-      compute_log_q_uncertainty_report(model, params, opts, fit);
+  if (fit.par.size() == 1)
+  {
+    const auto logq_uncertainty =
+        compute_log_q_uncertainty_report(model, params, opts, fit);
 
-  write_uncertainty_summary_csv(
-      "examples/NMFS/pifsc_opakapaka/outputs/uncertainty_summary.csv",
-      logq_uncertainty);
-  write_covariance_matrix_csv(
-      "examples/NMFS/pifsc_opakapaka/outputs/covariance_matrix.csv",
-      logq_uncertainty);
-  write_correlation_matrix_csv(
-      "examples/NMFS/pifsc_opakapaka/outputs/correlation_matrix.csv");
-  write_standard_errors_csv(
-      "examples/NMFS/pifsc_opakapaka/outputs/standard_errors.csv",
-      logq_uncertainty);
-  write_confidence_intervals_csv(
-      "examples/NMFS/pifsc_opakapaka/outputs/confidence_intervals.csv",
-      logq_uncertainty);
+    write_uncertainty_summary_csv(
+        "examples/NMFS/pifsc_opakapaka/outputs/uncertainty_summary.csv",
+        logq_uncertainty);
+    write_covariance_matrix_csv(
+        "examples/NMFS/pifsc_opakapaka/outputs/covariance_matrix.csv",
+        logq_uncertainty);
+    write_correlation_matrix_csv(
+        "examples/NMFS/pifsc_opakapaka/outputs/correlation_matrix.csv");
+    write_standard_errors_csv(
+        "examples/NMFS/pifsc_opakapaka/outputs/standard_errors.csv",
+        logq_uncertainty);
+    write_confidence_intervals_csv(
+        "examples/NMFS/pifsc_opakapaka/outputs/confidence_intervals.csv",
+        logq_uncertainty);
+  }
 
   write_random_effect_uncertainty_csv(
       "examples/NMFS/pifsc_opakapaka/outputs/random_effect_uncertainty.csv",
@@ -337,6 +341,10 @@ inline void write_opakapaka_report_suite(
   write_runtime_memory_summary_csv(
       "examples/NMFS/pifsc_opakapaka/outputs/runtime_memory_summary.csv",
       std::numeric_limits<double>::quiet_NaN(), fit.u_hat.size(), 58);
+
+  write_opakapaka_reference_points_csv(
+      "examples/NMFS/pifsc_opakapaka/outputs/reference_points.csv",
+      fit, data);
 
   write_projection_csv("examples/NMFS/pifsc_opakapaka/outputs/"
                        "synthetic_projection_scenarios.csv",
