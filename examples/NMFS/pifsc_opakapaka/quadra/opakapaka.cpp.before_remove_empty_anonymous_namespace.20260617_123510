@@ -9,6 +9,9 @@
 #include "drivers/opakapaka_driver_output.hpp"
 #include "../reports/opakapaka_report_suite.hpp"
 #include "../optimization/opakapaka_logq_optimization.hpp"
+
+// QUADRA_OPAKAPAKA_USE_CORE_UNCERTAINTY_REPORTING_ROBUST_V2
+
 #include <algorithm>
 #include <chrono>
 #include <cmath>
@@ -20,6 +23,101 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+
+namespace
+{
+
+// QUADRA_OPAKAPAKA_LOGQ_POLISH_V1
+template <class Model>
+
+
+// QUADRA_LEVEL1_UNCERTAINTY_REPORTING_V3
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+inline void write_pending_quantity_uncertainty_csv(
+    const std::string &path,
+    const std::vector<opakapaka_example::Observation> &data)
+{
+  std::ofstream out(path);
+  out << "year,quantity,estimate,se,lwr_95,upr_95,note\n";
+  for (const auto &obs : data)
+  {
+    out << obs.year << ",biomass,,,,,pending delta-method propagation\n";
+    out << obs.year << ",depletion,,,,,pending delta-method propagation\n";
+    out << obs.year << ",F_proxy,,,,,pending delta-method propagation\n";
+  }
+}
+
+inline void write_projection_uncertainty_csv(
+    const std::string &path,
+    const std::vector<opakapaka_example::ProjectionRow> &rows)
+{
+  std::ofstream out(path);
+  out << "scenario,year,quantity,estimate,se,lwr_95,upr_95,note\n";
+  for (const auto &row : rows)
+  {
+    out << row.scenario << "," << row.year << ",biomass," << row.biomass
+        << ",,,,pending projection covariance/simulation envelope\n";
+    out << row.scenario << "," << row.year << ",index," << row.index
+        << ",,,,pending projection covariance/simulation envelope\n";
+  }
+}
+
+
+
+// QUADRA_OPAKAPAKA_LOCAL_LOGQ_FALLBACK_V1
+template <class Model>
+
+
+// QUADRA_OPAKAPAKA_RANDOM_EFFECT_SELECTED_INVERSE_V1
+
+
+// QUADRA_OPAKAPAKA_DERIVED_QUANTITY_UNCERTAINTY_V1
+
+
+// QUADRA_OPAKAPAKA_DERIVED_QUANTITY_CORRELATION_V1
+
+
+// QUADRA_OPAKAPAKA_BIOMASS_COVARIANCE_MATRIX_V1
+
+
+
+
+// QUADRA_OPAKAPAKA_PROJECTION_UNCERTAINTY_ENVELOPES_V1
+
+
+
+
+
+
+
+
+// QUADRA_OPAKAPAKA_BIOMASS_COVARIANCE_DIAGNOSTICS_V1
+
+
+
+
+
+
+
+
+
 
 int main()
 {
