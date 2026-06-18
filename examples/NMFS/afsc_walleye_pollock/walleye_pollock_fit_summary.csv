@@ -1,0 +1,7 @@
+field,value
+objective,-14.3868675854755
+grad_norm,5.19827398754203e-06
+iterations,17
+converged,yes
+message,converged to requested fixed-effect gradient tolerance
+random_effects,20
