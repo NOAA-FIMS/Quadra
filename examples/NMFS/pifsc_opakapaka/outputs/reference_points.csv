@@ -1,0 +1,11 @@
+quantity,value,note
+q,0.000942365,catchability estimate
+r,0.387881,intrinsic growth rate estimate
+K,1333.01,carrying capacity estimate
+B_MSY,666.504,Schaefer surplus-production biomass at MSY equals K/2
+F_MSY,0.193941,Schaefer surplus-production fishing mortality proxy equals r/2
+MSY,129.262,Schaefer surplus-production maximum sustainable yield equals r*K/4
+B_terminal,1097.1,terminal fitted biomass state
+B_terminal_over_B_MSY,1.64605,terminal biomass relative to B_MSY
+F_status_quo,0.0779327,recent catch divided by terminal biomass
+F_status_quo_over_F_MSY,0.401838,status quo fishing mortality proxy relative to F_MSY
