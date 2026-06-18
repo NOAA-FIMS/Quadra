@@ -99,6 +99,8 @@ public:
     // log_q is estimated to demonstrate optimize_lbfgs without adding a large
     // identifiability problem to the synthetic example.
     add_parameter(params, "log_q", std::log(0.0010), false);
+    add_parameter(params, "log_r", std::log(0.34), false);
+    add_parameter(params, "log_K", std::log(950.0), false);
 
     // Random effects: latent log-biomass by year.
     for (std::size_t i = 0; i < data_.size(); ++i) {
@@ -114,23 +116,30 @@ public:
     const int n = static_cast<int>(data_.size());
 
     const T log_q = par[0];
-    const T q = exp(log_q);
+    const T log_r = par[1];
+    const T log_K = par[2];
 
-    // Fixed biological parameters for readable example.
-    const T r = T(0.34);
-    const T K = T(950.0);
+    const T q = exp(log_q);
+    const T r = exp(log_r);
+    const T K = exp(log_K);
+
     const T sigma_process = T(0.10);
     const T sigma_index = T(0.08);
 
     T nll = T(0.0);
 
+    // Weak biological priors to stabilize the synthetic 3-fixed-effect fit.
+    // Weak biological priors to stabilize the synthetic 3-fixed-effect fit.
+    nll += T(0.5) * square((log_r - log(T(0.34))) / T(0.25));
+    nll += T(0.5) * square((log_K - log(T(950.0))) / T(0.50));
+
     // Biomass state prior.
     const T log_B0_expected = log(T(0.82) * K);
-    const T log_B0 = par[1];
+    const T log_B0 = par[3];
     nll += T(0.5) * square((log_B0 - log_B0_expected) / T(0.15));
 
     for (int t = 0; t < n; ++t) {
-      const T log_Bt = par[1 + t];
+      const T log_Bt = par[3 + t];
       const T Bt = exp(log_Bt);
 
       // Index likelihood.
@@ -147,7 +156,7 @@ public:
         const T guarded_B_next_pred =
             sqrt(B_next_pred * B_next_pred + T(1.0e-8));
 
-        const T log_B_next = par[1 + t + 1];
+        const T log_B_next = par[3 + t + 1];
         nll += T(0.5) *
                square((log_B_next - log(guarded_B_next_pred)) / sigma_process);
       }
@@ -163,10 +172,12 @@ public:
     }
 
     const double log_q = fit.par.at(0);
-    const double q = std::exp(log_q);
+    const double log_r = fit.par.at(1);
+    const double log_K = fit.par.at(2);
 
-    const double r = 0.34;
-    const double K = 950.0;
+    const double q = std::exp(log_q);
+    const double r = std::exp(log_r);
+    const double K = std::exp(log_K);
 
     const double terminal_biomass = std::exp(fit.u_hat.back());
     const double recent_catch = data_.back().catch_mt;
