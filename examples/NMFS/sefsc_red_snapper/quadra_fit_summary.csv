@@ -1,0 +1,21 @@
+field,value
+objective,110.643356126
+joint_objective,106.020126617
+laplace_logdet,46.0040003451
+laplace_constant,18.3787706641
+grad_norm,1.79624738135e-05
+iterations,25
+converged,yes
+message,converged to requested fixed-effect gradient tolerance
+laplace,yes
+random_effects,20
+log_r0,7.10695684968
+r0,1220.42794362
+log_fbar,-4.06812464175
+fbar,0.0171094447779
+log_q,-9.99799142041
+q,4.54912107767e-05
+logit_sel_a50,-2.69417591083
+sel_a50,1.56986108398
+log_sel_slope,0.215705290744
+sel_slope,1.24073666853
