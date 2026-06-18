@@ -14,7 +14,8 @@
 
 namespace sefsc_red_snapper {
 
-inline void write_fit_summary(const std::string &path, const quadra::OptResult &fit) {
+inline void write_fit_summary(const std::string &path,
+                              const quadra::OptResult &fit) {
   std::ofstream out(path);
   if (!out) {
     throw std::runtime_error("Could not open fit summary CSV: " + path);
@@ -50,7 +51,6 @@ inline void write_fit_summary(const std::string &path, const quadra::OptResult &
     }
   }
 }
-
 
 inline void write_fitted_trajectory(
     const std::string &path,
@@ -175,7 +175,7 @@ inline void write_residual_diagnostics(
 }
 
 inline void write_selectivity_at_age(const std::string &path,
-                              const quadra::OptResult &fit) {
+                                     const quadra::OptResult &fit) {
   if (fit.par.size() < 5) {
     return;
   }
@@ -193,7 +193,7 @@ inline void write_selectivity_at_age(const std::string &path,
 }
 
 inline void write_recruitment_deviations(const std::string &path,
-                                  const quadra::OptResult &fit) {
+                                         const quadra::OptResult &fit) {
   std::ofstream out(path);
   out << "year,log_rec_dev,rec_multiplier\n";
   out << std::setprecision(12);
@@ -361,7 +361,7 @@ inline void write_objective_components(
       << "\n";
 }
 
-}  // namespace sefsc_red_snapper
+} // namespace sefsc_red_snapper
 
 using sefsc_red_snapper::write_fit_summary;
 using sefsc_red_snapper::write_fitted_trajectory;

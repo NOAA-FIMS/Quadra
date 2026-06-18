@@ -217,7 +217,6 @@ private:
   std::vector<Observation> observations_;
 };
 
-
-}  // namespace sefsc_red_snapper
+} // namespace sefsc_red_snapper
 
 using sefsc_red_snapper::RedSnapperQuadraObjective;

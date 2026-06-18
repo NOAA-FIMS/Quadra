@@ -1,14 +1,14 @@
 #include "../../../../core/uncertainty/reporting.hpp"
 #include "../../../../core/uncertainty/selected_inverse_diagonal.hpp"
-#include "opakapaka_model.hpp"
 #include "../data/opakapaka_io.hpp"
-#include "../diagnostics/opakapaka_logq_diagnostics.hpp"
-#include "../diagnostics/opakapaka_random_effect_diagnostics.hpp"
-#include "../diagnostics/opakapaka_projection_uncertainty.hpp"
 #include "../diagnostics/opakapaka_biomass_covariance_diagnostics.hpp"
-#include "drivers/opakapaka_driver_output.hpp"
-#include "../reports/opakapaka_report_suite.hpp"
+#include "../diagnostics/opakapaka_logq_diagnostics.hpp"
+#include "../diagnostics/opakapaka_projection_uncertainty.hpp"
+#include "../diagnostics/opakapaka_random_effect_diagnostics.hpp"
 #include "../optimization/opakapaka_logq_optimization.hpp"
+#include "../reports/opakapaka_report_suite.hpp"
+#include "drivers/opakapaka_driver_output.hpp"
+#include "opakapaka_model.hpp"
 #include <algorithm>
 #include <chrono>
 #include <cmath>
@@ -21,8 +21,7 @@
 #include <string>
 #include <vector>
 
-int main()
-{
+int main() {
   using namespace opakapaka_example;
 
   std::cout << "Synthetic opakapaka-style fit + projection example\n";
@@ -58,10 +57,8 @@ int main()
   // over the random effects and avoids quasi-Newton line-search pathologies.
   fit = quadra::optimize_lbfgs(model, params, opts);
 
-  if (fit.converged)
-  {
-    fit.message =
-        "converged with L-BFGS optimizer";
+  if (fit.converged) {
+    fit.message = "converged with L-BFGS optimizer";
   }
 
   primary_optimizer_converged = fit.converged;
@@ -69,19 +66,15 @@ int main()
   primary_optimizer_grad_norm = fit.grad_norm;
 #else
   primary_optimizer_name = "L-BFGS";
-  try
-  {
+  try {
     fit = quadra::optimize_lbfgs(model, params, opts);
     primary_optimizer_converged = fit.converged;
     primary_optimizer_status = fit.message;
     primary_optimizer_grad_norm = fit.grad_norm;
-  }
-  catch (const std::runtime_error &e)
-  {
+  } catch (const std::runtime_error &e) {
     const std::string msg = e.what();
     if (msg.find("line search") == std::string::npos &&
-        msg.find("sufficiently decrease") == std::string::npos)
-    {
+        msg.find("sufficiently decrease") == std::string::npos) {
       throw;
     }
 
@@ -127,8 +120,7 @@ int main()
 
     state_out << "index,log_B,B\n";
 
-    for (std::size_t i = 0; i < fit.u_hat.size(); ++i)
-    {
+    for (std::size_t i = 0; i < fit.u_hat.size(); ++i) {
       state_out << i << "," << std::setprecision(15) << fit.u_hat[i] << ","
                 << std::setprecision(15) << std::exp(fit.u_hat[i]) << "\n";
     }
@@ -165,8 +157,8 @@ int main()
   const auto final_h_uu =
       compute_final_random_effect_hessian(model, params, opts, fit);
 
-  write_opakapaka_report_suite(
-      model, params, opts, fit, data, projection, final_h_uu);
+  write_opakapaka_report_suite(model, params, opts, fit, data, projection,
+                               final_h_uu);
 
   print_opakapaka_output_manifest();
 

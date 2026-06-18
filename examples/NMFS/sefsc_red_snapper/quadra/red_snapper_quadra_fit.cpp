@@ -1,7 +1,7 @@
-#include "red_snapper_age_structured.hpp"
+#include "../diagnostics/red_snapper_functional_analysis_diagnostics.hpp"
 #include "../objective/red_snapper_quadra_objective.hpp"
 #include "../reports/red_snapper_report_suite.hpp"
-#include "../diagnostics/red_snapper_functional_analysis_diagnostics.hpp"
+#include "red_snapper_age_structured.hpp"
 
 #include "../../../../core/optimizer.hpp"
 
@@ -13,8 +13,7 @@
 #include <string>
 #include <vector>
 
-int main()
-{
+int main() {
   const std::string input_path = "examples/NMFS/sefsc_red_snapper/data/"
                                  "synthetic_red_snapper_observations.csv";
   const auto report_paths =
@@ -35,8 +34,7 @@ int main()
   params.add({"log_sel_slope", std::log(1.2),
               quadra::ParameterTransform::Identity, false});
 
-  for (std::size_t t = 0; t < observations.size(); ++t)
-  {
+  for (std::size_t t = 0; t < observations.size(); ++t) {
     params.add({"log_rec_dev_" + std::to_string(t + 1), 0.0,
                 quadra::ParameterTransform::Identity, true});
   }
@@ -45,8 +43,8 @@ int main()
 
   auto fit = quadra::optimize_lbfgs(objective, params, opts);
 
-  sefsc_red_snapper::write_red_snapper_report_suite(
-      report_paths, observations, objective, params, fit);
+  sefsc_red_snapper::write_red_snapper_report_suite(report_paths, observations,
+                                                    objective, params, fit);
   sefsc_red_snapper::write_red_snapper_functional_analysis_report(
       "examples/NMFS/sefsc_red_snapper/outputs/"
       "red_snapper_functional_analysis_report.txt",

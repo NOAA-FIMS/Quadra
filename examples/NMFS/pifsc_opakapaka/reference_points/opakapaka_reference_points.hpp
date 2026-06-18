@@ -10,8 +10,7 @@
 
 namespace opakapaka_example {
 
-struct OpakapakaReferencePoints
-{
+struct OpakapakaReferencePoints {
   double q = std::numeric_limits<double>::quiet_NaN();
   double r = std::numeric_limits<double>::quiet_NaN();
   double K = std::numeric_limits<double>::quiet_NaN();
@@ -26,14 +25,12 @@ struct OpakapakaReferencePoints
   double F_status_quo_over_F_MSY = std::numeric_limits<double>::quiet_NaN();
 };
 
-inline OpakapakaReferencePoints compute_opakapaka_reference_points(
-    const quadra::OptResult &fit,
-    const std::vector<Observation> &data)
-{
+inline OpakapakaReferencePoints
+compute_opakapaka_reference_points(const quadra::OptResult &fit,
+                                   const std::vector<Observation> &data) {
   OpakapakaReferencePoints out;
 
-  if (fit.par.size() < 3 || fit.u_hat.empty())
-  {
+  if (fit.par.size() < 3 || fit.u_hat.empty()) {
     return out;
   }
 
@@ -46,17 +43,14 @@ inline OpakapakaReferencePoints compute_opakapaka_reference_points(
   out.MSY = 0.25 * out.r * out.K;
 
   out.B_terminal = std::exp(fit.u_hat.back());
-  if (std::isfinite(out.B_MSY) && out.B_MSY > 0.0)
-  {
+  if (std::isfinite(out.B_MSY) && out.B_MSY > 0.0) {
     out.B_terminal_over_B_MSY = out.B_terminal / out.B_MSY;
   }
 
-  if (!data.empty() && std::isfinite(out.B_terminal) && out.B_terminal > 0.0)
-  {
+  if (!data.empty() && std::isfinite(out.B_terminal) && out.B_terminal > 0.0) {
     const double recent_catch = data.back().catch_mt;
     out.F_status_quo = recent_catch / out.B_terminal;
-    if (std::isfinite(out.F_MSY) && out.F_MSY > 0.0)
-    {
+    if (std::isfinite(out.F_MSY) && out.F_MSY > 0.0) {
       out.F_status_quo_over_F_MSY = out.F_status_quo / out.F_MSY;
     }
   }
@@ -64,10 +58,9 @@ inline OpakapakaReferencePoints compute_opakapaka_reference_points(
   return out;
 }
 
-inline void write_opakapaka_reference_points_csv(
-    const std::string &path,
-    const OpakapakaReferencePoints &rp)
-{
+inline void
+write_opakapaka_reference_points_csv(const std::string &path,
+                                     const OpakapakaReferencePoints &rp) {
   std::ofstream out(path);
   out << "quantity,value,note\n";
   out << "q," << rp.q << ",catchability estimate\n";
@@ -78,9 +71,9 @@ inline void write_opakapaka_reference_points_csv(
   out << "F_MSY," << rp.F_MSY
       << ",Schaefer surplus-production fishing mortality proxy equals r/2\n";
   out << "MSY," << rp.MSY
-      << ",Schaefer surplus-production maximum sustainable yield equals r*K/4\n";
-  out << "B_terminal," << rp.B_terminal
-      << ",terminal fitted biomass state\n";
+      << ",Schaefer surplus-production maximum sustainable yield equals "
+         "r*K/4\n";
+  out << "B_terminal," << rp.B_terminal << ",terminal fitted biomass state\n";
   out << "B_terminal_over_B_MSY," << rp.B_terminal_over_B_MSY
       << ",terminal biomass relative to B_MSY\n";
   out << "F_status_quo," << rp.F_status_quo
@@ -89,17 +82,16 @@ inline void write_opakapaka_reference_points_csv(
       << ",status quo fishing mortality proxy relative to F_MSY\n";
 }
 
-inline void write_opakapaka_reference_points_csv(
-    const std::string &path,
-    const quadra::OptResult &fit,
-    const std::vector<Observation> &data)
-{
+inline void
+write_opakapaka_reference_points_csv(const std::string &path,
+                                     const quadra::OptResult &fit,
+                                     const std::vector<Observation> &data) {
   write_opakapaka_reference_points_csv(
       path, compute_opakapaka_reference_points(fit, data));
 }
 
-}  // namespace opakapaka_example
+} // namespace opakapaka_example
 
-using opakapaka_example::OpakapakaReferencePoints;
 using opakapaka_example::compute_opakapaka_reference_points;
+using opakapaka_example::OpakapakaReferencePoints;
 using opakapaka_example::write_opakapaka_reference_points_csv;
