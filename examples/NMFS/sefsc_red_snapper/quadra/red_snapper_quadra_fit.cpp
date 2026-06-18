@@ -1,6 +1,7 @@
 #include "red_snapper_age_structured.hpp"
 #include "../objective/red_snapper_quadra_objective.hpp"
-#include "../reports/red_snapper_fit_reports.hpp"
+#include "../reports/red_snapper_report_suite.hpp"
+#include "../diagnostics/red_snapper_functional_analysis_diagnostics.hpp"
 
 #include "../../../../core/optimizer.hpp"
 
@@ -12,23 +13,12 @@
 #include <string>
 #include <vector>
 
-int main() {
+int main()
+{
   const std::string input_path = "examples/NMFS/sefsc_red_snapper/data/"
                                  "synthetic_red_snapper_observations.csv";
-  const std::string summary_path =
-      "examples/NMFS/sefsc_red_snapper/outputs/quadra_fit_summary.csv";
-  const std::string trajectory_path =
-      "examples/NMFS/sefsc_red_snapper/outputs/quadra_fitted_trajectory.csv";
-  const std::string residual_diagnostics_path =
-      "examples/NMFS/sefsc_red_snapper/outputs/"
-      "quadra_fit_residual_diagnostics.csv";
-  const std::string selectivity_path =
-      "examples/NMFS/sefsc_red_snapper/outputs/selectivity_at_age.csv";
-  const std::string recruitment_deviations_path =
-      "examples/NMFS/sefsc_red_snapper/outputs/recruitment_deviations.csv";
-  const std::string objective_components_path =
-      "examples/NMFS/sefsc_red_snapper/outputs/"
-      "quadra_fit_objective_components.csv";
+  const auto report_paths =
+      sefsc_red_snapper::default_red_snapper_report_paths();
   const auto observations = sefsc_red_snapper::read_observations(input_path);
 
   sefsc_red_snapper::RedSnapperQuadraObjective objective(observations);
@@ -45,7 +35,8 @@ int main() {
   params.add({"log_sel_slope", std::log(1.2),
               quadra::ParameterTransform::Identity, false});
 
-  for (std::size_t t = 0; t < observations.size(); ++t) {
+  for (std::size_t t = 0; t < observations.size(); ++t)
+  {
     params.add({"log_rec_dev_" + std::to_string(t + 1), 0.0,
                 quadra::ParameterTransform::Identity, true});
   }
@@ -54,23 +45,34 @@ int main() {
 
   auto fit = quadra::optimize_lbfgs(objective, params, opts);
 
-  sefsc_red_snapper::write_fit_summary(summary_path, fit);
-  write_fitted_trajectory(trajectory_path, observations, fit);
-  write_residual_diagnostics(residual_diagnostics_path, observations, fit);
-  write_selectivity_at_age(selectivity_path, fit);
-  write_recruitment_deviations(recruitment_deviations_path, fit);
-  write_objective_components(objective_components_path, observations, fit);
+  sefsc_red_snapper::write_red_snapper_report_suite(
+      report_paths, observations, objective, params, fit);
+  sefsc_red_snapper::write_red_snapper_functional_analysis_report(
+      "examples/NMFS/sefsc_red_snapper/outputs/"
+      "red_snapper_functional_analysis_report.txt",
+      "examples/NMFS/sefsc_red_snapper/outputs/"
+      "red_snapper_functional_analysis_report.csv",
+      objective, params, fit);
   std::cout
       << "SEFSC red-snapper-style Quadra Laplace recruitment-deviation fit\n";
   std::cout << "objective:  " << fit.value << "\n";
   std::cout << "grad_norm:  " << fit.grad_norm << "\n";
   std::cout << "converged:  " << (fit.converged ? "yes" : "no") << "\n";
   std::cout << "message:    " << fit.message << "\n";
-  std::cout << "wrote:      " << summary_path << "\n";
-  std::cout << "wrote:      " << trajectory_path << "\n";
-  std::cout << "wrote:      " << residual_diagnostics_path << "\n";
-  std::cout << "wrote:      " << selectivity_path << "\n";
-  std::cout << "wrote:      " << recruitment_deviations_path << "\n";
-  std::cout << "wrote:      " << objective_components_path << "\n";
+  std::cout << "wrote:      " << report_paths.summary << "\n";
+  std::cout << "wrote:      " << report_paths.trajectory << "\n";
+  std::cout << "wrote:      " << report_paths.residual_diagnostics << "\n";
+  std::cout << "wrote:      " << report_paths.selectivity << "\n";
+  std::cout << "wrote:      " << report_paths.recruitment_deviations << "\n";
+  std::cout << "wrote:      " << report_paths.objective_components << "\n";
+  std::cout << "wrote:      " << report_paths.laplace_structure_text << "\n";
+  std::cout << "wrote:      " << report_paths.laplace_structure_csv << "\n";
+  std::cout << "wrote:      "
+            << "examples/NMFS/sefsc_red_snapper/outputs/"
+               "red_snapper_functional_analysis_report.txt\n";
+
+  std::cout << "wrote:      "
+            << "examples/NMFS/sefsc_red_snapper/outputs/"
+               "red_snapper_functional_analysis_report.csv\n";
   return 0;
 }
