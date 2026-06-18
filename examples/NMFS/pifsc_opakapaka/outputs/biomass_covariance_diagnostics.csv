@@ -1,0 +1,16 @@
+metric,value,note
+n_years,20,number of fitted biomass states in covariance block
+finite_all,yes,all covariance entries finite
+positive_diagonal,yes,all variances positive
+valid_covariance,yes,finite positive-diagonal symmetric positive-semidefinite check
+ldlt_success,yes,dense LDLT check on biomass covariance matrix
+max_abs_asymmetry,2.22045e-16,max absolute covariance asymmetry
+min_variance,3569.54,minimum biomass variance
+max_variance,5083.43,maximum biomass variance
+min_eigenvalue,2129.61,self-adjoint eigenvalue diagnostic
+max_eigenvalue,7064.51,self-adjoint eigenvalue diagnostic
+mean_nearest_neighbor_corr,0.265879,average Corr(B_t,B_tplus1)
+min_nearest_neighbor_corr,0.258456,minimum Corr(B_t,B_tplus1)
+max_nearest_neighbor_corr,0.278678,maximum Corr(B_t,B_tplus1)
+mean_lag2_corr,0.0703659,average Corr(B_t,B_tplus2)
+mean_lag5_corr,0.00131535,average Corr(B_t,B_tplus5)

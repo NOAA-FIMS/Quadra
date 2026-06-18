@@ -1,0 +1,16 @@
+field,value
+objective_total,15.6324122557
+index_nll,2.50887691725
+catch_nll,13.1235353384
+n_index,20
+n_catch,20
+log_r0,7.09007683578
+r0,1200
+log_m,-1.71479842809
+m,0.18
+log_fbar,-3.68887945411
+fbar,0.025
+log_q,-9.90348755254
+q,5e-05
+sel_a50,4
+sel_slope,1.2

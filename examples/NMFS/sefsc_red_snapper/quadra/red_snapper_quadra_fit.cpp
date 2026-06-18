@@ -72,5 +72,6 @@ int main() {
   std::cout << "wrote:      "
             << "examples/NMFS/sefsc_red_snapper/outputs/"
                "red_snapper_functional_analysis_report.csv\n";
+  std::cout << "wrote:      " << report_paths.reference_points << "\n";
   return 0;
 }
