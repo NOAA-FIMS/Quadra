@@ -1,31 +1,35 @@
 # Level 0: Single-Region Bigeye Tuna Prototype
 
-This is the baseline model in the diagnostic-guided modeling ladder.
+This level is the baseline model for the Bigeye diagnostic-guided modeling
+ladder.
+
+It intentionally starts simple.
 
 ## Purpose
 
-Establish a minimal age-structured tuna-like model before adding fleets,
-regions, movement, or tagging.
+Create a tuna-like single-region model with the same diagnostic package used by
+the Red Snapper example.
 
-## Intended structure
+## Initial model
 
 - one region
 - one aggregate catch series
 - one abundance index
-- age-structured population dynamics
+- age-structured dynamics
 - recruitment deviations as random effects
 - fixed effects for recruitment scale, fishing mortality, and catchability
 
-## Diagnostic questions
+## Key question
 
-- Does the model converge cleanly?
-- Is the random-effect Hessian positive definite?
-- Are recruitment deviations weakly or strongly correlated?
-- Is curvature concentrated in a few years?
-- Are catchability, recruitment scale, and fishing mortality separable?
-- What diagnostics worsen when the next level adds fleets?
+Can the available data separate recruitment scale, fishing mortality,
+catchability, and recruitment deviations?
 
-## Status
+## Expected outputs
 
-Scaffold only. The first implementation should borrow the Red Snapper layout,
-then rename/reparameterize toward a tuna-like example.
+- `bigeye_fit_summary.csv`
+- `bigeye_objective_components.csv`
+- `bigeye_functional_analysis_report.txt`
+- `bigeye_functional_analysis_report.csv`
+- `bigeye_laplace_structure_report.txt`
+- `bigeye_laplace_structure_report.csv`
+- `bigeye_reference_points.csv`

@@ -4,41 +4,30 @@
 
 Status: scaffolded.
 
-Planned first diagnostic target:
+Purpose:
 
-- Fit summary
-- Objective components
-- Functional analysis report
-- Laplace structure report
+- establish baseline tuna-like single-region model
+- generate the same diagnostic package as Red Snapper
+- define the first identifiability questions
 
-Decision: pending implementation.
+Decision: pending implementation and diagnostics.
 
 ## Level 1: multi-fleet model
 
 Status: not started.
 
-Decision: pending Level 0 diagnostics.
-
-## Level 2: fleet-specific composition data
+## Level 2: fleet-specific composition model
 
 Status: not started.
-
-Decision: pending Level 1 diagnostics.
 
 ## Level 3: spatial model
 
 Status: not started.
 
-Decision: pending Level 2 diagnostics.
-
-## Level 4: movement
+## Level 4: movement model
 
 Status: not started.
 
-Decision: pending Level 3 diagnostics.
-
-## Level 5: tagging
+## Level 5: tagging model
 
 Status: not started.
-
-Decision: pending Level 4 diagnostics.

@@ -1,50 +1,41 @@
 # Diagnostic-Guided Model Construction
 
-The goal is to make model development auditable.
+Quadra's purpose in this prototype is not only to fit a model. The purpose is to
+make model development auditable.
 
-For each model level, record:
+## Workflow
 
-## Model change
+1. Start with the simplest defensible model.
+2. Fit the model.
+3. Generate diagnostics.
+4. Add one model feature.
+5. Refit.
+6. Compare diagnostics.
+7. Retain, simplify, or remove the feature.
 
-What was added?
+## Required outputs at each level
 
-Examples:
+- fit summary
+- objective components
+- functional analysis report
+- Laplace structure report
+- reference points, when biologically meaningful
+- model decision notes
 
-- new fleet
-- fleet-specific selectivity
-- length composition
-- regional state structure
-- movement
-- tagging likelihood
+## Future diagnostic frontier: identifiability report
 
-## Expected information gain
+The goal is to expose weak directions such as:
 
-What should the new feature identify?
+```text
++ log_q_fleet_1
+- abundance_region_1
+```
 
-Examples:
+or:
 
-- catchability
-- fleet selectivity
-- recruitment variability
-- regional abundance
-- movement probability
+```text
++ movement_region_1_to_2
+- recruitment_region_2
+```
 
-## Diagnostics to compare
-
-- convergence status
-- fixed-effect gradient norm
-- Huu positive definiteness
-- Huu condition number
-- effective sparsity
-- effective bandwidth
-- random-effect correlation structure
-- top parameter influence
-- weakest curvature directions
-- objective component contributions
-
-## Decision
-
-Retain, simplify, or remove the feature.
-
-A feature should not be retained only because it is biologically plausible. It
-should also improve the model in a way that the data and diagnostics support.
+These directions indicate parameters that the data cannot cleanly separate.
