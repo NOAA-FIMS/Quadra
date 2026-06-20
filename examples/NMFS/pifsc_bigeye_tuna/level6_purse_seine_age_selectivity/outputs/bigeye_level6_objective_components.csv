@@ -1,0 +1,7 @@
+component,value
+fixed_prior_nll,12.3162264209
+rec_prior_nll,19.5143241209
+index_nll,34.4994903473
+catch_nll,84.5818820563
+age_comp_nll,103.420580284
+joint_total,254.33250323

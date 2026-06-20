@@ -1,0 +1,17 @@
+quantity,value,note
+R0,2246.78,estimated unfished recruitment scale
+Fbar,0.0533413,estimated fully selected fishing mortality proxy
+q,1.61979e-05,catchability estimate
+selectivity_a50,1.00011,estimated logistic selectivity age at 50 percent selected
+selectivity_slope,0.549642,estimated logistic selectivity slope
+SPR0_proxy,13.2039,unfished spawning output per recruit proxy
+SPR_current_proxy,8.97602,spawning output per recruit proxy at estimated Fbar
+SPR_ratio,0.679802,SPR_current_proxy divided by SPR0_proxy
+F40_proxy,0.1442,Fbar value giving 40 percent SPR proxy under fitted selectivity
+Fbar_over_F40_proxy,0.369911,estimated Fbar relative to F40 proxy
+SSB0_proxy,29666.2,R0 multiplied by SPR0_proxy
+SSB40_proxy,11866.5,40 percent of SSB0_proxy
+terminal_biomass,25198.9,terminal deterministic total biomass from fitted trajectory
+terminal_SSB_proxy,20308.1,terminal deterministic spawning biomass proxy from fitted trajectory
+terminal_SSB_over_SSB0_proxy,0.684554,terminal SSB proxy relative to unfished SSB proxy
+terminal_SSB_over_SSB40_proxy,1.71138,terminal SSB proxy relative to SSB40 proxy

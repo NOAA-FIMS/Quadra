@@ -284,3 +284,177 @@ Tagging may identify movement and reporting rates.
 
 Retain tagging complexity only if it materially improves movement
 identifiability.
+
+## Level 2 plan: fleet-specific composition
+
+### Model change
+
+Add synthetic fleet-specific age-composition patterns:
+
+- longline samples older/larger fish
+- purse seine samples younger/smaller fish
+
+### Scientific hypothesis
+
+Fleet-specific composition data should provide information about how fleets
+sample the population. This may reduce or clarify the R0/F/q confounding seen
+in Level 1A and Level 1B.
+
+### Decision rule
+
+Fleet-specific composition earns its place only if diagnostics show improved
+separability or interpretable selectivity pressure.
+
+## Level 3 plan: fleet-specific selectivity and vulnerable-biomass indices
+
+### Model change
+
+Add fleet-specific selectivity and connect each fleet index to its own
+fleet-vulnerable biomass.
+
+### Scientific hypothesis
+
+Level 2 showed that fleet-specific composition improved optimization but did
+not fully resolve the abundance/F/q weak direction. This suggests composition
+information was entering the selectivity block but not fully informing the
+index likelihood.
+
+If the index is modeled as fleet-vulnerable biomass rather than total biomass,
+composition-driven selectivity information can influence the index scale.
+
+### Decision rule
+
+Fleet-specific selectivity and vulnerable-biomass indices earn their place only
+if they reduce the primary weak fixed-effect direction or create an interpretable
+separation between fleet q, selectivity, F, and R0.
+
+## Level 4 plan: distinct vulnerable-biomass indices
+
+### Model change
+
+Keep the Level 3 model structure but regenerate synthetic fleet indices so that
+longline and purse seine observe meaningfully different vulnerable biomass
+signals.
+
+### Scientific hypothesis
+
+Level 3 showed that adding fleet-specific selectivity and vulnerable-biomass
+indices improved the objective but did not resolve the main weak fixed-effect
+geometry. Inspection of the synthetic indices showed that longline and purse
+seine index ratios changed only modestly through time, suggesting that the
+indices still behaved like a pooled abundance signal.
+
+If the information bottleneck is pooled or nearly pooled index data, then
+distinct vulnerable-biomass index trajectories should reduce q/F/R0 confounding.
+
+### Decision rule
+
+If q correlations drop, weak eigenvalues increase, or optimizer behavior
+improves, then the diagnostics correctly identified a data-information
+bottleneck. If not, the model remains structurally under-identified.
+
+## Wiggle diagnostics
+
+### Purpose
+
+Fixed-effect geometry identifies weak directions through local curvature.
+Wiggle diagnostics complement this by perturbing each fixed effect directly and
+re-solving random effects through the Laplace machinery.
+
+### Scientific question
+
+Which fixed effects can be moved without meaningfully changing the profiled
+objective?
+
+### Interpretation
+
+A small objective change under perturbation suggests that the parameter is
+weakly informed or that other model components can compensate for it. A large
+change suggests the parameter is locally influential. Asymmetric plus/minus
+changes suggest nonlinearity or boundary behavior.
+
+## Level 5 plan: strong selectivity contrast
+
+### Motivation
+
+Level 4 wiggle diagnostics showed that individual q and R0 parameters are
+highly influential when perturbed alone, but fleet selectivity parameters can
+move with relatively small objective cost. This separates individual parameter
+weakness from compensating multi-parameter weakness.
+
+### Model change
+
+Keep the Level 4 model structure but strengthen the synthetic composition
+information:
+
+- longline composition dominated by older ages
+- purse-seine composition dominated by young ages
+- age-composition effective sample size increased
+
+### Scientific hypothesis
+
+If selectivity is weak because composition data are too diffuse or weakly
+weighted, then stronger composition contrast should increase selectivity
+sensitivity and reduce weak-direction loading on purse-seine selectivity.
+
+### Decision rule
+
+If stronger composition contrast does not improve selectivity geometry, then the
+selectivity weakness is structural rather than data-strength related.
+
+## Level 6 plan: purse-seine age-based selectivity
+
+### Motivation
+
+Level 5 successfully reduced the broad R0/F/q confounding, but the remaining
+weakest fixed-effect direction was dominated by purse-seine a50. This suggests
+the remaining issue is not broad scale identifiability, but an inappropriate
+two-parameter logistic selectivity structure for a young-fish purse-seine fleet.
+
+### Model change
+
+Keep longline logistic selectivity, but replace purse-seine logistic selectivity
+with a fixed age-based selectivity curve.
+
+### Scientific hypothesis
+
+If the Level 5 weakness is a boundary-like purse-seine a50 problem, then
+removing the free purse-seine logistic a50/slope parameters should improve
+fixed-effect geometry without requiring more optimizer tuning.
+
+### Decision rule
+
+If the smallest eigenvalue increases, condition number decreases, and wiggle
+diagnostics no longer identify purse-seine a50 as weak, then the diagnostics
+support using an age-based purse-seine observation process.
+
+## Level 6 result: purse-seine age-based selectivity
+
+### Result
+
+Replacing the purse-seine logistic selectivity curve with a fixed age-based
+selectivity pattern improved the model substantially.
+
+The fit moved back toward biologically sensible scale:
+
+- R0 returned near the original recruitment scale.
+- q returned near the original catchability scale.
+- Fbar dropped from the extreme Level 5 value.
+- The maximum fixed-effect gradient became small.
+
+### Diagnostic interpretation
+
+Level 5 successfully reduced broad R0/F/q confounding but exposed a remaining
+weak direction dominated by purse-seine a50. Level 6 removed that inappropriate
+free logistic purse-seine selectivity parameterization.
+
+This supports the diagnostic-guided conclusion that the purse-seine observation
+process in this synthetic example is better represented by age-based
+selectivity than by a freely estimated logistic a50/slope curve.
+
+### Diagnostic hardening
+
+Level 6 also exposed a diagnostic-layer issue: some post-fit perturbation
+diagnostics can cross regions where the profiled random-effect Hessian is not
+factorizable. Safe diagnostics now preserve those failed perturbations as rows
+instead of aborting the model run.

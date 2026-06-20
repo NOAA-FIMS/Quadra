@@ -1,0 +1,104 @@
+Fixed Effect Geometry Report
+============================
+
+available:             yes
+positive_definite:     yes
+covariance_available:  yes
+min_eigenvalue:        3.16379619610306
+max_eigenvalue:        1254.73320391549
+condition_number_abs:  396.591033727449
+
+Fixed effects
+-------------
+index,name,gradient
+0,log_r0,0.475264561423138
+1,log_fbar,0.310968748499676
+2,log_q_longline,0.0115157695509054
+3,log_q_purse_seine,0.187842223517877
+4,logit_sel_a50,-0.20203855062546
+5,log_sel_slope,0.117976891459519
+
+Eigenvalues
+-----------
+index,eigenvalue
+0,3.16379619610306
+1,5.60642010121417
+2,26.1285476199113
+3,500.999999681299
+4,696.86798121015
+5,1254.73320391549
+
+Weak directions
+---------------
+direction 1, eigenvalue = 3.16379619610306
+parameter,loading
+log_fbar,0.522353741840413
+log_q_longline,0.478859432516556
+log_q_purse_seine,0.478859431877682
+log_r0,-0.449987404283328
+logit_sel_a50,0.243979535939493
+log_sel_slope,-0.0807414317815017
+
+direction 2, eigenvalue = 5.60642010121417
+parameter,loading
+logit_sel_a50,-0.849753847880389
+log_sel_slope,0.451520439816177
+log_q_longline,0.161916155034197
+log_q_purse_seine,0.161916154753835
+log_r0,-0.137865771265952
+log_fbar,0.0510591531715545
+
+direction 3, eigenvalue = 26.1285476199113
+parameter,loading
+log_sel_slope,-0.886314763416522
+logit_sel_a50,-0.460682101127024
+log_fbar,0.0395249271868744
+log_q_longline,0.0170798112926889
+log_q_purse_seine,0.0170798108942058
+log_r0,-0.00851364128925318
+
+Fixed-effect correlation matrix
+-------------------------------
+row,col,value
+log_r0,log_r0,1
+log_r0,log_fbar,-0.97729525280096
+log_r0,log_q_longline,-0.979323984695986
+log_r0,log_q_purse_seine,-0.97932398464129
+log_r0,logit_sel_a50,-0.132324017906896
+log_r0,log_sel_slope,0.00985181648373759
+log_fbar,log_r0,-0.977295252800961
+log_fbar,log_fbar,1
+log_fbar,log_q_longline,0.968803832631637
+log_fbar,log_q_purse_seine,0.968803832609476
+log_fbar,logit_sel_a50,0.272414582295849
+log_fbar,log_sel_slope,-0.135840770674015
+log_q_longline,log_r0,-0.979323984695986
+log_q_longline,log_fbar,0.968803832631637
+log_q_longline,log_q_longline,1
+log_q_longline,log_q_purse_seine,0.974574249913935
+log_q_longline,logit_sel_a50,0.109620935050453
+log_q_longline,log_sel_slope,0.0029619775172217
+log_q_purse_seine,log_r0,-0.97932398464129
+log_q_purse_seine,log_fbar,0.968803832609476
+log_q_purse_seine,log_q_longline,0.974574249913934
+log_q_purse_seine,log_q_purse_seine,1
+log_q_purse_seine,logit_sel_a50,0.109620935192865
+log_q_purse_seine,log_sel_slope,0.00296197761240685
+logit_sel_a50,log_r0,-0.132324017906895
+logit_sel_a50,log_fbar,0.272414582295849
+logit_sel_a50,log_q_longline,0.109620935050452
+logit_sel_a50,log_q_purse_seine,0.109620935192864
+logit_sel_a50,logit_sel_a50,1
+logit_sel_a50,log_sel_slope,-0.571644835605841
+log_sel_slope,log_r0,0.00985181648373734
+log_sel_slope,log_fbar,-0.135840770674015
+log_sel_slope,log_q_longline,0.00296197751722194
+log_sel_slope,log_q_purse_seine,0.00296197761240708
+log_sel_slope,logit_sel_a50,-0.571644835605841
+log_sel_slope,log_sel_slope,1
+
+Interpretation notes
+--------------------
+Small eigenvalues identify weakly curved fixed-effect directions.
+Large loadings in the same weak direction indicate parameter combinations
+that may be difficult for the data to separate.
