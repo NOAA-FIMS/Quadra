@@ -1,5 +1,7 @@
 #include "../diagnostics/bigeye_functional_analysis_diagnostics.hpp"
 #include "../diagnostics/bigeye_safe_fixed_effect_diagnostics.hpp"
+#include "../diagnostics/bigeye_longline_slope_geometry_scan.hpp"
+#include "../diagnostics/bigeye_recruitment_diagnostics.hpp"
 #include "../diagnostics/bigeye_fixed_effect_geometry.hpp"
 #include "../diagnostics/bigeye_fixed_effect_wiggle_diagnostics.hpp"
 #include "../objective/bigeye_quadra_objective.hpp"
@@ -171,6 +173,20 @@ int main()
 
     pifsc_bigeye_tuna::write_bigeye_report_suite(report_paths, observations,
                                                       objective, params, fit);
+
+    pifsc_bigeye_tuna::write_recruitment_diagnostics(
+        "examples/NMFS/pifsc_bigeye_tuna/level6_purse_seine_age_selectivity/outputs/"
+        "bigeye_level6_recruitment_diagnostics.txt",
+        "examples/NMFS/pifsc_bigeye_tuna/level6_purse_seine_age_selectivity/outputs/"
+        "bigeye_level6_recruitment_diagnostics.csv",
+        objective, fit);
+
+    pifsc_bigeye_tuna::write_longline_slope_geometry_scan(
+        "examples/NMFS/pifsc_bigeye_tuna/level6_purse_seine_age_selectivity/outputs/"
+        "bigeye_level6_longline_slope_geometry_scan.txt",
+        "examples/NMFS/pifsc_bigeye_tuna/level6_purse_seine_age_selectivity/outputs/"
+        "bigeye_level6_longline_slope_geometry_scan.csv",
+        objective, params, fit, opts);
 
     pifsc_bigeye_tuna::write_safe_fixed_effect_wiggle_diagnostics(
         "examples/NMFS/pifsc_bigeye_tuna/level6_purse_seine_age_selectivity/outputs/"

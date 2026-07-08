@@ -1,0 +1,8 @@
+name: FleetPackage
+purpose: Composes fleet dynamics for one fleet
+consumes: BigeyeModelData, FleetParameters, LifeHistoryState, PopulationState
+produces: FleetState
+steps:
+  - LogisticSelectivity
+  - FishingMortality
+  - BaranovCatch

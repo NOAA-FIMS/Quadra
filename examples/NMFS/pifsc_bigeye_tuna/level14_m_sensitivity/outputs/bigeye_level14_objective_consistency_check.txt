@@ -1,0 +1,15 @@
+Objective Consistency Check
+===========================
+
+fit_value:                  1926.12847351387
+direct_joint_objective:     1905.47295761648
+direct_minus_fit_value:     -20.6555158973902
+fit_par_size:               15
+fit_u_hat_size:             20
+full_parameter_vector_size: 35
+
+Interpretation
+--------------
+The direct joint objective is evaluated at the exact returned fixed effects and random effects.
+The optimizer fit value is the profiled Laplace objective, so it should differ by Laplace terms.
+A large mismatch with the objective-components report indicates stale parameter ordering or assumptions.

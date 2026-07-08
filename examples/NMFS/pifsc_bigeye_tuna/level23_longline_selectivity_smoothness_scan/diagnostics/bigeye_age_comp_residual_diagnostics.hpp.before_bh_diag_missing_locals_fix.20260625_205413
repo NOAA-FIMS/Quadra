@@ -1,0 +1,213 @@
+#pragma once
+
+#include "../objective/bigeye_quadra_objective.hpp"
+
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <fstream>
+#include <iomanip>
+#include <iostream>
+#include <map>
+#include <stdexcept>
+#include <string>
+#include <vector>
+
+namespace pifsc_bigeye_tuna {
+
+struct BigeyeAgeCompResidualRow {
+  int year = 0;
+  std::string fleet;
+  int age = 0;
+  double observed = 0.0;
+  double predicted = 0.0;
+  double residual = 0.0;
+  double abs_residual = 0.0;
+};
+
+
+
+inline void write_level15_age_comp_residual_diagnostics(
+    const std::string &txt_path,
+    const std::string &csv_path,
+    const BigeyeQuadraObjective &objective,
+    const quadra::OptResult &fit)
+{
+  std::ofstream txt(txt_path);
+  std::ofstream csv(csv_path);
+  if (!txt || !csv) {
+    throw std::runtime_error("Cannot write age-comp residual diagnostics");
+  }
+
+  txt << std::setprecision(15);
+  csv << std::setprecision(15);
+
+  constexpr int kBaseFixed = 3;
+  constexpr int kLonglineSelOffset = kBaseFixed;
+  constexpr int kLonglineSelDevs = kAges;
+  constexpr int kInitialDevs = kAges;
+  constexpr int kInitialDevOffset = kLonglineSelOffset + kLonglineSelDevs;
+  constexpr int kPurseSeineSelOffset = kInitialDevOffset + kInitialDevs;
+
+  const double min_positive = 1.0e-12;
+  const double m = 0.45;
+  const auto weight = default_weight_at_age();
+  const auto maturity = default_maturity_at_age();
+
+  const double r0 = std::exp(fit.par[0]);
+  const double steepness = 0.75;
+  const double fbar = std::exp(fit.par[1]);
+  const double q_purse_seine = std::exp(fit.par[2]);
+  const double q_longline = 0.00005;
+  std::array<double, kAges> sel_longline{};
+  std::array<double, kAges> sel_purse_seine{};
+  for (int a = 0; a < kAges; ++a) {
+    sel_longline[static_cast<std::size_t>(a)] =
+        1.0 / (1.0 + std::exp(-fit.par[kLonglineSelOffset + a]));
+    sel_purse_seine[static_cast<std::size_t>(a)] =
+        1.0 / (1.0 + std::exp(-fit.par[kPurseSeineSelOffset + a]));
+  }
+
+  std::array<double, kAges> n{};
+  n[0] = r0;
+  for (int a = 1; a < kAges; ++a) {
+    n[static_cast<std::size_t>(a)] =
+        n[static_cast<std::size_t>(a - 1)] * std::exp(-m);
+  }
+  n[static_cast<std::size_t>(kAges - 1)] =
+      n[static_cast<std::size_t>(kAges - 1)] / (1.0 - std::exp(-m));
+
+  for (int a = 0; a < kAges; ++a) {
+    n[static_cast<std::size_t>(a)] *= std::exp(fit.par[kInitialDevOffset + a]);
+  }
+
+  std::vector<BigeyeAgeCompResidualRow> rows;
+  std::map<std::string, std::pair<double, int>> fleet_abs_sum_n;
+  std::map<std::string, double> fleet_max_abs;
+  std::map<int, std::pair<double, int>> year_abs_sum_n;
+  std::map<int, double> year_max_abs;
+
+  csv << "section,year,fleet,age,observed,predicted,residual,abs_residual\n";
+
+  const auto &observations = objective.fleet_observations();
+
+  for (std::size_t t = 0; t < objective.n_years(); ++t) {
+    for (const auto &obs : observations) {
+      if (static_cast<std::size_t>(obs.year - observations.front().year) != t &&
+          obs.year != objective.unique_years()[t]) {
+        continue;
+      }
+
+      const bool is_longline = obs.fleet == "longline";
+      const auto &sel = is_longline ? sel_longline : sel_purse_seine;
+
+      std::array<double, kAges> pred{};
+      double selected_sum = 0.0;
+      for (int a = 0; a < kAges; ++a) {
+        const std::size_t i = static_cast<std::size_t>(a);
+        pred[i] = n[i] * sel[i];
+        selected_sum += pred[i];
+      }
+
+      for (int a = 0; a < kAges; ++a) {
+        const std::size_t i = static_cast<std::size_t>(a);
+        pred[i] /= std::max(selected_sum, min_positive);
+        const double residual = obs.age_comp[i] - pred[i];
+        const double abs_residual = std::abs(residual);
+
+        rows.push_back({obs.year, obs.fleet, a + 1, obs.age_comp[i], pred[i],
+                        residual, abs_residual});
+
+        fleet_abs_sum_n[obs.fleet].first += abs_residual;
+        fleet_abs_sum_n[obs.fleet].second += 1;
+        fleet_max_abs[obs.fleet] = std::max(fleet_max_abs[obs.fleet], abs_residual);
+
+        year_abs_sum_n[obs.year].first += abs_residual;
+        year_abs_sum_n[obs.year].second += 1;
+        year_max_abs[obs.year] = std::max(year_max_abs[obs.year], abs_residual);
+
+        csv << "age_residual," << obs.year << "," << obs.fleet << ","
+            << (a + 1) << "," << obs.age_comp[i] << "," << pred[i] << ","
+            << residual << "," << abs_residual << "\n";
+      }
+    }
+
+    std::array<double, kAges> total_sel{};
+    for (int a = 0; a < kAges; ++a) {
+      const std::size_t i = static_cast<std::size_t>(a);
+      total_sel[i] = sel_longline[i] + sel_purse_seine[i];
+    }
+
+    std::array<double, kAges> next{};
+    const double spawning_biomass =
+        level23_bh_sync::spawning_biomass_from_numbers(n, weight, maturity);
+    const double expected_recruitment =
+        level23_bh_sync::beverton_holt_recruitment(spawning_biomass, r0, steepness, phi0);
+    next[0] = expected_recruitment * std::exp(fit.u_hat[static_cast<Eigen::Index>(t)]);
+    for (int a = 1; a < kAges; ++a) {
+      const std::size_t prev = static_cast<std::size_t>(a - 1);
+      const double z_prev = m + fbar * total_sel[prev];
+      next[static_cast<std::size_t>(a)] = n[prev] * std::exp(-z_prev);
+    }
+    const std::size_t last = static_cast<std::size_t>(kAges - 1);
+    const double z_last = m + fbar * total_sel[last];
+    next[last] += n[last] * std::exp(-z_last);
+    n = next;
+  }
+
+  std::sort(rows.begin(), rows.end(),
+            [](const BigeyeAgeCompResidualRow &a,
+               const BigeyeAgeCompResidualRow &b) {
+              return a.abs_residual > b.abs_residual;
+            });
+
+  txt << "Level 23 Age-Composition Residual Diagnostics\n";
+  txt << "=============================================\n\n";
+  txt << "Interpretation\n";
+  txt << "--------------\n";
+  txt << "Residuals are observed minus predicted age-composition proportions.\n";
+  txt << "This report now uses the same objective-consistent prediction path as\n";
+  txt << "the Level 23 model: fitted initial numbers, fitted longline selectivity,\n";
+  txt << "fitted age-specific purse-seine selectivity, and the same annual state\n";
+  txt << "update used in the objective.\n\n";
+
+  txt << "Fleet summary\n";
+  txt << "-------------\n";
+  txt << "fleet,mean_abs_residual,max_abs_residual,n\n";
+  for (const auto &kv : fleet_abs_sum_n) {
+    const auto &fleet = kv.first;
+    const double mean_abs =
+        kv.second.second > 0 ? kv.second.first / kv.second.second : 0.0;
+    txt << fleet << "," << mean_abs << "," << fleet_max_abs[fleet] << ","
+        << kv.second.second << "\n";
+    csv << "fleet_summary,," << fleet << ",," << "," << "," << mean_abs
+        << "," << fleet_max_abs[fleet] << "\n";
+  }
+
+  txt << "\nWorst years\n";
+  txt << "-----------\n";
+  txt << "year,mean_abs_residual,max_abs_residual,n\n";
+  for (const auto &kv : year_abs_sum_n) {
+    const int year = kv.first;
+    const double mean_abs =
+        kv.second.second > 0 ? kv.second.first / kv.second.second : 0.0;
+    txt << year << "," << mean_abs << "," << year_max_abs[year] << ","
+        << kv.second.second << "\n";
+    csv << "year_summary," << year << ",,," << "," << "," << mean_abs
+        << "," << year_max_abs[year] << "\n";
+  }
+
+  txt << "\nCompact worst age-comp residuals\n";
+  txt << "--------------------------------\n";
+  txt << "year,fleet,age,observed,predicted,residual,abs_residual\n";
+  for (std::size_t i = 0; i < std::min<std::size_t>(20, rows.size()); ++i) {
+    const auto &r = rows[i];
+    txt << r.year << "," << r.fleet << "," << r.age << "," << r.observed
+        << "," << r.predicted << "," << r.residual << ","
+        << r.abs_residual << "\n";
+  }
+}
+
+} // namespace pifsc_bigeye_tuna
+
+using pifsc_bigeye_tuna::write_level15_age_comp_residual_diagnostics;

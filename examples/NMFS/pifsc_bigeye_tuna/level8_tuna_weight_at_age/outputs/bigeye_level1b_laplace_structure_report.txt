@@ -1,0 +1,42 @@
+Laplace Structure Report
+========================
+
+Random effects:              20
+Matrix size:                 20 x 20
+Total entries:               400
+Structural nonzeros:         362 / 400 (90.5%)
+Nonzero tolerance:           1e-08
+Max |H_ij|:                  20.4439825641863
+Positive definite:           yes
+Min eigenvalue:              8.16326632957498
+Max eigenvalue:              95.317695528308
+Condition number:            11.6764162383112
+
+Effective sparsity
+------------------
+curvature_retained,entries_required,entry_share,compression_vs_structural
+90%,183,0.4575,1.97814207650273
+95%,220,0.55,1.64545454545455
+97%,243,0.6075,1.48971193415638
+98%,259,0.6475,1.3976833976834
+99%,283,0.7075,1.2791519434629
+99.5%,303,0.7575,1.19471947194719
+99.9%,337,0.8425,1.07418397626113
+100%,362,0.905,1
+
+Effective bandwidth
+-------------------
+curvature_retained,bandwidth,entry_count_if_banded,entry_share_if_banded
+90%,7,244,0.61
+95%,8,268,0.67
+97%,9,290,0.725
+98%,10,310,0.775
+99%,11,328,0.82
+99.5%,13,358,0.895
+99.9%,15,380,0.95
+100%,19,400,1
+
+Interpretation
+--------------
+This report measures numerical curvature concentration, not only symbolic sparsity.
+A dense structural Hessian can still be effectively sparse if most curvature is carried by relatively few entries or bands.

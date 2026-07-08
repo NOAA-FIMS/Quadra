@@ -1,0 +1,16 @@
+field,value
+objective,2161.95627839
+grad_norm,0.0609627609844
+iterations,96
+converged,no
+message,stopped before requested fixed-effect gradient tolerance; L-BFGS line search stalled; recovered with gradient restart. attempts=1
+laplace,yes
+random_effects,20
+log_r0,7.90791947486
+r0,2718.72819578
+log_fbar,-2.48066864488
+fbar,0.083687249829
+log_q_longline,-10.9448951535
+q_longline,1.76478754397e-05
+log_q_purse_seine,-10.2812669149
+q_purse_seine,3.42690852503e-05

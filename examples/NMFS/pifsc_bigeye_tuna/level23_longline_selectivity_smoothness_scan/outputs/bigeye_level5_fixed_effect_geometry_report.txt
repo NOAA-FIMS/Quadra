@@ -1,0 +1,142 @@
+Fixed Effect Geometry Report
+============================
+
+available:             yes
+positive_definite:     yes
+covariance_available:  yes
+min_eigenvalue:        2.56729673955225
+max_eigenvalue:        2106.40148345695
+condition_number_abs:  820.474490153532
+
+Fixed effects
+-------------
+index,name,gradient
+0,log_r0,-0.0131191696762698
+1,log_fbar,-0.0328611509503594
+2,log_q_longline,0.00476039577704593
+3,log_q_purse_seine,-0.000235160907178067
+4,logit_sel_a50_longline,0.0207658022652086
+5,log_sel_slope_longline,-0.0115294922844042
+6,logit_sel_a50_purse_seine,0.000258802600346423
+7,log_sel_slope_purse_seine,-0.00941429935192277
+
+Eigenvalues
+-----------
+index,eigenvalue
+0,2.56729673955225
+1,25.3959534001474
+2,55.8042463145482
+3,206.485008623924
+4,445.953272371255
+5,722.042408115046
+6,1457.45119913259
+7,2106.40148345695
+
+Weak directions
+---------------
+direction 1, eigenvalue = 2.56729673955225
+parameter,loading
+logit_sel_a50_purse_seine,-0.984889886507556
+log_sel_slope_purse_seine,0.152435023337375
+log_q_purse_seine,-0.0681013572570346
+log_fbar,-0.0446969459873647
+log_q_longline,0.00693853285107406
+log_sel_slope_longline,0.00611300503862857
+log_r0,-0.00435920896281785
+logit_sel_a50_longline,-0.00391771654277738
+
+direction 2, eigenvalue = 25.3959534001474
+parameter,loading
+log_sel_slope_purse_seine,-0.950052084849379
+log_q_longline,-0.248820534800448
+logit_sel_a50_purse_seine,-0.144407116845045
+log_fbar,-0.0897924788993105
+log_r0,0.0588790841871315
+logit_sel_a50_longline,-0.0460096530859093
+log_sel_slope_longline,0.0313292684897839
+log_q_purse_seine,-0.00284869736530472
+
+direction 3, eigenvalue = 55.8042463145482
+parameter,loading
+log_q_longline,0.745911416621436
+log_fbar,0.42267065589761
+log_q_purse_seine,0.361104071336196
+log_sel_slope_purse_seine,-0.246630471155361
+log_r0,-0.180709962630784
+logit_sel_a50_longline,0.136730015456627
+log_sel_slope_longline,-0.127941604367754
+logit_sel_a50_purse_seine,-0.0776060159395633
+
+Fixed-effect correlation matrix
+-------------------------------
+row,col,value
+log_r0,log_r0,1
+log_r0,log_fbar,-0.392054397861814
+log_r0,log_q_longline,-0.549837235191013
+log_r0,log_q_purse_seine,-0.327697037392136
+log_r0,logit_sel_a50_longline,-0.248838958866591
+log_r0,log_sel_slope_longline,0.0703661617650259
+log_r0,logit_sel_a50_purse_seine,0.0563904539078521
+log_r0,log_sel_slope_purse_seine,-0.170692469637921
+log_fbar,log_r0,-0.392054397861814
+log_fbar,log_fbar,1
+log_fbar,log_q_longline,0.783082714883588
+log_fbar,log_q_purse_seine,0.683518926865093
+log_fbar,logit_sel_a50_longline,0.511217184646552
+log_fbar,log_sel_slope_longline,-0.175777817794545
+log_fbar,logit_sel_a50_purse_seine,0.394275659592027
+log_fbar,log_sel_slope_purse_seine,-0.0767391353546534
+log_q_longline,log_r0,-0.549837235191014
+log_q_longline,log_fbar,0.783082714883588
+log_q_longline,log_q_longline,1
+log_q_longline,log_q_purse_seine,0.452971132384148
+log_q_longline,logit_sel_a50_longline,0.564341660687656
+log_q_longline,log_sel_slope_longline,-0.197561069632496
+log_q_longline,logit_sel_a50_purse_seine,-0.0320224678733375
+log_q_longline,log_sel_slope_purse_seine,0.260359158143359
+log_q_purse_seine,log_r0,-0.327697037392136
+log_q_purse_seine,log_fbar,0.683518926865093
+log_q_purse_seine,log_q_longline,0.452971132384148
+log_q_purse_seine,log_q_purse_seine,1
+log_q_purse_seine,logit_sel_a50_longline,0.244551424936415
+log_q_purse_seine,log_sel_slope_longline,-0.0905733282762774
+log_q_purse_seine,logit_sel_a50_purse_seine,0.531927363776924
+log_q_purse_seine,log_sel_slope_purse_seine,-0.318270082395363
+logit_sel_a50_longline,log_r0,-0.248838958866591
+logit_sel_a50_longline,log_fbar,0.511217184646552
+logit_sel_a50_longline,log_q_longline,0.564341660687656
+logit_sel_a50_longline,log_q_purse_seine,0.244551424936415
+logit_sel_a50_longline,logit_sel_a50_longline,1
+logit_sel_a50_longline,log_sel_slope_longline,-0.567274593206556
+logit_sel_a50_longline,logit_sel_a50_purse_seine,0.0755631353358942
+logit_sel_a50_longline,log_sel_slope_purse_seine,0.116850092107171
+log_sel_slope_longline,log_r0,0.0703661617650258
+log_sel_slope_longline,log_fbar,-0.175777817794545
+log_sel_slope_longline,log_q_longline,-0.197561069632496
+log_sel_slope_longline,log_q_purse_seine,-0.0905733282762774
+log_sel_slope_longline,logit_sel_a50_longline,-0.567274593206556
+log_sel_slope_longline,log_sel_slope_longline,1
+log_sel_slope_longline,logit_sel_a50_purse_seine,-0.0553868011246691
+log_sel_slope_longline,log_sel_slope_purse_seine,-0.0146110650951625
+logit_sel_a50_purse_seine,log_r0,0.0563904539078522
+logit_sel_a50_purse_seine,log_fbar,0.394275659592026
+logit_sel_a50_purse_seine,log_q_longline,-0.0320224678733376
+logit_sel_a50_purse_seine,log_q_purse_seine,0.531927363776924
+logit_sel_a50_purse_seine,logit_sel_a50_longline,0.0755631353358942
+logit_sel_a50_purse_seine,log_sel_slope_longline,-0.0553868011246691
+logit_sel_a50_purse_seine,logit_sel_a50_purse_seine,1
+logit_sel_a50_purse_seine,log_sel_slope_purse_seine,-0.400861394091699
+log_sel_slope_purse_seine,log_r0,-0.170692469637921
+log_sel_slope_purse_seine,log_fbar,-0.0767391353546534
+log_sel_slope_purse_seine,log_q_longline,0.260359158143359
+log_sel_slope_purse_seine,log_q_purse_seine,-0.318270082395363
+log_sel_slope_purse_seine,logit_sel_a50_longline,0.116850092107171
+log_sel_slope_purse_seine,log_sel_slope_longline,-0.0146110650951624
+log_sel_slope_purse_seine,logit_sel_a50_purse_seine,-0.400861394091699
+log_sel_slope_purse_seine,log_sel_slope_purse_seine,1
+
+Interpretation notes
+--------------------
+Small eigenvalues identify weakly curved fixed-effect directions.
+Large loadings in the same weak direction indicate parameter combinations
+that may be difficult for the data to separate.

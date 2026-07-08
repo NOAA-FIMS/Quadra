@@ -1,0 +1,203 @@
+#pragma once
+
+#include "bigeye_level21_m_at_age_helpers.hpp"
+#include "../objective/bigeye_quadra_objective.hpp"
+
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <fstream>
+#include <iomanip>
+#include <map>
+#include <numeric>
+#include <string>
+#include <vector>
+
+namespace pifsc_bigeye_tuna {
+
+inline double invlogit_double_level21_plus(double x) {
+  if (x >= 0.0) {
+    const double z = std::exp(-x);
+    return 1.0 / (1.0 + z);
+  }
+  const double z = std::exp(x);
+  return z / (1.0 + z);
+}
+
+inline std::array<double, kAges>
+level21_longline_selectivity_from_par(const std::vector<double> &par) {
+  std::array<double, kAges> sel{};
+  for (int a = 0; a < kAges; ++a) {
+    const std::size_t idx =
+        static_cast<std::size_t>(level21_m_helpers::kLonglineSelOffset + a);
+    sel[static_cast<std::size_t>(a)] =
+        idx < par.size() ? invlogit_double_level21_plus(par[idx]) : 0.0;
+  }
+  return sel;
+}
+
+inline std::array<double, kAges>
+level21_purse_seine_selectivity_from_par(const std::vector<double> &par) {
+  std::array<double, kAges> sel{};
+  for (int a = 0; a < kAges; ++a) {
+    const std::size_t idx =
+        static_cast<std::size_t>(level21_m_helpers::kPurseSeineSelOffset + a);
+    sel[static_cast<std::size_t>(a)] =
+        idx < par.size() ? invlogit_double_level21_plus(par[idx]) : 0.0;
+  }
+  return sel;
+}
+
+inline void write_level21_plus_group_audit(
+    const BigeyeQuadraObjective &objective, const quadra::OptResult &fit,
+    const std::string &txt_path, const std::string &csv_path) {
+  const auto &obs = objective.fleet_observations();
+  const auto years = objective.unique_years();
+  const auto weight = default_weight_at_age();
+
+  const auto m_at_age = level21_m_helpers::m_at_age_from_level21_par(fit.par);
+  const auto sel_ll = level21_longline_selectivity_from_par(fit.par);
+  const auto sel_ps = level21_purse_seine_selectivity_from_par(fit.par);
+
+  const double r0 = std::exp(fit.par[0]);
+  const double fbar = std::exp(fit.par[1]);
+
+  std::array<double, kAges> n{};
+  n[0] = r0;
+  for (int a = 1; a < kAges; ++a) {
+    const auto prev = static_cast<std::size_t>(a - 1);
+    n[static_cast<std::size_t>(a)] = n[prev] * std::exp(-m_at_age[prev]);
+  }
+
+  const auto last = static_cast<std::size_t>(kAges - 1);
+  const double plus_init_denominator = 1.0 - std::exp(-m_at_age[last]);
+  const double plus_before_equilibrium = n[last];
+  n[last] = n[last] / std::max(plus_init_denominator, 1.0e-12);
+
+  for (int a = 0; a < kAges; ++a) {
+    const std::size_t idx =
+        static_cast<std::size_t>(level21_m_helpers::kInitialDevOffset + a);
+    if (idx < fit.par.size()) {
+      n[static_cast<std::size_t>(a)] *= std::exp(fit.par[idx]);
+    }
+  }
+
+  std::ofstream txt(txt_path);
+  std::ofstream csv(csv_path);
+  txt << std::setprecision(15);
+  csv << std::setprecision(15);
+
+  txt << "Level 21 Plus Group Audit\n";
+  txt << "=========================\n\n";
+  txt << "Purpose\n-------\n";
+  txt << "Audit whether the terminal age is accumulating biomass or distorting the\n";
+  txt << "longline tail age composition under age-based M and dome-shaped selectivity.\n\n";
+
+  txt << "Initialization\n--------------\n";
+  txt << "r0," << r0 << "\n";
+  txt << "fbar," << fbar << "\n";
+  txt << "plus_before_equilibrium," << plus_before_equilibrium << "\n";
+  txt << "plus_init_denominator_1_minus_exp_minus_mplus," << plus_init_denominator << "\n";
+  txt << "plus_after_equilibrium_and_init_dev," << n[last] << "\n\n";
+
+  csv << "section,year,age,n,m,ll_sel,ps_sel,total_sel,z,annual_survival,"
+      << "plus_inflow,plus_survival,plus_next,pred_ll_comp,obs_ll_comp,residual\n";
+
+  txt << "Initial state by age\n--------------------\n";
+  txt << "age,n,m,ll_sel,ps_sel,total_sel,z,annual_survival\n";
+  for (int a = 0; a < kAges; ++a) {
+    const auto i = static_cast<std::size_t>(a);
+    const double total_sel = sel_ll[i] + sel_ps[i];
+    const double z = m_at_age[i] + fbar * total_sel;
+    const double surv = std::exp(-z);
+    txt << (a + 1) << "," << n[i] << "," << m_at_age[i] << ","
+        << sel_ll[i] << "," << sel_ps[i] << "," << total_sel << ","
+        << z << "," << surv << "\n";
+    csv << "initial,NA," << (a + 1) << "," << n[i] << "," << m_at_age[i]
+        << "," << sel_ll[i] << "," << sel_ps[i] << "," << total_sel << ","
+        << z << "," << surv << ",,,,,,\n";
+  }
+
+  txt << "\nAnnual plus-group dynamics\n--------------------------\n";
+  txt << "year,n8,n9,n10,z8,z9,z10,s8,s9,s10,inflow_age9_to_plus,plus_survival,plus_next,plus_share_of_ages8_10\n";
+
+  std::map<int, const FleetObservation *> longline_by_year;
+  for (const auto &o : obs) {
+    if (o.fleet == "longline")
+      longline_by_year[o.year] = &o;
+  }
+
+  for (std::size_t t = 0; t < years.size(); ++t) {
+    const int year = years[t];
+
+    std::array<double, kAges> selected_ll{};
+    double selected_sum = 0.0;
+    for (int a = 0; a < kAges; ++a) {
+      const auto i = static_cast<std::size_t>(a);
+      selected_ll[i] = n[i] * sel_ll[i];
+      selected_sum += selected_ll[i];
+    }
+
+    const FleetObservation *ll_obs = nullptr;
+    auto it = longline_by_year.find(year);
+    if (it != longline_by_year.end())
+      ll_obs = it->second;
+
+    for (int a = 7; a < kAges; ++a) {
+      const auto i = static_cast<std::size_t>(a);
+      const double pred = selected_sum > 0.0 ? selected_ll[i] / selected_sum : 0.0;
+      const double observed = ll_obs ? ll_obs->age_comp[i] : 0.0;
+      csv << "tail_comp," << year << "," << (a + 1) << "," << n[i] << ","
+          << m_at_age[i] << "," << sel_ll[i] << "," << sel_ps[i] << ",,,,"
+          << ",,,," << pred << "," << observed << "," << (observed - pred)
+          << "\n";
+    }
+
+    std::array<double, kAges> z{};
+    std::array<double, kAges> surv{};
+    for (int a = 0; a < kAges; ++a) {
+      const auto i = static_cast<std::size_t>(a);
+      const double total_sel = sel_ll[i] + sel_ps[i];
+      z[i] = m_at_age[i] + fbar * total_sel;
+      surv[i] = std::exp(-z[i]);
+    }
+
+    const double inflow_age9_to_plus = n[8] * surv[8];
+    const double plus_survival = n[9] * surv[9];
+    const double plus_next = inflow_age9_to_plus + plus_survival;
+    const double tail_sum = n[7] + n[8] + n[9];
+    const double plus_share = tail_sum > 0.0 ? n[9] / tail_sum : 0.0;
+
+    txt << year << "," << n[7] << "," << n[8] << "," << n[9] << ","
+        << z[7] << "," << z[8] << "," << z[9] << ","
+        << surv[7] << "," << surv[8] << "," << surv[9] << ","
+        << inflow_age9_to_plus << "," << plus_survival << ","
+        << plus_next << "," << plus_share << "\n";
+
+    csv << "plus_dynamics," << year << ",10," << n[9] << "," << m_at_age[9]
+        << "," << sel_ll[9] << "," << sel_ps[9] << ",,"
+        << z[9] << "," << surv[9] << "," << inflow_age9_to_plus << ","
+        << plus_survival << "," << plus_next << ",,,\n";
+
+    std::array<double, kAges> next{};
+    const std::size_t rec_idx =
+        static_cast<std::size_t>(level21_m_helpers::kRecruitmentOffset + t);
+    const double rec_dev = rec_idx < fit.par.size() ? fit.par[rec_idx] : 0.0;
+    next[0] = r0 * std::exp(rec_dev);
+    for (int a = 1; a < kAges; ++a) {
+      const auto prev = static_cast<std::size_t>(a - 1);
+      next[static_cast<std::size_t>(a)] = n[prev] * surv[prev];
+    }
+    next[last] += n[last] * surv[last];
+    n = next;
+  }
+
+  txt << "\nInterpretation\n--------------\n";
+  txt << "If n10 or plus_share grows large while longline age-10 predicted composition\n";
+  txt << "is inconsistent with observations, the terminal age is likely distorting the\n";
+  txt << "tail. If n10 remains modest but ages 8-9 dominate selected numbers, the issue\n";
+  txt << "is more likely longline dome-shaped selectivity or catch-at-age vs selected-\n";
+  txt << "numbers age-composition basis.\n";
+}
+
+} // namespace pifsc_bigeye_tuna

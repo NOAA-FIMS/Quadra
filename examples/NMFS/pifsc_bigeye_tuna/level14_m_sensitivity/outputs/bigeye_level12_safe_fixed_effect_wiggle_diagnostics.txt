@@ -1,0 +1,20 @@
+Safe Fixed Effect Wiggle Diagnostics
+====================================
+
+relative_step:       0.02
+absolute_min_step:   0.001
+
+Interpretation
+--------------
+Perturbations that fail are retained as diagnostic rows instead of aborting
+the model run. Failed perturbations identify regions where the profiled
+Laplace solve or Huu factorization is not stable.
+
+Rows sorted by finite abs_sensitivity, failed rows last
+------------------------------------------------------
+index,name,base_value,step,f_base,f_minus,f_plus,delta_minus,delta_plus,central_gradient,central_curvature,abs_sensitivity,status,message
+4,log_sel_slope_longline,1.0456359128557,0.040912718257114,2113.43398299532,2113.57886319693,2113.57700846193,0.144880201611159,0.143025466612016,-0.022666973476148,172.002019063921,0.144880201611159,ok,ok
+3,logit_sel_a50_longline,0.155398643980591,0.0231079728796118,2113.43398299532,2113.7421576008,2113.756892504,0.308174605479508,0.322909508673547,0.318827256523223,1181.85323904422,0.322909508673547,ok,ok
+1,log_fbar,-1.41716269760174,0.0483432539520348,2113.43398299532,2114.25454408681,2114.25418030003,0.820561091493346,0.82019730471302,-0.00376253924370997,702.057813381567,0.820561091493346,ok,ok
+0,log_r0,3.98921674106646,0.0997843348213293,2113.43398299532,2117.75807650937,2117.86424125966,4.32409351405158,4.43025826433586,0.531971027688736,879.22344607309,4.43025826433586,ok,ok
+2,log_q_purse_seine,-9.18229242955462,0.203645848591092,2113.43398299532,nan,2121.40730690277,nan,nan,nan,nan,nan,perturbation_failed,minus=Sparse Hessian factorization failed in solve_random_effects_laplace; plus=ok

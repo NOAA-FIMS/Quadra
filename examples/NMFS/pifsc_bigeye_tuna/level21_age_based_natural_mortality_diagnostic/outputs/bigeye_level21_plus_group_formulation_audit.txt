@@ -1,0 +1,40 @@
+Level 21 Plus-Group Formulation Audit
+=====================================
+
+Key formulas checked
+--------------------
+M-only equilibrium:     Nplus = N9 * exp(-M10) / (1 - exp(-M10))
+Total-Z equilibrium:    Nplus = N9 * exp(-Z10) / (1 - exp(-Z10))
+Annual update observed: Nplus_next = N9 * exp(-Z9) + Nplus * exp(-Z10)
+
+Results
+-------
+n9_initial,18.6944032413855,age-9 abundance entering terminal age
+n10_current_initial,35.5136022221027,current terminal abundance after plus initialization and init dev
+m10,0.446480426884972,terminal natural mortality
+z10,0.451608104556753,terminal total mortality using total fleet selectivity
+ll_sel10,0.0804730215038725,terminal longline selectivity
+ps_sel10,0.00469301994603827,terminal purse-seine selectivity
+survival_m10,0.6398762844348015,M-only terminal survival
+survival_z10,0.6366036028971629,M+F terminal survival
+equil_n10_m_only,33.21665519042438,N9*exp(-M10)/(1-exp(-M10))
+equil_n10_z_total,32.74915368550168,N9*exp(-Z10)/(1-exp(-Z10))
+current_minus_m_equil,2.2969470316783145,current terminal abundance minus M-only equilibrium
+current_minus_z_equil,2.764448536601016,current terminal abundance minus Z-total equilibrium
+z_equil_minus_m_equil,-0.46750150492270137,effect of including fishing mortality in plus equilibrium
+mean_annual_plus_inflow,12.07791791098554,age-9 inflow into plus group
+mean_annual_plus_survival,21.319804698561935,surviving plus-group fish
+mean_annual_plus_next,33.39772260954746,next-year terminal abundance
+mean_plus_next_over_current,0.9974034414720858,near 1 means terminal age is dynamically stable
+min_plus_next_over_current,0.9590654512019867,
+max_plus_next_over_current,1.0063661781843358,
+mean_inflow_over_plus_survival,0.5667574561829906,large values mean inflow dominates; small values mean resident plus dominates
+
+Interpretation
+--------------
+If current_initial is close to M-only equilibrium but far from Z-total equilibrium,
+then initialization and annual transition are not using the same mortality basis.
+That is not always wrong for an unfished initial equilibrium, but it can create a
+transient in the terminal age once fishing starts. If the model starts in an exploited
+period or the synthetic data were generated with fishing active at t0, Z-total may be
+the more internally consistent initialization.

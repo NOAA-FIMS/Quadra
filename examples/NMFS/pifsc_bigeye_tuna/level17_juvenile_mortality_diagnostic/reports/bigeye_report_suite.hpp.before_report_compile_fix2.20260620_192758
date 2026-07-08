@@ -1,0 +1,48 @@
+#pragma once
+
+#include "bigeye_fit_reports.hpp"
+
+#include "../objective/bigeye_quadra_objective.hpp"
+#include "../../../../../core/optimizer.hpp"
+
+#include <string>
+#include <vector>
+
+namespace pifsc_bigeye_tuna {
+
+// Compatibility alias for older Level drivers that expect BigeyeReportPaths.
+using BigeyeReportPaths = BigeyeFitReportPaths;
+
+inline BigeyeReportPaths default_bigeye_report_paths()
+{
+  return BigeyeReportPaths{};
+}
+
+// Compatibility wrapper for the Level 9 report suite. The observations vector
+// is retained in the signature so older driver code does not need to change;
+// Level 9 reports use the objective because this level has fleet observations
+// and a different fixed-effect parameter ordering.
+inline void write_bigeye_report_suite(
+    const BigeyeReportPaths &paths,
+    const std::vector<Observation> &observations,
+    const BigeyeQuadraObjective &objective,
+    const quadra::ParameterVector &params,
+    const quadra::OptResult &fit)
+{
+  (void)observations;
+  (void)params;
+
+  write_bigeye_fit_summary(paths.summary, fit);
+  write_bigeye_fitted_trajectory(paths.trajectory, objective, fit);
+  write_bigeye_residual_diagnostics(paths.residual_diagnostics, objective, fit);
+  write_bigeye_selectivity_at_age(paths.selectivity, fit);
+  write_bigeye_recruitment_deviations(paths.recruitment_deviations, objective,
+                                      fit);
+  write_bigeye_objective_components(paths.objective_components, objective, fit);
+}
+
+} // namespace pifsc_bigeye_tuna
+
+using pifsc_bigeye_tuna::BigeyeReportPaths;
+using pifsc_bigeye_tuna::default_bigeye_report_paths;
+using pifsc_bigeye_tuna::write_bigeye_report_suite;

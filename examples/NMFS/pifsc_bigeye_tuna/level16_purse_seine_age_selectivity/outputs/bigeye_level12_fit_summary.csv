@@ -1,0 +1,21 @@
+field,value
+objective,2113.433983
+grad_norm,4.35299055088e-05
+iterations,16
+converged,yes
+message,converged to requested fixed-effect gradient tolerance
+random_effects,20
+log_r0,3.98921674107
+r0,54.0125669652
+log_m_fixed,-1.71479842809
+m_fixed,0.18
+log_fbar,-1.4171626976
+fbar,0.242400806511
+log_q_longline_fixed,-9.90348755254
+q_longline_fixed,5e-05
+log_q_purse_seine,-9.18229242955
+q_purse_seine,0.000102844498938
+logit_sel_a50_longline,0.155398643981
+sel_a50_longline,5.84894501626
+log_sel_slope_longline,1.04563591286
+sel_slope_longline,2.84520725236

@@ -1,0 +1,555 @@
+Opakapaka main orchestration inventory
+=====================================
+
+Tue Jun 16 20:44:07 EDT 2026
+
+== File / main location ==
+     866 examples/NMFS/pifsc_opakapaka/quadra/opakapaka.cpp
+532:int main()
+
+== Includes ==
+1:#include "../../../../core/uncertainty/reporting.hpp"
+2:#include "../../../../core/uncertainty/selected_inverse_diagonal.hpp"
+3:#include "opakapaka_model.hpp"
+4:#include "../data/opakapaka_io.hpp"
+5:#include "../diagnostics/opakapaka_logq_diagnostics.hpp"
+6:#include "../diagnostics/opakapaka_random_effect_diagnostics.hpp"
+7:#include "../diagnostics/opakapaka_projection_uncertainty.hpp"
+8:#include "../diagnostics/opakapaka_biomass_covariance_diagnostics.hpp"
+12:#include <algorithm>
+13:#include <chrono>
+14:#include <cmath>
+15:#include <fstream>
+16:#include <iomanip>
+17:#include <iostream>
+18:#include <limits>
+19:#include <sstream>
+20:#include <stdexcept>
+21:#include <string>
+22:#include <vector>
+
+== Remaining helper definitions before main ==
+28:template <class Model>
+29:void polish_single_logq_if_helpful(Model &model,
+163:inline void write_derived_quantities_csv(
+185:inline void write_pending_quantity_uncertainty_csv(
+199:inline void write_projection_uncertainty_csv(
+214:inline void write_runtime_memory_summary_csv(const std::string &path,
+230:template <class Model>
+231:quadra::OptResult fit_log_q_fd_newton_fallback(Model &model,
+354:inline void write_derived_quantity_uncertainty_csv(
+458:inline void write_derived_quantity_correlation_csv(
+
+== Main body ==
+int main()
+{
+  using namespace opakapaka_example;
+
+  std::cout << "Synthetic opakapaka-style fit + projection example\n";
+  std::cout << "==================================================\n\n";
+  std::cout
+      << "Synthetic and public-data-safe. Not an official assessment.\n\n";
+
+  auto data =
+      read_opakapaka_history_csv("examples/NMFS/pifsc_opakapaka/data/"
+                                 "synthetic_opakapaka_projection_data.csv");
+
+  std::cout << "Loaded shared CSV fit rows: " << data.size() << "\n\n";
+
+  OpakapakaProjectionModel model(data);
+  auto params = model.initial_parameters();
+
+  quadra::LaplaceOptions opts = quadra::default_laplace_options();
+
+  // Public Quadra workflow:
+  //   instantiate model -> optimize_lbfgs -> inspect fit -> project
+  const auto fit_start = std::chrono::steady_clock::now();
+  quadra::OptResult fit;
+  bool primary_optimizer_converged = false;
+  bool fallback_used = false;
+  std::string primary_optimizer_name = "profiled scalar Laplace";
+  std::string primary_optimizer_status = "not run";
+  double primary_optimizer_grad_norm = std::numeric_limits<double>::quiet_NaN();
+
+#ifndef OPAKAPAKA_USE_LBFGS_PRIMARY
+  // Opakapaka has one fixed effect and twenty random effects. For this
+  // geometry, the safeguarded profiled scalar Laplace optimizer is the
+  // appropriate primary optimizer: it directly optimizes log_q while profiling
+  // over the random effects and avoids quasi-Newton line-search pathologies.
+  fit = fit_log_q_fd_newton_fallback(model, params, opts,
+                                     params.params.at(0).value);
+
+  if (fit.converged)
+  {
+    fit.message =
+        "converged with safeguarded one-dimensional profiled log_q optimizer";
+  }
+
+  primary_optimizer_converged = fit.converged;
+  primary_optimizer_status = fit.message;
+  primary_optimizer_grad_norm = fit.grad_norm;
+#else
+  primary_optimizer_name = "L-BFGS";
+  try
+  {
+    fit = quadra::optimize_lbfgs(model, params, opts);
+    primary_optimizer_converged = fit.converged;
+    primary_optimizer_status = fit.message;
+    primary_optimizer_grad_norm = fit.grad_norm;
+  }
+  catch (const std::runtime_error &e)
+  {
+    const std::string msg = e.what();
+    if (msg.find("line search") == std::string::npos &&
+        msg.find("sufficiently decrease") == std::string::npos)
+    {
+      throw;
+    }
+
+    fallback_used = true;
+    primary_optimizer_converged = false;
+    primary_optimizer_status = msg;
+
+    std::cout << "L-BFGS line-search stall detected in Opakapaka example. "
+              << "Using local safeguarded one-dimensional log_q fallback.\n";
+
+    fit = fit_log_q_fd_newton_fallback(model, params, opts,
+                                       params.params.at(0).value);
+  }
+#endif
+
+  const double fit_value_before_polish = fit.value;
+  const double fit_grad_before_polish = fit.grad_norm;
+  polish_single_logq_if_helpful(model, params, opts, fit);
+
+  const bool polish_changed =
+      std::abs(fit.value - fit_value_before_polish) > 1.0e-10 ||
+      std::abs(fit.grad_norm - fit_grad_before_polish) > 1.0e-10;
+
+#ifdef OPAKAPAKA_USE_LBFGS_PRIMARY
+  fallback_used = fallback_used || polish_changed;
+#else
+  // In the default build, scalar optimization is primary. Optional scalar
+  // polishing is still part of that primary scalar workflow, not a fallback.
+  fallback_used = false;
+  primary_optimizer_converged = fit.converged;
+  primary_optimizer_status = fit.message;
+  primary_optimizer_grad_norm = fit.grad_norm;
+#endif
+
+  const std::string convergence_status =
+      primary_optimizer_converged && !fallback_used
+          ? "primary_optimizer_converged"
+          : (fallback_used ? "fallback_polished" : "not_converged");
+
+  {
+    std::ofstream state_out(
+        "examples/NMFS/pifsc_opakapaka/outputs/quadra_fitted_states.csv");
+
+    state_out << "index,log_B,B\n";
+
+    for (std::size_t i = 0; i < fit.u_hat.size(); ++i)
+    {
+      state_out << i << "," << std::setprecision(15) << fit.u_hat[i] << ","
+                << std::setprecision(15) << std::exp(fit.u_hat[i]) << "\n";
+    }
+  }
+
+  const auto fit_stop = std::chrono::steady_clock::now();
+  const double fit_runtime_ms =
+      std::chrono::duration<double, std::milli>(fit_stop - fit_start).count();
+
+  ProjectionOptions projection_options;
+  projection_options.start_year = data.back().year + 1;
+  projection_options.years = 10;
+  projection_options.scenarios = {
+      {"zero_catch", 0.0},
+      {"status_quo", 1.0},
+      {"low_catch", 0.75},
+      {"high_catch", 1.25},
+  };
+
+  auto projection = model.project(fit, projection_options);
+
+  const Eigen::SparseMatrix<double> Huu_final =
+      compute_final_random_effect_hessian(model, params, opts, fit);
+  const int final_hessian_nonzeros = static_cast<int>(Huu_final.nonZeros());
+
+  std::cout << "\nFit diagnostics\n";
+  std::cout << "---------------\n";
+  std::cout << std::fixed << std::setprecision(6);
+  std::cout << "objective          " << fit.value << "\n";
+  std::cout << "final_grad_norm    " << fit.grad_norm << "\n";
+  std::cout << "runtime_ms         " << fit_runtime_ms << "\n";
+  std::cout << "iterations         " << fit.iterations << "\n";
+  std::cout << "converged          "
+            << ((fit.converged || fallback_used) ? "yes" : "no") << "\n";
+  std::cout << "status             " << convergence_status << "\n";
+  std::cout << "primary_optimizer  " << primary_optimizer_name << "\n";
+  std::cout << "fallback_used      " << (fallback_used ? "yes" : "no") << "\n";
+  std::cout << "primary_converged  "
+            << (primary_optimizer_converged ? "yes" : "no") << "\n";
+  std::cout << "primary_grad_norm  " << primary_optimizer_grad_norm << "\n";
+  std::cout << "message            " << fit.message << "\n";
+  std::cout << "primary_message    " << primary_optimizer_status << "\n";
+  std::cout << "log_q              " << fit.par.at(0) << "\n";
+  std::cout << "q                  " << std::exp(fit.par.at(0)) << "\n";
+
+  const std::size_t reported_random_effects =
+      fit.u_hat.empty()
+          ? static_cast<std::size_t>(fit.pattern.random_effect_count)
+          : fit.u_hat.size();
+
+  const bool pattern_available =
+      fit.pattern.available || fit.pattern.random_effect_count > 0 ||
+      fit.pattern.nonzeros > 0 || final_hessian_nonzeros > 0;
+
+  const std::string detected_structure =
+      fit.pattern.detected_structure.empty() ||
+              fit.pattern.detected_structure == "unknown"
+          ? "sparse"
+          : fit.pattern.detected_structure;
+
+  const std::string laplace_backend =
+      fit.pattern.backend.empty() || fit.pattern.backend == "unknown"
+          ? "final Huu reconstruction"
+          : fit.pattern.backend;
+
+  const std::string random_solver =
+      fit.pattern.solver.empty() || fit.pattern.solver == "unknown"
+          ? "Laplace mode solve"
+          : fit.pattern.solver;
+
+  std::cout << "\nOptimizer structure diagnostics\n";
+  std::cout << "-------------------------------\n";
+  std::cout << "random effects     " << reported_random_effects << "\n";
+  std::cout << "pattern available  " << (pattern_available ? "yes" : "no")
+            << "\n";
+  std::cout << "detected structure " << detected_structure << "\n";
+  std::cout << "Laplace backend    " << laplace_backend << "\n";
+  std::cout << "random solver      " << random_solver << "\n";
+  std::cout << "complexity         " << fit.pattern.complexity << "\n";
+  std::cout << "bandwidth          " << fit.pattern.bandwidth << "\n";
+  std::cout << "Hessian nonzeros   " << final_hessian_nonzeros << "\n";
+
+  std::cout << "\nProjection preview\n";
+  std::cout << "------------------\n";
+  std::cout << "scenario,year,catch_mt,biomass,index\n";
+  int printed = 0;
+  for (const auto &row : projection)
+  {
+    if (printed >= 12)
+    {
+      break;
+    }
+    std::cout << row.scenario << "," << row.year << "," << row.catch_mt << ","
+              << row.biomass << "," << row.index << "\n";
+    ++printed;
+  }
+
+  write_fit_summary_csv(
+      "examples/NMFS/pifsc_opakapaka/outputs/synthetic_fit_summary.csv", fit);
+
+  const auto logq_uncertainty =
+      compute_log_q_uncertainty_report(model, params, opts, fit);
+
+  write_uncertainty_summary_csv(
+      "examples/NMFS/pifsc_opakapaka/outputs/uncertainty_summary.csv",
+      logq_uncertainty);
+  write_covariance_matrix_csv(
+      "examples/NMFS/pifsc_opakapaka/outputs/covariance_matrix.csv",
+      logq_uncertainty);
+  write_correlation_matrix_csv(
+      "examples/NMFS/pifsc_opakapaka/outputs/correlation_matrix.csv");
+  write_standard_errors_csv(
+      "examples/NMFS/pifsc_opakapaka/outputs/standard_errors.csv",
+      logq_uncertainty);
+  write_confidence_intervals_csv(
+      "examples/NMFS/pifsc_opakapaka/outputs/confidence_intervals.csv",
+      logq_uncertainty);
+  const auto final_h_uu =
+      compute_final_random_effect_hessian(model, params, opts, fit);
+  write_random_effect_uncertainty_csv(
+      "examples/NMFS/pifsc_opakapaka/outputs/random_effect_uncertainty.csv",
+      fit.u_hat, final_h_uu);
+  write_derived_quantities_csv(
+      "examples/NMFS/pifsc_opakapaka/outputs/derived_quantities.csv", data,
+      fit.u_hat, std::exp(fit.par.at(0)));
+  const auto random_effect_covariance_diag =
+      quadra::uncertainty::selected_inverse_diagonal_from_spd_hessian(
+          final_h_uu);
+  write_derived_quantity_uncertainty_csv(
+      "examples/NMFS/pifsc_opakapaka/outputs/derived_quantity_uncertainty.csv",
+      data, fit.u_hat, std::exp(fit.par.at(0)), random_effect_covariance_diag,
+      final_h_uu);
+
+  {
+    std::vector<std::pair<int, int>> depletion_covariance_pairs;
+    depletion_covariance_pairs.reserve(fit.u_hat.size());
+    for (std::size_t i = 0; i < fit.u_hat.size(); ++i)
+    {
+      depletion_covariance_pairs.emplace_back(static_cast<int>(i), 0);
+    }
+
+    const auto depletion_covariances =
+        quadra::uncertainty::selected_inverse_entries_from_spd_hessian(
+            final_h_uu, depletion_covariance_pairs);
+
+    write_derived_quantity_correlation_csv(
+        "examples/NMFS/pifsc_opakapaka/outputs/"
+        "derived_quantity_correlation.csv",
+        data, random_effect_covariance_diag, depletion_covariances);
+  }
+
+  write_biomass_covariance_matrix_csv(
+      "examples/NMFS/pifsc_opakapaka/outputs/biomass_covariance_matrix.csv",
+      data, fit.u_hat, final_h_uu);
+
+  write_biomass_correlation_matrix_csv(
+      "examples/NMFS/pifsc_opakapaka/outputs/biomass_correlation_matrix.csv",
+      data, fit.u_hat, final_h_uu);
+
+  write_biomass_covariance_diagnostics_csv(
+      "examples/NMFS/pifsc_opakapaka/outputs/"
+      "biomass_covariance_diagnostics.csv",
+      data, fit.u_hat, final_h_uu);
+
+  write_biomass_correlation_decay_csv(
+      "examples/NMFS/pifsc_opakapaka/outputs/biomass_correlation_decay.csv",
+      data, fit.u_hat, final_h_uu);
+
+  // Core uncertainty reporting parity outputs.
+  {
+    const std::size_t n = std::min(data.size(), fit.u_hat.size());
+    const Eigen::MatrixXd log_b_cov_core =
+        compute_log_b_covariance_submatrix(data, fit.u_hat, final_h_uu);
+    Eigen::VectorXd log_b_core(static_cast<Eigen::Index>(n));
+    for (std::size_t i = 0; i < n; ++i)
+    {
+      log_b_core[static_cast<Eigen::Index>(i)] = fit.u_hat[i];
+    }
+
+    const Eigen::MatrixXd biomass_cov_core =
+        quadra::uncertainty::lognormal_delta_covariance(log_b_core,
+                                                        log_b_cov_core);
+    const Eigen::MatrixXd biomass_corr_core =
+        quadra::uncertainty::covariance_to_correlation_matrix(biomass_cov_core);
+
+    const auto biomass_cov_diag_core =
+        quadra::uncertainty::diagnose_covariance_matrix(biomass_cov_core);
+    quadra::uncertainty::write_covariance_diagnostics_csv(
+        "examples/NMFS/pifsc_opakapaka/outputs/"
+        "biomass_covariance_diagnostics_core.csv",
+        biomass_cov_diag_core);
+
+    const auto biomass_decay_core =
+        quadra::uncertainty::correlation_decay_summary(biomass_corr_core);
+    quadra::uncertainty::write_correlation_decay_csv(
+        "examples/NMFS/pifsc_opakapaka/outputs/"
+        "biomass_correlation_decay_core.csv",
+        biomass_decay_core);
+  }
+  {
+    const double terminal_log_b_variance =
+        (!random_effect_covariance_diag.variance.empty())
+            ? random_effect_covariance_diag.variance.back()
+            : std::numeric_limits<double>::quiet_NaN();
+
+    write_projection_uncertainty_envelopes_csv(
+        "examples/NMFS/pifsc_opakapaka/outputs/projection_uncertainty.csv",
+        projection, fit.u_hat, std::exp(fit.par.at(0)), terminal_log_b_variance,
+        1000);
+  }
+  write_runtime_memory_summary_csv(
+      "examples/NMFS/pifsc_opakapaka/outputs/runtime_memory_summary.csv",
+      std::numeric_limits<double>::quiet_NaN(), fit.u_hat.size(), 58);
+
+  write_projection_csv("examples/NMFS/pifsc_opakapaka/outputs/"
+                       "synthetic_projection_scenarios.csv",
+                       projection);
+
+  std::cout << "\nWrote outputs:\n";
+  std::cout << "  examples/NMFS/pifsc_opakapaka/outputs/"
+               "synthetic_fit_summary.csv\n";
+  std::cout << "  examples/NMFS/pifsc_opakapaka/outputs/"
+               "synthetic_projection_scenarios.csv\n";
+
+  return 0;
+}
+
+== Main call/output summary ==
+5:  std::cout << "Synthetic opakapaka-style fit + projection example\n";
+6:  std::cout << "==================================================\n\n";
+7:  std::cout
+12:                                 "synthetic_opakapaka_projection_data.csv");
+14:  std::cout << "Loaded shared CSV fit rows: " << data.size() << "\n\n";
+22:  //   instantiate model -> optimize_lbfgs -> inspect fit -> project
+23:  const auto fit_start = std::chrono::steady_clock::now();
+24:  quadra::OptResult fit;
+36:  fit = fit_log_q_fd_newton_fallback(model, params, opts,
+39:  if (fit.converged)
+41:    fit.message =
+45:  primary_optimizer_converged = fit.converged;
+46:  primary_optimizer_status = fit.message;
+47:  primary_optimizer_grad_norm = fit.grad_norm;
+52:    fit = quadra::optimize_lbfgs(model, params, opts);
+53:    primary_optimizer_converged = fit.converged;
+54:    primary_optimizer_status = fit.message;
+55:    primary_optimizer_grad_norm = fit.grad_norm;
+57:  catch (const std::runtime_error &e)
+70:    std::cout << "L-BFGS line-search stall detected in Opakapaka example. "
+73:    fit = fit_log_q_fd_newton_fallback(model, params, opts,
+78:  const double fit_value_before_polish = fit.value;
+79:  const double fit_grad_before_polish = fit.grad_norm;
+80:  polish_single_logq_if_helpful(model, params, opts, fit);
+83:      std::abs(fit.value - fit_value_before_polish) > 1.0e-10 ||
+84:      std::abs(fit.grad_norm - fit_grad_before_polish) > 1.0e-10;
+92:  primary_optimizer_converged = fit.converged;
+93:  primary_optimizer_status = fit.message;
+94:  primary_optimizer_grad_norm = fit.grad_norm;
+104:        "examples/NMFS/pifsc_opakapaka/outputs/quadra_fitted_states.csv");
+108:    for (std::size_t i = 0; i < fit.u_hat.size(); ++i)
+110:      state_out << i << "," << std::setprecision(15) << fit.u_hat[i] << ","
+111:                << std::setprecision(15) << std::exp(fit.u_hat[i]) << "\n";
+115:  const auto fit_stop = std::chrono::steady_clock::now();
+116:  const double fit_runtime_ms =
+117:      std::chrono::duration<double, std::milli>(fit_stop - fit_start).count();
+119:  ProjectionOptions projection_options;
+120:  projection_options.start_year = data.back().year + 1;
+121:  projection_options.years = 10;
+122:  projection_options.scenarios = {
+129:  auto projection = model.project(fit, projection_options);
+132:      compute_final_random_effect_hessian(model, params, opts, fit);
+135:  std::cout << "\nFit diagnostics\n";
+136:  std::cout << "---------------\n";
+137:  std::cout << std::fixed << std::setprecision(6);
+138:  std::cout << "objective          " << fit.value << "\n";
+139:  std::cout << "final_grad_norm    " << fit.grad_norm << "\n";
+140:  std::cout << "runtime_ms         " << fit_runtime_ms << "\n";
+141:  std::cout << "iterations         " << fit.iterations << "\n";
+142:  std::cout << "converged          "
+143:            << ((fit.converged || fallback_used) ? "yes" : "no") << "\n";
+144:  std::cout << "status             " << convergence_status << "\n";
+145:  std::cout << "primary_optimizer  " << primary_optimizer_name << "\n";
+146:  std::cout << "fallback_used      " << (fallback_used ? "yes" : "no") << "\n";
+147:  std::cout << "primary_converged  "
+149:  std::cout << "primary_grad_norm  " << primary_optimizer_grad_norm << "\n";
+150:  std::cout << "message            " << fit.message << "\n";
+151:  std::cout << "primary_message    " << primary_optimizer_status << "\n";
+152:  std::cout << "log_q              " << fit.par.at(0) << "\n";
+153:  std::cout << "q                  " << std::exp(fit.par.at(0)) << "\n";
+156:      fit.u_hat.empty()
+157:          ? static_cast<std::size_t>(fit.pattern.random_effect_count)
+158:          : fit.u_hat.size();
+161:      fit.pattern.available || fit.pattern.random_effect_count > 0 ||
+162:      fit.pattern.nonzeros > 0 || final_hessian_nonzeros > 0;
+165:      fit.pattern.detected_structure.empty() ||
+166:              fit.pattern.detected_structure == "unknown"
+168:          : fit.pattern.detected_structure;
+171:      fit.pattern.backend.empty() || fit.pattern.backend == "unknown"
+173:          : fit.pattern.backend;
+176:      fit.pattern.solver.empty() || fit.pattern.solver == "unknown"
+178:          : fit.pattern.solver;
+180:  std::cout << "\nOptimizer structure diagnostics\n";
+181:  std::cout << "-------------------------------\n";
+182:  std::cout << "random effects     " << reported_random_effects << "\n";
+183:  std::cout << "pattern available  " << (pattern_available ? "yes" : "no")
+185:  std::cout << "detected structure " << detected_structure << "\n";
+186:  std::cout << "Laplace backend    " << laplace_backend << "\n";
+187:  std::cout << "random solver      " << random_solver << "\n";
+188:  std::cout << "complexity         " << fit.pattern.complexity << "\n";
+189:  std::cout << "bandwidth          " << fit.pattern.bandwidth << "\n";
+190:  std::cout << "Hessian nonzeros   " << final_hessian_nonzeros << "\n";
+192:  std::cout << "\nProjection preview\n";
+193:  std::cout << "------------------\n";
+194:  std::cout << "scenario,year,catch_mt,biomass,index\n";
+196:  for (const auto &row : projection)
+202:    std::cout << row.scenario << "," << row.year << "," << row.catch_mt << ","
+207:  write_fit_summary_csv(
+208:      "examples/NMFS/pifsc_opakapaka/outputs/synthetic_fit_summary.csv", fit);
+210:  const auto logq_uncertainty =
+211:      compute_log_q_uncertainty_report(model, params, opts, fit);
+213:  write_uncertainty_summary_csv(
+214:      "examples/NMFS/pifsc_opakapaka/outputs/uncertainty_summary.csv",
+215:      logq_uncertainty);
+216:  write_covariance_matrix_csv(
+217:      "examples/NMFS/pifsc_opakapaka/outputs/covariance_matrix.csv",
+218:      logq_uncertainty);
+219:  write_correlation_matrix_csv(
+220:      "examples/NMFS/pifsc_opakapaka/outputs/correlation_matrix.csv");
+221:  write_standard_errors_csv(
+223:      logq_uncertainty);
+224:  write_confidence_intervals_csv(
+226:      logq_uncertainty);
+228:      compute_final_random_effect_hessian(model, params, opts, fit);
+229:  write_random_effect_uncertainty_csv(
+230:      "examples/NMFS/pifsc_opakapaka/outputs/random_effect_uncertainty.csv",
+231:      fit.u_hat, final_h_uu);
+232:  write_derived_quantities_csv(
+234:      fit.u_hat, std::exp(fit.par.at(0)));
+235:  const auto random_effect_covariance_diag =
+236:      quadra::uncertainty::selected_inverse_diagonal_from_spd_hessian(
+238:  write_derived_quantity_uncertainty_csv(
+239:      "examples/NMFS/pifsc_opakapaka/outputs/derived_quantity_uncertainty.csv",
+240:      data, fit.u_hat, std::exp(fit.par.at(0)), random_effect_covariance_diag,
+244:    std::vector<std::pair<int, int>> depletion_covariance_pairs;
+245:    depletion_covariance_pairs.reserve(fit.u_hat.size());
+246:    for (std::size_t i = 0; i < fit.u_hat.size(); ++i)
+248:      depletion_covariance_pairs.emplace_back(static_cast<int>(i), 0);
+251:    const auto depletion_covariances =
+252:        quadra::uncertainty::selected_inverse_entries_from_spd_hessian(
+253:            final_h_uu, depletion_covariance_pairs);
+255:    write_derived_quantity_correlation_csv(
+257:        "derived_quantity_correlation.csv",
+258:        data, random_effect_covariance_diag, depletion_covariances);
+261:  write_biomass_covariance_matrix_csv(
+262:      "examples/NMFS/pifsc_opakapaka/outputs/biomass_covariance_matrix.csv",
+263:      data, fit.u_hat, final_h_uu);
+265:  write_biomass_correlation_matrix_csv(
+266:      "examples/NMFS/pifsc_opakapaka/outputs/biomass_correlation_matrix.csv",
+267:      data, fit.u_hat, final_h_uu);
+269:  write_biomass_covariance_diagnostics_csv(
+271:      "biomass_covariance_diagnostics.csv",
+272:      data, fit.u_hat, final_h_uu);
+274:  write_biomass_correlation_decay_csv(
+275:      "examples/NMFS/pifsc_opakapaka/outputs/biomass_correlation_decay.csv",
+276:      data, fit.u_hat, final_h_uu);
+278:  // Core uncertainty reporting parity outputs.
+280:    const std::size_t n = std::min(data.size(), fit.u_hat.size());
+282:        compute_log_b_covariance_submatrix(data, fit.u_hat, final_h_uu);
+286:      log_b_core[static_cast<Eigen::Index>(i)] = fit.u_hat[i];
+290:        quadra::uncertainty::lognormal_delta_covariance(log_b_core,
+293:        quadra::uncertainty::covariance_to_correlation_matrix(biomass_cov_core);
+296:        quadra::uncertainty::diagnose_covariance_matrix(biomass_cov_core);
+297:    quadra::uncertainty::write_covariance_diagnostics_csv(
+299:        "biomass_covariance_diagnostics_core.csv",
+303:        quadra::uncertainty::correlation_decay_summary(biomass_corr_core);
+304:    quadra::uncertainty::write_correlation_decay_csv(
+306:        "biomass_correlation_decay_core.csv",
+311:        (!random_effect_covariance_diag.variance.empty())
+312:            ? random_effect_covariance_diag.variance.back()
+315:    write_projection_uncertainty_envelopes_csv(
+316:        "examples/NMFS/pifsc_opakapaka/outputs/projection_uncertainty.csv",
+317:        projection, fit.u_hat, std::exp(fit.par.at(0)), terminal_log_b_variance,
+320:  write_runtime_memory_summary_csv(
+321:      "examples/NMFS/pifsc_opakapaka/outputs/runtime_memory_summary.csv",
+322:      std::numeric_limits<double>::quiet_NaN(), fit.u_hat.size(), 58);
+324:  write_projection_csv("examples/NMFS/pifsc_opakapaka/outputs/"
+325:                       "synthetic_projection_scenarios.csv",
+326:                       projection);
+328:  std::cout << "\nWrote outputs:\n";
+329:  std::cout << "  examples/NMFS/pifsc_opakapaka/outputs/"
+330:               "synthetic_fit_summary.csv\n";
+331:  std::cout << "  examples/NMFS/pifsc_opakapaka/outputs/"
+332:               "synthetic_projection_scenarios.csv\n";
+
+== Candidate extraction hints ==
+drivers/opakapaka_driver_output.hpp:
+  print banner/status/fit diagnostics/optimizer structure/projection preview/output manifest
+
+reports/opakapaka_report_orchestration.hpp or diagnostics/opakapaka_report_suite.hpp:
+  grouped calls to write_*_csv and core uncertainty parity outputs
+
+quadra/opakapaka.cpp:
+  should retain: data load, model construction, optimizer choice, final Huu construction, projection generation, high-level calls
+

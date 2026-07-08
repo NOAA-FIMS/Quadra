@@ -1,0 +1,6 @@
+sigma_init,objective,grad_norm,converged,longline_mean_abs,longline_max_abs,purse_seine_mean_abs,purse_seine_max_abs,initial_numbers_prior_nll,longline_selectivity_prior_nll,purse_seine_selectivity_prior_nll,recruitment_prior_nll
+0.35,1750.13120196,0.0254379787481,no,,,,,,,,
+0.50,1749.7416383,0.0255829356431,no,,,,,,,,
+0.75,1749.38314001,0.00610599697056,no,,,,,,,,
+1.00,1749.19713554,0.0382252325926,no,,,,,,,,
+1.25,1749.08954066,0.0624786152923,no,,,,,,,,

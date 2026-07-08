@@ -1,0 +1,52 @@
+#pragma once
+
+#include "bigeye_constants.hpp"
+
+#include <array>
+#include <cmath>
+
+namespace bigeye_v2 {
+
+template <typename T>
+struct BigeyeLifeHistoryParameters {
+  T log_m_young_offset = T(0.0);
+  T log_m_old_offset = T(0.0);
+};
+
+template <typename T>
+struct BigeyeWorkspace {
+  std::array<T, kAges> m_at_age{};
+  std::array<T, kAges> weight_at_age{};
+  std::array<T, kAges> maturity_at_age{};
+};
+
+struct BigeyeLifeHistory {
+  template <typename T>
+  void operator()(const BigeyeLifeHistoryParameters<T> &p,
+                  BigeyeWorkspace<T> &w) const {
+    const T adult_m = T(0.45);
+    const T m_young = adult_m * std::exp(p.log_m_young_offset);
+    const T m_old = adult_m * std::exp(p.log_m_old_offset);
+
+    static constexpr double weight_values[kAges] = {
+        1.0, 3.0, 5.0, 7.0, 9.0, 11.0, 13.0, 15.0, 17.0, 19.0};
+
+    static constexpr double maturity_values[kAges] = {
+        0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
+
+    for (int a = 0; a < kAges; ++a) {
+      if (a <= 2) {
+        w.m_at_age[a] = m_young;
+      } else if (a >= 7) {
+        w.m_at_age[a] = m_old;
+      } else {
+        w.m_at_age[a] = adult_m;
+      }
+
+      w.weight_at_age[a] = T(weight_values[a]);
+      w.maturity_at_age[a] = T(maturity_values[a]);
+    }
+  }
+};
+
+} // namespace bigeye_v2

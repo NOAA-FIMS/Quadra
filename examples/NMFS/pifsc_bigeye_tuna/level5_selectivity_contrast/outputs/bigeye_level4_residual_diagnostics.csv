@@ -1,0 +1,8 @@
+metric,value,note
+n,20,number of fitted years
+catch_rmse_log,0.249823931943,root mean squared log catch residual
+index_rmse_log,0.230975258986,root mean squared log index residual
+catch_mean_log_residual,0.137765004242,mean log observed minus predicted catch
+index_mean_log_residual,-0.22560615324,mean log observed minus predicted index
+max_abs_catch_log_residual,0.355003562938,maximum absolute log catch residual
+max_abs_index_log_residual,0.309451656612,maximum absolute log index residual

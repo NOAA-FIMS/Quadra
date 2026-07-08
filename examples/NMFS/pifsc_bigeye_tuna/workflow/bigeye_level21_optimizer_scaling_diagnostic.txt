@@ -1,0 +1,89 @@
+Bigeye Level 21 Optimizer Scaling Diagnostic
+===========================================
+
+Fit summary
+-----------
+objective,1731.59519524
+grad_norm,0.0383493123725
+converged,no
+
+Gradient group summary
+----------------------
+group,n_params,abs_gradient_sum,rms_gradient,max_gradient_param,max_abs_gradient
+age_m,2,0.03072299,0.0285156309657,log_m_young_offset,0.0284227
+base_scale,3,0.02611728,0.0168058578502,log_r0,0.0128794
+purse_seine_selectivity,10,0.040038133,0.0139134888457,logit_sel_purse_seine_age_4,0.00709098
+longline_selectivity,10,0.0263530892,0.0109955947394,logit_sel_longline_age_9,0.00658238
+initial_numbers,10,0.0184823244,0.00778504277683,init_log_number_dev_age_6,0.00569966
+
+total_gradient_rms,0.0383493576742
+base_scale_rms_share,0.438230491186
+
+Top gradients
+-------------
+rank,name,value,fixed_gradient,abs_fixed_gradient,group
+1,log_m_young_offset,-0.272702,0.0284227,0.0284227,age_m
+2,log_r0,6.45125,-0.0128794,0.0128794,base_scale
+3,log_fbar,-2.68029,-0.0104227,0.0104227,base_scale
+4,logit_sel_purse_seine_age_4,-0.510507,-0.00709098,0.00709098,purse_seine_selectivity
+5,logit_sel_longline_age_9,0.826161,0.00658238,0.00658238,longline_selectivity
+6,logit_sel_longline_age_7,0.982843,-0.00646497,0.00646497,longline_selectivity
+7,logit_sel_purse_seine_age_6,-3.24344,0.00617378,0.00617378,purse_seine_selectivity
+8,init_log_number_dev_age_6,-0.228469,-0.00569966,0.00569966,initial_numbers
+9,logit_sel_purse_seine_age_1,-0.978906,0.00560755,0.00560755,purse_seine_selectivity
+10,logit_sel_purse_seine_age_10,-5.4599,0.00512267,0.00512267,purse_seine_selectivity
+11,logit_sel_longline_age_10,-2.92836,-0.00439252,0.00439252,longline_selectivity
+12,logit_sel_purse_seine_age_5,-2.51928,0.00359462,0.00359462,purse_seine_selectivity
+13,logit_sel_purse_seine_age_7,-3.46776,-0.00345902,0.00345902,purse_seine_selectivity
+14,init_log_number_dev_age_3,-0.074607,-0.0029211,0.0029211,initial_numbers
+15,log_q_purse_seine,-10.7134,0.00281518,0.00281518,base_scale
+16,logit_sel_purse_seine_age_9,-4.36897,0.00275638,0.00275638,purse_seine_selectivity
+17,logit_sel_purse_seine_age_2,2.08106,-0.00268155,0.00268155,purse_seine_selectivity
+18,logit_sel_purse_seine_age_8,-3.90689,0.00264755,0.00264755,purse_seine_selectivity
+19,init_log_number_dev_age_10,-0.399053,0.00263697,0.00263697,initial_numbers
+20,init_log_number_dev_age_1,0.0289653,-0.00259572,0.00259572,initial_numbers
+21,logit_sel_longline_age_4,-6.01216,0.0024936,0.0024936,longline_selectivity
+22,log_m_old_offset,-0.386285,-0.00230029,0.00230029,age_m
+23,logit_sel_longline_age_1,-8.77714,0.00210257,0.00210257,longline_selectivity
+24,init_log_number_dev_age_5,-0.199647,-0.00204513,0.00204513,initial_numbers
+25,logit_sel_longline_age_8,3.77903,0.00178224,0.00178224,longline_selectivity
+
+Prior penalty by block
+----------------------
+age_based_m_prior_nll,0.912582432253875
+m_young,0.342593870560771
+m_adult,0.45
+m_old,0.305809459566894
+initial_numbers_prior_nll,0.573050475636681
+longline_selectivity_prior_nll,10.2483473422314
+purse_seine_selectivity_prior_nll,6.95057786536421
+recruitment_prior_nll,0.0955709150798753
+total_flexible_prior_nll,18.7801290305661
+
+Initial-number stress summary
+-----------------------------
+max_abs_init_log_dev,0.431318530588563
+max_abs_init_log_dev_age,9
+min_init_multiplier,0.649651943797824
+min_init_multiplier_age,9
+max_init_multiplier,1.0293889209143
+max_init_multiplier_age,1
+
+Residual fleet summary
+----------------------
+fleet,mean_abs_residual,max_abs_residual,n
+longline,0.0112283327304,0.0430188546025863,200
+purse_seine,0.00665269707989103,0.0273829655574135,200
+
+Interpretation
+--------------
+- The final gradient is small but above the requested tolerance; this is consistent with optimizer/line-search polishing trouble, not necessarily a broken objective.
+- Base-scale parameters are a meaningful part of the remaining gradient; a scale-aware polish is still worth testing.
+- The prior block gives context for whether the fit is paying penalty in M, initial numbers, or selectivity. Compare these against objective changes before patching model equations.
+
+Recommended next diagnostic
+---------------------------
+- Run a restart from the final iterate with a looser line-search epsilon or a small gradient-descent/Barzilai-Borwein polish.
+- Try parameter scaling: base log parameters can be stepped separately from logits and initial-number deviations.
+- Do not patch plus-group or M again based only on this run; fixed-M was worse and plus dynamics looked stable.
+- Next high-value check: add a one-step directional descent diagnostic, reporting f(theta - alpha*g) for alpha in {1e-4, 3e-4, 1e-3, 3e-3, 1e-2}.

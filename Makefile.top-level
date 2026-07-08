@@ -1,0 +1,41 @@
+# Top-level convenience Makefile for Quadra examples
+#
+# Usage:
+#   make help
+#   make red_snapper
+#   make opakapaka
+#   make all
+
+SHELL := /usr/bin/env bash
+
+.PHONY: help all red_snapper opakapaka
+
+help:
+	@echo "Available targets:"
+	@echo "  make red_snapper"
+	@echo "  make opakapaka"
+	@echo "  make all"
+
+all: red_snapper opakapaka
+
+red_snapper:
+	@if [[ -x ./run_sefsc_red_snapper.sh ]]; then \
+		./run_sefsc_red_snapper.sh; \
+	elif [[ -x ./examples/sefsc_red_snapper/run_sefsc_red_snapper.sh ]]; then \
+		./examples/sefsc_red_snapper/run_sefsc_red_snapper.sh; \
+	else \
+		echo "Could not locate a red snapper runner."; \
+		exit 1; \
+	fi
+
+opakapaka:
+	@if [[ -x ./run_opakapaka.sh ]]; then \
+		./run_opakapaka.sh; \
+	elif [[ -x ./examples/NMFS/pifsc_opakapaka/run_opakapaka.sh ]]; then \
+		./examples/NMFS/pifsc_opakapaka/run_opakapaka.sh; \
+	elif [[ -x ./examples/NMFS/pifsc_opakapaka/quadra/run_opakapaka.sh ]]; then \
+		./examples/NMFS/pifsc_opakapaka/quadra/run_opakapaka.sh; \
+	else \
+		echo "Could not locate an opakapaka runner."; \
+		exit 1; \
+	fi

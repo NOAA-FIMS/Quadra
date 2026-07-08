@@ -1,0 +1,74 @@
+Bigeye MULTIFAN/A-SCALA Consistency Checklist
+============================================
+
+Level summary
+-------------
+level,objective,grad_norm,converged,m_convention,selectivity_regularization,fleet_specific_baranov,total_f_in_survival,old_catch_share_leftover,composition_basis,plus_group_dynamics,plus_initialization
+level20,1738.51842831,0.0142464011344,no,fixed_m_like,template_prior,no,unclear/no,yes,vulnerable_numbers,plus_accumulator,unclear
+level21,1731.59519524,0.0383493123725,no,estimated_age_m,template_prior,yes,yes,no,catch_at_age,plus_accumulator,m_only_equilibrium
+level23,1743.39923501,0.0290879021153,no,fixed_m_like,template_prior,yes,yes,no,catch_at_age,plus_accumulator,unclear
+
+Interpretive checklist
+----------------------
+topic,published_or_target_convention,current_interpretation
+M-at-age,Published-style convention used fixed M-at-age.,Level 21 estimates young/old M offsets; fixed-M diagnostic was worse, so M helps fit but may be confounded.
+Selectivity,Published-style convention used smoothed/constrained selectivity.,Template priors help, but Level 21 still pays large selectivity penalties; Level 23 smoothness scan is the right comparator.
+Catch equation,Fleet-specific Baranov catch is preferred.,Level 21 appears to use fleet-specific catch-at-age and no old fleet_catch_share/total_catch_hat path.
+Composition likelihood,Fishery age comps should usually use catch-at-age basis.,Level 21 appears to use fleet catch-at-age for predicted compositions.
+Plus group,Plus group receives age-9 inflow plus surviving terminal fish.,Level 21 appears to use accumulator dynamics; M-only initialization is defensible for unfished initial state.
+Optimizer,Check actual f(theta - alpha*g).,Remaining gradient has age-M/base-scale/selectivity components; directional descent is the decisive next test.
+
+Level 21 prior penalty by block
+-------------------------------
+age_based_m_prior_nll,0.912582432253875
+m_young,0.342593870560771
+m_adult,0.45
+m_old,0.305809459566894
+initial_numbers_prior_nll,0.573050475636681
+longline_selectivity_prior_nll,10.2483473422314
+purse_seine_selectivity_prior_nll,6.95057786536421
+recruitment_prior_nll,0.0955709150798753
+total_flexible_prior_nll,18.7801290305661
+
+Level 21 initial-number stress
+------------------------------
+max_abs_init_log_dev,0.431318530588563
+max_abs_init_log_dev_age,9
+min_init_multiplier,0.649651943797824
+min_init_multiplier_age,9
+max_init_multiplier,1.0293889209143
+max_init_multiplier_age,1
+
+Level 21 gradient group summary
+-------------------------------
+group,n_params,abs_gradient_sum,rms_gradient,max_gradient_param,max_abs_gradient
+age_m,2,0.03072299,0.0285156309657,log_m_young_offset,0.0284227
+base_scale,3,0.02611728,0.0168058578502,log_r0,0.0128794
+purse_seine_selectivity,10,0.040038133,0.0139134888457,logit_sel_purse_seine_age_4,0.00709098
+longline_selectivity,10,0.0263530892,0.0109955947394,logit_sel_longline_age_9,0.00658238
+initial_numbers,10,0.0184823244,0.00778504277683,init_log_number_dev_age_6,0.00569966
+
+Level 21 top gradients
+----------------------
+rank,name,value,fixed_gradient,abs_fixed_gradient
+1,log_m_young_offset,-0.272702,0.0284227,0.0284227
+2,log_r0,6.45125,-0.0128794,0.0128794
+3,log_fbar,-2.68029,-0.0104227,0.0104227
+4,logit_sel_purse_seine_age_4,-0.510507,-0.00709098,0.00709098
+5,logit_sel_longline_age_9,0.826161,0.00658238,0.00658238
+6,logit_sel_longline_age_7,0.982843,-0.00646497,0.00646497
+7,logit_sel_purse_seine_age_6,-3.24344,0.00617378,0.00617378
+8,init_log_number_dev_age_6,-0.228469,-0.00569966,0.00569966
+9,logit_sel_purse_seine_age_1,-0.978906,0.00560755,0.00560755
+10,logit_sel_purse_seine_age_10,-5.4599,0.00512267,0.00512267
+11,logit_sel_longline_age_10,-2.92836,-0.00439252,0.00439252
+12,logit_sel_purse_seine_age_5,-2.51928,0.00359462,0.00359462
+13,logit_sel_purse_seine_age_7,-3.46776,-0.00345902,0.00345902
+14,init_log_number_dev_age_3,-0.074607,-0.0029211,0.0029211
+
+Recommended next actions
+------------------------
+1. Run actual directional descent: f(theta - alpha*g) for full, age_m-only, and base-scale-only directions.
+2. Compare Level 21 against Level 23 smoothness scan before changing M or plus-group again.
+3. Treat age-M as useful but potentially non-identifiable unless directional descent/profile diagnostics support it.
+4. Keep fleet-specific Baranov and catch-at-age composition as the preferred current formulation.

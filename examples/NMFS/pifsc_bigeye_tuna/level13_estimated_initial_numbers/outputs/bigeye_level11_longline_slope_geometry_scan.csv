@@ -1,0 +1,2 @@
+parameter_index,parameter_name,base_log_slope,base_slope,base_objective,step_index,multiplier,log_sel_slope_longline,sel_slope_longline,objective,delta_objective,status,message
+5,log_sel_slope_longline,nan,nan,nan,0,nan,nan,nan,nan,nan,failed,"fit.par does not contain requested parameter index"

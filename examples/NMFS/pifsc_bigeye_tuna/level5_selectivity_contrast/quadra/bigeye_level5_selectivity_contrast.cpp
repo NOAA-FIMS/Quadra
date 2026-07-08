@@ -1,0 +1,218 @@
+#include "../diagnostics/bigeye_functional_analysis_diagnostics.hpp"
+#include "../diagnostics/bigeye_fixed_effect_geometry.hpp"
+#include "../diagnostics/bigeye_fixed_effect_wiggle_diagnostics.hpp"
+#include "../objective/bigeye_quadra_objective.hpp"
+#include "../reports/bigeye_report_suite.hpp"
+#include "bigeye_age_structured.hpp"
+
+#include "../../../../../core/optimizer.hpp"
+
+#include <array>
+#include <cmath>
+#include <fstream>
+#include <iomanip>
+#include <map>
+#include <iostream>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <vector>
+
+namespace {
+
+std::vector<pifsc_bigeye_tuna::FleetObservation>
+read_multifleet_observations(const std::string &path)
+{
+    std::ifstream in(path);
+    if (!in)
+    {
+        throw std::runtime_error("Could not open multifleet observations CSV: " +
+                                 path);
+    }
+
+    std::string line;
+    std::getline(in, line);
+
+    std::vector<pifsc_bigeye_tuna::FleetObservation> out;
+
+    while (std::getline(in, line))
+    {
+        if (line.empty())
+            continue;
+
+        std::stringstream ss(line);
+        std::string year_s;
+        std::string fleet;
+        std::string catch_s;
+        std::string index_s;
+
+        std::getline(ss, year_s, ',');
+        std::getline(ss, fleet, ',');
+        std::getline(ss, catch_s, ',');
+        std::getline(ss, index_s, ',');
+
+        pifsc_bigeye_tuna::FleetObservation obs;
+        obs.year = std::stoi(year_s);
+        obs.fleet = fleet;
+        obs.catch_mt = std::stod(catch_s);
+        obs.index = std::stod(index_s);
+
+        double comp_sum = 0.0;
+        for (int a = 0; a < pifsc_bigeye_tuna::kAges; ++a)
+        {
+            std::string comp_s;
+            if (std::getline(ss, comp_s, ',') && !comp_s.empty())
+            {
+                obs.age_comp[static_cast<std::size_t>(a)] = std::stod(comp_s);
+                comp_sum += obs.age_comp[static_cast<std::size_t>(a)];
+            }
+        }
+
+        if (comp_sum > 0.0)
+        {
+            for (double &p_age : obs.age_comp)
+                p_age /= comp_sum;
+        }
+        else
+        {
+            const double inv_n_age =
+                1.0 / static_cast<double>(pifsc_bigeye_tuna::kAges);
+            for (double &p_age : obs.age_comp)
+                p_age = inv_n_age;
+        }
+
+        out.push_back(obs);
+    }
+
+    return out;
+}
+
+std::vector<pifsc_bigeye_tuna::Observation>
+aggregate_fleet_observations_for_reports(
+    const std::vector<pifsc_bigeye_tuna::FleetObservation> &fleet_obs)
+{
+    struct Accumulator
+    {
+        double catch_mt = 0.0;
+        double index_sum = 0.0;
+        int index_count = 0;
+    };
+
+    std::map<int, Accumulator> by_year;
+
+    for (const auto &obs : fleet_obs)
+    {
+        auto &acc = by_year[obs.year];
+        acc.catch_mt += obs.catch_mt;
+        acc.index_sum += obs.index;
+        acc.index_count += 1;
+    }
+
+    std::vector<pifsc_bigeye_tuna::Observation> out;
+    for (const auto &kv : by_year)
+    {
+        pifsc_bigeye_tuna::Observation obs;
+        obs.year = kv.first;
+        obs.catch_mt = kv.second.catch_mt;
+        obs.index =
+            kv.second.index_count > 0
+                ? kv.second.index_sum / static_cast<double>(kv.second.index_count)
+                : 0.0;
+
+        const double inv_n_age =
+            1.0 / static_cast<double>(pifsc_bigeye_tuna::kAges);
+        for (double &p_age : obs.age_comp)
+            p_age = inv_n_age;
+
+        out.push_back(obs);
+    }
+
+    return out;
+}
+
+} // namespace
+
+int main()
+{
+    const std::string input_path =
+        "examples/NMFS/pifsc_bigeye_tuna/level5_selectivity_contrast/data/"
+        "synthetic_bigeye_level5_selectivity_contrast_observations.csv";
+    const auto report_paths =
+        pifsc_bigeye_tuna::default_bigeye_report_paths();
+    const auto fleet_observations = read_multifleet_observations(input_path);
+    const auto observations = aggregate_fleet_observations_for_reports(fleet_observations);
+
+    pifsc_bigeye_tuna::BigeyeQuadraObjective objective(fleet_observations);
+
+    quadra::ParameterVector params;
+    params.add({"log_r0", std::log(1200.0), quadra::ParameterTransform::Identity,
+                false});
+    params.add({"log_fbar", std::log(0.025), quadra::ParameterTransform::Identity,
+                false});
+    params.add({"log_q_longline", std::log(0.00005),
+                quadra::ParameterTransform::Identity, false});
+    params.add({"log_q_purse_seine", std::log(0.00005),
+                quadra::ParameterTransform::Identity, false});
+    params.add({"logit_sel_a50_longline", 0.0,
+                quadra::ParameterTransform::Identity, false});
+    params.add({"log_sel_slope_longline", std::log(1.2),
+                quadra::ParameterTransform::Identity, false});
+    params.add({"logit_sel_a50_purse_seine", -1.0,
+                quadra::ParameterTransform::Identity, false});
+    params.add({"log_sel_slope_purse_seine", std::log(1.2),
+                quadra::ParameterTransform::Identity, false});
+
+    for (std::size_t t = 0; t < objective.n_years(); ++t)
+    {
+        params.add({"log_rec_dev_" + std::to_string(t + 1), 0.0,
+                    quadra::ParameterTransform::Identity, true});
+    }
+
+    quadra::LaplaceOptions opts;
+
+    auto fit = quadra::optimize_lbfgs(objective, params, opts);
+
+    pifsc_bigeye_tuna::write_bigeye_report_suite(report_paths, observations,
+                                                      objective, params, fit);
+    pifsc_bigeye_tuna::write_bigeye_functional_analysis_report(
+        "examples/NMFS/pifsc_bigeye_tuna/level5_selectivity_contrast/outputs/"
+        "bigeye_level5_functional_analysis_report.txt",
+        "examples/NMFS/pifsc_bigeye_tuna/level5_selectivity_contrast/outputs/"
+        "bigeye_level5_functional_analysis_report.csv",
+        objective, params, fit);
+    pifsc_bigeye_tuna::write_bigeye_fixed_effect_geometry_report(
+        "examples/NMFS/pifsc_bigeye_tuna/level5_selectivity_contrast/outputs/"
+        "bigeye_level5_fixed_effect_geometry_report.txt",
+        "examples/NMFS/pifsc_bigeye_tuna/level5_selectivity_contrast/outputs/"
+        "bigeye_level5_fixed_effect_geometry_report.csv",
+        objective, params, fit, opts);
+    pifsc_bigeye_tuna::write_bigeye_fixed_effect_wiggle_diagnostics(
+        "examples/NMFS/pifsc_bigeye_tuna/level5_selectivity_contrast/outputs/"
+        "bigeye_level5_fixed_effect_wiggle_diagnostics.txt",
+        "examples/NMFS/pifsc_bigeye_tuna/level5_selectivity_contrast/outputs/"
+        "bigeye_level5_fixed_effect_wiggle_diagnostics.csv",
+        objective, params, fit, opts);
+    std::cout
+        << "PIFSC bigeye-tuna-style Level 5 selectivity-contrast Quadra Laplace recruitment-deviation fit\n";
+    std::cout << "objective:  " << fit.value << "\n";
+    std::cout << "grad_norm:  " << fit.grad_norm << "\n";
+    std::cout << "converged:  " << (fit.converged ? "yes" : "no") << "\n";
+    std::cout << "message:    " << fit.message << "\n";
+    std::cout << "wrote:      " << report_paths.summary << "\n";
+    std::cout << "wrote:      " << report_paths.trajectory << "\n";
+    std::cout << "wrote:      " << report_paths.residual_diagnostics << "\n";
+    std::cout << "wrote:      " << report_paths.selectivity << "\n";
+    std::cout << "wrote:      " << report_paths.recruitment_deviations << "\n";
+    std::cout << "wrote:      " << report_paths.objective_components << "\n";
+    std::cout << "wrote:      " << report_paths.laplace_structure_text << "\n";
+    std::cout << "wrote:      " << report_paths.laplace_structure_csv << "\n";
+    std::cout << "wrote:      "
+              << "examples/NMFS/pifsc_bigeye_tuna/level5_selectivity_contrast/outputs/"
+                 "bigeye_level5_functional_analysis_report.txt\n";
+
+    std::cout << "wrote:      "
+              << "examples/NMFS/pifsc_bigeye_tuna/level5_selectivity_contrast/outputs/"
+                 "bigeye_level5_functional_analysis_report.csv\n";
+    std::cout << "wrote:      " << report_paths.reference_points << "\n";
+    return 0;
+}

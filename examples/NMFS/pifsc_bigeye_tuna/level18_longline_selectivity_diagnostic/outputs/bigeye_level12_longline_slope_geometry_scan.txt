@@ -1,0 +1,20 @@
+Longline Selectivity Slope Geometry Scan
+=======================================
+
+parameter_index:       5
+parameter_name:        log_sel_slope_longline
+base_log_slope:        nan
+base_slope:            nan
+base_objective:        nan
+
+Interpretation
+--------------
+This scan holds all fixed effects at the Level 6 fit except longline
+log-selectivity-slope. For each slope multiplier, random effects are
+re-solved and the profiled Laplace objective is evaluated. Failed rows
+mark local Huu/Laplace stability boundaries.
+
+Rows
+----
+step_index,multiplier,log_sel_slope_longline,sel_slope_longline,objective,delta_objective,status,message
+0,nan,nan,nan,nan,nan,failed,fit.par does not contain requested parameter index

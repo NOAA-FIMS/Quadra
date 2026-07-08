@@ -1,0 +1,124 @@
+Level 19 Fixed Effect Geometry Report
+====================================
+
+geometry_type:          direct joint objective at fixed u_hat
+available:             yes
+eigen_success:         yes
+positive_definite:     yes
+covariance_available:  yes
+min_eigenvalue:        2.81319046787474
+max_eigenvalue:        16211.1468281857
+condition_number_abs:  5762.54861279713
+
+Interpretation note
+-------------------
+This is direct joint-objective geometry holding u_hat fixed, not fully
+profiled-Laplace geometry. It is still useful for detecting local ridges
+and parameter confounding around the returned Level 19 solution.
+
+Fixed effects
+-------------
+index,name,value
+0,log_r0,10.1517672880029
+1,log_m,-0.680648506614464
+2,log_fbar,-2.82127895142624
+3,log_q_longline,-10.2997937457568
+4,log_q_purse_seine,-11.8081547312595
+5,logit_sel_a50_longline,0.388794396307698
+6,log_sel_slope_longline,0.997312512932804
+
+Eigenvalues
+-----------
+index,eigenvalue
+0,2.81319046787474
+1,46.9840746298732
+2,209.464112711143
+3,714.201655911363
+4,1481.35670896697
+5,2189.24704746045
+6,16211.1468281857
+
+Weak directions
+---------------
+direction 1, eigenvalue = 2.81319046787474
+parameter,loading
+log_q_longline,0.504345265355043
+log_q_purse_seine,0.502070211880759
+log_fbar,0.501802652524931
+log_r0,-0.491472657160063
+log_m,-0.0138705377484721
+log_sel_slope_longline,-0.00380400872377753
+logit_sel_a50_longline,0.00179402874247998
+
+direction 2, eigenvalue = 46.9840746298732
+parameter,loading
+log_q_longline,-0.752350970825544
+log_r0,-0.484611124912282
+log_q_purse_seine,0.295868499122887
+log_m,-0.281632940182291
+logit_sel_a50_longline,-0.15177184160701
+log_sel_slope_longline,0.0937435528060597
+log_fbar,-0.0210296681542088
+
+direction 3, eigenvalue = 209.464112711143
+parameter,loading
+log_sel_slope_longline,0.95693373829226
+logit_sel_a50_longline,-0.255066340324745
+log_q_longline,0.0856151175031037
+log_m,0.0749297205122958
+log_r0,0.0724998054860415
+log_q_purse_seine,-0.024832912555238
+log_fbar,0.0200418524276381
+
+Fixed-effect correlation matrix
+-------------------------------
+row,col,value
+log_r0,log_r0,1
+log_r0,log_m,0.414612150215169
+log_r0,log_fbar,-0.964258061569999
+log_r0,log_q_longline,-0.831101243888291
+log_r0,log_q_purse_seine,-0.983030028076812
+log_r0,logit_sel_a50_longline,0.110292429039676
+log_r0,log_sel_slope_longline,0.000499121753691783
+log_m,log_r0,0.414612150215168
+log_m,log_m,1
+log_m,log_fbar,-0.172094696092483
+log_m,log_q_longline,0.140352070497366
+log_m,log_q_purse_seine,-0.307741654163205
+log_m,logit_sel_a50_longline,0.492109009783473
+log_m,log_sel_slope_longline,-0.0768062369768428
+log_fbar,log_r0,-0.964258061569999
+log_fbar,log_m,-0.172094696092484
+log_fbar,log_fbar,1
+log_fbar,log_q_longline,0.937119083080108
+log_fbar,log_q_purse_seine,0.97563437016006
+log_fbar,logit_sel_a50_longline,0.0340205340626712
+log_fbar,log_sel_slope_longline,-0.0315057774130637
+log_q_longline,log_r0,-0.831101243888291
+log_q_longline,log_m,0.140352070497365
+log_q_longline,log_fbar,0.937119083080109
+log_q_longline,log_q_longline,1
+log_q_longline,log_q_purse_seine,0.875549884770811
+log_q_longline,logit_sel_a50_longline,0.234487615090307
+log_q_longline,log_sel_slope_longline,-0.0824698672951491
+log_q_purse_seine,log_r0,-0.983030028076811
+log_q_purse_seine,log_m,-0.307741654163206
+log_q_purse_seine,log_fbar,0.975634370160059
+log_q_purse_seine,log_q_longline,0.87554988477081
+log_q_purse_seine,log_q_purse_seine,1
+log_q_purse_seine,logit_sel_a50_longline,-0.0539524934421933
+log_q_purse_seine,log_sel_slope_longline,-0.0101504152246661
+logit_sel_a50_longline,log_r0,0.110292429039675
+logit_sel_a50_longline,log_m,0.492109009783472
+logit_sel_a50_longline,log_fbar,0.0340205340626723
+logit_sel_a50_longline,log_q_longline,0.234487615090308
+logit_sel_a50_longline,log_q_purse_seine,-0.0539524934421922
+logit_sel_a50_longline,logit_sel_a50_longline,1
+logit_sel_a50_longline,log_sel_slope_longline,-0.572448908158644
+log_sel_slope_longline,log_r0,0.000499121753692338
+log_sel_slope_longline,log_m,-0.0768062369768426
+log_sel_slope_longline,log_fbar,-0.0315057774130643
+log_sel_slope_longline,log_q_longline,-0.0824698672951496
+log_sel_slope_longline,log_q_purse_seine,-0.0101504152246666
+log_sel_slope_longline,logit_sel_a50_longline,-0.572448908158644
+log_sel_slope_longline,log_sel_slope_longline,1

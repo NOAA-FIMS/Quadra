@@ -1,0 +1,3 @@
+metric,value,note
+direct_joint,1706.4,objective at fit.par+u_hat
+profiled_objective,1727.69,optimizer fit value

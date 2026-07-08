@@ -1,0 +1,6 @@
+name: LifeHistoryPackage
+purpose: Computes life-history quantities
+consumes: BigeyeModelData, LifeHistoryParameters
+produces: LifeHistoryState
+steps:
+  - BigeyeLifeHistory

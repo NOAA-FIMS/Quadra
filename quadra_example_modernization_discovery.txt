@@ -1,0 +1,42 @@
+Quadra example modernization discovery
+======================================
+
+Timestamp: 20260615_180647
+
+Candidate Opakapaka paths:
+examples/NMFS/pifsc_opakapaka
+examples/NMFS/pifsc_opakapaka/data/synthetic_opakapaka_projection_data.csv
+examples/NMFS/pifsc_opakapaka/quadra/opakapaka_adgraph_global.cpp
+examples/NMFS/pifsc_opakapaka/quadra/opakapaka_model.hpp
+examples/NMFS/pifsc_opakapaka/quadra/opakapaka_projection_structure_demo.cpp
+examples/NMFS/pifsc_opakapaka/quadra/opakapaka_projection.cpp
+examples/NMFS/pifsc_opakapaka/quadra/opakapaka_projection.cpp.before_fallback_status_reporting.20260613_181944
+examples/NMFS/pifsc_opakapaka/quadra/opakapaka_projection.cpp.before_quiet_scalar_polish.20260613_195638
+examples/NMFS/pifsc_opakapaka/quadra/opakapaka_projection.cpp.before_reuse_final_huu_for_diagnostics.20260613_180135
+examples/NMFS/pifsc_opakapaka/quadra/opakapaka_projection.cpp.before_scalar_optimizer_message_cleanup.20260613_193914
+examples/NMFS/pifsc_opakapaka/quadra/opakapaka_projection.cpp.before_scalar_primary_and_meaningful_recovery.20260613_193025
+examples/NMFS/pifsc_opakapaka/tmb/opakapaka_projection_tmb.cpp
+examples/NMFS/pifsc_opakapaka/tmb/run_opakapaka_projection_tmb.R
+examples/NMFS/pifsc_opakapaka/validation/opakapaka_projection_memory_scenarios.tsv
+
+Candidate Red Snapper paths:
+
+Candidate Quadra C++ drivers:
+examples/NMFS/afsc_walleye_pollock/quadra/pollock_data.hpp
+examples/NMFS/afsc_walleye_pollock/quadra/pollock_model.hpp
+examples/NMFS/afsc_walleye_pollock/quadra/pollock_reports.hpp
+examples/NMFS/afsc_walleye_pollock/quadra/pollock_utilities.hpp
+examples/NMFS/afsc_walleye_pollock/quadra/walleye_pollock_adgraph_global.cpp
+examples/NMFS/afsc_walleye_pollock/quadra/walleye_pollock.cpp
+examples/NMFS/pifsc_opakapaka/quadra/opakapaka_adgraph_global.cpp
+examples/NMFS/pifsc_opakapaka/quadra/opakapaka_model.hpp
+examples/NMFS/pifsc_opakapaka/quadra/opakapaka_projection_structure_demo.cpp
+examples/NMFS/pifsc_opakapaka/quadra/opakapaka_projection.cpp
+examples/NMFS/sefsc_red_snapper/quadra/evaluate_red_snapper_objective.cpp
+examples/NMFS/sefsc_red_snapper/quadra/red_snapper_adgraph_global.cpp
+examples/NMFS/sefsc_red_snapper/quadra/red_snapper_age_structured.cpp
+examples/NMFS/sefsc_red_snapper/quadra/red_snapper_age_structured.hpp
+examples/NMFS/sefsc_red_snapper/quadra/red_snapper_level0.cpp
+examples/NMFS/sefsc_red_snapper/quadra/red_snapper_model.hpp
+examples/NMFS/sefsc_red_snapper/quadra/red_snapper_objective.hpp
+examples/NMFS/sefsc_red_snapper/quadra/red_snapper_quadra_fit.cpp

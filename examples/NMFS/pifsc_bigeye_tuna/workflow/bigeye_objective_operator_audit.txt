@@ -1,0 +1,86 @@
+Bigeye Objective Operator Audit
+===============================
+
+Purpose
+-------
+Static audit of BigeyeQuadraObjective::operator() and diagnostics for:
+1 parameter layout, 2 age-comp prediction path, 3 population timing,
+4 catch equation, 5 index equation, 6 age-comp likelihood,
+7 plus group, and 8 natural mortality consistency.
+
+level20_longline_selectivity_regularization_scan
+------------------------------------------------
+1_parameter_layout: inspect
+  driver_params=7 direct_par_refs=[0, 1, 2] offsets=['kBaseFixed', 'kInitialDevOffset', 'kInitialDevs', 'kLonglineSelDevs', 'kLonglineSelOffset', 'kPurseSeineSelDevs', 'kPurseSeineSelOffset', 'kRecruitmentOffset']
+2_age_comp_prediction_basis: inspect
+  objective_selected_numbers_basis=True; nearby_catch_age_terms=True; diagnostics_selected_basis=True
+3_population_update_timing: inspect
+  within yearly loop: rec_dev_pos=63, obs_loop_pos=599, next_update_pos=2237; observations appear before annual survival/update
+4_catch_equation: pass
+  Baranov-style catch equation found
+5_index_equation: pass
+  index_hat = q * vulnerable biomass pattern found
+6_age_comp_likelihood: pass
+  multinomial-like -N_eff * obs * log(pred) pattern found
+7_plus_group: inspect
+  plus_group_patterns_found=2; next[last] = next[last] + n[last] * exp_t(-z_last) | n[static_cast<std::size_t>(kAges - 1)] / (T(1.0) - exp_t(-m))
+8_natural_mortality_consistency: inspect
+  objective_m_at_age=False; objective_scalar_m=True; init_uses_m=True; annual_uses_m=True; diagnostics_age_m_aware=False
+
+level21_age_based_natural_mortality_diagnostic
+----------------------------------------------
+1_parameter_layout: inspect
+  driver_params=9 direct_par_refs=[0, 1, 2] offsets=['kBaseFixed', 'kInitialDevOffset', 'kInitialDevs', 'kLonglineSelDevs', 'kLonglineSelOffset', 'kMParamOffset', 'kMParams', 'kPurseSeineSelDevs', 'kPurseSeineSelOffset', 'kRecruitmentOffset']
+2_age_comp_prediction_basis: inspect
+  objective_selected_numbers_basis=True; nearby_catch_age_terms=True; diagnostics_selected_basis=True
+3_population_update_timing: inspect
+  within yearly loop: rec_dev_pos=63, obs_loop_pos=609, next_update_pos=2247; observations appear before annual survival/update
+4_catch_equation: pass
+  Baranov-style catch equation found
+5_index_equation: pass
+  index_hat = q * vulnerable biomass pattern found
+6_age_comp_likelihood: pass
+  multinomial-like -N_eff * obs * log(pred) pattern found
+7_plus_group: inspect
+  plus_group_patterns_found=2; next[last] = next[last] + n[last] * exp_t(-z_last) | T(1.0) - exp_t(-m_at_age[static_cast<std::size_t>(kAges - 1)])
+8_natural_mortality_consistency: inspect
+  objective_m_at_age=True; objective_scalar_m=False; init_uses_m=False; annual_uses_m=True; diagnostics_age_m_aware=False
+
+level23_longline_selectivity_smoothness_scan
+--------------------------------------------
+1_parameter_layout: inspect
+  driver_params=7 direct_par_refs=[0, 1, 2] offsets=['kBaseFixed', 'kInitialDevOffset', 'kInitialDevs', 'kLonglineSelDevs', 'kLonglineSelOffset', 'kPurseSeineSelDevs', 'kPurseSeineSelOffset', 'kRecruitmentOffset']
+2_age_comp_prediction_basis: inspect
+  objective_selected_numbers_basis=True; nearby_catch_age_terms=True; diagnostics_selected_basis=True
+3_population_update_timing: inspect
+  within yearly loop: rec_dev_pos=63, obs_loop_pos=599, next_update_pos=2237; observations appear before annual survival/update
+4_catch_equation: pass
+  Baranov-style catch equation found
+5_index_equation: pass
+  index_hat = q * vulnerable biomass pattern found
+6_age_comp_likelihood: pass
+  multinomial-like -N_eff * obs * log(pred) pattern found
+7_plus_group: inspect
+  plus_group_patterns_found=2; next[last] = next[last] + n[last] * exp_t(-z_last) | n[static_cast<std::size_t>(kAges - 1)] / (T(1.0) - exp_t(-m))
+8_natural_mortality_consistency: inspect
+  objective_m_at_age=False; objective_scalar_m=True; init_uses_m=True; annual_uses_m=True; diagnostics_age_m_aware=False
+
+High-risk items to inspect manually
+-----------------------------------
+A. Age composition is currently predicted from selected numbers at age.
+   Verify whether the synthetic observation CSV represents selected survey/fishery
+   age composition or catch-at-age composition. If it represents catch-at-age,
+   the objective should use N_a * F_a/Z_a * (1-exp(-Z_a)) instead.
+
+B. Observation timing appears to be before the annual survival/update step.
+   Verify whether catches, indices, and age comps are intended to observe beginning-
+   of-year population, mid-year population, or catch over the year.
+
+C. Plus-group initialization and annual update should be checked with M and F.
+   Equilibrium plus-group often uses survival into plus group divided by
+   1 - survival in plus group. If annual F contributes to survival, make sure
+   this is intentional and consistent.
+
+D. Level 21 age-based M must be consistently applied in equilibrium initialization,
+   catch Z, annual survival, plus group, residual diagnostics, and report writers.
+

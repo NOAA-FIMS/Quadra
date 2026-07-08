@@ -1,0 +1,46 @@
+Level 21 Gradient by Fixed Parameter
+====================================
+
+Purpose
+-------
+Identify which fixed-effect parameters dominate the final gradient norm.
+This uses OptResult::fixed_gradient directly.
+
+Summary
+-------
+n_named_fixed_parameters: 35
+n_values_in_fit_par: 35
+n_values_in_fixed_gradient: 35
+n_parameters_checked: 35
+reported_grad_norm: 0.0560562
+max_abs_fixed_gradient: 0.0336099
+max_abs_fixed_gradient_parameter: log_r0
+
+Top gradients
+-------------
+rank,name,value,fixed_gradient,abs_fixed_gradient
+1,log_r0,6.44648,0.0336099,0.0336099
+2,log_fbar,-2.68026,0.0314807,0.0314807
+3,logit_sel_longline_age_6,-1.38776,0.0144812,0.0144812
+4,log_m_young_offset,-0.272718,-0.0141346,0.0141346
+5,log_q_purse_seine,-10.7133,0.0140355,0.0140355
+6,init_log_number_dev_age_1,0.0340266,0.00945814,0.00945814
+7,logit_sel_purse_seine_age_4,-0.510728,-0.0085477,0.0085477
+8,init_log_number_dev_age_3,-0.0695551,0.00778835,0.00778835
+9,init_log_number_dev_age_6,-0.224152,-0.00658237,0.00658237
+10,init_log_number_dev_age_2,0.00377607,0.00599049,0.00599049
+11,init_log_number_dev_age_5,-0.194979,0.0057528,0.0057528
+12,log_m_old_offset,-0.386628,-0.00327997,0.00327997
+13,logit_sel_longline_age_4,-6.01405,-0.00327784,0.00327784
+14,logit_sel_longline_age_10,-2.92497,0.00299518,0.00299518
+15,logit_sel_longline_age_3,-7.2404,0.00292375,0.00292375
+16,logit_sel_longline_age_9,0.825421,0.00246621,0.00246621
+17,logit_sel_purse_seine_age_3,6.89915,0.00239743,0.00239743
+18,logit_sel_purse_seine_age_6,-3.24497,0.00215596,0.00215596
+19,logit_sel_purse_seine_age_10,-5.46215,0.00212737,0.00212737
+20,init_log_number_dev_age_4,-0.148731,0.00190745,0.00190745
+21,init_log_number_dev_age_9,-0.428204,0.00188097,0.00188097
+22,logit_sel_purse_seine_age_5,-2.51969,0.00166383,0.00166383
+23,logit_sel_longline_age_7,0.983204,-0.00150766,0.00150766
+24,logit_sel_longline_age_1,-8.78099,-0.001408,0.001408
+25,init_log_number_dev_age_10,-0.410007,0.00132172,0.00132172

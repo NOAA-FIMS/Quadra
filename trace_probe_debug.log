@@ -1,0 +1,3 @@
++ set -euo pipefail
++ LOG=level21_logdet_gradient_sign_probe.log
++ ./run_bigeye_level21_age_based_m_check.sh

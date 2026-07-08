@@ -1,0 +1,8 @@
+name: LikelihoodPackage
+purpose: Composes likelihood components for one fleet
+consumes: BigeyeModelData, FleetParameters, FleetState
+produces: LikelihoodState
+steps:
+  - LognormalCatchLikelihood
+  - LognormalIndexLikelihood
+  - MultinomialAgeCompLikelihood

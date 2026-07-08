@@ -1,0 +1,10 @@
+name: PopulationPackage
+purpose: Composes population dynamics for one population
+consumes: BigeyeModelData, PopulationParameters, LifeHistoryState, FleetState
+produces: PopulationState
+steps:
+  - FixedRecruitment
+  - Survival
+  - Aging
+  - PlusGroup
+  - SpawningBiomass

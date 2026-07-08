@@ -1,0 +1,7 @@
+metric,value,note
+fit_value,1743.4689034746,reported profiled Laplace objective from optimizer
+direct_joint_objective,1721.20483699982,objective evaluated directly at fit.par plus fit.u_hat
+direct_minus_fit_value,-22.2640664747864,direct joint objective minus fit.value; expected to differ because fit.value includes Laplace terms
+fit_par_size,33,number of fixed effects in returned fit
+fit_u_hat_size,20,number of random effects in returned fit
+full_parameter_vector_size,53,fixed plus random effects passed to objective

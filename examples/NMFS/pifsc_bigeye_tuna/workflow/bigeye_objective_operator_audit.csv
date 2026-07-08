@@ -1,0 +1,25 @@
+level,check,status,detail
+level20_longline_selectivity_regularization_scan,1_parameter_layout,inspect,"driver_params=7 direct_par_refs=[0, 1, 2] offsets=['kBaseFixed', 'kInitialDevOffset', 'kInitialDevs', 'kLonglineSelDevs', 'kLonglineSelOffset', 'kPurseSeineSelDevs', 'kPurseSeineSelOffset', 'kRecruitmentOffset']"
+level20_longline_selectivity_regularization_scan,2_age_comp_prediction_basis,inspect,objective_selected_numbers_basis=True; nearby_catch_age_terms=True; diagnostics_selected_basis=True
+level20_longline_selectivity_regularization_scan,3_population_update_timing,inspect,"within yearly loop: rec_dev_pos=63, obs_loop_pos=599, next_update_pos=2237; observations appear before annual survival/update"
+level20_longline_selectivity_regularization_scan,4_catch_equation,pass,Baranov-style catch equation found
+level20_longline_selectivity_regularization_scan,5_index_equation,pass,index_hat = q * vulnerable biomass pattern found
+level20_longline_selectivity_regularization_scan,6_age_comp_likelihood,pass,multinomial-like -N_eff * obs * log(pred) pattern found
+level20_longline_selectivity_regularization_scan,7_plus_group,inspect,plus_group_patterns_found=2; next[last] = next[last] + n[last] * exp_t(-z_last) | n[static_cast<std::size_t>(kAges - 1)] / (T(1.0) - exp_t(-m))
+level20_longline_selectivity_regularization_scan,8_natural_mortality_consistency,inspect,objective_m_at_age=False; objective_scalar_m=True; init_uses_m=True; annual_uses_m=True; diagnostics_age_m_aware=False
+level21_age_based_natural_mortality_diagnostic,1_parameter_layout,inspect,"driver_params=9 direct_par_refs=[0, 1, 2] offsets=['kBaseFixed', 'kInitialDevOffset', 'kInitialDevs', 'kLonglineSelDevs', 'kLonglineSelOffset', 'kMParamOffset', 'kMParams', 'kPurseSeineSelDevs', 'kPurseSeineSelOffset', 'kRecruitmentOffset']"
+level21_age_based_natural_mortality_diagnostic,2_age_comp_prediction_basis,inspect,objective_selected_numbers_basis=True; nearby_catch_age_terms=True; diagnostics_selected_basis=True
+level21_age_based_natural_mortality_diagnostic,3_population_update_timing,inspect,"within yearly loop: rec_dev_pos=63, obs_loop_pos=609, next_update_pos=2247; observations appear before annual survival/update"
+level21_age_based_natural_mortality_diagnostic,4_catch_equation,pass,Baranov-style catch equation found
+level21_age_based_natural_mortality_diagnostic,5_index_equation,pass,index_hat = q * vulnerable biomass pattern found
+level21_age_based_natural_mortality_diagnostic,6_age_comp_likelihood,pass,multinomial-like -N_eff * obs * log(pred) pattern found
+level21_age_based_natural_mortality_diagnostic,7_plus_group,inspect,plus_group_patterns_found=2; next[last] = next[last] + n[last] * exp_t(-z_last) | T(1.0) - exp_t(-m_at_age[static_cast<std::size_t>(kAges - 1)])
+level21_age_based_natural_mortality_diagnostic,8_natural_mortality_consistency,inspect,objective_m_at_age=True; objective_scalar_m=False; init_uses_m=False; annual_uses_m=True; diagnostics_age_m_aware=False
+level23_longline_selectivity_smoothness_scan,1_parameter_layout,inspect,"driver_params=7 direct_par_refs=[0, 1, 2] offsets=['kBaseFixed', 'kInitialDevOffset', 'kInitialDevs', 'kLonglineSelDevs', 'kLonglineSelOffset', 'kPurseSeineSelDevs', 'kPurseSeineSelOffset', 'kRecruitmentOffset']"
+level23_longline_selectivity_smoothness_scan,2_age_comp_prediction_basis,inspect,objective_selected_numbers_basis=True; nearby_catch_age_terms=True; diagnostics_selected_basis=True
+level23_longline_selectivity_smoothness_scan,3_population_update_timing,inspect,"within yearly loop: rec_dev_pos=63, obs_loop_pos=599, next_update_pos=2237; observations appear before annual survival/update"
+level23_longline_selectivity_smoothness_scan,4_catch_equation,pass,Baranov-style catch equation found
+level23_longline_selectivity_smoothness_scan,5_index_equation,pass,index_hat = q * vulnerable biomass pattern found
+level23_longline_selectivity_smoothness_scan,6_age_comp_likelihood,pass,multinomial-like -N_eff * obs * log(pred) pattern found
+level23_longline_selectivity_smoothness_scan,7_plus_group,inspect,plus_group_patterns_found=2; next[last] = next[last] + n[last] * exp_t(-z_last) | n[static_cast<std::size_t>(kAges - 1)] / (T(1.0) - exp_t(-m))
+level23_longline_selectivity_smoothness_scan,8_natural_mortality_consistency,inspect,objective_m_at_age=False; objective_scalar_m=True; init_uses_m=True; annual_uses_m=True; diagnostics_age_m_aware=False

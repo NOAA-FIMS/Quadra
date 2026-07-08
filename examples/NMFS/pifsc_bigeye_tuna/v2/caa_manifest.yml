@@ -1,0 +1,50 @@
+assessment:
+  name: Bigeye Tuna Reference Assessment
+  architecture: Composable Assessment Architecture
+  version: 0.2
+
+cycle:
+  - LifeHistoryPackage
+  - PopulationPackage
+  - MovementPackage
+  - FleetPackage
+  - ObservationPackage
+  - LikelihoodPackage
+
+packages:
+  life_history:
+    package: LifeHistoryPackage
+    step: BigeyeLifeHistory
+
+  population:
+    package: PopulationPackage
+    steps:
+      - FixedRecruitment
+      - Survival
+      - Aging
+      - PlusGroup
+      - SpawningBiomass
+
+  movement:
+    package: MovementPackage
+    step: IdentityMovement
+
+  fleet:
+    package: FleetPackage
+    steps:
+      - LogisticSelectivity
+      - FishingMortality
+      - BaranovCatch
+
+  observation:
+    package: ObservationPackage
+    steps:
+      - BiomassIndexPrediction
+      - CatchAgeCompositionPrediction
+
+  likelihood:
+    package: LikelihoodPackage
+    steps:
+      - LognormalCatchLikelihood
+      - LognormalIndexLikelihood
+      - MultinomialAgeCompLikelihood

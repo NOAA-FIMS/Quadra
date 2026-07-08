@@ -1,0 +1,431 @@
+#pragma once
+
+#include "../objective/bigeye_quadra_objective.hpp"
+#include "../quadra/bigeye_age_structured.hpp"
+
+#include <array>
+#include <cmath>
+#include <fstream>
+#include <iomanip>
+#include <limits>
+#include <stdexcept>
+#include <string>
+#include <vector>
+
+namespace pifsc_bigeye_tuna {
+
+struct BigeyeFitReportPaths {
+  std::string summary =
+      "examples/NMFS/pifsc_bigeye_tuna/level9_estimated_natural_mortality/outputs/bigeye_level9_fit_summary.csv";
+  std::string trajectory =
+      "examples/NMFS/pifsc_bigeye_tuna/level9_estimated_natural_mortality/outputs/bigeye_level9_fitted_trajectory.csv";
+  std::string residual_diagnostics =
+      "examples/NMFS/pifsc_bigeye_tuna/level9_estimated_natural_mortality/outputs/bigeye_level9_residual_diagnostics.csv";
+  std::string selectivity =
+      "examples/NMFS/pifsc_bigeye_tuna/level9_estimated_natural_mortality/outputs/bigeye_level9_selectivity_at_age.csv";
+  std::string recruitment_deviations =
+      "examples/NMFS/pifsc_bigeye_tuna/level9_estimated_natural_mortality/outputs/bigeye_level9_recruitment_deviations.csv";
+  std::string objective_components =
+      "examples/NMFS/pifsc_bigeye_tuna/level9_estimated_natural_mortality/outputs/bigeye_level9_objective_components.csv";
+  std::string laplace_structure_text =
+      "examples/NMFS/pifsc_bigeye_tuna/level9_estimated_natural_mortality/outputs/bigeye_level9_laplace_structure_report.txt";
+  std::string laplace_structure_csv =
+      "examples/NMFS/pifsc_bigeye_tuna/level9_estimated_natural_mortality/outputs/bigeye_level9_laplace_structure_report.csv";
+  std::string reference_points =
+      "examples/NMFS/pifsc_bigeye_tuna/level9_estimated_natural_mortality/outputs/bigeye_level9_reference_points.csv";
+};
+
+inline BigeyeFitReportPaths default_bigeye_report_paths()
+{
+  return BigeyeFitReportPaths{};
+}
+
+template <class T>
+inline T sqr_report(const T &x)
+{
+  return x * x;
+}
+
+inline void ensure_level9_fit_sizes(const quadra::OptResult &fit,
+                                    std::size_t n_years)
+{
+  if (fit.par.size() < 7)
+    throw std::runtime_error("Level 9 report expected at least 7 fixed effects");
+  if (fit.u_hat.size() < n_years)
+    throw std::runtime_error("Level 9 report expected one recruitment deviation per year");
+}
+
+inline std::array<double, kAges> level9_longline_selectivity(
+    double logit_sel_a50_longline,
+    double log_sel_slope_longline)
+{
+  const double a50 =
+      1.0 + 9.0 / (1.0 + std::exp(-logit_sel_a50_longline));
+  const double slope = std::exp(log_sel_slope_longline);
+
+  std::array<double, kAges> out{};
+  for (int a = 0; a < kAges; ++a)
+    out[static_cast<std::size_t>(a)] =
+        logistic_selectivity(static_cast<double>(a + 1), a50, slope);
+  return out;
+}
+
+inline std::array<double, kAges> level9_purse_seine_selectivity()
+{
+  return {1.00, 1.00, 0.85, 0.55, 0.25, 0.10, 0.04, 0.02, 0.01, 0.005};
+}
+
+inline void write_bigeye_fit_summary(const std::string &path,
+                                     const quadra::OptResult &fit)
+{
+  std::ofstream out(path);
+  if (!out)
+    throw std::runtime_error("Could not open Level 9 fit summary CSV: " + path);
+
+  out << std::setprecision(12);
+  out << "field,value\n";
+  out << "objective," << fit.value << "\n";
+  out << "laplace_logdet," << fit.laplace_logdet << "\n";
+  out << "laplace_constant," << fit.laplace_constant << "\n";
+  out << "grad_norm," << fit.grad_norm << "\n";
+  out << "iterations," << fit.iterations << "\n";
+  out << "converged," << (fit.converged ? "yes" : "no") << "\n";
+  out << "message," << fit.message << "\n";
+  out << "laplace,yes\n";
+  out << "random_effects," << fit.u_hat.size() << "\n";
+
+  if (fit.par.size() >= 7)
+  {
+    out << "log_r0," << fit.par[0] << "\n";
+    out << "r0," << std::exp(fit.par[0]) << "\n";
+    out << "log_m," << fit.par[1] << "\n";
+    out << "m," << std::exp(fit.par[1]) << "\n";
+    out << "log_fbar," << fit.par[2] << "\n";
+    out << "fbar," << std::exp(fit.par[2]) << "\n";
+    out << "log_q_longline," << fit.par[3] << "\n";
+    out << "q_longline," << std::exp(fit.par[3]) << "\n";
+    out << "log_q_purse_seine," << fit.par[4] << "\n";
+    out << "q_purse_seine," << std::exp(fit.par[4]) << "\n";
+    out << "logit_sel_a50_longline," << fit.par[5] << "\n";
+    out << "sel_a50_longline,"
+        << 1.0 + 9.0 / (1.0 + std::exp(-fit.par[5])) << "\n";
+    out << "log_sel_slope_longline," << fit.par[6] << "\n";
+    out << "sel_slope_longline," << std::exp(fit.par[6]) << "\n";
+  }
+}
+
+inline void write_bigeye_recruitment_deviations(
+    const std::string &path,
+    const BigeyeQuadraObjective &objective,
+    const quadra::OptResult &fit)
+{
+  const auto years = objective.unique_years();
+  ensure_level9_fit_sizes(fit, years.size());
+
+  std::ofstream out(path);
+  if (!out)
+    throw std::runtime_error("Could not open Level 9 recruitment deviations CSV: " + path);
+
+  out << std::setprecision(12);
+  out << "year,rec_dev,recruitment_multiplier\n";
+  for (std::size_t t = 0; t < years.size(); ++t)
+    out << years[t] << "," << fit.u_hat[t] << "," << std::exp(fit.u_hat[t])
+        << "\n";
+}
+
+inline void write_bigeye_selectivity_at_age(const std::string &path,
+                                            const quadra::OptResult &fit)
+{
+  if (fit.par.size() < 7)
+    throw std::runtime_error("Level 9 selectivity report expected 7 fixed effects");
+
+  const auto ll = level9_longline_selectivity(fit.par[5], fit.par[6]);
+  const auto ps = level9_purse_seine_selectivity();
+
+  std::ofstream out(path);
+  if (!out)
+    throw std::runtime_error("Could not open Level 9 selectivity CSV: " + path);
+
+  out << std::setprecision(12);
+  out << "age,longline_selectivity,purse_seine_selectivity\n";
+  for (int a = 0; a < kAges; ++a)
+    out << (a + 1) << "," << ll[static_cast<std::size_t>(a)] << ","
+        << ps[static_cast<std::size_t>(a)] << "\n";
+}
+
+inline void write_bigeye_objective_components(
+    const std::string &path,
+    const BigeyeQuadraObjective &objective,
+    const quadra::OptResult &fit)
+{
+  const auto years = objective.unique_years();
+  ensure_level9_fit_sizes(fit, years.size());
+
+  const double log_r0 = fit.par[0];
+  const double log_m = fit.par[1];
+  const double log_fbar = fit.par[2];
+  const double log_q_longline = fit.par[3];
+  const double log_q_purse_seine = fit.par[4];
+  const double logit_sel_a50_longline = fit.par[5];
+  const double log_sel_slope_longline = fit.par[6];
+
+  const double r0 = std::exp(log_r0);
+  const double m = std::exp(log_m);
+  const double fbar = std::exp(log_fbar);
+  const double q_longline = std::exp(log_q_longline);
+  const double q_purse_seine = std::exp(log_q_purse_seine);
+
+  const double sigma_log_index = 0.20;
+  const double sigma_log_catch = 0.15;
+  const double sigma_rec_dev = 0.35;
+  const double age_comp_effective_n = 30.0;
+  const double min_positive = 1.0e-12;
+
+  const auto weight = default_weight_at_age();
+  const auto sel_longline =
+      level9_longline_selectivity(logit_sel_a50_longline,
+                                  log_sel_slope_longline);
+  const auto sel_purse_seine = level9_purse_seine_selectivity();
+
+  auto normal_prior = [](double x, double mean, double sd) {
+    const double z = (x - mean) / sd;
+    return 0.5 * z * z;
+  };
+
+  double fixed_prior_nll = 0.0;
+  fixed_prior_nll += normal_prior(log_r0, std::log(1200.0), 1.0);
+  fixed_prior_nll += normal_prior(log_m, std::log(0.18), 0.35);
+  fixed_prior_nll += normal_prior(log_fbar, std::log(0.025), 0.75);
+  fixed_prior_nll += normal_prior(log_q_longline, std::log(0.00005), 1.0);
+  fixed_prior_nll += normal_prior(log_q_purse_seine, std::log(0.00005), 1.0);
+
+  const double sel_a50_longline =
+      1.0 + 9.0 / (1.0 + std::exp(-logit_sel_a50_longline));
+  fixed_prior_nll += normal_prior(sel_a50_longline, 5.5, 0.75);
+  fixed_prior_nll += normal_prior(log_sel_slope_longline, std::log(1.2), 0.35);
+
+  double rec_prior_nll = 0.0;
+  double index_nll = 0.0;
+  double catch_nll = 0.0;
+  double age_comp_nll_value = 0.0;
+
+  std::array<double, kAges> n{};
+  n[0] = r0;
+  for (int a = 1; a < kAges; ++a)
+    n[static_cast<std::size_t>(a)] =
+        n[static_cast<std::size_t>(a - 1)] * std::exp(-m);
+  n[static_cast<std::size_t>(kAges - 1)] =
+      n[static_cast<std::size_t>(kAges - 1)] / (1.0 - std::exp(-m));
+
+  for (std::size_t t = 0; t < years.size(); ++t)
+  {
+    const double rec_dev = fit.u_hat[t];
+    rec_prior_nll += 0.5 * std::pow(rec_dev / sigma_rec_dev, 2.0);
+
+    double total_catch_hat = 0.0;
+
+    for (int a = 0; a < kAges; ++a)
+    {
+      const auto i = static_cast<std::size_t>(a);
+      const double avg_sel = 0.5 * (sel_longline[i] + sel_purse_seine[i]);
+      const double f_a = fbar * avg_sel;
+      const double z_a = m + f_a;
+      const double harvest_rate = (f_a / z_a) * (1.0 - std::exp(-z_a));
+      total_catch_hat += n[i] * weight[i] * harvest_rate;
+    }
+
+    for (const auto &obs : objective.fleet_observations())
+    {
+      if (obs.year != years[t])
+        continue;
+
+      const bool is_longline = obs.fleet == "longline";
+      const auto &sel = is_longline ? sel_longline : sel_purse_seine;
+      const double fleet_q = is_longline ? q_longline : q_purse_seine;
+
+      double vulnerable_biomass = 0.0;
+      double selected_numbers_sum = 0.0;
+      std::array<double, kAges> pred_age_comp{};
+
+      for (int a = 0; a < kAges; ++a)
+      {
+        const auto i = static_cast<std::size_t>(a);
+        vulnerable_biomass += n[i] * weight[i] * sel[i];
+        pred_age_comp[i] = n[i] * sel[i];
+        selected_numbers_sum += pred_age_comp[i];
+      }
+
+      const double index_hat = fleet_q * vulnerable_biomass;
+      if (obs.index > 0.0)
+      {
+        const double z =
+            (std::log(obs.index) -
+             std::log(std::max(index_hat, min_positive))) /
+            sigma_log_index;
+        index_nll += 0.5 * z * z;
+      }
+
+      const double catch_hat =
+          total_catch_hat * objective.fleet_catch_share(obs.fleet);
+      if (obs.catch_mt > 0.0)
+      {
+        const double z =
+            (std::log(obs.catch_mt) -
+             std::log(std::max(catch_hat, min_positive))) /
+            sigma_log_catch;
+        catch_nll += 0.5 * z * z;
+      }
+
+      for (int a = 0; a < kAges; ++a)
+      {
+        const auto i = static_cast<std::size_t>(a);
+        pred_age_comp[i] =
+            pred_age_comp[i] / std::max(selected_numbers_sum, min_positive);
+      }
+
+      for (int a = 0; a < kAges; ++a)
+      {
+        const auto i = static_cast<std::size_t>(a);
+        const double obs_a = std::max(obs.age_comp[i], 0.0);
+        if (obs_a > 0.0)
+          age_comp_nll_value -=
+              age_comp_effective_n * obs_a *
+              std::log(std::max(pred_age_comp[i], min_positive));
+      }
+    }
+
+    std::array<double, kAges> next{};
+    next[0] = r0 * std::exp(rec_dev);
+
+    for (int a = 1; a < kAges; ++a)
+    {
+      const auto prev = static_cast<std::size_t>(a - 1);
+      const double avg_sel =
+          0.5 * (sel_longline[prev] + sel_purse_seine[prev]);
+      const double f_prev = fbar * avg_sel;
+      const double z_prev = m + f_prev;
+      next[static_cast<std::size_t>(a)] = n[prev] * std::exp(-z_prev);
+    }
+
+    const auto last = static_cast<std::size_t>(kAges - 1);
+    const double avg_sel_last =
+        0.5 * (sel_longline[last] + sel_purse_seine[last]);
+    const double f_last = fbar * avg_sel_last;
+    const double z_last = m + f_last;
+    next[last] = next[last] + n[last] * std::exp(-z_last);
+
+    n = next;
+  }
+
+  const double joint_total =
+      fixed_prior_nll + rec_prior_nll + index_nll + catch_nll +
+      age_comp_nll_value;
+
+  std::ofstream out(path);
+  if (!out)
+    throw std::runtime_error("Could not open Level 9 objective components CSV: " +
+                             path);
+
+  out << std::setprecision(12);
+  out << "component,value\n";
+  out << "fixed_prior_nll," << fixed_prior_nll << "\n";
+  out << "rec_prior_nll," << rec_prior_nll << "\n";
+  out << "index_nll," << index_nll << "\n";
+  out << "catch_nll," << catch_nll << "\n";
+  out << "age_comp_nll," << age_comp_nll_value << "\n";
+  out << "joint_total," << joint_total << "\n";
+}
+
+inline void write_bigeye_fitted_trajectory(
+    const std::string &path,
+    const BigeyeQuadraObjective &objective,
+    const quadra::OptResult &fit)
+{
+  const auto years = objective.unique_years();
+  ensure_level9_fit_sizes(fit, years.size());
+
+  const double r0 = std::exp(fit.par[0]);
+  const double m = std::exp(fit.par[1]);
+  const double fbar = std::exp(fit.par[2]);
+  const auto weight = default_weight_at_age();
+  const auto maturity = default_maturity_at_age();
+  const auto sel_longline = level9_longline_selectivity(fit.par[5], fit.par[6]);
+  const auto sel_purse_seine = level9_purse_seine_selectivity();
+
+  std::array<double, kAges> n{};
+  n[0] = r0;
+  for (int a = 1; a < kAges; ++a)
+    n[static_cast<std::size_t>(a)] =
+        n[static_cast<std::size_t>(a - 1)] * std::exp(-m);
+  n[static_cast<std::size_t>(kAges - 1)] =
+      n[static_cast<std::size_t>(kAges - 1)] / (1.0 - std::exp(-m));
+
+  std::ofstream out(path);
+  if (!out)
+    throw std::runtime_error("Could not open Level 9 trajectory CSV: " + path);
+
+  out << std::setprecision(12);
+  out << "year,recruitment,total_biomass,ssb_proxy,fbar\n";
+
+  for (std::size_t t = 0; t < years.size(); ++t)
+  {
+    const double total_biomass = biomass_from_numbers(n, weight);
+    const double ssb_proxy = ssb_from_numbers(n, weight, maturity);
+    out << years[t] << "," << r0 * std::exp(fit.u_hat[t]) << ","
+        << total_biomass << "," << ssb_proxy << "," << fbar << "\n";
+
+    std::array<double, kAges> next{};
+    next[0] = r0 * std::exp(fit.u_hat[t]);
+    for (int a = 1; a < kAges; ++a)
+    {
+      const auto prev = static_cast<std::size_t>(a - 1);
+      const double avg_sel =
+          0.5 * (sel_longline[prev] + sel_purse_seine[prev]);
+      const double z = m + fbar * avg_sel;
+      next[static_cast<std::size_t>(a)] = n[prev] * std::exp(-z);
+    }
+    const auto last = static_cast<std::size_t>(kAges - 1);
+    const double avg_sel_last =
+        0.5 * (sel_longline[last] + sel_purse_seine[last]);
+    const double z_last = m + fbar * avg_sel_last;
+    next[last] += n[last] * std::exp(-z_last);
+    n = next;
+  }
+}
+
+inline void write_bigeye_residual_diagnostics(
+    const std::string &path,
+    const BigeyeQuadraObjective &objective,
+    const quadra::OptResult &fit)
+{
+  // Minimal placeholder until residual writer is specialized for Level 9.
+  std::ofstream out(path);
+  if (!out)
+    throw std::runtime_error("Could not open Level 9 residual diagnostics CSV: " +
+                             path);
+  out << "metric,value,note\n";
+  out << "status,not_specialized,Level 9 residual writer not yet specialized\n";
+  out << "n_years," << objective.unique_years().size() << ",observed years\n";
+}
+
+inline void write_bigeye_report_suite(
+    const BigeyeFitReportPaths &paths,
+    const std::vector<Observation> &,
+    const BigeyeQuadraObjective &objective,
+    const quadra::ParameterVector &,
+    const quadra::OptResult &fit)
+{
+  write_bigeye_fit_summary(paths.summary, fit);
+  write_bigeye_fitted_trajectory(paths.trajectory, objective, fit);
+  write_bigeye_residual_diagnostics(paths.residual_diagnostics, objective, fit);
+  write_bigeye_selectivity_at_age(paths.selectivity, fit);
+  write_bigeye_recruitment_deviations(paths.recruitment_deviations, objective,
+                                      fit);
+  write_bigeye_objective_components(paths.objective_components, objective, fit);
+}
+
+} // namespace pifsc_bigeye_tuna
+
+using pifsc_bigeye_tuna::BigeyeFitReportPaths;
+using pifsc_bigeye_tuna::default_bigeye_report_paths;
+using pifsc_bigeye_tuna::write_bigeye_report_suite;

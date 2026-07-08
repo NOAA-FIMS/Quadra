@@ -1,0 +1,20 @@
+Level 21 Fixed-M-Offsets Diagnostic
+===================================
+
+Purpose
+-------
+This diagnostic keeps the Level 21 parameter layout intact, but fixes
+log_m_young_offset = 0 and log_m_old_offset = 0 inside the objective.
+
+Interpretation rule
+-------------------
+If objective, residuals, and gradient norm improve relative to the free-M run,
+then age-based M freedom was likely creating confounding or optimizer curvature
+problems.
+
+If objective worsens but gradient norm improves, M flexibility may be improving
+fit but making optimization harder.
+
+If both objective and gradient norm worsen, age-based M was probably helping,
+and the remaining issue is more likely optimizer control, scaling, or another
+model component.

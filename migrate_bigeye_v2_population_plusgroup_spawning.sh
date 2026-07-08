@@ -1,0 +1,200 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+BASE="examples/NMFS/pifsc_bigeye_tuna/v2"
+
+cat > "$BASE/architecture/steps/population/plus_group.hpp" <<'CPP'
+#pragma once
+
+#include "../../state/population_state.hpp"
+
+namespace bigeye_v2 {
+
+// Accumulates survivors into the terminal plus group.
+struct PlusGroup {
+  template <typename T>
+  void operator()(PopulationState<T> &population) const {
+    const auto ny = population.survivors_at_age.size();
+
+    for (std::size_t y = 0; y + 1 < ny; ++y) {
+      constexpr int plus = kAges - 1;
+
+      population.numbers_at_age[y + 1][plus] =
+          population.survivors_at_age[y][plus - 1] +
+          population.survivors_at_age[y][plus];
+    }
+  }
+};
+
+} // namespace bigeye_v2
+CPP
+
+cat > "$BASE/architecture/steps/population/spawning_biomass.hpp" <<'CPP'
+#pragma once
+
+#include "../../state/life_history_state.hpp"
+#include "../../state/population_state.hpp"
+
+namespace bigeye_v2 {
+
+// Computes spawning biomass by year.
+struct SpawningBiomass {
+  template <typename T>
+  void operator()(const LifeHistoryState<T> &life,
+                  PopulationState<T> &population) const {
+    const auto ny = population.numbers_at_age.size();
+
+    population.spawning_biomass_by_year.assign(ny, T(0.0));
+
+    for (std::size_t y = 0; y < ny; ++y) {
+      for (int a = 0; a < kAges; ++a) {
+        population.spawning_biomass_by_year[y] +=
+            population.numbers_at_age[y][a] *
+            life.weight_at_age[a] *
+            life.maturity_at_age[a];
+      }
+    }
+  }
+};
+
+} // namespace bigeye_v2
+CPP
+
+mkdir -p "$BASE/07_population_package_caa"
+
+cat > "$BASE/07_population_package_caa/bigeye_v2_07_population_package_caa_check.cpp" <<'CPP'
+#include "../architecture/parameters/fleet_parameters.hpp"
+#include "../architecture/parameters/life_history_parameters.hpp"
+#include "../architecture/parameters/population_parameters.hpp"
+#include "../architecture/state/fleet_state.hpp"
+#include "../architecture/state/life_history_state.hpp"
+#include "../architecture/state/population_state.hpp"
+#include "../architecture/steps/fleet/fishing_mortality.hpp"
+#include "../architecture/steps/fleet/logistic_selectivity.hpp"
+#include "../architecture/steps/life_history/life_history.hpp"
+#include "../architecture/steps/population/aging.hpp"
+#include "../architecture/steps/population/plus_group.hpp"
+#include "../architecture/steps/population/recruitment.hpp"
+#include "../architecture/steps/population/spawning_biomass.hpp"
+#include "../architecture/steps/population/survival.hpp"
+#include "../common/model_data.hpp"
+
+#include <array>
+#include <cmath>
+#include <cstdlib>
+#include <iomanip>
+#include <iostream>
+
+namespace {
+bool nearly_equal(double a, double b, double tol = 1.0e-6) {
+  return std::abs(a - b) <= tol;
+}
+} // namespace
+
+int main() {
+  using namespace bigeye_v2;
+
+  BigeyeModelData<double> data;
+  data.n_years = 3;
+
+  LifeHistoryParameters<double> lp;
+  lp.log_m_young_offset = std::log(0.75);
+  lp.log_m_old_offset = std::log(0.65);
+
+  LifeHistoryState<double> life;
+  BigeyeLifeHistory{}(data, lp, life);
+
+  FleetParameters<double> fp;
+  fp.sel_a50 = 5.0;
+  fp.sel_slope = 1.0;
+  fp.fbar = 0.2;
+
+  FleetState<double> fleet;
+  LogisticSelectivity{}(data, fp, fleet);
+  FishingMortality{}(fp, life, fleet);
+
+  PopulationParameters<double> pp;
+  pp.r0 = 1000.0;
+
+  PopulationState<double> pop;
+  FixedRecruitment{}(data, pp, pop);
+
+  pop.numbers_at_age.assign(
+      static_cast<std::size_t>(data.n_years),
+      std::array<double, kAges>{});
+
+  for (int a = 0; a < kAges; ++a) {
+    pop.numbers_at_age[0][a] = 1000.0;
+  }
+
+  Survival{}(fleet, pop);
+  Aging{}(pop);
+
+  for (std::size_t y = 0; y < pop.recruits_by_year.size(); ++y) {
+    pop.numbers_at_age[y][0] = pop.recruits_by_year[y];
+  }
+
+  PlusGroup{}(pop);
+  SpawningBiomass{}(life, pop);
+
+  constexpr double expected_y1_age1 = 1000.0;
+  constexpr double expected_y1_age2 = 711.9177620339338;
+  constexpr double expected_y1_age10 = 1226.9201954177395;
+  constexpr double expected_ssb_y0 = 64000.0;
+
+  if (!nearly_equal(pop.numbers_at_age[1][0], expected_y1_age1)) {
+    std::cerr << "FAIL: recruitment age1\n";
+    return EXIT_FAILURE;
+  }
+
+  if (!nearly_equal(pop.numbers_at_age[1][1], expected_y1_age2)) {
+    std::cerr << std::setprecision(17)
+              << "FAIL: aging/survival y1 age2 got "
+              << pop.numbers_at_age[1][1]
+              << " expected " << expected_y1_age2
+              << " diff " << (pop.numbers_at_age[1][1] - expected_y1_age2)
+              << "\n";
+    return EXIT_FAILURE;
+  }
+
+  if (!nearly_equal(pop.numbers_at_age[1][9], expected_y1_age10)) {
+    std::cerr << std::setprecision(17)
+              << "FAIL: plus group y1 age10 got "
+              << pop.numbers_at_age[1][9]
+              << " expected " << expected_y1_age10
+              << " diff " << (pop.numbers_at_age[1][9] - expected_y1_age10)
+              << "\n";
+    return EXIT_FAILURE;
+  }
+
+  if (!nearly_equal(pop.spawning_biomass_by_year[0], expected_ssb_y0)) {
+    std::cerr << std::setprecision(17)
+              << "FAIL: ssb y0 got " << pop.spawning_biomass_by_year[0]
+              << " expected " << expected_ssb_y0
+              << " diff " << (pop.spawning_biomass_by_year[0] - expected_ssb_y0)
+              << "\n";
+    return EXIT_FAILURE;
+  }
+
+  std::cout << "PASSED: Bigeye v2 CAA population package regression\n";
+  return EXIT_SUCCESS;
+}
+CPP
+
+cat > run_bigeye_v2_07_population_package_caa_check.sh <<'SH'
+#!/usr/bin/env bash
+set -euo pipefail
+
+mkdir -p build/examples
+
+c++ -std=c++17 -O3 \
+  -I. \
+  examples/NMFS/pifsc_bigeye_tuna/v2/07_population_package_caa/bigeye_v2_07_population_package_caa_check.cpp \
+  -o build/examples/bigeye_v2_07_population_package_caa_check
+
+./build/examples/bigeye_v2_07_population_package_caa_check
+SH
+
+chmod +x run_bigeye_v2_07_population_package_caa_check.sh
+
+echo "migrated CAA population plus-group and spawning-biomass steps"

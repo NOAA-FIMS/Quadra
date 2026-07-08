@@ -1,0 +1,24 @@
+field,value
+objective,1936.13626926
+laplace_logdet,78.6044191658
+laplace_constant,18.3787706641
+grad_norm,0.336447732796
+iterations,217
+converged,no
+message,stopped before requested fixed-effect gradient tolerance; L-BFGS line search stalled; recovered with gradient restart. attempts=2
+laplace,yes
+random_effects,20
+log_r0,10.151767288
+r0,25636.3690426
+log_m,-0.680648506614
+m,0.506288554404
+log_fbar,-2.82127895143
+fbar,0.0595297583319
+log_q_longline,-10.2997937458
+q_longline,3.36400328698e-05
+log_q_purse_seine,-11.8081547313
+q_purse_seine,7.44360911038e-06
+logit_sel_a50_longline,0.388794396308
+sel_a50_longline,6.36393196985
+log_sel_slope_longline,0.997312512933
+sel_slope_longline,2.71098628893

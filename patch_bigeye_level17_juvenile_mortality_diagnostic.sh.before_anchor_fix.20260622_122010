@@ -1,0 +1,233 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="examples/NMFS/pifsc_bigeye_tuna"
+L16="$ROOT/level16_purse_seine_age_selectivity"
+L17="$ROOT/level17_juvenile_mortality_diagnostic"
+WF="$ROOT/workflow/scientific_reasoning_log.md"
+
+if [[ ! -d "$L16" ]]; then
+  echo "ERROR: missing $L16. Run from repo root after Level 16."
+  exit 1
+fi
+
+rm -rf "$L17"
+mkdir -p "$L17"
+cp -R "$L16"/. "$L17"/
+
+if [[ -f "$L17/quadra/bigeye_level16_purse_seine_age_selectivity.cpp" ]]; then
+  mv "$L17/quadra/bigeye_level16_purse_seine_age_selectivity.cpp" \
+     "$L17/quadra/bigeye_level17_juvenile_mortality_diagnostic.cpp"
+fi
+
+python3 - <<'PY'
+from pathlib import Path
+import re
+
+root = Path("examples/NMFS/pifsc_bigeye_tuna/level17_juvenile_mortality_diagnostic")
+for p in root.rglob("*"):
+    if p.is_file() and p.suffix in {".cpp", ".hpp", ".md", ".csv", ".txt"}:
+        s = p.read_text()
+        s = s.replace("level16_purse_seine_age_selectivity", "level17_juvenile_mortality_diagnostic")
+        s = s.replace("bigeye_level16_", "bigeye_level17_")
+        s = s.replace("Level 16", "Level 17")
+        s = s.replace("write_level16_", "write_level17_")
+        p.write_text(s)
+
+data_dir = root / "data"
+target = data_dir / "synthetic_bigeye_level17_juvenile_mortality_diagnostic_observations.csv"
+for p in list(data_dir.glob("synthetic_bigeye_level*_observations.csv")):
+    if p.name != target.name:
+        p.rename(target)
+        break
+
+driver = root / "quadra/bigeye_level17_juvenile_mortality_diagnostic.cpp"
+s = driver.read_text()
+s = re.sub(r"synthetic_bigeye_level[0-9a-z_]*_observations\\.csv",
+           "synthetic_bigeye_level17_juvenile_mortality_diagnostic_observations.csv", s)
+
+anchor = '    for (int a = 0; a < pifsc_bigeye_tuna::kAges; ++a) {\\n      params.add({"init_log_number_dev_age_"'
+insert = '    params.add({"log_juvenile_m_multiplier", 0.0,\\n                quadra::ParameterTransform::Identity, false});\\n\\n'
+if "log_juvenile_m_multiplier" not in s:
+    if anchor not in s:
+        raise SystemExit("Could not find initial-number insertion anchor")
+    s = s.replace(anchor, insert + anchor, 1)
+driver.write_text(s)
+PY
+
+python3 - <<'PY'
+from pathlib import Path
+p = Path("examples/NMFS/pifsc_bigeye_tuna/level17_juvenile_mortality_diagnostic/objective/bigeye_quadra_objective.hpp")
+s = p.read_text()
+
+s = s.replace("constexpr int kBaseFixed = 5;", "constexpr int kBaseFixed = 6;")
+s = s.replace("const T log_sel_slope_longline = par[4];",
+              "const T log_sel_slope_longline = par[4];\\n    const T log_juvenile_m_multiplier = par[5];")
+s = s.replace("const T log_m = T(std::log(0.45));",
+              "const T adult_m = T(0.45);\\n    const T juvenile_m = adult_m * exp_t(log_juvenile_m_multiplier);")
+s = s.replace("const T m = exp_t(log_m);\\n    const T fbar", "const T fbar")
+s = s.replace("const T sigma_ps_sel_dev = T(1.0);",
+              "const T sigma_ps_sel_dev = T(1.0);\\n    const T sigma_log_juvenile_m_multiplier = T(0.50);")
+s = s.replace("nll = nll + normal_prior(log_sel_slope_longline, std::log(1.2), 0.35);",
+              "nll = nll + normal_prior(log_sel_slope_longline, std::log(1.2), 0.35);\\n    nll = nll + T(0.5) * square_t(log_juvenile_m_multiplier / sigma_log_juvenile_m_multiplier);")
+
+needle = "    const auto weight = default_weight_at_age();\\n"
+insert = (
+"    const auto weight = default_weight_at_age();\\n\\n"
+"    std::array<T, kAges> m_at_age{};\\n"
+"    for (int a = 0; a < kAges; ++a) {\\n"
+"      m_at_age[static_cast<std::size_t>(a)] =\\n"
+"          (a < 2) ? juvenile_m : adult_m;\\n"
+"    }\\n"
+)
+s = s.replace(needle, insert, 1)
+
+s = s.replace("] * exp_t(-m);", "] * exp_t(-m_at_age[static_cast<std::size_t>(a - 1)]);")
+s = s.replace("/ (T(1.0) - exp_t(-m));",
+              "/ (T(1.0) - exp_t(-m_at_age[static_cast<std::size_t>(kAges - 1)]));")
+s = s.replace("const T z_a = m + f_a;", "const T z_a = m_at_age[i] + f_a;")
+s = s.replace("const T z_prev = m + fbar * avg_sel_prev;", "const T z_prev = m_at_age[prev] + fbar * avg_sel_prev;")
+s = s.replace("const T z_last = m + fbar * avg_sel_last;", "const T z_last = m_at_age[last] + fbar * avg_sel_last;")
+p.write_text(s)
+PY
+
+python3 - <<'PY'
+from pathlib import Path
+
+report = Path("examples/NMFS/pifsc_bigeye_tuna/level17_juvenile_mortality_diagnostic/reports/bigeye_fit_reports.hpp")
+if report.exists():
+    s = report.read_text()
+    needle = '    out << "sel_slope_longline," << std::exp(fit.par[4]) << "\\\\n";\\n'
+    add = (
+'    out << "log_juvenile_m_multiplier," << fit.par[5] << "\\\\n";\\n'
+'    out << "juvenile_m_multiplier," << std::exp(fit.par[5]) << "\\\\n";\\n'
+'    out << "juvenile_m_age1_2," << 0.45 * std::exp(fit.par[5]) << "\\\\n";\\n'
+)
+    if needle in s and "juvenile_m_multiplier" not in s:
+        s = s.replace(needle, needle + add, 1)
+    s = s.replace("const int idx = 5 + a;", "const int idx = 6 + a;")
+    s = s.replace("const int idx = 5 + pifsc_bigeye_tuna::kAges + a;", "const int idx = 6 + pifsc_bigeye_tuna::kAges + a;")
+    report.write_text(s)
+
+for rel in ["diagnostics/bigeye_initial_numbers_diagnostics.hpp",
+            "diagnostics/bigeye_age_comp_residual_diagnostics.hpp"]:
+    p = Path("examples/NMFS/pifsc_bigeye_tuna/level17_juvenile_mortality_diagnostic") / rel
+    if not p.exists():
+        continue
+    s = p.read_text()
+    s = s.replace("constexpr int kBaseFixed = 5;", "constexpr int kBaseFixed = 6;")
+    s = s.replace("const double m = 0.45;", "const double adult_m = 0.45;\\n  const double juvenile_m = adult_m * std::exp(fit.par[5]);\\n  const double m = adult_m;")
+    s = s.replace("] * std::exp(-m);", "] * std::exp(-((a - 1) < 2 ? juvenile_m : adult_m));")
+    s = s.replace("/ (1.0 - std::exp(-m));", "/ (1.0 - std::exp(-adult_m));")
+    s = s.replace("const double z_prev = m + fbar * avg_sel_prev;", "const double z_prev = ((a - 1) < 2 ? juvenile_m : adult_m) + fbar * avg_sel_prev;")
+    s = s.replace("const double z_last = m + fbar * avg_sel_last;", "const double z_last = adult_m + fbar * avg_sel_last;")
+    p.write_text(s)
+PY
+
+cat > "$L17/README.md" <<'EOF_README'
+# Level 17: Juvenile Mortality Diagnostic
+
+Adds `log_juvenile_m_multiplier`:
+
+```text
+M_age1_2 = 0.45 * exp(log_juvenile_m_multiplier)
+M_age3_plus = 0.45
+```
+
+Keeps estimated initial numbers, estimated purse-seine age selectivity, adult
+M=0.45, fixed longline q, and recruitment deviations.
+EOF_README
+
+cat >> "$WF" <<'EOF_LOG'
+
+## Level 17 plan: juvenile mortality diagnostic
+
+Level 16 improved objective after estimating purse-seine age selectivity, but
+the repeated purse-seine age-1 residual persisted. Level 17 adds a single
+juvenile mortality multiplier for ages 1-2, keeping adult M fixed at 0.45.
+EOF_LOG
+
+cat > inspect_bigeye_level17_juvenile_mortality.sh <<'EOF_INSPECT'
+#!/usr/bin/env bash
+set -euo pipefail
+L17="examples/NMFS/pifsc_bigeye_tuna/level17_juvenile_mortality_diagnostic"
+echo "== Level 17 fixed effects =="
+grep -n "params.add" "$L17/quadra/bigeye_level17_juvenile_mortality_diagnostic.cpp" | head -220
+echo
+echo "== Juvenile mortality objective wiring =="
+grep -n "juvenile\\|m_at_age\\|adult_m\\|kBaseFixed" "$L17/objective/bigeye_quadra_objective.hpp" | head -220
+EOF_INSPECT
+chmod +x inspect_bigeye_level17_juvenile_mortality.sh
+
+cat > run_bigeye_level17_juvenile_mortality_check.sh <<'EOF_RUN'
+#!/usr/bin/env bash
+set -euo pipefail
+
+./inspect_bigeye_level17_juvenile_mortality.sh
+
+echo
+echo "== O3 build Bigeye Level 17 juvenile mortality diagnostic =="
+mkdir -p build/examples
+c++ -std=c++17 -O3 \
+  -I. \
+  -Iexternal/eigen \
+  examples/NMFS/pifsc_bigeye_tuna/level17_juvenile_mortality_diagnostic/quadra/bigeye_level17_juvenile_mortality_diagnostic.cpp \
+  examples/NMFS/pifsc_bigeye_tuna/level17_juvenile_mortality_diagnostic/quadra/bigeye_adgraph_global.cpp \
+  -o build/examples/pifsc_bigeye_level17_juvenile_mortality_check
+
+echo
+echo "== Run Bigeye Level 17 juvenile mortality diagnostic =="
+./build/examples/pifsc_bigeye_level17_juvenile_mortality_check
+
+echo
+echo "== Level 17 fit summary =="
+cat examples/NMFS/pifsc_bigeye_tuna/level17_juvenile_mortality_diagnostic/outputs/bigeye_level17_fit_summary.csv
+
+echo
+echo "== Level 17 age-comp residual summary =="
+grep -n -A20 "Fleet summary" examples/NMFS/pifsc_bigeye_tuna/level17_juvenile_mortality_diagnostic/outputs/bigeye_level17_age_comp_residual_diagnostics.txt || true
+
+echo
+echo "== Level 16 vs Level 17 compact comparison =="
+python3 - <<'PY'
+import csv
+from pathlib import Path
+base=Path("examples/NMFS/pifsc_bigeye_tuna")
+def fit(level,prefix):
+    d={}
+    p=base/level/"outputs"/f"{prefix}_fit_summary.csv"
+    if p.exists():
+        for r in csv.DictReader(p.open()): d[r["field"]]=r["value"]
+    return d
+def rec(level,prefix):
+    d={}
+    p=base/level/"outputs"/f"{prefix}_recruitment_diagnostics.csv"
+    if p.exists():
+        for r in csv.DictReader(p.open()):
+            if r.get("section")=="summary": d[r["metric"]]=r["value"]
+    return d
+def fleet(level,prefix):
+    d={}
+    p=base/level/"outputs"/f"{prefix}_age_comp_residual_diagnostics.csv"
+    if p.exists():
+        for r in csv.DictReader(p.open()):
+            if r["section"]=="fleet_summary": d[r["fleet"]]=r["residual"]
+    return d
+items=[("level16","level16_purse_seine_age_selectivity","bigeye_level16"),
+       ("level17","level17_juvenile_mortality_diagnostic","bigeye_level17")]
+print("level,objective,grad_norm,juvenile_m_multiplier,juvenile_m,rec_sd,rec_lag1,rec_prior_nll,purse_seine_mean_abs,longline_mean_abs")
+for label,level,prefix in items:
+    fi=fit(level,prefix); re=rec(level,prefix); fl=fleet(level,prefix)
+    print(",".join([label,fi.get("objective",""),fi.get("grad_norm",""),
+                    fi.get("juvenile_m_multiplier",""),fi.get("juvenile_m_age1_2",""),
+                    re.get("sd",""),re.get("lag1_correlation",""),re.get("total_prior_nll",""),
+                    fl.get("purse_seine",""),fl.get("longline","")]))
+PY
+EOF_RUN
+chmod +x run_bigeye_level17_juvenile_mortality_check.sh
+
+echo "Created Level 17 juvenile mortality diagnostic."
+echo
+echo "Run:"
+echo "  ./inspect_bigeye_level17_juvenile_mortality.sh"
+echo "  ./run_bigeye_level17_juvenile_mortality_check.sh"

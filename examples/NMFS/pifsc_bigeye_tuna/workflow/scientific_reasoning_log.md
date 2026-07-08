@@ -458,3 +458,347 @@ Level 6 also exposed a diagnostic-layer issue: some post-fit perturbation
 diagnostics can cross regions where the profiled random-effect Hessian is not
 factorizable. Safe diagnostics now preserve those failed perturbations as rows
 instead of aborting the model run.
+
+## Level 6 follow-up: longline slope geometry scan
+
+### Motivation
+
+Safe wiggle diagnostics showed that decreasing `log_sel_slope_longline` caused a
+profiled Laplace/Huu factorization failure while increasing it was stable. This
+suggests a one-sided stability boundary around the longline selectivity slope.
+
+### Diagnostic addition
+
+A longline slope geometry scan holds all other fixed effects fixed and sweeps
+the longline selectivity slope on the natural scale. For each value, random
+effects are re-solved and the profiled objective is evaluated.
+
+### Scientific question
+
+Where does the Laplace approximation become unstable as longline selectivity
+slope changes?
+
+### Interpretation
+
+The first failed row below the fitted slope identifies an approximate local
+stability boundary. If the boundary is close to the fitted value, the model is
+locally sharp and should be treated carefully before adding more structure.
+
+## Level 6 follow-up: recruitment diagnostics
+
+### Motivation
+
+The current recruitment model uses independent annual recruitment deviations
+with fixed prior scale `sigma_rec_dev = 0.35`. Recruitment deviations can
+represent biological variation, but they can also absorb residual structure from
+misspecified selectivity, catch, index, or composition processes.
+
+### Diagnostic addition
+
+Recruitment diagnostics summarize:
+
+- estimated annual recruitment deviations,
+- recruitment multipliers,
+- prior z-scores,
+- prior NLL contribution,
+- standard deviation,
+- lag-1 correlation,
+- first-difference roughness,
+- and the year with maximum absolute deviation.
+
+### Scientific question
+
+Are recruitment deviations modest biological variation, or are they carrying
+unmodeled structure?
+
+### Interpretation
+
+Large persistent recruitment deviations or strong autocorrelation would suggest
+that the independent annual recruitment model is compensating for missing
+structure. Modest deviations centered near zero support leaving recruitment as
+a simple independent random-effect process for the current diagnostic level.
+
+## Level 7 plan: dual age-based selectivity
+
+### Motivation
+
+Level 6 replaced purse-seine logistic selectivity with fixed age-based
+selectivity and substantially improved the model. However, recruitment
+diagnostics showed a smooth, persistent recruitment trajectory with high lag-1
+correlation. This suggests recruitment may still be absorbing remaining
+structural mismatch, possibly from longline logistic selectivity.
+
+### Model change
+
+Level 7 replaces longline logistic selectivity with a fixed age-based
+selectivity pattern while retaining purse-seine age-based selectivity. The
+fixed-effect dimension is reduced to R0, Fbar, and two fleet-specific q values.
+
+### Scientific hypothesis
+
+If the Level 6 recruitment pattern is compensating for longline logistic
+selectivity misspecification, then Level 7 should reduce recruitment
+persistence, recruitment prior burden, or age-composition NLL.
+
+### Decision rule
+
+If recruitment lag-1 correlation and rec prior burden drop materially, then
+the diagnostic evidence supports the conclusion that recruitment was absorbing
+remaining selectivity misspecification. If recruitment persistence remains high,
+then the persistent recruitment pattern likely reflects data construction,
+observation weighting, or a need for an explicit recruitment process.
+
+## Level 8 plan: tuna weight-at-age
+
+### Motivation
+
+The bigeye tuna examples inherited a small toy/red-snapper-like weight-at-age
+schedule that tops out near 5 kg. That is biologically inappropriate for adult
+bigeye tuna and affects biomass, vulnerable biomass, catch biomass, q, Fbar,
+SSB proxy, and recruitment scaling.
+
+### Model change
+
+Level 8 keeps the Level 6 model structure but replaces the fixed weight-at-age
+with a tuna-like schedule:
+
+- age 1: 2 kg
+- age 2: 8 kg
+- age 3: 18 kg
+- age 4: 32 kg
+- age 5: 48 kg
+- age 6: 65 kg
+- age 7: 82 kg
+- age 8: 98 kg
+- age 9: 112 kg
+- age 10: 125 kg
+
+### Scientific question
+
+Were persistent recruitment deviations compensating for unrealistic adult
+weight-at-age?
+
+### Interpretation
+
+If recruitment burden, Fbar, q, or objective components shift materially, then
+weight-at-age was a hidden structural driver and should be treated as a core
+biological input rather than a harmless reporting detail.
+
+## Level 9 plan: estimated natural mortality
+
+### Motivation
+
+Level 8 showed that correcting tuna weight-at-age changed biomass scale but did
+not remove the persistent recruitment trajectory. The remaining smooth
+recruitment deviations may be compensating for misspecified survival.
+
+### Model change
+
+Level 9 estimates natural mortality as fixed effect `log_m` with a prior
+centered at `log(0.18)`. The model otherwise retains the Level 6 structure.
+
+### Scientific question
+
+Can the data support estimated natural mortality, and does allowing M to move
+reduce recruitment persistence or age-composition pressure?
+
+### Caution
+
+Estimating M is often weakly identified in stock assessment models. This is a
+diagnostic experiment intended to reveal confounding and compensation.
+
+## Level 9 follow-up: objective consistency check
+
+### Motivation
+
+Level 9 produced a large disagreement between the optimizer-reported objective
+and the objective-components report. Before interpreting biological results, we
+need to verify whether reports are evaluating the same objective and parameter
+ordering as the optimizer.
+
+### Diagnostic addition
+
+The objective consistency check constructs the full parameter vector from the
+returned fixed effects and random effects, evaluates the objective directly,
+and compares that direct joint objective with the profiled Laplace objective.
+
+### Interpretation
+
+The direct joint objective should not equal the profiled Laplace objective,
+because the latter includes Laplace adjustment terms. However, it should be on
+a plausible scale relative to the reported joint objective components. A large
+mismatch indicates stale report code, stale parameter indexing, or inconsistent
+fixed assumptions.
+
+## Level 9 follow-up: fixed-effect geometry
+
+### Motivation
+
+After patching Level 9 reports, objective components matched the direct joint
+objective. The estimated-M run collapsed recruitment compensation, but it did so
+through a biologically implausible ridge involving very large R0, high Fbar,
+large q, and nearly flat longline selectivity.
+
+### Diagnostic addition
+
+The Level 9 fixed-effect geometry report computes a finite-difference Hessian
+of the profiled Laplace objective across the seven Level 9 fixed effects:
+
+- log_r0
+- log_m
+- log_fbar
+- log_q_longline
+- log_q_purse_seine
+- logit_sel_a50_longline
+- log_sel_slope_longline
+
+### Scientific question
+
+Which parameter combinations define the weak ridge exposed by estimating natural
+mortality?
+
+### Interpretation
+
+If `log_m` loads heavily with R0, Fbar, q, or selectivity terms in the weakest
+eigen-directions, then estimated M is not independently informed by the data and
+is instead part of a compensatory identifiability ridge.
+
+## Level 10 plan: q anchor
+
+Level 9 fixed-effect geometry showed the weakest direction was primarily an
+R0-F-q scale ridge. Level 10 fixes longline q at 0.00005 and estimates the
+remaining scale terms to test whether one external scale anchor improves the
+surface.
+
+## Level 11 plan: fixed M + q anchor
+
+Level 10 fixed longline q but M still escaped high. Level 11 fixes both M and
+longline q, leaving R0, Fbar, purse-seine q, and longline selectivity estimated.
+This tests whether M was the remaining escape hatch after anchoring q.
+
+## Level 12 plan: tuna life-history correction
+
+Inspection showed that the bigeye levels still carried inherited reef-fish-like
+life-history schedules: weight-at-age reached only about 5 kg, and maturity was
+near complete by age 5. Level 12 clones Level 11 and keeps fixed M and fixed
+longline q, but replaces weight-at-age and maturity-at-age with provisional
+bigeye-tuna-like diagnostic schedules. These are placeholders and should be
+replaced by stock-specific assessment inputs before production use.
+
+## Level 13 plan: estimated initial numbers
+
+Level 12 converged cleanly after tuna life-history correction, but recruitment
+deviations remained strongly positive in the early modeled years. Level 13 tests
+whether those recruitment deviations are compensating for an incorrect initial
+age structure by estimating initial log-number deviations by age, with a prior
+to keep the experiment diagnostic rather than unconstrained.
+
+## Level 14 plan: M sensitivity with estimated initial numbers
+
+Level 13 showed that recruitment deviations were compensating for a bad initial
+age structure, especially excessive age-10+ biomass. Level 14 keeps estimated
+initial numbers but sweeps fixed M values to test whether higher M reduces
+plus-group pressure and the need to crush the age-10+ initial state.
+
+## Level 15 plan: fixed M=0.45 best diagnostic model
+
+Level 14 M sensitivity found the best objective near M=0.45. Level 15 freezes
+that setting as the current best diagnostic model and adds age-composition
+residual diagnostics. This should identify the remaining fleet/year/age
+structure that is driving compensation.
+
+## Level 16 plan: age-specific purse-seine selectivity
+
+Level 15 residual diagnostics showed purse-seine age-1 was greatly overpredicted
+every year. Level 16 replaces the fixed purse-seine selectivity vector with
+estimated age-specific selectivity logits.
+
+## Level 17 plan: juvenile mortality diagnostic
+
+Level 16 improved objective after estimating purse-seine age selectivity, but
+the repeated purse-seine age-1 residual persisted. Level 17 adds a single
+juvenile mortality multiplier for ages 1-2, keeping adult M fixed at 0.45.
+
+## Level 16 plan: age-specific purse-seine selectivity
+
+Level 15 residual diagnostics showed purse-seine age-1 was greatly overpredicted
+every year. Level 16 replaces the fixed purse-seine selectivity vector with
+estimated age-specific selectivity logits.
+
+## Level 18: longline selectivity diagnostic
+
+Level 16 resolved the apparent purse-seine age-composition mismatch once the
+diagnostics were corrected to use the objective-consistent prediction path. The
+remaining age-composition residuals are concentrated in the longline fleet,
+especially older ages. Level 18 clones Level 16 and adds a longline prediction
+decomposition report:
+
+- numbers-at-age
+- longline selectivity
+- selected numbers
+- predicted composition
+- observed composition
+- residual
+
+This level is diagnostic only. Its purpose is to determine whether the remaining
+mismatch is caused by the logistic longline selectivity curve being too
+restrictive, especially for old ages and the plus group.
+
+## Level 19: flexible longline age selectivity
+
+Level 18 showed that the remaining age-composition mismatch is concentrated in
+longline old ages. The logistic longline selectivity curve was essentially fully
+selected at both age 8 and age 10, which prevented the model from shifting
+selected composition from the plus group back into age 8.
+
+Level 19 replaces the logistic longline selectivity curve with age-specific
+longline selectivity logits under an informative template prior. This is the
+longline analogue of the successful Level 16 purse-seine age-specific
+selectivity diagnostic.
+
+## Level 19 parameter sanity diagnostics
+
+After Level 19 reduced the longline age-composition mismatch, the next question
+is whether the improvement came from a defensible selectivity shape or from
+excessive tradeoffs with initial numbers. This diagnostic adds block-level prior
+penalties and age-specific parameter summaries for initial numbers, longline
+selectivity, purse-seine selectivity, and recruitment deviations.
+
+## Level 20: longline selectivity regularization scan
+
+Level 19 showed that flexible longline age selectivity greatly improved the
+longline age-composition fit while leaving initial numbers and recruitment
+well behaved. Level 20 scans the longline selectivity prior width to find the
+smallest amount of selectivity flexibility that preserves most of the Level 19
+improvement.
+
+Scanned values:
+
+- sigma_ll_sel_dev = 0.50
+- sigma_ll_sel_dev = 0.75
+- sigma_ll_sel_dev = 1.00
+- sigma_ll_sel_dev = 1.25
+
+Decision rule: prefer the tightest prior that retains most of the objective and
+residual improvement, rather than automatically choosing the loosest fit.
+
+## Level 20 wide sigma scan
+
+The first Level 20 scan improved monotonically through sigma_ll_sel_dev = 1.25,
+so a wider scan was added for 1.25, 1.50, 1.75, and 2.00. This checks whether
+there is an objective/residual elbow or whether the model continues to request
+more longline selectivity flexibility.
+
+## Level 21: age-based natural mortality diagnostic
+
+Age-based natural mortality is now on the explicit model-development list. Level
+21 starts from the Level 20 sigma_ll_sel_dev = 1.75 diagnostic compromise and
+adds a restrained age-based M structure:
+
+- ages 1–3 share a young-M multiplier
+- ages 4–7 use the adult fixed-M anchor
+- ages 8–10 share an old-M multiplier
+
+Both M multipliers are penalized on the log scale with sigma = 0.35. This tests
+whether age-based M improves the remaining fit without letting M become a fully
+free age-specific selectivity surrogate.
