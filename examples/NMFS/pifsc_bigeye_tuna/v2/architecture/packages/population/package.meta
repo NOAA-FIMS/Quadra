@@ -2,6 +2,8 @@ name: PopulationPackage
 purpose: Composes population dynamics for one population
 consumes: BigeyeModelData, PopulationParameters, LifeHistoryState, FleetState
 produces: PopulationState
+creates: PopulationState
+updates: PopulationState
 steps:
   - FixedRecruitment
   - Survival

@@ -1,0 +1,208 @@
+{
+  "name": "Bigeye v2 CAA IR",
+  "packages": [
+    {
+      "key": "life_history",
+      "name": "LifeHistoryPackage",
+      "purpose": "Computes life-history quantities",
+      "consumes": [
+        "BigeyeModelData",
+        "LifeHistoryParameters"
+      ],
+      "produces": [
+        "LifeHistoryState"
+      ],
+      "creates": [
+        "LifeHistoryState"
+      ],
+      "updates": [],
+      "steps": [
+        "BigeyeLifeHistory"
+      ]
+    },
+    {
+      "key": "population",
+      "name": "PopulationPackage",
+      "purpose": "Composes population dynamics for one population",
+      "consumes": [
+        "BigeyeModelData",
+        "PopulationParameters",
+        "LifeHistoryState",
+        "FleetState"
+      ],
+      "produces": [
+        "PopulationState"
+      ],
+      "creates": [
+        "PopulationState"
+      ],
+      "updates": [
+        "PopulationState"
+      ],
+      "steps": [
+        "FixedRecruitment",
+        "Survival",
+        "Aging",
+        "PlusGroup",
+        "SpawningBiomass"
+      ]
+    },
+    {
+      "key": "movement",
+      "name": "MovementPackage",
+      "purpose": "Composes movement across populations",
+      "consumes": [
+        "BigeyeModelData",
+        "MovementParameters",
+        "PopulationState"
+      ],
+      "produces": [
+        "PopulationState"
+      ],
+      "creates": [],
+      "updates": [
+        "PopulationState"
+      ],
+      "steps": [
+        "IdentityMovement"
+      ]
+    },
+    {
+      "key": "fleet",
+      "name": "FleetPackage",
+      "purpose": "Composes fleet dynamics for one fleet",
+      "consumes": [
+        "BigeyeModelData",
+        "FleetParameters",
+        "LifeHistoryState",
+        "PopulationState"
+      ],
+      "produces": [
+        "FleetState"
+      ],
+      "creates": [
+        "FleetState"
+      ],
+      "updates": [
+        "FleetState"
+      ],
+      "steps": [
+        "LogisticSelectivity",
+        "FishingMortality",
+        "BaranovCatch"
+      ]
+    },
+    {
+      "key": "observation",
+      "name": "ObservationPackage",
+      "purpose": "Composes predicted observations for one fleet",
+      "consumes": [
+        "BigeyeModelData",
+        "FleetParameters",
+        "PopulationState",
+        "FleetState"
+      ],
+      "produces": [
+        "FleetState"
+      ],
+      "creates": [],
+      "updates": [
+        "FleetState"
+      ],
+      "steps": [
+        "BiomassIndexPrediction",
+        "CatchAgeCompositionPrediction"
+      ]
+    },
+    {
+      "key": "likelihood",
+      "name": "LikelihoodPackage",
+      "purpose": "Composes likelihood components for one fleet",
+      "consumes": [
+        "BigeyeModelData",
+        "FleetParameters",
+        "FleetState"
+      ],
+      "produces": [
+        "LikelihoodState"
+      ],
+      "creates": [
+        "LikelihoodState"
+      ],
+      "updates": [
+        "LikelihoodState"
+      ],
+      "steps": [
+        "LognormalCatchLikelihood",
+        "LognormalIndexLikelihood",
+        "MultinomialAgeCompLikelihood"
+      ]
+    }
+  ],
+  "created": {
+    "LifeHistoryState": [
+      "LifeHistoryPackage"
+    ],
+    "PopulationState": [
+      "PopulationPackage"
+    ],
+    "FleetState": [
+      "FleetPackage"
+    ],
+    "LikelihoodState": [
+      "LikelihoodPackage"
+    ]
+  },
+  "updated": {
+    "PopulationState": [
+      "PopulationPackage",
+      "MovementPackage"
+    ],
+    "FleetState": [
+      "FleetPackage",
+      "ObservationPackage"
+    ],
+    "LikelihoodState": [
+      "LikelihoodPackage"
+    ]
+  },
+  "consumed": {
+    "BigeyeModelData": [
+      "LifeHistoryPackage",
+      "PopulationPackage",
+      "MovementPackage",
+      "FleetPackage",
+      "ObservationPackage",
+      "LikelihoodPackage"
+    ],
+    "LifeHistoryParameters": [
+      "LifeHistoryPackage"
+    ],
+    "PopulationParameters": [
+      "PopulationPackage"
+    ],
+    "LifeHistoryState": [
+      "PopulationPackage",
+      "FleetPackage"
+    ],
+    "FleetState": [
+      "PopulationPackage",
+      "ObservationPackage",
+      "LikelihoodPackage"
+    ],
+    "MovementParameters": [
+      "MovementPackage"
+    ],
+    "PopulationState": [
+      "MovementPackage",
+      "FleetPackage",
+      "ObservationPackage"
+    ],
+    "FleetParameters": [
+      "FleetPackage",
+      "ObservationPackage",
+      "LikelihoodPackage"
+    ]
+  },
+  "diagnostics": []
+}

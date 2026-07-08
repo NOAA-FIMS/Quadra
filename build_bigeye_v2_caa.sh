@@ -16,6 +16,10 @@ echo "== Generate registry =="
 ./generate_bigeye_v2_caa_registry.sh
 
 echo
+echo "== Generate IR =="
+./generate_bigeye_v2_caa_ir.sh
+
+echo
 echo "== Inspect architecture =="
 ./inspect_bigeye_v2_caa_architecture.sh
 

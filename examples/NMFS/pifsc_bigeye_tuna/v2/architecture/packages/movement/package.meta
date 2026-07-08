@@ -2,5 +2,7 @@ name: MovementPackage
 purpose: Composes movement across populations
 consumes: BigeyeModelData, MovementParameters, PopulationState
 produces: PopulationState
+creates: 
+updates: PopulationState
 steps:
   - IdentityMovement

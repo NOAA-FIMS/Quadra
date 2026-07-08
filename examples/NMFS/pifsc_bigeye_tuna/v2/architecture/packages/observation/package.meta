@@ -2,6 +2,8 @@ name: ObservationPackage
 purpose: Composes predicted observations for one fleet
 consumes: BigeyeModelData, FleetParameters, PopulationState, FleetState
 produces: FleetState
+creates: 
+updates: FleetState
 steps:
   - BiomassIndexPrediction
   - CatchAgeCompositionPrediction
