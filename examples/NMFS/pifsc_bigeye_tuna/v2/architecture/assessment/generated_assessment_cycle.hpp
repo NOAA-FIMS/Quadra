@@ -16,12 +16,12 @@
 #include "../state/assessment_state.hpp"
 #include "../../common/model_data.hpp"
 #include "../packages/life_history/life_history_package.hpp"
-#include "../packages/movement/movement_package.hpp"
-#include "../packages/movement/movement_context.hpp"
 #include "../packages/fleet/fleet_package.hpp"
 #include "../packages/fleet/fleet_context.hpp"
 #include "../packages/population/population_package.hpp"
 #include "../packages/population/population_context.hpp"
+#include "../packages/movement/movement_package.hpp"
+#include "../packages/movement/movement_context.hpp"
 #include "../packages/observation/observation_package.hpp"
 #include "../packages/observation/observation_context.hpp"
 #include "../packages/likelihood/likelihood_package.hpp"
@@ -75,14 +75,14 @@ struct GeneratedAssessmentCycleFromIR {
     // Phase 0: lifehistory - compute life-history state
     LifeHistoryPackage{}(data, parameters.life, state.life);
 
-    // Phase 1: movement - move individuals across populations
-    MovementPackage{}(data, movement_context);
-
-    // Phase 2: fleet_bootstrap - initialize fleet mortality before population dynamics
+    // Phase 1: fleet_bootstrap - initialize fleet mortality before population dynamics
     FleetPackage{}(data, fleet_context);
 
-    // Phase 3: population - advance population state
+    // Phase 2: population - advance population state
     PopulationPackage{}(data, population_context);
+
+    // Phase 3: movement - move individuals across populations
+    MovementPackage{}(data, movement_context);
 
     // Phase 4: fleet - recompute fleet predictions after population dynamics
     FleetPackage{}(data, fleet_context);

@@ -1,8 +1,8 @@
 {
   "name": "Bigeye v2 CAA Execution Plan",
   "source": "examples/NMFS/pifsc_bigeye_tuna/v2/CAA_IR.json",
-  "planner_version": 2,
-  "scheduler": "state_dependency_scheduler_v1",
+  "planner_version": 3,
+  "scheduler": "graph_dependency_scheduler_v1",
   "initial_states": [
     "PopulationState"
   ],
@@ -18,6 +18,7 @@
         "LifeHistoryPackage"
       ],
       "derived_from": {
+        "reason": "no_state_inputs",
         "consumes": [
           "BigeyeModelData",
           "LifeHistoryParameters"
@@ -30,31 +31,13 @@
     },
     {
       "phase": 1,
-      "name": "movement",
-      "purpose": "move individuals across populations",
-      "packages": [
-        "MovementPackage"
-      ],
-      "derived_from": {
-        "consumes": [
-          "BigeyeModelData",
-          "MovementParameters",
-          "PopulationState"
-        ],
-        "creates": [],
-        "updates": [
-          "PopulationState"
-        ]
-      }
-    },
-    {
-      "phase": 2,
       "name": "fleet_bootstrap",
       "purpose": "initialize fleet mortality before population dynamics",
       "packages": [
         "FleetPackage"
       ],
       "derived_from": {
+        "reason": "bootstrap_from_initial_state",
         "consumes": [
           "BigeyeModelData",
           "FleetParameters",
@@ -70,13 +53,14 @@
       }
     },
     {
-      "phase": 3,
+      "phase": 2,
       "name": "population",
       "purpose": "advance population state",
       "packages": [
         "PopulationPackage"
       ],
       "derived_from": {
+        "reason": "dependency_graph",
         "consumes": [
           "BigeyeModelData",
           "PopulationParameters",
@@ -88,6 +72,35 @@
         ],
         "updates": [
           "PopulationState"
+        ],
+        "incoming_edges": []
+      }
+    },
+    {
+      "phase": 3,
+      "name": "movement",
+      "purpose": "move individuals across populations",
+      "packages": [
+        "MovementPackage"
+      ],
+      "derived_from": {
+        "reason": "dependency_graph",
+        "consumes": [
+          "BigeyeModelData",
+          "MovementParameters",
+          "PopulationState"
+        ],
+        "creates": [],
+        "updates": [
+          "PopulationState"
+        ],
+        "incoming_edges": [
+          {
+            "from": "PopulationPackage",
+            "states": [
+              "PopulationState"
+            ]
+          }
         ]
       }
     },
@@ -99,6 +112,7 @@
         "FleetPackage"
       ],
       "derived_from": {
+        "reason": "dependency_graph",
         "consumes": [
           "BigeyeModelData",
           "FleetParameters",
@@ -110,6 +124,20 @@
         ],
         "updates": [
           "FleetState"
+        ],
+        "incoming_edges": [
+          {
+            "from": "PopulationPackage",
+            "states": [
+              "PopulationState"
+            ]
+          },
+          {
+            "from": "MovementPackage",
+            "states": [
+              "PopulationState"
+            ]
+          }
         ]
       }
     },
@@ -121,6 +149,7 @@
         "ObservationPackage"
       ],
       "derived_from": {
+        "reason": "dependency_graph",
         "consumes": [
           "BigeyeModelData",
           "FleetParameters",
@@ -130,6 +159,26 @@
         "creates": [],
         "updates": [
           "FleetState"
+        ],
+        "incoming_edges": [
+          {
+            "from": "FleetPackage",
+            "states": [
+              "FleetState"
+            ]
+          },
+          {
+            "from": "PopulationPackage",
+            "states": [
+              "PopulationState"
+            ]
+          },
+          {
+            "from": "MovementPackage",
+            "states": [
+              "PopulationState"
+            ]
+          }
         ]
       }
     },
@@ -141,6 +190,7 @@
         "LikelihoodPackage"
       ],
       "derived_from": {
+        "reason": "dependency_graph",
         "consumes": [
           "BigeyeModelData",
           "FleetParameters",
@@ -151,6 +201,20 @@
         ],
         "updates": [
           "LikelihoodState"
+        ],
+        "incoming_edges": [
+          {
+            "from": "FleetPackage",
+            "states": [
+              "FleetState"
+            ]
+          },
+          {
+            "from": "ObservationPackage",
+            "states": [
+              "FleetState"
+            ]
+          }
         ]
       }
     }

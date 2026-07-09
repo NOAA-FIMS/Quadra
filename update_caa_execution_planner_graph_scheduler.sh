@@ -1,3 +1,7 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+cat > tools/caa/generate_execution_plan.py <<'PY'
 #!/usr/bin/env python3
 from pathlib import Path
 import json
@@ -165,21 +169,8 @@ edges, reasons = build_static_graph(main_sched_nodes)
 # producer of an input needed by an upstream package.
 for pkg_name in list(edges.keys()):
     for target in list(edges[pkg_name]):
-        # Bootstrap semantics:
-        # PopulationPackage needs FleetState, but that FleetState is supplied
-        # by the bootstrap FleetPackage run. The main graph should not require
-        # FleetPackage to precede PopulationPackage again.
         if pkg_name in RERUNNABLE_PACKAGES and target == "PopulationPackage":
             edges[pkg_name].remove(target)
-
-        # FleetPackage reruns after PopulationPackage updates PopulationState.
-        # Keep PopulationPackage -> FleetPackage.
-
-# ObservationPackage decorates FleetState with predicted observations.
-# PopulationPackage consumes FleetState for mortality, not observation outputs,
-# so this coarse state-level edge is a false dependency.
-if "ObservationPackage" in edges:
-    edges["ObservationPackage"].discard("PopulationPackage")
 
 layers, unscheduled = topological_layers(main_sched_nodes, edges)
 
@@ -251,3 +242,13 @@ if diagnostics:
         raise SystemExit(1)
 else:
     print("diagnostics: clean")
+PY
+
+chmod +x tools/caa/generate_execution_plan.py
+
+echo "updated CAA execution planner to graph-based dependency scheduling"
+echo
+echo "Run:"
+echo "  ./generate_bigeye_v2_caa_execution_plan.sh"
+echo "  ./inspect_bigeye_v2_caa_execution_plan.sh"
+echo "  ./build_bigeye_v2_caa.sh"
