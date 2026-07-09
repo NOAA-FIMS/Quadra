@@ -11,3 +11,7 @@ steps:
   - LognormalCatchLikelihood
   - LognormalIndexLikelihood
   - MultinomialAgeCompLikelihood
+operations:
+  - LognormalCatchLikelihood
+  - LognormalIndexLikelihood
+  - MultinomialAgeCompLikelihood

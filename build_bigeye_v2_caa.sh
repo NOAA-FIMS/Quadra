@@ -16,6 +16,10 @@ echo "== Generate registry =="
 ./generate_bigeye_v2_caa_registry.sh
 
 echo
+echo "== Generate operation catalog =="
+./generate_bigeye_v2_caa_operation_catalog.sh
+
+echo
 echo "== Generate IR =="
 ./generate_bigeye_v2_caa_ir.sh
 

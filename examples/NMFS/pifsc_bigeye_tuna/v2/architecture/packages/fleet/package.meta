@@ -11,3 +11,7 @@ steps:
   - LogisticSelectivity
   - FishingMortality
   - BaranovCatch
+operations:
+  - LogisticSelectivity
+  - FishingMortality
+  - BaranovCatch

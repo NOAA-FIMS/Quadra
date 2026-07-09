@@ -10,3 +10,6 @@ updates_fields: FleetState.predicted_index_by_year, FleetState.predicted_catch_a
 steps:
   - BiomassIndexPrediction
   - CatchAgeCompositionPrediction
+operations:
+  - BiomassIndexPrediction
+  - CatchAgeCompositionPrediction

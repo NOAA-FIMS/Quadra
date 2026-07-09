@@ -9,3 +9,7 @@ creates_fields: LifeHistoryState.m_at_age, LifeHistoryState.weight_at_age, LifeH
 updates_fields: 
 steps:
   - BigeyeLifeHistory
+operations:
+  - ComputeNaturalMortality
+  - ComputeWeightAtAge
+  - ComputeMaturityAtAge

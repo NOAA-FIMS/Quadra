@@ -9,3 +9,5 @@ creates_fields:
 updates_fields: PopulationState.numbers_at_age
 steps:
   - IdentityMovement
+operations:
+  - IdentityMovement

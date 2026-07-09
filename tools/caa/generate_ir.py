@@ -12,21 +12,33 @@ def split_list(value: str) -> list[str]:
 
 
 def parse_meta(path: Path) -> dict:
-    out = {"steps": []}
+    out = {"steps": [], "operations": []}
     in_steps = False
+    in_operations = False
 
     for line in path.read_text().splitlines():
         line = line.rstrip()
 
         if line == "steps:":
             in_steps = True
+            in_operations = False
+            continue
+
+        if line == "operations:":
+            in_operations = True
+            in_steps = False
             continue
 
         if in_steps and line.startswith("  - "):
             out["steps"].append(line[4:])
             continue
 
+        if in_operations and line.startswith("  - "):
+            out["operations"].append(line[4:])
+            continue
+
         in_steps = False
+        in_operations = False
 
         if ": " in line:
             k, v = line.split(": ", 1)
@@ -63,6 +75,7 @@ for key in ORDER:
         "creates_fields": split_list(meta["creates_fields"]),
         "updates_fields": split_list(meta["updates_fields"]),
         "steps": meta["steps"],
+        "operations": meta.get("operations", []),
     }
 
     packages.append(package)

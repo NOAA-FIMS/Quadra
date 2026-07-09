@@ -25,6 +25,11 @@
       "updates_fields": [],
       "steps": [
         "BigeyeLifeHistory"
+      ],
+      "operations": [
+        "ComputeNaturalMortality",
+        "ComputeWeightAtAge",
+        "ComputeMaturityAtAge"
       ]
     },
     {
@@ -70,6 +75,13 @@
         "Aging",
         "PlusGroup",
         "SpawningBiomass"
+      ],
+      "operations": [
+        "Recruitment",
+        "Survival",
+        "Aging",
+        "PlusGroup",
+        "SpawningBiomass"
       ]
     },
     {
@@ -96,6 +108,9 @@
         "PopulationState.numbers_at_age"
       ],
       "steps": [
+        "IdentityMovement"
+      ],
+      "operations": [
         "IdentityMovement"
       ]
     },
@@ -143,6 +158,11 @@
         "LogisticSelectivity",
         "FishingMortality",
         "BaranovCatch"
+      ],
+      "operations": [
+        "LogisticSelectivity",
+        "FishingMortality",
+        "BaranovCatch"
       ]
     },
     {
@@ -175,6 +195,10 @@
         "FleetState.predicted_catch_age_proportion"
       ],
       "steps": [
+        "BiomassIndexPrediction",
+        "CatchAgeCompositionPrediction"
+      ],
+      "operations": [
         "BiomassIndexPrediction",
         "CatchAgeCompositionPrediction"
       ]
@@ -215,6 +239,11 @@
         "LikelihoodState.total_nll"
       ],
       "steps": [
+        "LognormalCatchLikelihood",
+        "LognormalIndexLikelihood",
+        "MultinomialAgeCompLikelihood"
+      ],
+      "operations": [
         "LognormalCatchLikelihood",
         "LognormalIndexLikelihood",
         "MultinomialAgeCompLikelihood"

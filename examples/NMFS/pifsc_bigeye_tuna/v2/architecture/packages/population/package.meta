@@ -13,3 +13,9 @@ steps:
   - Aging
   - PlusGroup
   - SpawningBiomass
+operations:
+  - Recruitment
+  - Survival
+  - Aging
+  - PlusGroup
+  - SpawningBiomass
