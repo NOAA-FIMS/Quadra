@@ -4,6 +4,9 @@ consumes: BigeyeModelData, FleetParameters, FleetState
 produces: LikelihoodState
 creates: LikelihoodState
 updates: LikelihoodState
+consumes_fields: FleetState.total_catch_biomass_by_year, FleetState.predicted_index_by_year, FleetState.predicted_catch_age_proportion
+creates_fields: LikelihoodState.catch_nll, LikelihoodState.index_nll, LikelihoodState.agecomp_nll, LikelihoodState.total_nll
+updates_fields: LikelihoodState.catch_nll, LikelihoodState.index_nll, LikelihoodState.agecomp_nll, LikelihoodState.total_nll
 steps:
   - LognormalCatchLikelihood
   - LognormalIndexLikelihood

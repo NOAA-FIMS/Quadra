@@ -34,6 +34,9 @@ def parse_meta(path: Path) -> dict:
 
     out.setdefault("creates", "")
     out.setdefault("updates", "")
+    out.setdefault("consumes_fields", "")
+    out.setdefault("creates_fields", "")
+    out.setdefault("updates_fields", "")
     return out
 
 
@@ -41,6 +44,9 @@ packages = []
 created = {}
 updated = {}
 consumed = {}
+created_fields = {}
+updated_fields = {}
+consumed_fields = {}
 
 for key in ORDER:
     meta = parse_meta(BASE / key / "package.meta")
@@ -53,6 +59,9 @@ for key in ORDER:
         "produces": split_list(meta["produces"]),
         "creates": split_list(meta["creates"]),
         "updates": split_list(meta["updates"]),
+        "consumes_fields": split_list(meta["consumes_fields"]),
+        "creates_fields": split_list(meta["creates_fields"]),
+        "updates_fields": split_list(meta["updates_fields"]),
         "steps": meta["steps"],
     }
 
@@ -67,6 +76,15 @@ for key in ORDER:
     for item in package["consumes"]:
         consumed.setdefault(item, []).append(package["name"])
 
+    for item in package["creates_fields"]:
+        created_fields.setdefault(item, []).append(package["name"])
+
+    for item in package["updates_fields"]:
+        updated_fields.setdefault(item, []).append(package["name"])
+
+    for item in package["consumes_fields"]:
+        consumed_fields.setdefault(item, []).append(package["name"])
+
 
 diagnostics = []
 
@@ -79,6 +97,15 @@ for state, creators in created.items():
             "creators": creators,
         })
 
+for field, creators in created_fields.items():
+    if len(creators) > 1:
+        diagnostics.append({
+            "level": "warning",
+            "kind": "multiple_field_creators",
+            "field": field,
+            "creators": creators,
+        })
+
 for state, consumers in consumed.items():
     if state.endswith("State") and state not in created and state not in updated:
         diagnostics.append({
@@ -88,12 +115,24 @@ for state, consumers in consumed.items():
             "consumers": consumers,
         })
 
+for field, consumers in consumed_fields.items():
+    if field not in created_fields and field not in updated_fields:
+        diagnostics.append({
+            "level": "warning",
+            "kind": "missing_field_creator_or_updater",
+            "field": field,
+            "consumers": consumers,
+        })
+
 ir = {
     "name": "Bigeye v2 CAA IR",
     "packages": packages,
     "created": created,
     "updated": updated,
     "consumed": consumed,
+    "created_fields": created_fields,
+    "updated_fields": updated_fields,
+    "consumed_fields": consumed_fields,
     "diagnostics": diagnostics,
 }
 
@@ -103,6 +142,6 @@ print(f"wrote {OUT}")
 if diagnostics:
     print("diagnostics:")
     for d in diagnostics:
-        print(f"  {d['level']}: {d['kind']} {d.get('state', '')}")
+        print(f"  {d['level']}: {d['kind']} {d.get('state', d.get('field', ''))}")
 else:
     print("diagnostics: clean")

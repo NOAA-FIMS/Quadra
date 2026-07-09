@@ -4,6 +4,9 @@ consumes: BigeyeModelData, FleetParameters, LifeHistoryState, PopulationState
 produces: FleetState
 creates: FleetState
 updates: FleetState
+consumes_fields: LifeHistoryState.m_at_age, LifeHistoryState.weight_at_age, PopulationState.numbers_at_age
+creates_fields: FleetState.selectivity_at_age, FleetState.f_at_age, FleetState.z_at_age, FleetState.catch_numbers_at_age, FleetState.catch_biomass_at_age, FleetState.total_catch_biomass_by_year
+updates_fields: FleetState.selectivity_at_age, FleetState.f_at_age, FleetState.z_at_age, FleetState.catch_numbers_at_age, FleetState.catch_biomass_at_age, FleetState.total_catch_biomass_by_year
 steps:
   - LogisticSelectivity
   - FishingMortality

@@ -4,5 +4,8 @@ consumes: BigeyeModelData, LifeHistoryParameters
 produces: LifeHistoryState
 creates: LifeHistoryState
 updates: 
+consumes_fields: 
+creates_fields: LifeHistoryState.m_at_age, LifeHistoryState.weight_at_age, LifeHistoryState.maturity_at_age
+updates_fields: 
 steps:
   - BigeyeLifeHistory

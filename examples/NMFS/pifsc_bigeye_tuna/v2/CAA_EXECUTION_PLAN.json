@@ -1,10 +1,10 @@
 {
   "name": "Bigeye v2 CAA Execution Plan",
   "source": "examples/NMFS/pifsc_bigeye_tuna/v2/CAA_IR.json",
-  "planner_version": 3,
-  "scheduler": "graph_dependency_scheduler_v1",
-  "initial_states": [
-    "PopulationState"
+  "planner_version": 4,
+  "scheduler": "field_dependency_scheduler_v1",
+  "initial_fields": [
+    "PopulationState.numbers_at_age"
   ],
   "rerunnable_packages": [
     "FleetPackage"
@@ -18,15 +18,13 @@
         "LifeHistoryPackage"
       ],
       "derived_from": {
-        "reason": "no_state_inputs",
-        "consumes": [
-          "BigeyeModelData",
-          "LifeHistoryParameters"
-        ],
-        "creates": [
-          "LifeHistoryState"
-        ],
-        "updates": []
+        "reason": "no_inputs",
+        "inputs": [],
+        "outputs": [
+          "LifeHistoryState.m_at_age",
+          "LifeHistoryState.weight_at_age",
+          "LifeHistoryState.maturity_at_age"
+        ]
       }
     },
     {
@@ -37,18 +35,19 @@
         "FleetPackage"
       ],
       "derived_from": {
-        "reason": "bootstrap_from_initial_state",
-        "consumes": [
-          "BigeyeModelData",
-          "FleetParameters",
-          "LifeHistoryState",
-          "PopulationState"
+        "reason": "bootstrap_from_initial_fields",
+        "inputs": [
+          "LifeHistoryState.m_at_age",
+          "LifeHistoryState.weight_at_age",
+          "PopulationState.numbers_at_age"
         ],
-        "creates": [
-          "FleetState"
-        ],
-        "updates": [
-          "FleetState"
+        "outputs": [
+          "FleetState.selectivity_at_age",
+          "FleetState.f_at_age",
+          "FleetState.z_at_age",
+          "FleetState.catch_numbers_at_age",
+          "FleetState.catch_biomass_at_age",
+          "FleetState.total_catch_biomass_by_year"
         ]
       }
     },
@@ -60,18 +59,18 @@
         "PopulationPackage"
       ],
       "derived_from": {
-        "reason": "dependency_graph",
-        "consumes": [
-          "BigeyeModelData",
-          "PopulationParameters",
-          "LifeHistoryState",
-          "FleetState"
+        "reason": "field_dependency_graph",
+        "inputs": [
+          "LifeHistoryState.m_at_age",
+          "LifeHistoryState.weight_at_age",
+          "LifeHistoryState.maturity_at_age",
+          "FleetState.z_at_age"
         ],
-        "creates": [
-          "PopulationState"
-        ],
-        "updates": [
-          "PopulationState"
+        "outputs": [
+          "PopulationState.recruits_by_year",
+          "PopulationState.numbers_at_age",
+          "PopulationState.survivors_at_age",
+          "PopulationState.spawning_biomass_by_year"
         ],
         "incoming_edges": []
       }
@@ -84,21 +83,18 @@
         "MovementPackage"
       ],
       "derived_from": {
-        "reason": "dependency_graph",
-        "consumes": [
-          "BigeyeModelData",
-          "MovementParameters",
-          "PopulationState"
+        "reason": "field_dependency_graph",
+        "inputs": [
+          "PopulationState.numbers_at_age"
         ],
-        "creates": [],
-        "updates": [
-          "PopulationState"
+        "outputs": [
+          "PopulationState.numbers_at_age"
         ],
         "incoming_edges": [
           {
             "from": "PopulationPackage",
-            "states": [
-              "PopulationState"
+            "items": [
+              "PopulationState.numbers_at_age"
             ]
           }
         ]
@@ -112,30 +108,31 @@
         "FleetPackage"
       ],
       "derived_from": {
-        "reason": "dependency_graph",
-        "consumes": [
-          "BigeyeModelData",
-          "FleetParameters",
-          "LifeHistoryState",
-          "PopulationState"
+        "reason": "field_dependency_graph",
+        "inputs": [
+          "LifeHistoryState.m_at_age",
+          "LifeHistoryState.weight_at_age",
+          "PopulationState.numbers_at_age"
         ],
-        "creates": [
-          "FleetState"
-        ],
-        "updates": [
-          "FleetState"
+        "outputs": [
+          "FleetState.selectivity_at_age",
+          "FleetState.f_at_age",
+          "FleetState.z_at_age",
+          "FleetState.catch_numbers_at_age",
+          "FleetState.catch_biomass_at_age",
+          "FleetState.total_catch_biomass_by_year"
         ],
         "incoming_edges": [
           {
             "from": "PopulationPackage",
-            "states": [
-              "PopulationState"
+            "items": [
+              "PopulationState.numbers_at_age"
             ]
           },
           {
             "from": "MovementPackage",
-            "states": [
-              "PopulationState"
+            "items": [
+              "PopulationState.numbers_at_age"
             ]
           }
         ]
@@ -149,34 +146,26 @@
         "ObservationPackage"
       ],
       "derived_from": {
-        "reason": "dependency_graph",
-        "consumes": [
-          "BigeyeModelData",
-          "FleetParameters",
-          "PopulationState",
-          "FleetState"
+        "reason": "field_dependency_graph",
+        "inputs": [
+          "PopulationState.spawning_biomass_by_year",
+          "FleetState.catch_numbers_at_age"
         ],
-        "creates": [],
-        "updates": [
-          "FleetState"
+        "outputs": [
+          "FleetState.predicted_index_by_year",
+          "FleetState.predicted_catch_age_proportion"
         ],
         "incoming_edges": [
           {
             "from": "FleetPackage",
-            "states": [
-              "FleetState"
+            "items": [
+              "FleetState.catch_numbers_at_age"
             ]
           },
           {
             "from": "PopulationPackage",
-            "states": [
-              "PopulationState"
-            ]
-          },
-          {
-            "from": "MovementPackage",
-            "states": [
-              "PopulationState"
+            "items": [
+              "PopulationState.spawning_biomass_by_year"
             ]
           }
         ]
@@ -190,29 +179,30 @@
         "LikelihoodPackage"
       ],
       "derived_from": {
-        "reason": "dependency_graph",
-        "consumes": [
-          "BigeyeModelData",
-          "FleetParameters",
-          "FleetState"
+        "reason": "field_dependency_graph",
+        "inputs": [
+          "FleetState.total_catch_biomass_by_year",
+          "FleetState.predicted_index_by_year",
+          "FleetState.predicted_catch_age_proportion"
         ],
-        "creates": [
-          "LikelihoodState"
-        ],
-        "updates": [
-          "LikelihoodState"
+        "outputs": [
+          "LikelihoodState.catch_nll",
+          "LikelihoodState.index_nll",
+          "LikelihoodState.agecomp_nll",
+          "LikelihoodState.total_nll"
         ],
         "incoming_edges": [
           {
             "from": "FleetPackage",
-            "states": [
-              "FleetState"
+            "items": [
+              "FleetState.total_catch_biomass_by_year"
             ]
           },
           {
             "from": "ObservationPackage",
-            "states": [
-              "FleetState"
+            "items": [
+              "FleetState.predicted_index_by_year",
+              "FleetState.predicted_catch_age_proportion"
             ]
           }
         ]

@@ -9,20 +9,7 @@ OUT = Path("examples/NMFS/pifsc_bigeye_tuna/v2/CAA_EXECUTION_PLAN.json")
 ir = json.loads(IR.read_text())
 packages = ir["packages"]
 
-# Graph scheduler v1
-# ------------------
-# Builds package dependency edges from state-level consumes/creates/updates.
-#
-# Important reference-assessment semantics:
-# - PopulationState is initialized before AssessmentCycle runs.
-# - Packages may create/update the same state.
-# - Some packages are allowed to rerun when an input state changes.
-#
-# The initial PopulationState lets FleetPackage bootstrap FleetState before
-# PopulationPackage advances the population. FleetPackage reruns after
-# PopulationPackage/MovementPackage updates PopulationState.
-
-INITIAL_STATES = {"PopulationState"}
+INITIAL_FIELDS = {"PopulationState.numbers_at_age"}
 RERUNNABLE_PACKAGES = {"FleetPackage"}
 
 PURPOSES = {
@@ -34,33 +21,37 @@ PURPOSES = {
     "LikelihoodPackage": "evaluate likelihood components",
 }
 
-def state_inputs(pkg):
+def inputs(pkg):
+    fields = pkg.get("consumes_fields") or []
+    if fields:
+        return fields
     return [x for x in pkg["consumes"] if x.endswith("State")]
 
-def state_outputs(pkg):
+def outputs(pkg):
+    fields = (pkg.get("creates_fields") or []) + (pkg.get("updates_fields") or [])
+    if fields:
+        return list(dict.fromkeys(fields))
     return list(dict.fromkeys(pkg["creates"] + pkg["updates"]))
 
 def normalize_phase_name(name):
     return name.replace("Package", "").lower()
 
-def build_static_graph(nodes):
-    """Create package dependency graph from state producers to state consumers."""
+def build_graph(nodes):
     producers = defaultdict(list)
     for pkg in nodes:
-        for state in state_outputs(pkg):
-            producers[state].append(pkg["name"])
+        for item in outputs(pkg):
+            producers[item].append(pkg["name"])
 
     edges = defaultdict(set)
     reasons = defaultdict(list)
-
     for consumer in nodes:
         cname = consumer["name"]
-        for state in state_inputs(consumer):
-            for producer in producers.get(state, []):
+        for item in inputs(consumer):
+            for producer in producers.get(item, []):
                 if producer == cname:
                     continue
                 edges[producer].add(cname)
-                reasons[(producer, cname)].append(state)
+                reasons[(producer, cname)].append(item)
 
     return edges, reasons
 
@@ -69,7 +60,8 @@ def topological_layers(nodes, edges):
     indegree = {name: 0 for name in names}
     for src, targets in edges.items():
         for dst in targets:
-            indegree[dst] += 1
+            if dst in indegree:
+                indegree[dst] += 1
 
     ready = deque([name for name in names if indegree[name] == 0])
     layers = []
@@ -78,9 +70,10 @@ def topological_layers(nodes, edges):
         layer = list(ready)
         ready.clear()
         layers.append(layer)
-
         for src in layer:
             for dst in sorted(edges.get(src, [])):
+                if dst not in indegree:
+                    continue
                 indegree[dst] -= 1
                 if indegree[dst] == 0:
                     ready.append(dst)
@@ -89,27 +82,11 @@ def topological_layers(nodes, edges):
     return layers, unscheduled
 
 pkg_by_name = {p["name"]: p for p in packages}
-
-# For the current reference assessment, the graph has an intentional cycle:
-# PopulationPackage consumes FleetState and FleetPackage consumes PopulationState.
-# Break that by recognizing externally initialized PopulationState and allowing
-# FleetPackage to bootstrap from it before PopulationPackage runs.
-bootstrap_nodes = []
-main_nodes = []
-
-for pkg in packages:
-    if pkg["name"] == "FleetPackage":
-        bootstrap_nodes.append(pkg)
-    else:
-        main_nodes.append(pkg)
-
 phases = []
 diagnostics = []
-phase_id = 0
-available_states = set(INITIAL_STATES)
+available = set(INITIAL_FIELDS)
 
 def append_phase(name, purpose, package_names, derived_from=None):
-    global phase_id
     phases.append({
         "phase": len(phases),
         "name": name,
@@ -118,21 +95,24 @@ def append_phase(name, purpose, package_names, derived_from=None):
         "derived_from": derived_from or {},
     })
 
-# Phase 0: any package with no state inputs can run before bootstrap.
+# Packages with all inputs available can run first, but keep only no-input
+# packages here so the bootstrap phase remains explicit.
 for pkg in packages:
-    if not state_inputs(pkg):
+    if not inputs(pkg):
         append_phase(
             normalize_phase_name(pkg["name"]),
             PURPOSES.get(pkg["name"], "execute package"),
             [pkg["name"]],
-            {"reason": "no_state_inputs", "consumes": pkg["consumes"], "creates": pkg["creates"], "updates": pkg["updates"]},
+            {"reason": "no_inputs", "inputs": inputs(pkg), "outputs": outputs(pkg)},
         )
-        for state in state_outputs(pkg):
-            available_states.add(state)
+        available.update(outputs(pkg))
 
 # Bootstrap rerunnable packages whose inputs are already available.
-for pkg in bootstrap_nodes:
-    missing = [s for s in state_inputs(pkg) if s not in available_states]
+for pkg in packages:
+    if pkg["name"] not in RERUNNABLE_PACKAGES:
+        continue
+
+    missing = [x for x in inputs(pkg) if x not in available]
     if missing:
         diagnostics.append({
             "level": "error",
@@ -140,49 +120,33 @@ for pkg in bootstrap_nodes:
             "package": pkg["name"],
             "missing": missing,
         })
-    else:
-        append_phase(
-            "fleet_bootstrap" if pkg["name"] == "FleetPackage" else normalize_phase_name(pkg["name"]) + "_bootstrap",
-            "initialize fleet mortality before population dynamics" if pkg["name"] == "FleetPackage" else "bootstrap package state",
-            [pkg["name"]],
-            {"reason": "bootstrap_from_initial_state", "consumes": pkg["consumes"], "creates": pkg["creates"], "updates": pkg["updates"]},
-        )
-        for state in state_outputs(pkg):
-            available_states.add(state)
+        continue
 
-# Main scheduling: exclude no-input packages already run, then derive graph.
-already_run_main = {ph["packages"][0] for ph in phases if ph["name"] != "fleet_bootstrap"}
-main_sched_nodes = [
-    p for p in packages
-    if p["name"] not in already_run_main
-]
+    append_phase(
+        "fleet_bootstrap" if pkg["name"] == "FleetPackage" else normalize_phase_name(pkg["name"]) + "_bootstrap",
+        "initialize fleet mortality before population dynamics" if pkg["name"] == "FleetPackage" else "bootstrap package state",
+        [pkg["name"]],
+        {"reason": "bootstrap_from_initial_fields", "inputs": inputs(pkg), "outputs": outputs(pkg)},
+    )
+    available.update(outputs(pkg))
 
-# Drop the PopulationPackage -> FleetPackage cycle in the main graph by treating
-# FleetPackage as rerunnable after PopulationState updates.
-edges, reasons = build_static_graph(main_sched_nodes)
+already_run_nonbootstrap = {
+    ph["packages"][0]
+    for ph in phases
+    if not ph["name"].endswith("_bootstrap") and ph["name"] != "fleet_bootstrap"
+}
 
-# Remove self/semantic bootstrap back-edges where the rerunnable package is the
-# producer of an input needed by an upstream package.
-for pkg_name in list(edges.keys()):
-    for target in list(edges[pkg_name]):
-        # Bootstrap semantics:
-        # PopulationPackage needs FleetState, but that FleetState is supplied
-        # by the bootstrap FleetPackage run. The main graph should not require
-        # FleetPackage to precede PopulationPackage again.
-        if pkg_name in RERUNNABLE_PACKAGES and target == "PopulationPackage":
-            edges[pkg_name].remove(target)
+main_nodes = [p for p in packages if p["name"] not in already_run_nonbootstrap]
 
-        # FleetPackage reruns after PopulationPackage updates PopulationState.
-        # Keep PopulationPackage -> FleetPackage.
+edges, reasons = build_graph(main_nodes)
 
-# ObservationPackage decorates FleetState with predicted observations.
-# PopulationPackage consumes FleetState for mortality, not observation outputs,
-# so this coarse state-level edge is a false dependency.
-if "ObservationPackage" in edges:
-    edges["ObservationPackage"].discard("PopulationPackage")
+# Bootstrap semantics: FleetPackage already produced FleetState.z_at_age before
+# PopulationPackage runs, so do not require the main FleetPackage pass to precede
+# PopulationPackage.
+if "FleetPackage" in edges:
+    edges["FleetPackage"].discard("PopulationPackage")
 
-layers, unscheduled = topological_layers(main_sched_nodes, edges)
-
+layers, unscheduled = topological_layers(main_nodes, edges)
 if unscheduled:
     diagnostics.append({
         "level": "error",
@@ -191,35 +155,31 @@ if unscheduled:
     })
 
 for layer in layers:
-    # Keep each package in its own phase for now so diagnostics remain clear.
-    # Later, packages in the same layer can become a parallel phase.
     for pkg_name in layer:
         pkg = pkg_by_name[pkg_name]
+        phase_name = normalize_phase_name(pkg_name)
+        purpose = PURPOSES.get(pkg_name, "execute package")
+
         if pkg_name == "FleetPackage":
             phase_name = "fleet"
             purpose = "recompute fleet predictions after population dynamics"
-        else:
-            phase_name = normalize_phase_name(pkg_name)
-            purpose = PURPOSES.get(pkg_name, "execute package")
 
         append_phase(
             phase_name,
             purpose,
             [pkg_name],
             {
-                "reason": "dependency_graph",
-                "consumes": pkg["consumes"],
-                "creates": pkg["creates"],
-                "updates": pkg["updates"],
+                "reason": "field_dependency_graph",
+                "inputs": inputs(pkg),
+                "outputs": outputs(pkg),
                 "incoming_edges": [
-                    {"from": src, "states": reasons.get((src, pkg_name), [])}
+                    {"from": src, "items": reasons.get((src, pkg_name), [])}
                     for src, targets in edges.items()
                     if pkg_name in targets
                 ],
             },
         )
 
-# Validate every package is scheduled at least once.
 scheduled = {pkg for ph in phases for pkg in ph["packages"]}
 missing_packages = sorted({p["name"] for p in packages} - scheduled)
 if missing_packages:
@@ -232,9 +192,9 @@ if missing_packages:
 plan = {
     "name": "Bigeye v2 CAA Execution Plan",
     "source": str(IR),
-    "planner_version": 3,
-    "scheduler": "graph_dependency_scheduler_v1",
-    "initial_states": sorted(INITIAL_STATES),
+    "planner_version": 4,
+    "scheduler": "field_dependency_scheduler_v1",
+    "initial_fields": sorted(INITIAL_FIELDS),
     "rerunnable_packages": sorted(RERUNNABLE_PACKAGES),
     "phases": phases,
     "diagnostics": diagnostics,

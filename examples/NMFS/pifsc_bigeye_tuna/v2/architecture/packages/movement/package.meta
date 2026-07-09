@@ -4,5 +4,8 @@ consumes: BigeyeModelData, MovementParameters, PopulationState
 produces: PopulationState
 creates: 
 updates: PopulationState
+consumes_fields: PopulationState.numbers_at_age
+creates_fields: 
+updates_fields: PopulationState.numbers_at_age
 steps:
   - IdentityMovement

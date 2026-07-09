@@ -4,6 +4,9 @@ consumes: BigeyeModelData, FleetParameters, PopulationState, FleetState
 produces: FleetState
 creates: 
 updates: FleetState
+consumes_fields: PopulationState.spawning_biomass_by_year, FleetState.catch_numbers_at_age
+creates_fields: FleetState.predicted_index_by_year, FleetState.predicted_catch_age_proportion
+updates_fields: FleetState.predicted_index_by_year, FleetState.predicted_catch_age_proportion
 steps:
   - BiomassIndexPrediction
   - CatchAgeCompositionPrediction

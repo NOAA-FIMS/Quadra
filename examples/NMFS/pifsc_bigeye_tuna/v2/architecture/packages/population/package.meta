@@ -4,6 +4,9 @@ consumes: BigeyeModelData, PopulationParameters, LifeHistoryState, FleetState
 produces: PopulationState
 creates: PopulationState
 updates: PopulationState
+consumes_fields: LifeHistoryState.m_at_age, LifeHistoryState.weight_at_age, LifeHistoryState.maturity_at_age, FleetState.z_at_age
+creates_fields: PopulationState.recruits_by_year, PopulationState.numbers_at_age, PopulationState.survivors_at_age, PopulationState.spawning_biomass_by_year
+updates_fields: PopulationState.recruits_by_year, PopulationState.numbers_at_age, PopulationState.survivors_at_age, PopulationState.spawning_biomass_by_year
 steps:
   - FixedRecruitment
   - Survival
