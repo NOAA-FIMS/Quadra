@@ -19,6 +19,7 @@ echo "== Bigeye v2 CAA suite =="
 ./run_bigeye_v2_14_likelihood_package_caa_check.sh
 ./run_bigeye_v2_15_assessment_cycle_objective_caa_check.sh
 ./run_bigeye_v2_16_movement_package_caa_check.sh
+./run_bigeye_v2_18_ir_generated_cycle_caa_check.sh
 ./run_bigeye_v2_package_interface_unification_check.sh
 
 echo

@@ -20,6 +20,10 @@ echo "== Generate IR =="
 ./generate_bigeye_v2_caa_ir.sh
 
 echo
+echo "== Generate IR AssessmentCycle =="
+./generate_bigeye_v2_caa_assessment_cycle_from_ir.sh
+
+echo
 echo "== Inspect architecture =="
 ./inspect_bigeye_v2_caa_architecture.sh
 
