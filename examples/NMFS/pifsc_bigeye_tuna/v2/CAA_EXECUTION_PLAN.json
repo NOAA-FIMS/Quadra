@@ -1,0 +1,64 @@
+{
+  "name": "Bigeye v2 CAA Execution Plan",
+  "source": "examples/NMFS/pifsc_bigeye_tuna/v2/CAA_IR.json",
+  "planner_version": 1,
+  "phases": [
+    {
+      "phase": 0,
+      "name": "life_history",
+      "purpose": "compute life-history state",
+      "packages": [
+        "LifeHistoryPackage"
+      ]
+    },
+    {
+      "phase": 1,
+      "name": "fleet_bootstrap",
+      "purpose": "initialize fleet mortality before population dynamics",
+      "packages": [
+        "FleetPackage"
+      ]
+    },
+    {
+      "phase": 2,
+      "name": "population",
+      "purpose": "advance population state",
+      "packages": [
+        "PopulationPackage"
+      ]
+    },
+    {
+      "phase": 3,
+      "name": "movement",
+      "purpose": "move individuals across populations",
+      "packages": [
+        "MovementPackage"
+      ]
+    },
+    {
+      "phase": 4,
+      "name": "fleet",
+      "purpose": "recompute fleet predictions after population dynamics",
+      "packages": [
+        "FleetPackage"
+      ]
+    },
+    {
+      "phase": 5,
+      "name": "observation",
+      "purpose": "predict observations",
+      "packages": [
+        "ObservationPackage"
+      ]
+    },
+    {
+      "phase": 6,
+      "name": "likelihood",
+      "purpose": "evaluate likelihood components",
+      "packages": [
+        "LikelihoodPackage"
+      ]
+    }
+  ],
+  "diagnostics": []
+}

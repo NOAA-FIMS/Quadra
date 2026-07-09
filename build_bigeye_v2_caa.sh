@@ -24,6 +24,10 @@ echo "== Generate IR AssessmentCycle =="
 ./generate_bigeye_v2_caa_assessment_cycle_from_ir.sh
 
 echo
+echo "== Inspect execution plan =="
+./inspect_bigeye_v2_caa_execution_plan.sh
+
+echo
 echo "== Inspect architecture =="
 ./inspect_bigeye_v2_caa_architecture.sh
 
