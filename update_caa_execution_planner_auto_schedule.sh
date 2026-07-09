@@ -1,3 +1,7 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+cat > tools/caa/generate_execution_plan.py <<'PY'
 #!/usr/bin/env python3
 from pathlib import Path
 import json
@@ -135,3 +139,13 @@ if diagnostics:
         raise SystemExit(1)
 else:
     print("diagnostics: clean")
+PY
+
+chmod +x tools/caa/generate_execution_plan.py
+
+echo "updated CAA execution planner to derive phases from IR state dependencies"
+echo
+echo "Run:"
+echo "  ./generate_bigeye_v2_caa_execution_plan.sh"
+echo "  ./inspect_bigeye_v2_caa_execution_plan.sh"
+echo "  ./build_bigeye_v2_caa.sh"

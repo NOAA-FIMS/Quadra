@@ -1,39 +1,95 @@
 {
   "name": "Bigeye v2 CAA Execution Plan",
   "source": "examples/NMFS/pifsc_bigeye_tuna/v2/CAA_IR.json",
-  "planner_version": 1,
+  "planner_version": 2,
+  "scheduler": "state_dependency_scheduler_v1",
+  "initial_states": [
+    "PopulationState"
+  ],
+  "rerunnable_packages": [
+    "FleetPackage"
+  ],
   "phases": [
     {
       "phase": 0,
-      "name": "life_history",
+      "name": "lifehistory",
       "purpose": "compute life-history state",
       "packages": [
         "LifeHistoryPackage"
-      ]
+      ],
+      "derived_from": {
+        "consumes": [
+          "BigeyeModelData",
+          "LifeHistoryParameters"
+        ],
+        "creates": [
+          "LifeHistoryState"
+        ],
+        "updates": []
+      }
     },
     {
       "phase": 1,
-      "name": "fleet_bootstrap",
-      "purpose": "initialize fleet mortality before population dynamics",
-      "packages": [
-        "FleetPackage"
-      ]
-    },
-    {
-      "phase": 2,
-      "name": "population",
-      "purpose": "advance population state",
-      "packages": [
-        "PopulationPackage"
-      ]
-    },
-    {
-      "phase": 3,
       "name": "movement",
       "purpose": "move individuals across populations",
       "packages": [
         "MovementPackage"
-      ]
+      ],
+      "derived_from": {
+        "consumes": [
+          "BigeyeModelData",
+          "MovementParameters",
+          "PopulationState"
+        ],
+        "creates": [],
+        "updates": [
+          "PopulationState"
+        ]
+      }
+    },
+    {
+      "phase": 2,
+      "name": "fleet_bootstrap",
+      "purpose": "initialize fleet mortality before population dynamics",
+      "packages": [
+        "FleetPackage"
+      ],
+      "derived_from": {
+        "consumes": [
+          "BigeyeModelData",
+          "FleetParameters",
+          "LifeHistoryState",
+          "PopulationState"
+        ],
+        "creates": [
+          "FleetState"
+        ],
+        "updates": [
+          "FleetState"
+        ]
+      }
+    },
+    {
+      "phase": 3,
+      "name": "population",
+      "purpose": "advance population state",
+      "packages": [
+        "PopulationPackage"
+      ],
+      "derived_from": {
+        "consumes": [
+          "BigeyeModelData",
+          "PopulationParameters",
+          "LifeHistoryState",
+          "FleetState"
+        ],
+        "creates": [
+          "PopulationState"
+        ],
+        "updates": [
+          "PopulationState"
+        ]
+      }
     },
     {
       "phase": 4,
@@ -41,7 +97,21 @@
       "purpose": "recompute fleet predictions after population dynamics",
       "packages": [
         "FleetPackage"
-      ]
+      ],
+      "derived_from": {
+        "consumes": [
+          "BigeyeModelData",
+          "FleetParameters",
+          "LifeHistoryState",
+          "PopulationState"
+        ],
+        "creates": [
+          "FleetState"
+        ],
+        "updates": [
+          "FleetState"
+        ]
+      }
     },
     {
       "phase": 5,
@@ -49,7 +119,19 @@
       "purpose": "predict observations",
       "packages": [
         "ObservationPackage"
-      ]
+      ],
+      "derived_from": {
+        "consumes": [
+          "BigeyeModelData",
+          "FleetParameters",
+          "PopulationState",
+          "FleetState"
+        ],
+        "creates": [],
+        "updates": [
+          "FleetState"
+        ]
+      }
     },
     {
       "phase": 6,
@@ -57,7 +139,20 @@
       "purpose": "evaluate likelihood components",
       "packages": [
         "LikelihoodPackage"
-      ]
+      ],
+      "derived_from": {
+        "consumes": [
+          "BigeyeModelData",
+          "FleetParameters",
+          "FleetState"
+        ],
+        "creates": [
+          "LikelihoodState"
+        ],
+        "updates": [
+          "LikelihoodState"
+        ]
+      }
     }
   ],
   "diagnostics": []
