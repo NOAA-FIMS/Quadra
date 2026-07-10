@@ -1,0 +1,485 @@
+{
+  "name": "Bigeye v2 CAA Operation Graph",
+  "source": "examples/NMFS/pifsc_bigeye_tuna/v2/CAA_IR.json",
+  "graph_version": 1,
+  "initial_fields": [
+    "PopulationState.numbers_at_age"
+  ],
+  "nodes": [
+    {
+      "key": "LifeHistoryPackage::ComputeNaturalMortality",
+      "id": "ComputeNaturalMortality",
+      "package": "LifeHistoryPackage",
+      "order": 0,
+      "reads": [
+        "LifeHistoryParameters.log_m_young_offset",
+        "LifeHistoryParameters.log_m_old_offset"
+      ],
+      "writes": [
+        "LifeHistoryState.m_at_age"
+      ]
+    },
+    {
+      "key": "LifeHistoryPackage::ComputeWeightAtAge",
+      "id": "ComputeWeightAtAge",
+      "package": "LifeHistoryPackage",
+      "order": 1,
+      "reads": [
+        "BigeyeModelData"
+      ],
+      "writes": [
+        "LifeHistoryState.weight_at_age"
+      ]
+    },
+    {
+      "key": "LifeHistoryPackage::ComputeMaturityAtAge",
+      "id": "ComputeMaturityAtAge",
+      "package": "LifeHistoryPackage",
+      "order": 2,
+      "reads": [
+        "BigeyeModelData"
+      ],
+      "writes": [
+        "LifeHistoryState.maturity_at_age"
+      ]
+    },
+    {
+      "key": "PopulationPackage::Recruitment",
+      "id": "Recruitment",
+      "package": "PopulationPackage",
+      "order": 0,
+      "reads": [
+        "PopulationParameters.r0"
+      ],
+      "writes": [
+        "PopulationState.recruits_by_year",
+        "PopulationState.numbers_at_age"
+      ]
+    },
+    {
+      "key": "PopulationPackage::Survival",
+      "id": "Survival",
+      "package": "PopulationPackage",
+      "order": 1,
+      "reads": [
+        "PopulationState.numbers_at_age",
+        "FleetState.z_at_age"
+      ],
+      "writes": [
+        "PopulationState.survivors_at_age"
+      ]
+    },
+    {
+      "key": "PopulationPackage::Aging",
+      "id": "Aging",
+      "package": "PopulationPackage",
+      "order": 2,
+      "reads": [
+        "PopulationState.survivors_at_age"
+      ],
+      "writes": [
+        "PopulationState.numbers_at_age"
+      ]
+    },
+    {
+      "key": "PopulationPackage::PlusGroup",
+      "id": "PlusGroup",
+      "package": "PopulationPackage",
+      "order": 3,
+      "reads": [
+        "PopulationState.survivors_at_age",
+        "PopulationState.numbers_at_age"
+      ],
+      "writes": [
+        "PopulationState.numbers_at_age"
+      ]
+    },
+    {
+      "key": "PopulationPackage::SpawningBiomass",
+      "id": "SpawningBiomass",
+      "package": "PopulationPackage",
+      "order": 4,
+      "reads": [
+        "PopulationState.numbers_at_age",
+        "LifeHistoryState.weight_at_age",
+        "LifeHistoryState.maturity_at_age"
+      ],
+      "writes": [
+        "PopulationState.spawning_biomass_by_year"
+      ]
+    },
+    {
+      "key": "MovementPackage::IdentityMovement",
+      "id": "IdentityMovement",
+      "package": "MovementPackage",
+      "order": 0,
+      "reads": [
+        "PopulationState.numbers_at_age"
+      ],
+      "writes": [
+        "PopulationState.numbers_at_age"
+      ]
+    },
+    {
+      "key": "FleetPackage::LogisticSelectivity",
+      "id": "LogisticSelectivity",
+      "package": "FleetPackage",
+      "order": 0,
+      "reads": [
+        "FleetParameters.sel_a50",
+        "FleetParameters.sel_slope"
+      ],
+      "writes": [
+        "FleetState.selectivity_at_age"
+      ]
+    },
+    {
+      "key": "FleetPackage::FishingMortality",
+      "id": "FishingMortality",
+      "package": "FleetPackage",
+      "order": 1,
+      "reads": [
+        "FleetParameters.fbar",
+        "FleetState.selectivity_at_age",
+        "LifeHistoryState.m_at_age"
+      ],
+      "writes": [
+        "FleetState.f_at_age",
+        "FleetState.z_at_age"
+      ]
+    },
+    {
+      "key": "FleetPackage::BaranovCatch",
+      "id": "BaranovCatch",
+      "package": "FleetPackage",
+      "order": 2,
+      "reads": [
+        "PopulationState.numbers_at_age",
+        "FleetState.f_at_age",
+        "FleetState.z_at_age",
+        "LifeHistoryState.weight_at_age"
+      ],
+      "writes": [
+        "FleetState.catch_numbers_at_age",
+        "FleetState.catch_biomass_at_age",
+        "FleetState.total_catch_biomass_by_year"
+      ]
+    },
+    {
+      "key": "ObservationPackage::BiomassIndexPrediction",
+      "id": "BiomassIndexPrediction",
+      "package": "ObservationPackage",
+      "order": 0,
+      "reads": [
+        "PopulationState.spawning_biomass_by_year",
+        "FleetParameters.q_index"
+      ],
+      "writes": [
+        "FleetState.predicted_index_by_year"
+      ]
+    },
+    {
+      "key": "ObservationPackage::CatchAgeCompositionPrediction",
+      "id": "CatchAgeCompositionPrediction",
+      "package": "ObservationPackage",
+      "order": 1,
+      "reads": [
+        "FleetState.catch_numbers_at_age"
+      ],
+      "writes": [
+        "FleetState.predicted_catch_age_proportion"
+      ]
+    },
+    {
+      "key": "LikelihoodPackage::LognormalCatchLikelihood",
+      "id": "LognormalCatchLikelihood",
+      "package": "LikelihoodPackage",
+      "order": 0,
+      "reads": [
+        "BigeyeModelData.observed_catch_biomass_by_year",
+        "FleetState.total_catch_biomass_by_year",
+        "FleetParameters.catch_sigma"
+      ],
+      "writes": [
+        "LikelihoodState.catch_nll"
+      ]
+    },
+    {
+      "key": "LikelihoodPackage::LognormalIndexLikelihood",
+      "id": "LognormalIndexLikelihood",
+      "package": "LikelihoodPackage",
+      "order": 1,
+      "reads": [
+        "BigeyeModelData.observed_index_by_year",
+        "FleetState.predicted_index_by_year",
+        "FleetParameters.index_sigma"
+      ],
+      "writes": [
+        "LikelihoodState.index_nll"
+      ]
+    },
+    {
+      "key": "LikelihoodPackage::MultinomialAgeCompLikelihood",
+      "id": "MultinomialAgeCompLikelihood",
+      "package": "LikelihoodPackage",
+      "order": 2,
+      "reads": [
+        "BigeyeModelData.observed_catch_age_proportion",
+        "BigeyeModelData.catch_agecomp_sample_size",
+        "FleetState.predicted_catch_age_proportion"
+      ],
+      "writes": [
+        "LikelihoodState.agecomp_nll"
+      ]
+    },
+    {
+      "key": "LikelihoodPackage::SumLikelihood",
+      "id": "SumLikelihood",
+      "package": "LikelihoodPackage",
+      "order": 3,
+      "reads": [
+        "LikelihoodState.catch_nll",
+        "LikelihoodState.index_nll",
+        "LikelihoodState.agecomp_nll"
+      ],
+      "writes": [
+        "LikelihoodState.total_nll"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "LifeHistoryPackage::ComputeNaturalMortality",
+      "to": "LifeHistoryPackage::ComputeWeightAtAge",
+      "kind": "declared_order",
+      "fields": []
+    },
+    {
+      "from": "LifeHistoryPackage::ComputeWeightAtAge",
+      "to": "LifeHistoryPackage::ComputeMaturityAtAge",
+      "kind": "declared_order",
+      "fields": []
+    },
+    {
+      "from": "PopulationPackage::Recruitment",
+      "to": "PopulationPackage::Survival",
+      "kind": "declared_order",
+      "fields": []
+    },
+    {
+      "from": "PopulationPackage::Survival",
+      "to": "PopulationPackage::Aging",
+      "kind": "declared_order",
+      "fields": []
+    },
+    {
+      "from": "PopulationPackage::Aging",
+      "to": "PopulationPackage::PlusGroup",
+      "kind": "declared_order",
+      "fields": []
+    },
+    {
+      "from": "PopulationPackage::PlusGroup",
+      "to": "PopulationPackage::SpawningBiomass",
+      "kind": "declared_order",
+      "fields": []
+    },
+    {
+      "from": "FleetPackage::LogisticSelectivity",
+      "to": "FleetPackage::FishingMortality",
+      "kind": "declared_order",
+      "fields": []
+    },
+    {
+      "from": "FleetPackage::FishingMortality",
+      "to": "FleetPackage::BaranovCatch",
+      "kind": "declared_order",
+      "fields": []
+    },
+    {
+      "from": "ObservationPackage::BiomassIndexPrediction",
+      "to": "ObservationPackage::CatchAgeCompositionPrediction",
+      "kind": "declared_order",
+      "fields": []
+    },
+    {
+      "from": "LikelihoodPackage::LognormalCatchLikelihood",
+      "to": "LikelihoodPackage::LognormalIndexLikelihood",
+      "kind": "declared_order",
+      "fields": []
+    },
+    {
+      "from": "LikelihoodPackage::LognormalIndexLikelihood",
+      "to": "LikelihoodPackage::MultinomialAgeCompLikelihood",
+      "kind": "declared_order",
+      "fields": []
+    },
+    {
+      "from": "LikelihoodPackage::MultinomialAgeCompLikelihood",
+      "to": "LikelihoodPackage::SumLikelihood",
+      "kind": "declared_order",
+      "fields": []
+    },
+    {
+      "from": "MovementPackage::IdentityMovement",
+      "to": "PopulationPackage::Survival",
+      "kind": "data_dependency",
+      "fields": [
+        "PopulationState.numbers_at_age"
+      ]
+    },
+    {
+      "from": "FleetPackage::FishingMortality",
+      "to": "PopulationPackage::Survival",
+      "kind": "data_dependency",
+      "fields": [
+        "FleetState.z_at_age"
+      ]
+    },
+    {
+      "from": "MovementPackage::IdentityMovement",
+      "to": "PopulationPackage::PlusGroup",
+      "kind": "data_dependency",
+      "fields": [
+        "PopulationState.numbers_at_age"
+      ]
+    },
+    {
+      "from": "MovementPackage::IdentityMovement",
+      "to": "PopulationPackage::SpawningBiomass",
+      "kind": "data_dependency",
+      "fields": [
+        "PopulationState.numbers_at_age"
+      ]
+    },
+    {
+      "from": "LifeHistoryPackage::ComputeWeightAtAge",
+      "to": "PopulationPackage::SpawningBiomass",
+      "kind": "data_dependency",
+      "fields": [
+        "LifeHistoryState.weight_at_age"
+      ]
+    },
+    {
+      "from": "LifeHistoryPackage::ComputeMaturityAtAge",
+      "to": "PopulationPackage::SpawningBiomass",
+      "kind": "data_dependency",
+      "fields": [
+        "LifeHistoryState.maturity_at_age"
+      ]
+    },
+    {
+      "from": "PopulationPackage::Recruitment",
+      "to": "MovementPackage::IdentityMovement",
+      "kind": "data_dependency",
+      "fields": [
+        "PopulationState.numbers_at_age"
+      ]
+    },
+    {
+      "from": "PopulationPackage::Aging",
+      "to": "MovementPackage::IdentityMovement",
+      "kind": "data_dependency",
+      "fields": [
+        "PopulationState.numbers_at_age"
+      ]
+    },
+    {
+      "from": "PopulationPackage::PlusGroup",
+      "to": "MovementPackage::IdentityMovement",
+      "kind": "data_dependency",
+      "fields": [
+        "PopulationState.numbers_at_age"
+      ]
+    },
+    {
+      "from": "LifeHistoryPackage::ComputeNaturalMortality",
+      "to": "FleetPackage::FishingMortality",
+      "kind": "data_dependency",
+      "fields": [
+        "LifeHistoryState.m_at_age"
+      ]
+    },
+    {
+      "from": "PopulationPackage::Recruitment",
+      "to": "FleetPackage::BaranovCatch",
+      "kind": "data_dependency",
+      "fields": [
+        "PopulationState.numbers_at_age"
+      ]
+    },
+    {
+      "from": "PopulationPackage::Aging",
+      "to": "FleetPackage::BaranovCatch",
+      "kind": "data_dependency",
+      "fields": [
+        "PopulationState.numbers_at_age"
+      ]
+    },
+    {
+      "from": "PopulationPackage::PlusGroup",
+      "to": "FleetPackage::BaranovCatch",
+      "kind": "data_dependency",
+      "fields": [
+        "PopulationState.numbers_at_age"
+      ]
+    },
+    {
+      "from": "MovementPackage::IdentityMovement",
+      "to": "FleetPackage::BaranovCatch",
+      "kind": "data_dependency",
+      "fields": [
+        "PopulationState.numbers_at_age"
+      ]
+    },
+    {
+      "from": "LifeHistoryPackage::ComputeWeightAtAge",
+      "to": "FleetPackage::BaranovCatch",
+      "kind": "data_dependency",
+      "fields": [
+        "LifeHistoryState.weight_at_age"
+      ]
+    },
+    {
+      "from": "PopulationPackage::SpawningBiomass",
+      "to": "ObservationPackage::BiomassIndexPrediction",
+      "kind": "data_dependency",
+      "fields": [
+        "PopulationState.spawning_biomass_by_year"
+      ]
+    },
+    {
+      "from": "FleetPackage::BaranovCatch",
+      "to": "ObservationPackage::CatchAgeCompositionPrediction",
+      "kind": "data_dependency",
+      "fields": [
+        "FleetState.catch_numbers_at_age"
+      ]
+    },
+    {
+      "from": "FleetPackage::BaranovCatch",
+      "to": "LikelihoodPackage::LognormalCatchLikelihood",
+      "kind": "data_dependency",
+      "fields": [
+        "FleetState.total_catch_biomass_by_year"
+      ]
+    },
+    {
+      "from": "ObservationPackage::BiomassIndexPrediction",
+      "to": "LikelihoodPackage::LognormalIndexLikelihood",
+      "kind": "data_dependency",
+      "fields": [
+        "FleetState.predicted_index_by_year"
+      ]
+    },
+    {
+      "from": "ObservationPackage::CatchAgeCompositionPrediction",
+      "to": "LikelihoodPackage::MultinomialAgeCompLikelihood",
+      "kind": "data_dependency",
+      "fields": [
+        "FleetState.predicted_catch_age_proportion"
+      ]
+    }
+  ],
+  "diagnostics": []
+}

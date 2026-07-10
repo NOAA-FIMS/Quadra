@@ -24,6 +24,14 @@ echo "== Generate IR =="
 ./generate_bigeye_v2_caa_ir.sh
 
 echo
+echo "== Generate operation graph =="
+./generate_bigeye_v2_caa_operation_graph.sh
+
+echo
+echo "== Inspect operation graph =="
+./inspect_bigeye_v2_caa_operation_graph.sh
+
+echo
 echo "== Generate IR AssessmentCycle =="
 ./generate_bigeye_v2_caa_assessment_cycle_from_ir.sh
 

@@ -1,0 +1,44 @@
+{
+  "package": "FleetPackage",
+  "operations": [
+    {
+      "id": "LogisticSelectivity",
+      "order": 0,
+      "reads": [
+        "FleetParameters.sel_a50",
+        "FleetParameters.sel_slope"
+      ],
+      "writes": [
+        "FleetState.selectivity_at_age"
+      ]
+    },
+    {
+      "id": "FishingMortality",
+      "order": 1,
+      "reads": [
+        "FleetParameters.fbar",
+        "FleetState.selectivity_at_age",
+        "LifeHistoryState.m_at_age"
+      ],
+      "writes": [
+        "FleetState.f_at_age",
+        "FleetState.z_at_age"
+      ]
+    },
+    {
+      "id": "BaranovCatch",
+      "order": 2,
+      "reads": [
+        "PopulationState.numbers_at_age",
+        "FleetState.f_at_age",
+        "FleetState.z_at_age",
+        "LifeHistoryState.weight_at_age"
+      ],
+      "writes": [
+        "FleetState.catch_numbers_at_age",
+        "FleetState.catch_biomass_at_age",
+        "FleetState.total_catch_biomass_by_year"
+      ]
+    }
+  ]
+}

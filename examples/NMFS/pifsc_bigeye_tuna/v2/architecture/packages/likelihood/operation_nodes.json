@@ -1,0 +1,53 @@
+{
+  "package": "LikelihoodPackage",
+  "operations": [
+    {
+      "id": "LognormalCatchLikelihood",
+      "order": 0,
+      "reads": [
+        "BigeyeModelData.observed_catch_biomass_by_year",
+        "FleetState.total_catch_biomass_by_year",
+        "FleetParameters.catch_sigma"
+      ],
+      "writes": [
+        "LikelihoodState.catch_nll"
+      ]
+    },
+    {
+      "id": "LognormalIndexLikelihood",
+      "order": 1,
+      "reads": [
+        "BigeyeModelData.observed_index_by_year",
+        "FleetState.predicted_index_by_year",
+        "FleetParameters.index_sigma"
+      ],
+      "writes": [
+        "LikelihoodState.index_nll"
+      ]
+    },
+    {
+      "id": "MultinomialAgeCompLikelihood",
+      "order": 2,
+      "reads": [
+        "BigeyeModelData.observed_catch_age_proportion",
+        "BigeyeModelData.catch_agecomp_sample_size",
+        "FleetState.predicted_catch_age_proportion"
+      ],
+      "writes": [
+        "LikelihoodState.agecomp_nll"
+      ]
+    },
+    {
+      "id": "SumLikelihood",
+      "order": 3,
+      "reads": [
+        "LikelihoodState.catch_nll",
+        "LikelihoodState.index_nll",
+        "LikelihoodState.agecomp_nll"
+      ],
+      "writes": [
+        "LikelihoodState.total_nll"
+      ]
+    }
+  ]
+}

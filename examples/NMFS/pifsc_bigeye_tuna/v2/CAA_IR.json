@@ -30,6 +30,39 @@
         "ComputeNaturalMortality",
         "ComputeWeightAtAge",
         "ComputeMaturityAtAge"
+      ],
+      "operation_nodes": [
+        {
+          "id": "ComputeNaturalMortality",
+          "order": 0,
+          "reads": [
+            "LifeHistoryParameters.log_m_young_offset",
+            "LifeHistoryParameters.log_m_old_offset"
+          ],
+          "writes": [
+            "LifeHistoryState.m_at_age"
+          ]
+        },
+        {
+          "id": "ComputeWeightAtAge",
+          "order": 1,
+          "reads": [
+            "BigeyeModelData"
+          ],
+          "writes": [
+            "LifeHistoryState.weight_at_age"
+          ]
+        },
+        {
+          "id": "ComputeMaturityAtAge",
+          "order": 2,
+          "reads": [
+            "BigeyeModelData"
+          ],
+          "writes": [
+            "LifeHistoryState.maturity_at_age"
+          ]
+        }
       ]
     },
     {
@@ -82,6 +115,63 @@
         "Aging",
         "PlusGroup",
         "SpawningBiomass"
+      ],
+      "operation_nodes": [
+        {
+          "id": "Recruitment",
+          "order": 0,
+          "reads": [
+            "PopulationParameters.r0"
+          ],
+          "writes": [
+            "PopulationState.recruits_by_year",
+            "PopulationState.numbers_at_age"
+          ]
+        },
+        {
+          "id": "Survival",
+          "order": 1,
+          "reads": [
+            "PopulationState.numbers_at_age",
+            "FleetState.z_at_age"
+          ],
+          "writes": [
+            "PopulationState.survivors_at_age"
+          ]
+        },
+        {
+          "id": "Aging",
+          "order": 2,
+          "reads": [
+            "PopulationState.survivors_at_age"
+          ],
+          "writes": [
+            "PopulationState.numbers_at_age"
+          ]
+        },
+        {
+          "id": "PlusGroup",
+          "order": 3,
+          "reads": [
+            "PopulationState.survivors_at_age",
+            "PopulationState.numbers_at_age"
+          ],
+          "writes": [
+            "PopulationState.numbers_at_age"
+          ]
+        },
+        {
+          "id": "SpawningBiomass",
+          "order": 4,
+          "reads": [
+            "PopulationState.numbers_at_age",
+            "LifeHistoryState.weight_at_age",
+            "LifeHistoryState.maturity_at_age"
+          ],
+          "writes": [
+            "PopulationState.spawning_biomass_by_year"
+          ]
+        }
       ]
     },
     {
@@ -112,6 +202,18 @@
       ],
       "operations": [
         "IdentityMovement"
+      ],
+      "operation_nodes": [
+        {
+          "id": "IdentityMovement",
+          "order": 0,
+          "reads": [
+            "PopulationState.numbers_at_age"
+          ],
+          "writes": [
+            "PopulationState.numbers_at_age"
+          ]
+        }
       ]
     },
     {
@@ -163,6 +265,47 @@
         "LogisticSelectivity",
         "FishingMortality",
         "BaranovCatch"
+      ],
+      "operation_nodes": [
+        {
+          "id": "LogisticSelectivity",
+          "order": 0,
+          "reads": [
+            "FleetParameters.sel_a50",
+            "FleetParameters.sel_slope"
+          ],
+          "writes": [
+            "FleetState.selectivity_at_age"
+          ]
+        },
+        {
+          "id": "FishingMortality",
+          "order": 1,
+          "reads": [
+            "FleetParameters.fbar",
+            "FleetState.selectivity_at_age",
+            "LifeHistoryState.m_at_age"
+          ],
+          "writes": [
+            "FleetState.f_at_age",
+            "FleetState.z_at_age"
+          ]
+        },
+        {
+          "id": "BaranovCatch",
+          "order": 2,
+          "reads": [
+            "PopulationState.numbers_at_age",
+            "FleetState.f_at_age",
+            "FleetState.z_at_age",
+            "LifeHistoryState.weight_at_age"
+          ],
+          "writes": [
+            "FleetState.catch_numbers_at_age",
+            "FleetState.catch_biomass_at_age",
+            "FleetState.total_catch_biomass_by_year"
+          ]
+        }
       ]
     },
     {
@@ -201,6 +344,29 @@
       "operations": [
         "BiomassIndexPrediction",
         "CatchAgeCompositionPrediction"
+      ],
+      "operation_nodes": [
+        {
+          "id": "BiomassIndexPrediction",
+          "order": 0,
+          "reads": [
+            "PopulationState.spawning_biomass_by_year",
+            "FleetParameters.q_index"
+          ],
+          "writes": [
+            "FleetState.predicted_index_by_year"
+          ]
+        },
+        {
+          "id": "CatchAgeCompositionPrediction",
+          "order": 1,
+          "reads": [
+            "FleetState.catch_numbers_at_age"
+          ],
+          "writes": [
+            "FleetState.predicted_catch_age_proportion"
+          ]
+        }
       ]
     },
     {
@@ -247,6 +413,56 @@
         "LognormalCatchLikelihood",
         "LognormalIndexLikelihood",
         "MultinomialAgeCompLikelihood"
+      ],
+      "operation_nodes": [
+        {
+          "id": "LognormalCatchLikelihood",
+          "order": 0,
+          "reads": [
+            "BigeyeModelData.observed_catch_biomass_by_year",
+            "FleetState.total_catch_biomass_by_year",
+            "FleetParameters.catch_sigma"
+          ],
+          "writes": [
+            "LikelihoodState.catch_nll"
+          ]
+        },
+        {
+          "id": "LognormalIndexLikelihood",
+          "order": 1,
+          "reads": [
+            "BigeyeModelData.observed_index_by_year",
+            "FleetState.predicted_index_by_year",
+            "FleetParameters.index_sigma"
+          ],
+          "writes": [
+            "LikelihoodState.index_nll"
+          ]
+        },
+        {
+          "id": "MultinomialAgeCompLikelihood",
+          "order": 2,
+          "reads": [
+            "BigeyeModelData.observed_catch_age_proportion",
+            "BigeyeModelData.catch_agecomp_sample_size",
+            "FleetState.predicted_catch_age_proportion"
+          ],
+          "writes": [
+            "LikelihoodState.agecomp_nll"
+          ]
+        },
+        {
+          "id": "SumLikelihood",
+          "order": 3,
+          "reads": [
+            "LikelihoodState.catch_nll",
+            "LikelihoodState.index_nll",
+            "LikelihoodState.agecomp_nll"
+          ],
+          "writes": [
+            "LikelihoodState.total_nll"
+          ]
+        }
       ]
     }
   ],

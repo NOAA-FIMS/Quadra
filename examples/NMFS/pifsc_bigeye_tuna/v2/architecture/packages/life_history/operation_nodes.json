@@ -1,0 +1,36 @@
+{
+  "package": "LifeHistoryPackage",
+  "operations": [
+    {
+      "id": "ComputeNaturalMortality",
+      "order": 0,
+      "reads": [
+        "LifeHistoryParameters.log_m_young_offset",
+        "LifeHistoryParameters.log_m_old_offset"
+      ],
+      "writes": [
+        "LifeHistoryState.m_at_age"
+      ]
+    },
+    {
+      "id": "ComputeWeightAtAge",
+      "order": 1,
+      "reads": [
+        "BigeyeModelData"
+      ],
+      "writes": [
+        "LifeHistoryState.weight_at_age"
+      ]
+    },
+    {
+      "id": "ComputeMaturityAtAge",
+      "order": 2,
+      "reads": [
+        "BigeyeModelData"
+      ],
+      "writes": [
+        "LifeHistoryState.maturity_at_age"
+      ]
+    }
+  ]
+}

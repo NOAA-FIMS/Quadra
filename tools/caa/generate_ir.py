@@ -52,6 +52,23 @@ def parse_meta(path: Path) -> dict:
     return out
 
 
+
+def load_operation_nodes(meta_path: Path) -> list[dict]:
+    node_path = meta_path.parent / "operation_nodes.json"
+    if not node_path.exists():
+        return []
+
+    payload = json.loads(node_path.read_text())
+    nodes = payload.get("operations", [])
+
+    for node in nodes:
+        node.setdefault("reads", [])
+        node.setdefault("writes", [])
+        node.setdefault("order", 0)
+
+    return sorted(nodes, key=lambda node: (node["order"], node["id"]))
+
+
 packages = []
 created = {}
 updated = {}
@@ -61,7 +78,9 @@ updated_fields = {}
 consumed_fields = {}
 
 for key in ORDER:
-    meta = parse_meta(BASE / key / "package.meta")
+    meta_path = BASE / key / "package.meta"
+    meta = parse_meta(meta_path)
+    operation_nodes = load_operation_nodes(meta_path)
 
     package = {
         "key": key,
@@ -76,6 +95,7 @@ for key in ORDER:
         "updates_fields": split_list(meta["updates_fields"]),
         "steps": meta["steps"],
         "operations": meta.get("operations", []),
+        "operation_nodes": operation_nodes,
     }
 
     packages.append(package)

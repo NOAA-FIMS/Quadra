@@ -1,0 +1,15 @@
+{
+  "package": "MovementPackage",
+  "operations": [
+    {
+      "id": "IdentityMovement",
+      "order": 0,
+      "reads": [
+        "PopulationState.numbers_at_age"
+      ],
+      "writes": [
+        "PopulationState.numbers_at_age"
+      ]
+    }
+  ]
+}

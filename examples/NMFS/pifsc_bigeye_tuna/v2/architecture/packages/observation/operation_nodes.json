@@ -1,0 +1,26 @@
+{
+  "package": "ObservationPackage",
+  "operations": [
+    {
+      "id": "BiomassIndexPrediction",
+      "order": 0,
+      "reads": [
+        "PopulationState.spawning_biomass_by_year",
+        "FleetParameters.q_index"
+      ],
+      "writes": [
+        "FleetState.predicted_index_by_year"
+      ]
+    },
+    {
+      "id": "CatchAgeCompositionPrediction",
+      "order": 1,
+      "reads": [
+        "FleetState.catch_numbers_at_age"
+      ],
+      "writes": [
+        "FleetState.predicted_catch_age_proportion"
+      ]
+    }
+  ]
+}

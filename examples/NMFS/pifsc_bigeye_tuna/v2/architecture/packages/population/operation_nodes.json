@@ -1,0 +1,60 @@
+{
+  "package": "PopulationPackage",
+  "operations": [
+    {
+      "id": "Recruitment",
+      "order": 0,
+      "reads": [
+        "PopulationParameters.r0"
+      ],
+      "writes": [
+        "PopulationState.recruits_by_year",
+        "PopulationState.numbers_at_age"
+      ]
+    },
+    {
+      "id": "Survival",
+      "order": 1,
+      "reads": [
+        "PopulationState.numbers_at_age",
+        "FleetState.z_at_age"
+      ],
+      "writes": [
+        "PopulationState.survivors_at_age"
+      ]
+    },
+    {
+      "id": "Aging",
+      "order": 2,
+      "reads": [
+        "PopulationState.survivors_at_age"
+      ],
+      "writes": [
+        "PopulationState.numbers_at_age"
+      ]
+    },
+    {
+      "id": "PlusGroup",
+      "order": 3,
+      "reads": [
+        "PopulationState.survivors_at_age",
+        "PopulationState.numbers_at_age"
+      ],
+      "writes": [
+        "PopulationState.numbers_at_age"
+      ]
+    },
+    {
+      "id": "SpawningBiomass",
+      "order": 4,
+      "reads": [
+        "PopulationState.numbers_at_age",
+        "LifeHistoryState.weight_at_age",
+        "LifeHistoryState.maturity_at_age"
+      ],
+      "writes": [
+        "PopulationState.spawning_biomass_by_year"
+      ]
+    }
+  ]
+}
