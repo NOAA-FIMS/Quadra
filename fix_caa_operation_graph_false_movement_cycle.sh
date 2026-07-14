@@ -1,3 +1,7 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+cat > tools/caa/generate_operation_graph.py <<'PY'
 #!/usr/bin/env python3
 from collections import defaultdict
 from pathlib import Path
@@ -138,3 +142,23 @@ if diagnostics:
         )
 else:
     print("diagnostics: clean")
+PY
+
+chmod +x tools/caa/generate_operation_graph.py
+
+cat > generate_bigeye_v2_caa_operation_graph.sh <<'SH'
+#!/usr/bin/env bash
+set -euo pipefail
+./generate_bigeye_v2_caa_ir.sh
+./generate_bigeye_v2_caa_execution_plan.sh
+python3 tools/caa/generate_operation_graph.py
+SH
+
+chmod +x generate_bigeye_v2_caa_operation_graph.sh
+
+echo "updated operation graph to use execution-plan-directed field lineage"
+echo
+echo "Run:"
+echo "  ./validate_bigeye_v2_caa_operation_graph.sh"
+echo "  ./build_bigeye_v2_caa.sh"
+echo "  ./run_bigeye_v2_regression_suite.sh"

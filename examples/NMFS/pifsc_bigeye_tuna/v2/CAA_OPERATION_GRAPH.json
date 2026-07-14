@@ -1,7 +1,9 @@
 {
   "name": "Bigeye v2 CAA Operation Graph",
   "source": "examples/NMFS/pifsc_bigeye_tuna/v2/CAA_IR.json",
-  "graph_version": 1,
+  "execution_plan": "examples/NMFS/pifsc_bigeye_tuna/v2/CAA_EXECUTION_PLAN.json",
+  "graph_version": 2,
+  "dependency_model": "plan_directed_field_lineage_v1",
   "initial_fields": [
     "PopulationState.numbers_at_age"
   ],
@@ -321,35 +323,11 @@
       "fields": []
     },
     {
-      "from": "MovementPackage::IdentityMovement",
-      "to": "PopulationPackage::Survival",
-      "kind": "data_dependency",
-      "fields": [
-        "PopulationState.numbers_at_age"
-      ]
-    },
-    {
       "from": "FleetPackage::FishingMortality",
       "to": "PopulationPackage::Survival",
       "kind": "data_dependency",
       "fields": [
         "FleetState.z_at_age"
-      ]
-    },
-    {
-      "from": "MovementPackage::IdentityMovement",
-      "to": "PopulationPackage::PlusGroup",
-      "kind": "data_dependency",
-      "fields": [
-        "PopulationState.numbers_at_age"
-      ]
-    },
-    {
-      "from": "MovementPackage::IdentityMovement",
-      "to": "PopulationPackage::SpawningBiomass",
-      "kind": "data_dependency",
-      "fields": [
-        "PopulationState.numbers_at_age"
       ]
     },
     {

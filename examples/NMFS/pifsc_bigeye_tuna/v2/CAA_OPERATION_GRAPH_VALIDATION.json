@@ -1,0 +1,35 @@
+{
+  "name": "Bigeye v2 CAA Operation Graph Validation",
+  "source": "examples/NMFS/pifsc_bigeye_tuna/v2/CAA_OPERATION_GRAPH.json",
+  "execution_plan": "examples/NMFS/pifsc_bigeye_tuna/v2/CAA_EXECUTION_PLAN.json",
+  "errors": [],
+  "warnings": [
+    {
+      "level": "warning",
+      "kind": "multiple_operation_writers",
+      "field": "PopulationState.numbers_at_age",
+      "writers": [
+        "MovementPackage::IdentityMovement",
+        "PopulationPackage::Aging",
+        "PopulationPackage::PlusGroup",
+        "PopulationPackage::Recruitment"
+      ]
+    },
+    {
+      "level": "warning",
+      "kind": "operation_output_never_consumed",
+      "field": "FleetState.catch_biomass_at_age",
+      "writers": [
+        "FleetPackage::BaranovCatch"
+      ]
+    },
+    {
+      "level": "warning",
+      "kind": "operation_output_never_consumed",
+      "field": "PopulationState.recruits_by_year",
+      "writers": [
+        "PopulationPackage::Recruitment"
+      ]
+    }
+  ]
+}
