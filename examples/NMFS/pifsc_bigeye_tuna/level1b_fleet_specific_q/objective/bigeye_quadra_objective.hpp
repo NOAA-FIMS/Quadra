@@ -136,7 +136,7 @@ public:
       T biomass = T(0.0);
       for (int a = 0; a < kAges; ++a) {
         biomass = biomass + n[static_cast<std::size_t>(a)] *
-                              T(weight[static_cast<std::size_t>(a)]);
+                                T(weight[static_cast<std::size_t>(a)]);
       }
 
       T total_catch_hat = T(0.0);
@@ -153,8 +153,7 @@ public:
           continue;
         }
 
-        const T fleet_q =
-            obs.fleet == "longline" ? q_longline : q_purse_seine;
+        const T fleet_q = obs.fleet == "longline" ? q_longline : q_purse_seine;
         const T index_hat = fleet_q * biomass;
 
         if (obs.index > 0.0) {
@@ -167,8 +166,7 @@ public:
         const T catch_hat = total_catch_hat * T(fleet_catch_share(obs.fleet));
         if (obs.catch_mt > 0.0) {
           const T z =
-              (log_t(T(obs.catch_mt)) -
-               log_t(max_t(catch_hat, min_positive))) /
+              (log_t(T(obs.catch_mt)) - log_t(max_t(catch_hat, min_positive))) /
               sigma_log_catch;
           nll = nll + T(0.5) * square_t(z);
         }

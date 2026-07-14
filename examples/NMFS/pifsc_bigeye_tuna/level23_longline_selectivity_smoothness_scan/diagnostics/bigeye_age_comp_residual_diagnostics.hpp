@@ -25,14 +25,9 @@ struct BigeyeAgeCompResidualRow {
   double abs_residual = 0.0;
 };
 
-
-
 inline void write_level15_age_comp_residual_diagnostics(
-    const std::string &txt_path,
-    const std::string &csv_path,
-    const BigeyeQuadraObjective &objective,
-    const quadra::OptResult &fit)
-{
+    const std::string &txt_path, const std::string &csv_path,
+    const BigeyeQuadraObjective &objective, const quadra::OptResult &fit) {
   std::ofstream txt(txt_path);
   std::ofstream csv(csv_path);
   if (!txt || !csv) {
@@ -120,15 +115,16 @@ inline void write_level15_age_comp_residual_diagnostics(
 
         fleet_abs_sum_n[obs.fleet].first += abs_residual;
         fleet_abs_sum_n[obs.fleet].second += 1;
-        fleet_max_abs[obs.fleet] = std::max(fleet_max_abs[obs.fleet], abs_residual);
+        fleet_max_abs[obs.fleet] =
+            std::max(fleet_max_abs[obs.fleet], abs_residual);
 
         year_abs_sum_n[obs.year].first += abs_residual;
         year_abs_sum_n[obs.year].second += 1;
         year_max_abs[obs.year] = std::max(year_max_abs[obs.year], abs_residual);
 
-        csv << "age_residual," << obs.year << "," << obs.fleet << ","
-            << (a + 1) << "," << obs.age_comp[i] << "," << pred[i] << ","
-            << residual << "," << abs_residual << "\n";
+        csv << "age_residual," << obs.year << "," << obs.fleet << "," << (a + 1)
+            << "," << obs.age_comp[i] << "," << pred[i] << "," << residual
+            << "," << abs_residual << "\n";
       }
     }
 
@@ -141,12 +137,14 @@ inline void write_level15_age_comp_residual_diagnostics(
     std::array<double, kAges> next{};
     const double spawning_biomass =
         level23_bh_sync::spawning_biomass_from_numbers(n, weight, maturity);
-        const double phi0 =
+    const double phi0 =
         level23_bh_sync::spawning_biomass_from_numbers(n, weight, maturity) /
         std::max(r0, level23_bh_sync::bh_min_positive());
-const double expected_recruitment =
-        level23_bh_sync::beverton_holt_recruitment(spawning_biomass, r0, steepness, phi0);
-    next[0] = expected_recruitment * std::exp(fit.u_hat[static_cast<Eigen::Index>(t)]);
+    const double expected_recruitment =
+        level23_bh_sync::beverton_holt_recruitment(spawning_biomass, r0,
+                                                   steepness, phi0);
+    next[0] = expected_recruitment *
+              std::exp(fit.u_hat[static_cast<Eigen::Index>(t)]);
     for (int a = 1; a < kAges; ++a) {
       const std::size_t prev = static_cast<std::size_t>(a - 1);
       const double z_prev = m + fbar * total_sel[prev];
@@ -158,20 +156,24 @@ const double expected_recruitment =
     n = next;
   }
 
-  std::sort(rows.begin(), rows.end(),
-            [](const BigeyeAgeCompResidualRow &a,
-               const BigeyeAgeCompResidualRow &b) {
-              return a.abs_residual > b.abs_residual;
-            });
+  std::sort(
+      rows.begin(), rows.end(),
+      [](const BigeyeAgeCompResidualRow &a, const BigeyeAgeCompResidualRow &b) {
+        return a.abs_residual > b.abs_residual;
+      });
 
   txt << "Level 23 Age-Composition Residual Diagnostics\n";
   txt << "=============================================\n\n";
   txt << "Interpretation\n";
   txt << "--------------\n";
-  txt << "Residuals are observed minus predicted age-composition proportions.\n";
-  txt << "This report now uses the same objective-consistent prediction path as\n";
-  txt << "the Level 23 model: fitted initial numbers, fitted longline selectivity,\n";
-  txt << "fitted age-specific purse-seine selectivity, and the same annual state\n";
+  txt << "Residuals are observed minus predicted age-composition "
+         "proportions.\n";
+  txt << "This report now uses the same objective-consistent prediction path "
+         "as\n";
+  txt << "the Level 23 model: fitted initial numbers, fitted longline "
+         "selectivity,\n";
+  txt << "fitted age-specific purse-seine selectivity, and the same annual "
+         "state\n";
   txt << "update used in the objective.\n\n";
 
   txt << "Fleet summary\n";
@@ -183,8 +185,8 @@ const double expected_recruitment =
         kv.second.second > 0 ? kv.second.first / kv.second.second : 0.0;
     txt << fleet << "," << mean_abs << "," << fleet_max_abs[fleet] << ","
         << kv.second.second << "\n";
-    csv << "fleet_summary,," << fleet << ",," << "," << "," << mean_abs
-        << "," << fleet_max_abs[fleet] << "\n";
+    csv << "fleet_summary,," << fleet << ",," << "," << "," << mean_abs << ","
+        << fleet_max_abs[fleet] << "\n";
   }
 
   txt << "\nWorst years\n";
@@ -196,8 +198,8 @@ const double expected_recruitment =
         kv.second.second > 0 ? kv.second.first / kv.second.second : 0.0;
     txt << year << "," << mean_abs << "," << year_max_abs[year] << ","
         << kv.second.second << "\n";
-    csv << "year_summary," << year << ",,," << "," << "," << mean_abs
-        << "," << year_max_abs[year] << "\n";
+    csv << "year_summary," << year << ",,," << "," << "," << mean_abs << ","
+        << year_max_abs[year] << "\n";
   }
 
   txt << "\nCompact worst age-comp residuals\n";
@@ -205,9 +207,8 @@ const double expected_recruitment =
   txt << "year,fleet,age,observed,predicted,residual,abs_residual\n";
   for (std::size_t i = 0; i < std::min<std::size_t>(20, rows.size()); ++i) {
     const auto &r = rows[i];
-    txt << r.year << "," << r.fleet << "," << r.age << "," << r.observed
-        << "," << r.predicted << "," << r.residual << ","
-        << r.abs_residual << "\n";
+    txt << r.year << "," << r.fleet << "," << r.age << "," << r.observed << ","
+        << r.predicted << "," << r.residual << "," << r.abs_residual << "\n";
   }
 }
 

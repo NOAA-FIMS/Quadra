@@ -1,9 +1,9 @@
 #pragma once
 
+#include "../objective/bigeye_quadra_objective.hpp"
 #include <array>
 #include <cmath>
 #include <vector>
-#include "../objective/bigeye_quadra_objective.hpp"
 
 namespace pifsc_bigeye_tuna {
 namespace level21_m_helpers {
@@ -17,7 +17,8 @@ inline constexpr int kInitialDevOffset = kLonglineSelOffset + kLonglineSelDevs;
 inline constexpr int kInitialDevs = kAges;
 inline constexpr int kPurseSeineSelOffset = kInitialDevOffset + kInitialDevs;
 inline constexpr int kPurseSeineSelDevs = kAges;
-inline constexpr int kRecruitmentOffset = kPurseSeineSelOffset + kPurseSeineSelDevs;
+inline constexpr int kRecruitmentOffset =
+    kPurseSeineSelOffset + kPurseSeineSelDevs;
 
 inline std::array<double, kAges>
 m_at_age_from_level21_par(const std::vector<double> &par) {

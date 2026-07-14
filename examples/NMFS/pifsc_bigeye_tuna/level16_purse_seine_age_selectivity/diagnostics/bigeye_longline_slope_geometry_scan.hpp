@@ -1,7 +1,7 @@
 #pragma once
 
-#include "bigeye_safe_fixed_effect_diagnostics.hpp"
 #include "../../../../../core/optimizer.hpp"
+#include "bigeye_safe_fixed_effect_diagnostics.hpp"
 
 #include <cmath>
 #include <fstream>
@@ -50,7 +50,8 @@ LonglineSlopeGeometryScan make_longline_slope_geometry_scan(
   }
 
   const auto names = safe_fixed_effect_names(params, fit);
-  if (parameter_index < names.size()) scan.parameter_name = names[parameter_index];
+  if (parameter_index < names.size())
+    scan.parameter_name = names[parameter_index];
 
   scan.base_log_slope = fit.par[parameter_index];
   scan.base_slope = std::exp(scan.base_log_slope);
@@ -60,9 +61,8 @@ LonglineSlopeGeometryScan make_longline_slope_geometry_scan(
   scan.base_objective = base.value;
 
   const std::vector<double> multipliers = {
-      0.40, 0.50, 0.60, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95,
-      0.975, 1.00, 1.025, 1.05, 1.10, 1.15, 1.20, 1.30, 1.40,
-      1.60, 1.80, 2.00};
+      0.40,  0.50, 0.60, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 0.975, 1.00,
+      1.025, 1.05, 1.10, 1.15, 1.20, 1.30, 1.40, 1.60, 1.80, 2.00};
 
   for (std::size_t i = 0; i < multipliers.size(); ++i) {
     LonglineSlopeScanRow row;
@@ -81,7 +81,8 @@ LonglineSlopeGeometryScan make_longline_slope_geometry_scan(
     row.status = val.ok ? "ok" : "failed";
     row.message = val.message;
 
-    if (val.ok && base.ok) row.delta_objective = val.value - base.value;
+    if (val.ok && base.ok)
+      row.delta_objective = val.value - base.value;
 
     scan.rows.push_back(row);
   }
@@ -89,10 +90,13 @@ LonglineSlopeGeometryScan make_longline_slope_geometry_scan(
   return scan;
 }
 
-inline void write_longline_slope_geometry_scan_csv(
-    const LonglineSlopeGeometryScan &scan, const std::string &path) {
+inline void
+write_longline_slope_geometry_scan_csv(const LonglineSlopeGeometryScan &scan,
+                                       const std::string &path) {
   std::ofstream out(path);
-  if (!out) throw std::runtime_error("Could not open longline slope geometry scan CSV: " + path);
+  if (!out)
+    throw std::runtime_error(
+        "Could not open longline slope geometry scan CSV: " + path);
 
   out << "parameter_index,parameter_name,base_log_slope,base_slope,"
       << "base_objective,step_index,multiplier,log_sel_slope_longline,"
@@ -102,18 +106,20 @@ inline void write_longline_slope_geometry_scan_csv(
   for (const auto &row : scan.rows) {
     out << scan.parameter_index << "," << scan.parameter_name << ","
         << scan.base_log_slope << "," << scan.base_slope << ","
-        << scan.base_objective << "," << row.step_index << ","
-        << row.multiplier << "," << row.log_sel_slope_longline << ","
-        << row.sel_slope_longline << "," << row.objective << ","
-        << row.delta_objective << "," << row.status << ","
-        << '"' << row.message << '"' << "\n";
+        << scan.base_objective << "," << row.step_index << "," << row.multiplier
+        << "," << row.log_sel_slope_longline << "," << row.sel_slope_longline
+        << "," << row.objective << "," << row.delta_objective << ","
+        << row.status << "," << '"' << row.message << '"' << "\n";
   }
 }
 
-inline void write_longline_slope_geometry_scan_text(
-    const LonglineSlopeGeometryScan &scan, const std::string &path) {
+inline void
+write_longline_slope_geometry_scan_text(const LonglineSlopeGeometryScan &scan,
+                                        const std::string &path) {
   std::ofstream out(path);
-  if (!out) throw std::runtime_error("Could not open longline slope geometry scan text: " + path);
+  if (!out)
+    throw std::runtime_error(
+        "Could not open longline slope geometry scan text: " + path);
 
   out << "Longline Selectivity Slope Geometry Scan\n";
   out << "=======================================\n\n";
@@ -126,9 +132,12 @@ inline void write_longline_slope_geometry_scan_text(
 
   out << "Interpretation\n";
   out << "--------------\n";
-  out << "This scan holds all fixed effects at the Level 6 fit except longline\n";
-  out << "log-selectivity-slope. For each slope multiplier, random effects are\n";
-  out << "re-solved and the profiled Laplace objective is evaluated. Failed rows\n";
+  out << "This scan holds all fixed effects at the Level 6 fit except "
+         "longline\n";
+  out << "log-selectivity-slope. For each slope multiplier, random effects "
+         "are\n";
+  out << "re-solved and the profiled Laplace objective is evaluated. Failed "
+         "rows\n";
   out << "mark local Huu/Laplace stability boundaries.\n\n";
 
   out << "Rows\n";
@@ -139,19 +148,21 @@ inline void write_longline_slope_geometry_scan_text(
   for (const auto &row : scan.rows) {
     out << row.step_index << "," << row.multiplier << ","
         << row.log_sel_slope_longline << "," << row.sel_slope_longline << ","
-        << row.objective << "," << row.delta_objective << ","
-        << row.status << "," << row.message << "\n";
+        << row.objective << "," << row.delta_objective << "," << row.status
+        << "," << row.message << "\n";
   }
 }
 
 template <class Objective>
-void write_longline_slope_geometry_scan(
-    const std::string &text_path, const std::string &csv_path,
-    Objective &objective, const quadra::ParameterVector &params,
-    const quadra::OptResult &fit, quadra::LaplaceOptions opts,
-    std::size_t parameter_index = 5) {
-  const auto scan = make_longline_slope_geometry_scan(
-      objective, params, fit, opts, parameter_index);
+void write_longline_slope_geometry_scan(const std::string &text_path,
+                                        const std::string &csv_path,
+                                        Objective &objective,
+                                        const quadra::ParameterVector &params,
+                                        const quadra::OptResult &fit,
+                                        quadra::LaplaceOptions opts,
+                                        std::size_t parameter_index = 5) {
+  const auto scan = make_longline_slope_geometry_scan(objective, params, fit,
+                                                      opts, parameter_index);
 
   write_longline_slope_geometry_scan_text(scan, text_path);
   write_longline_slope_geometry_scan_csv(scan, csv_path);

@@ -1,13 +1,13 @@
 #pragma once
 
-#include "likelihood_context.hpp"
+#include "../../../common/model_data.hpp"
 #include "../../parameters/fleet_parameters.hpp"
 #include "../../state/fleet_state.hpp"
 #include "../../state/likelihood_state.hpp"
 #include "../../steps/likelihood/lognormal_catch.hpp"
 #include "../../steps/likelihood/lognormal_index.hpp"
 #include "../../steps/likelihood/multinomial_agecomp.hpp"
-#include "../../../common/model_data.hpp"
+#include "likelihood_context.hpp"
 
 namespace bigeye_v2 {
 
@@ -16,10 +16,7 @@ struct LikelihoodPackage {
   template <typename T>
   void operator()(const BigeyeModelData<T> &data,
                   const LikelihoodContext<T> &context) const {
-    (*this)(data,
-            *context.parameters,
-            *context.fleet,
-            *context.likelihood);
+    (*this)(data, *context.parameters, *context.fleet, *context.likelihood);
   }
 
   template <typename T>

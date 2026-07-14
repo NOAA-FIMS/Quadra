@@ -23,9 +23,8 @@ int main() {
   std::vector<BigeyePopulationDerived<double>> pop(2);
 
   for (auto &x : pop) {
-    x.numbers_at_age.assign(
-        static_cast<std::size_t>(data.n_years),
-        std::array<double, kAges>{});
+    x.numbers_at_age.assign(static_cast<std::size_t>(data.n_years),
+                            std::array<double, kAges>{});
   }
 
   // Population 0 starts larger.
@@ -50,39 +49,31 @@ int main() {
   constexpr double expected_pop0_year1_age10 = 2016.5;
   constexpr double expected_pop1_year1_age10 = 1253.5;
 
-  if (!nearly_equal(pop[0].numbers_at_age[0][0],
-                    expected_pop0_year0_age1)) {
-    std::cerr << std::setprecision(17)
-              << "FAIL: pop0 y0 age1 got "
-              << pop[0].numbers_at_age[0][0]
-              << " expected " << expected_pop0_year0_age1 << "\n";
+  if (!nearly_equal(pop[0].numbers_at_age[0][0], expected_pop0_year0_age1)) {
+    std::cerr << std::setprecision(17) << "FAIL: pop0 y0 age1 got "
+              << pop[0].numbers_at_age[0][0] << " expected "
+              << expected_pop0_year0_age1 << "\n";
     return EXIT_FAILURE;
   }
 
-  if (!nearly_equal(pop[1].numbers_at_age[0][0],
-                    expected_pop1_year0_age1)) {
-    std::cerr << std::setprecision(17)
-              << "FAIL: pop1 y0 age1 got "
-              << pop[1].numbers_at_age[0][0]
-              << " expected " << expected_pop1_year0_age1 << "\n";
+  if (!nearly_equal(pop[1].numbers_at_age[0][0], expected_pop1_year0_age1)) {
+    std::cerr << std::setprecision(17) << "FAIL: pop1 y0 age1 got "
+              << pop[1].numbers_at_age[0][0] << " expected "
+              << expected_pop1_year0_age1 << "\n";
     return EXIT_FAILURE;
   }
 
-  if (!nearly_equal(pop[0].numbers_at_age[1][9],
-                    expected_pop0_year1_age10)) {
-    std::cerr << std::setprecision(17)
-              << "FAIL: pop0 y1 age10 got "
-              << pop[0].numbers_at_age[1][9]
-              << " expected " << expected_pop0_year1_age10 << "\n";
+  if (!nearly_equal(pop[0].numbers_at_age[1][9], expected_pop0_year1_age10)) {
+    std::cerr << std::setprecision(17) << "FAIL: pop0 y1 age10 got "
+              << pop[0].numbers_at_age[1][9] << " expected "
+              << expected_pop0_year1_age10 << "\n";
     return EXIT_FAILURE;
   }
 
-  if (!nearly_equal(pop[1].numbers_at_age[1][9],
-                    expected_pop1_year1_age10)) {
-    std::cerr << std::setprecision(17)
-              << "FAIL: pop1 y1 age10 got "
-              << pop[1].numbers_at_age[1][9]
-              << " expected " << expected_pop1_year1_age10 << "\n";
+  if (!nearly_equal(pop[1].numbers_at_age[1][9], expected_pop1_year1_age10)) {
+    std::cerr << std::setprecision(17) << "FAIL: pop1 y1 age10 got "
+              << pop[1].numbers_at_age[1][9] << " expected "
+              << expected_pop1_year1_age10 << "\n";
     return EXIT_FAILURE;
   }
 

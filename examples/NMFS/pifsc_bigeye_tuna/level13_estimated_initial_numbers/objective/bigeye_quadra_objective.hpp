@@ -19,10 +19,20 @@ struct FleetObservation {
   std::array<double, kAges> age_comp{};
 };
 
-template <class T> T exp_t(const T &x) { using std::exp; return exp(x); }
-template <class T> T log_t(const T &x) { using std::log; return log(x); }
-template <class T> T invlogit_t(const T &x) { return T(1.0) / (T(1.0) + exp_t(-x)); }
-template <class T> T max_t(const T &x, double floor) { return x > T(floor) ? x : T(floor); }
+template <class T> T exp_t(const T &x) {
+  using std::exp;
+  return exp(x);
+}
+template <class T> T log_t(const T &x) {
+  using std::log;
+  return log(x);
+}
+template <class T> T invlogit_t(const T &x) {
+  return T(1.0) / (T(1.0) + exp_t(-x));
+}
+template <class T> T max_t(const T &x, double floor) {
+  return x > T(floor) ? x : T(floor);
+}
 template <class T> T square_t(const T &x) { return x * x; }
 
 template <class T>
@@ -32,8 +42,7 @@ T logistic_selectivity_t(const T &age, const T &a50, const T &slope) {
 
 template <class T>
 T age_comp_nll(const std::array<double, kAges> &observed,
-               const std::array<T, kAges> &predicted,
-               double effective_n,
+               const std::array<T, kAges> &predicted, double effective_n,
                double floor = 1.0e-12) {
   T nll = T(0.0);
   for (int a = 0; a < kAges; ++a) {
@@ -45,10 +54,9 @@ T age_comp_nll(const std::array<double, kAges> &observed,
   return nll;
 }
 
-template <class T>
-std::array<T, kAges> fixed_purse_seine_age_selectivity() {
-  const std::array<double, kAges> raw =
-      {1.00, 1.00, 0.85, 0.55, 0.25, 0.10, 0.04, 0.02, 0.01, 0.005};
+template <class T> std::array<T, kAges> fixed_purse_seine_age_selectivity() {
+  const std::array<double, kAges> raw = {1.00, 1.00, 0.85, 0.55, 0.25,
+                                         0.10, 0.04, 0.02, 0.01, 0.005};
   std::array<T, kAges> out{};
   for (int a = 0; a < kAges; ++a)
     out[static_cast<std::size_t>(a)] = T(raw[static_cast<std::size_t>(a)]);
@@ -70,7 +78,8 @@ public:
 
     if (par.size() < static_cast<std::size_t>(kRecruitmentOffset) + n_years())
       throw std::runtime_error(
-          "Level 13 expected 5 base fixed effects, initial number deviations, plus recruitment deviations");
+          "Level 13 expected 5 base fixed effects, initial number deviations, "
+          "plus recruitment deviations");
 
     const T log_r0 = par[0];
     const T log_fbar = par[1];
@@ -87,7 +96,8 @@ public:
     const T q_longline = exp_t(log_q_longline);
     const T q_purse_seine = exp_t(log_q_purse_seine);
 
-    const T sel_a50_longline = T(1.0) + T(9.0) * invlogit_t(logit_sel_a50_longline);
+    const T sel_a50_longline =
+        T(1.0) + T(9.0) * invlogit_t(logit_sel_a50_longline);
     const T sel_slope_longline = exp_t(log_sel_slope_longline);
 
     const T sigma_log_index = T(0.20);
@@ -101,8 +111,8 @@ public:
 
     std::array<T, kAges> sel_longline{};
     for (int a = 0; a < kAges; ++a)
-      sel_longline[static_cast<std::size_t>(a)] =
-          logistic_selectivity_t(T(a + 1), sel_a50_longline, sel_slope_longline);
+      sel_longline[static_cast<std::size_t>(a)] = logistic_selectivity_t(
+          T(a + 1), sel_a50_longline, sel_slope_longline);
 
     const auto sel_purse_seine = fixed_purse_seine_age_selectivity<T>();
 
@@ -163,28 +173,32 @@ public:
 
         for (int a = 0; a < kAges; ++a) {
           const auto i = static_cast<std::size_t>(a);
-          vulnerable_biomass = vulnerable_biomass + n[i] * T(weight[i]) * sel[i];
+          vulnerable_biomass =
+              vulnerable_biomass + n[i] * T(weight[i]) * sel[i];
           pred_age_comp[i] = n[i] * sel[i];
           selected_numbers_sum = selected_numbers_sum + pred_age_comp[i];
         }
 
         const T index_hat = fleet_q * vulnerable_biomass;
         if (obs.index > 0.0) {
-          const T z = (log_t(T(obs.index)) - log_t(max_t(index_hat, min_positive))) /
-                      sigma_log_index;
+          const T z =
+              (log_t(T(obs.index)) - log_t(max_t(index_hat, min_positive))) /
+              sigma_log_index;
           nll = nll + T(0.5) * square_t(z);
         }
 
         const T catch_hat = total_catch_hat * T(fleet_catch_share(obs.fleet));
         if (obs.catch_mt > 0.0) {
-          const T z = (log_t(T(obs.catch_mt)) - log_t(max_t(catch_hat, min_positive))) /
-                      sigma_log_catch;
+          const T z =
+              (log_t(T(obs.catch_mt)) - log_t(max_t(catch_hat, min_positive))) /
+              sigma_log_catch;
           nll = nll + T(0.5) * square_t(z);
         }
 
         for (int a = 0; a < kAges; ++a) {
           const auto i = static_cast<std::size_t>(a);
-          pred_age_comp[i] = pred_age_comp[i] / max_t(selected_numbers_sum, min_positive);
+          pred_age_comp[i] =
+              pred_age_comp[i] / max_t(selected_numbers_sum, min_positive);
         }
 
         nll = nll + age_comp_nll(obs.age_comp, pred_age_comp,
@@ -196,13 +210,15 @@ public:
 
       for (int a = 1; a < kAges; ++a) {
         const auto prev = static_cast<std::size_t>(a - 1);
-        const T avg_sel_prev = T(0.5) * (sel_longline[prev] + sel_purse_seine[prev]);
+        const T avg_sel_prev =
+            T(0.5) * (sel_longline[prev] + sel_purse_seine[prev]);
         const T z_prev = m + fbar * avg_sel_prev;
         next[static_cast<std::size_t>(a)] = n[prev] * exp_t(-z_prev);
       }
 
       const auto last = static_cast<std::size_t>(kAges - 1);
-      const T avg_sel_last = T(0.5) * (sel_longline[last] + sel_purse_seine[last]);
+      const T avg_sel_last =
+          T(0.5) * (sel_longline[last] + sel_purse_seine[last]);
       const T z_last = m + fbar * avg_sel_last;
       next[last] = next[last] + n[last] * exp_t(-z_last);
       n = next;

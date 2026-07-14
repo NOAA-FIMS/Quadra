@@ -11,9 +11,8 @@ namespace bigeye_v2 {
 
 struct FleetLogisticSelectivity {
   template <typename T>
-  void operator()(const BigeyeModelData<T>&,
-                  const FleetParameters<T>& p,
-                  FleetState<T>& fleet) const {
+  void operator()(const BigeyeModelData<T> &, const FleetParameters<T> &p,
+                  FleetState<T> &fleet) const {
     for (int a = 0; a < kAges; ++a) {
       const T age = T(a + 1);
       fleet.selectivity_at_age[a] =
@@ -24,10 +23,8 @@ struct FleetLogisticSelectivity {
 
 struct FleetFishingMortality {
   template <typename T>
-  void operator()(const BigeyeModelData<T>&,
-                  const FleetParameters<T>& p,
-                  const BigeyeDerived<T>& life,
-                  FleetState<T>& fleet) const {
+  void operator()(const BigeyeModelData<T> &, const FleetParameters<T> &p,
+                  const BigeyeDerived<T> &life, FleetState<T> &fleet) const {
     for (int a = 0; a < kAges; ++a) {
       fleet.f_at_age[a] = p.fbar * fleet.selectivity_at_age[a];
       fleet.z_at_age[a] = life.m_at_age[a] + fleet.f_at_age[a];
@@ -35,4 +32,4 @@ struct FleetFishingMortality {
   }
 };
 
-}
+} // namespace bigeye_v2

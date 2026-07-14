@@ -9,8 +9,7 @@ threadDefine had::ADGraph *had::g_ADGraph = nullptr;
 using namespace quadra;
 
 struct ThetaDependentGaussianREModel {
-  template <class T>
-  T operator()(const std::vector<T> &p) const {
+  template <class T> T operator()(const std::vector<T> &p) const {
     const T theta = p[0];
     const T u = p[1];
 
@@ -29,7 +28,8 @@ int main() {
 
   ThetaDependentGaussianREModel model;
 
-  LaplaceOptions options = default_laplace_options();  options.hessian_drop_tol = 0.0;
+  LaplaceOptions options = default_laplace_options();
+  options.hessian_drop_tol = 0.0;
 
   auto result = optimize_lbfgs(model, params, options);
 

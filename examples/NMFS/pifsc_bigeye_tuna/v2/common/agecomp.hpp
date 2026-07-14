@@ -10,8 +10,7 @@ namespace bigeye_v2 {
 struct CatchAgeCompositionPrediction {
   template <typename T>
   void operator()(const BigeyeModelData<T> &data,
-                  const BigeyeModelParameters<T> &,
-                  BigeyeDerived<T> &d) const {
+                  const BigeyeModelParameters<T> &, BigeyeDerived<T> &d) const {
     const auto ny = static_cast<std::size_t>(data.n_years);
     d.predicted_catch_age_proportion.assign(ny, std::array<T, kAges>{});
 

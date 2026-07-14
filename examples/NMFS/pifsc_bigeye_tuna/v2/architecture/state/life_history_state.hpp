@@ -6,8 +6,7 @@
 
 namespace bigeye_v2 {
 
-template <typename T>
-struct LifeHistoryState {
+template <typename T> struct LifeHistoryState {
   std::array<T, kAges> m_at_age{};
   std::array<T, kAges> weight_at_age{};
   std::array<T, kAges> maturity_at_age{};

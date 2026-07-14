@@ -33,23 +33,23 @@ int main() {
   constexpr double expected_y2_age2 = 200.0;
 
   if (!nearly_equal(population.numbers_at_age[1][1], expected_y1_age2)) {
-    std::cerr << std::setprecision(17)
-              << "FAIL: y1 age2 got " << population.numbers_at_age[1][1]
-              << " expected " << expected_y1_age2 << "\n";
+    std::cerr << std::setprecision(17) << "FAIL: y1 age2 got "
+              << population.numbers_at_age[1][1] << " expected "
+              << expected_y1_age2 << "\n";
     return EXIT_FAILURE;
   }
 
   if (!nearly_equal(population.numbers_at_age[1][8], expected_y1_age9)) {
-    std::cerr << std::setprecision(17)
-              << "FAIL: y1 age9 got " << population.numbers_at_age[1][8]
-              << " expected " << expected_y1_age9 << "\n";
+    std::cerr << std::setprecision(17) << "FAIL: y1 age9 got "
+              << population.numbers_at_age[1][8] << " expected "
+              << expected_y1_age9 << "\n";
     return EXIT_FAILURE;
   }
 
   if (!nearly_equal(population.numbers_at_age[2][1], expected_y2_age2)) {
-    std::cerr << std::setprecision(17)
-              << "FAIL: y2 age2 got " << population.numbers_at_age[2][1]
-              << " expected " << expected_y2_age2 << "\n";
+    std::cerr << std::setprecision(17) << "FAIL: y2 age2 got "
+              << population.numbers_at_age[2][1] << " expected "
+              << expected_y2_age2 << "\n";
     return EXIT_FAILURE;
   }
 

@@ -58,8 +58,7 @@ BigeyeModelData<double> make_synthetic_data() {
   return data;
 }
 
-double evaluate(const BigeyeModelData<double>& data,
-                double log_fbar,
+double evaluate(const BigeyeModelData<double> &data, double log_fbar,
                 double log_q) {
   auto p = base_params();
   p.fbar = std::exp(log_fbar);
@@ -95,7 +94,7 @@ int main() {
         {log_fbar, log_q - step},
     };
 
-    for (const auto& c : candidates) {
+    for (const auto &c : candidates) {
       const double fx = evaluate(data, c[0], c[1]);
       if (fx < best) {
         best = fx;

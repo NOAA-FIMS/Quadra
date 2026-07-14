@@ -1,9 +1,9 @@
 #pragma once
 
 #include "../../../common/bigeye_constants.hpp"
+#include "../../../common/model_data.hpp"
 #include "../../parameters/fleet_parameters.hpp"
 #include "../../state/fleet_state.hpp"
-#include "../../../common/model_data.hpp"
 
 #include <cmath>
 
@@ -13,8 +13,7 @@ namespace bigeye_v2 {
 // Computes vulnerability-at-age for one fleet.
 struct LogisticSelectivity {
   template <typename T>
-  void operator()(const BigeyeModelData<T> &,
-                  const FleetParameters<T> &p,
+  void operator()(const BigeyeModelData<T> &, const FleetParameters<T> &p,
                   FleetState<T> &fleet) const {
     for (int a = 0; a < kAges; ++a) {
       const T age = T(a + 1);

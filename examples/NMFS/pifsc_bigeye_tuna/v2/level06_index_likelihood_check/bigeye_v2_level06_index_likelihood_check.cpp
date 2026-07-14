@@ -51,17 +51,16 @@ int main() {
   constexpr double expected_index_nll = 9.4692241297627753;
 
   if (!nearly_equal(d.predicted_index_by_year[0], expected_pred_index)) {
-    std::cerr << std::setprecision(17)
-              << "FAIL: predicted_index got " << d.predicted_index_by_year[0]
-              << " expected " << expected_pred_index << "\n";
+    std::cerr << std::setprecision(17) << "FAIL: predicted_index got "
+              << d.predicted_index_by_year[0] << " expected "
+              << expected_pred_index << "\n";
     return EXIT_FAILURE;
   }
 
   if (!nearly_equal(d.index_nll, expected_index_nll)) {
-    std::cerr << std::setprecision(17)
-              << "FAIL: index_nll got " << d.index_nll
-              << " expected " << expected_index_nll
-              << " diff " << (d.index_nll - expected_index_nll) << "\n";
+    std::cerr << std::setprecision(17) << "FAIL: index_nll got " << d.index_nll
+              << " expected " << expected_index_nll << " diff "
+              << (d.index_nll - expected_index_nll) << "\n";
     return EXIT_FAILURE;
   }
 

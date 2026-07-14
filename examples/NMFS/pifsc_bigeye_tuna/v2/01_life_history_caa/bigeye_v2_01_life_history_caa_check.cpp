@@ -31,20 +31,20 @@ int main() {
   constexpr double expected_m_age_8 = 0.2925;
 
   if (!nearly_equal(life.m_at_age[0], expected_m_age_1)) {
-    std::cerr << std::setprecision(17)
-              << "FAIL: m age 1 got " << life.m_at_age[0] << "\n";
+    std::cerr << std::setprecision(17) << "FAIL: m age 1 got "
+              << life.m_at_age[0] << "\n";
     return EXIT_FAILURE;
   }
 
   if (!nearly_equal(life.m_at_age[3], expected_m_age_4)) {
-    std::cerr << std::setprecision(17)
-              << "FAIL: m age 4 got " << life.m_at_age[3] << "\n";
+    std::cerr << std::setprecision(17) << "FAIL: m age 4 got "
+              << life.m_at_age[3] << "\n";
     return EXIT_FAILURE;
   }
 
   if (!nearly_equal(life.m_at_age[7], expected_m_age_8)) {
-    std::cerr << std::setprecision(17)
-              << "FAIL: m age 8 got " << life.m_at_age[7] << "\n";
+    std::cerr << std::setprecision(17) << "FAIL: m age 8 got "
+              << life.m_at_age[7] << "\n";
     return EXIT_FAILURE;
   }
 

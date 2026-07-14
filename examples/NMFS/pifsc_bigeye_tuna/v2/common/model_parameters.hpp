@@ -2,8 +2,7 @@
 
 namespace bigeye_v2 {
 
-template <typename T>
-struct BigeyeModelParameters {
+template <typename T> struct BigeyeModelParameters {
   T log_m_young_offset = T(0.0);
   T log_m_old_offset = T(0.0);
   T r0 = T(1000.0);

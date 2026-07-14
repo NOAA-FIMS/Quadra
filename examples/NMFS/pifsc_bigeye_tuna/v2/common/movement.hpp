@@ -8,13 +8,11 @@
 
 namespace bigeye_v2 {
 
-template <typename T>
-struct BigeyePopulationDerived {
+template <typename T> struct BigeyePopulationDerived {
   std::vector<std::array<T, kAges>> numbers_at_age{};
 };
 
-template <typename T>
-struct BigeyeMovementParameters {
+template <typename T> struct BigeyeMovementParameters {
   T move_0_to_1 = T(0.10);
   T move_1_to_0 = T(0.05);
 };

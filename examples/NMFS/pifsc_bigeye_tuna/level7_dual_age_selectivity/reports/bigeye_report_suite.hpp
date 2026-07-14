@@ -13,17 +13,23 @@ namespace pifsc_bigeye_tuna {
 
 struct BigeyeReportPaths {
   std::string summary =
-      "examples/NMFS/pifsc_bigeye_tuna/level7_dual_age_selectivity/outputs/bigeye_level7_fit_summary.csv";
+      "examples/NMFS/pifsc_bigeye_tuna/level7_dual_age_selectivity/outputs/"
+      "bigeye_level7_fit_summary.csv";
   std::string trajectory =
-      "examples/NMFS/pifsc_bigeye_tuna/level7_dual_age_selectivity/outputs/bigeye_level7_fitted_trajectory.csv";
-  std::string residual_diagnostics = "examples/NMFS/pifsc_bigeye_tuna/level7_dual_age_selectivity/outputs/"
-                                     "bigeye_level7_residual_diagnostics.csv";
+      "examples/NMFS/pifsc_bigeye_tuna/level7_dual_age_selectivity/outputs/"
+      "bigeye_level7_fitted_trajectory.csv";
+  std::string residual_diagnostics =
+      "examples/NMFS/pifsc_bigeye_tuna/level7_dual_age_selectivity/outputs/"
+      "bigeye_level7_residual_diagnostics.csv";
   std::string selectivity =
-      "examples/NMFS/pifsc_bigeye_tuna/level7_dual_age_selectivity/outputs/bigeye_level7_selectivity_at_age.csv";
+      "examples/NMFS/pifsc_bigeye_tuna/level7_dual_age_selectivity/outputs/"
+      "bigeye_level7_selectivity_at_age.csv";
   std::string recruitment_deviations =
-      "examples/NMFS/pifsc_bigeye_tuna/level7_dual_age_selectivity/outputs/bigeye_level7_recruitment_deviations.csv";
-  std::string objective_components = "examples/NMFS/pifsc_bigeye_tuna/level7_dual_age_selectivity/outputs/"
-                                     "bigeye_level7_objective_components.csv";
+      "examples/NMFS/pifsc_bigeye_tuna/level7_dual_age_selectivity/outputs/"
+      "bigeye_level7_recruitment_deviations.csv";
+  std::string objective_components =
+      "examples/NMFS/pifsc_bigeye_tuna/level7_dual_age_selectivity/outputs/"
+      "bigeye_level7_objective_components.csv";
   std::string laplace_structure_text =
       "examples/NMFS/pifsc_bigeye_tuna/level7_dual_age_selectivity/outputs/"
       "bigeye_level7_laplace_structure_report.txt";
@@ -52,12 +58,12 @@ inline void write_bigeye_report_suite(
   write_objective_components(paths.objective_components, observations, fit);
   write_bigeye_reference_points_csv(paths.reference_points, observations, fit);
   write_bigeye_laplace_structure_report(paths.laplace_structure_text,
-                                             paths.laplace_structure_csv,
-                                             objective, params, fit);
+                                        paths.laplace_structure_csv, objective,
+                                        params, fit);
 }
 
 } // namespace pifsc_bigeye_tuna
 
-using pifsc_bigeye_tuna::default_bigeye_report_paths;
 using pifsc_bigeye_tuna::BigeyeReportPaths;
+using pifsc_bigeye_tuna::default_bigeye_report_paths;
 using pifsc_bigeye_tuna::write_bigeye_report_suite;

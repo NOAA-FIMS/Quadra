@@ -4,8 +4,8 @@
 
 #include <cmath>
 #include <cstdlib>
-#include <iostream>
 #include <iomanip>
+#include <iostream>
 
 namespace {
 
@@ -50,32 +50,26 @@ int main() {
     }
 
     if (!nearly_equal(d.numbers_at_age[y][1], expected_n_age_2)) {
-      std::cerr << std::setprecision(17)
-                << "FAIL: numbers_at_age[" << y << "][1] got "
-                << d.numbers_at_age[y][1]
-                << " expected " << expected_n_age_2
-                << " diff " << (d.numbers_at_age[y][1] - expected_n_age_2)
-                << "\n";
+      std::cerr << std::setprecision(17) << "FAIL: numbers_at_age[" << y
+                << "][1] got " << d.numbers_at_age[y][1] << " expected "
+                << expected_n_age_2 << " diff "
+                << (d.numbers_at_age[y][1] - expected_n_age_2) << "\n";
       return EXIT_FAILURE;
     }
 
     if (!nearly_equal(d.numbers_at_age[y][9], expected_n_age_10)) {
-      std::cerr << std::setprecision(17)
-                << "FAIL: numbers_at_age[" << y << "][9] got "
-                << d.numbers_at_age[y][9]
-                << " expected " << expected_n_age_10
-                << " diff " << (d.numbers_at_age[y][9] - expected_n_age_10)
-                << "\n";
+      std::cerr << std::setprecision(17) << "FAIL: numbers_at_age[" << y
+                << "][9] got " << d.numbers_at_age[y][9] << " expected "
+                << expected_n_age_10 << " diff "
+                << (d.numbers_at_age[y][9] - expected_n_age_10) << "\n";
       return EXIT_FAILURE;
     }
 
     if (!nearly_equal(d.spawning_biomass_by_year[y], expected_ssb)) {
-      std::cerr << std::setprecision(17)
-                << "FAIL: spawning_biomass_by_year[" << y << "] got "
-                << d.spawning_biomass_by_year[y]
-                << " expected " << expected_ssb
-                << " diff " << (d.spawning_biomass_by_year[y] - expected_ssb)
-                << "\n";
+      std::cerr << std::setprecision(17) << "FAIL: spawning_biomass_by_year["
+                << y << "] got " << d.spawning_biomass_by_year[y]
+                << " expected " << expected_ssb << " diff "
+                << (d.spawning_biomass_by_year[y] - expected_ssb) << "\n";
       return EXIT_FAILURE;
     }
   }

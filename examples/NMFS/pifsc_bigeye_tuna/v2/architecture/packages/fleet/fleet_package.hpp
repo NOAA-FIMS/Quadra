@@ -1,6 +1,6 @@
 #pragma once
 
-#include "fleet_context.hpp"
+#include "../../../common/model_data.hpp"
 #include "../../parameters/fleet_parameters.hpp"
 #include "../../state/fleet_state.hpp"
 #include "../../state/life_history_state.hpp"
@@ -8,7 +8,7 @@
 #include "../../steps/fleet/baranov_catch.hpp"
 #include "../../steps/fleet/fishing_mortality.hpp"
 #include "../../steps/fleet/logistic_selectivity.hpp"
-#include "../../../common/model_data.hpp"
+#include "fleet_context.hpp"
 
 namespace bigeye_v2 {
 

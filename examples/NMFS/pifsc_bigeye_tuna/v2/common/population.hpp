@@ -29,16 +29,13 @@ struct UnfishedPopulation {
       }
 
       const int plus = kAges - 1;
-      d.numbers_at_age[y][plus] =
-          d.numbers_at_age[y][plus - 1] *
-          std::exp(-d.m_at_age[plus - 1]) /
-          (T(1.0) - std::exp(-d.m_at_age[plus]));
+      d.numbers_at_age[y][plus] = d.numbers_at_age[y][plus - 1] *
+                                  std::exp(-d.m_at_age[plus - 1]) /
+                                  (T(1.0) - std::exp(-d.m_at_age[plus]));
 
       for (int a = 0; a < kAges; ++a) {
         d.spawning_biomass_by_year[y] +=
-            d.numbers_at_age[y][a] *
-            d.weight_at_age[a] *
-            d.maturity_at_age[a];
+            d.numbers_at_age[y][a] * d.weight_at_age[a] * d.maturity_at_age[a];
       }
     }
   }

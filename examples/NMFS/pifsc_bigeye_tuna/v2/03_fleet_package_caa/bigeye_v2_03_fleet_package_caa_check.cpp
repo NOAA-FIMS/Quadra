@@ -37,9 +37,8 @@ int main() {
   BigeyeLifeHistory{}(data, lp, life);
 
   PopulationState<double> pop;
-  pop.numbers_at_age.assign(
-      static_cast<std::size_t>(data.n_years),
-      std::array<double, kAges>{});
+  pop.numbers_at_age.assign(static_cast<std::size_t>(data.n_years),
+                            std::array<double, kAges>{});
 
   for (int y = 0; y < data.n_years; ++y) {
     for (int a = 0; a < kAges; ++a) {
@@ -66,43 +65,37 @@ int main() {
   constexpr double expected_total_catch_y0 = 11918.418702057177;
 
   if (!nearly_equal(fleet.selectivity_at_age[4], expected_sel_age5)) {
-    std::cerr << std::setprecision(17)
-              << "FAIL: sel age5 got " << fleet.selectivity_at_age[4]
-              << " expected " << expected_sel_age5 << "\n";
+    std::cerr << std::setprecision(17) << "FAIL: sel age5 got "
+              << fleet.selectivity_at_age[4] << " expected "
+              << expected_sel_age5 << "\n";
     return EXIT_FAILURE;
   }
 
   if (!nearly_equal(fleet.f_at_age[4], expected_f_age5)) {
-    std::cerr << std::setprecision(17)
-              << "FAIL: F age5 got " << fleet.f_at_age[4]
-              << " expected " << expected_f_age5 << "\n";
+    std::cerr << std::setprecision(17) << "FAIL: F age5 got "
+              << fleet.f_at_age[4] << " expected " << expected_f_age5 << "\n";
     return EXIT_FAILURE;
   }
 
   if (!nearly_equal(fleet.z_at_age[4], expected_z_age5)) {
-    std::cerr << std::setprecision(17)
-              << "FAIL: Z age5 got " << fleet.z_at_age[4]
-              << " expected " << expected_z_age5 << "\n";
+    std::cerr << std::setprecision(17) << "FAIL: Z age5 got "
+              << fleet.z_at_age[4] << " expected " << expected_z_age5 << "\n";
     return EXIT_FAILURE;
   }
 
   if (!nearly_equal(fleet.catch_numbers_at_age[0][0], expected_catch_y0_age1)) {
-    std::cerr << std::setprecision(17)
-              << "FAIL: catch y0 age1 got "
-              << fleet.catch_numbers_at_age[0][0]
-              << " expected " << expected_catch_y0_age1
-              << " diff "
+    std::cerr << std::setprecision(17) << "FAIL: catch y0 age1 got "
+              << fleet.catch_numbers_at_age[0][0] << " expected "
+              << expected_catch_y0_age1 << " diff "
               << (fleet.catch_numbers_at_age[0][0] - expected_catch_y0_age1)
               << "\n";
     return EXIT_FAILURE;
   }
 
   if (!nearly_equal(fleet.catch_numbers_at_age[0][4], expected_catch_y0_age5)) {
-    std::cerr << std::setprecision(17)
-              << "FAIL: catch y0 age5 got "
-              << fleet.catch_numbers_at_age[0][4]
-              << " expected " << expected_catch_y0_age5
-              << " diff "
+    std::cerr << std::setprecision(17) << "FAIL: catch y0 age5 got "
+              << fleet.catch_numbers_at_age[0][4] << " expected "
+              << expected_catch_y0_age5 << " diff "
               << (fleet.catch_numbers_at_age[0][4] - expected_catch_y0_age5)
               << "\n";
     return EXIT_FAILURE;
@@ -110,11 +103,9 @@ int main() {
 
   if (!nearly_equal(fleet.total_catch_biomass_by_year[0],
                     expected_total_catch_y0)) {
-    std::cerr << std::setprecision(17)
-              << "FAIL: total catch y0 got "
-              << fleet.total_catch_biomass_by_year[0]
-              << " expected " << expected_total_catch_y0
-              << " diff "
+    std::cerr << std::setprecision(17) << "FAIL: total catch y0 got "
+              << fleet.total_catch_biomass_by_year[0] << " expected "
+              << expected_total_catch_y0 << " diff "
               << (fleet.total_catch_biomass_by_year[0] -
                   expected_total_catch_y0)
               << "\n";

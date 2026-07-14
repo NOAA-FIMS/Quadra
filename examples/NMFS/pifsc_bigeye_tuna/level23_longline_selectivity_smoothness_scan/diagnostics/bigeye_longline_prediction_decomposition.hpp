@@ -14,14 +14,9 @@
 
 namespace pifsc_bigeye_tuna {
 
-
-
 inline void write_level18_longline_prediction_decomposition(
-    const std::string &txt_path,
-    const std::string &csv_path,
-    const BigeyeQuadraObjective &objective,
-    const quadra::OptResult &fit)
-{
+    const std::string &txt_path, const std::string &csv_path,
+    const BigeyeQuadraObjective &objective, const quadra::OptResult &fit) {
   std::ofstream txt(txt_path);
   std::ofstream csv(csv_path);
   if (!txt || !csv) {
@@ -114,9 +109,8 @@ inline void write_level18_longline_prediction_decomposition(
   const auto &observations = objective.fleet_observations();
   const double unfished_spawning_biomass =
       level23_bh_sync::spawning_biomass_from_numbers(n, weight, maturity);
-  const double phi0 =
-      unfished_spawning_biomass / std::max(r0, level23_bh_sync::bh_min_positive());
-
+  const double phi0 = unfished_spawning_biomass /
+                      std::max(r0, level23_bh_sync::bh_min_positive());
 
   for (std::size_t t = 0; t < years.size(); ++t) {
     for (const auto &obs : observations) {
@@ -141,20 +135,17 @@ inline void write_level18_longline_prediction_decomposition(
         const double abs_resid = std::abs(resid);
 
         txt << obs.year << "," << (a + 1) << "," << n[i] << ","
-            << sel_longline[i] << "," << selected[i] << "," << pred
-            << "," << obs_a << "," << resid << "," << abs_resid << ","
-            << pred << "\n";
+            << sel_longline[i] << "," << selected[i] << "," << pred << ","
+            << obs_a << "," << resid << "," << abs_resid << "," << pred << "\n";
 
-        csv << "longline_decomposition," << obs.year << "," << (a + 1)
-            << "," << n[i] << "," << sel_longline[i] << ","
-            << selected[i] << "," << pred << "," << obs_a << ","
-            << resid << "," << abs_resid << "," << pred
-            << "," << obs.fleet << "," << obs.index << "," << obs.catch_mt
-            << "\n";
+        csv << "longline_decomposition," << obs.year << "," << (a + 1) << ","
+            << n[i] << "," << sel_longline[i] << "," << selected[i] << ","
+            << pred << "," << obs_a << "," << resid << "," << abs_resid << ","
+            << pred << "," << obs.fleet << "," << obs.index << ","
+            << obs.catch_mt << "\n";
 
-        residual_rows.push_back(
-            {obs.year, a + 1, obs_a, pred, resid, abs_resid, n[i],
-             sel_longline[i], selected[i]});
+        residual_rows.push_back({obs.year, a + 1, obs_a, pred, resid, abs_resid,
+                                 n[i], sel_longline[i], selected[i]});
       }
     }
 
@@ -165,13 +156,15 @@ inline void write_level18_longline_prediction_decomposition(
     }
 
     std::array<double, kAges> next{};
-        const auto weight = default_weight_at_age();
+    const auto weight = default_weight_at_age();
     const auto maturity = default_maturity_at_age();
-const double spawning_biomass =
+    const double spawning_biomass =
         level23_bh_sync::spawning_biomass_from_numbers(n, weight, maturity);
     const double expected_recruitment =
-        level23_bh_sync::beverton_holt_recruitment(spawning_biomass, r0, steepness, phi0);
-    next[0] = expected_recruitment * std::exp(fit.u_hat[static_cast<Eigen::Index>(t)]);
+        level23_bh_sync::beverton_holt_recruitment(spawning_biomass, r0,
+                                                   steepness, phi0);
+    next[0] = expected_recruitment *
+              std::exp(fit.u_hat[static_cast<Eigen::Index>(t)]);
     for (int a = 1; a < kAges; ++a) {
       const std::size_t prev = static_cast<std::size_t>(a - 1);
       const double z_prev = m + fbar * total_sel[prev];
@@ -193,11 +186,12 @@ const double spawning_biomass =
   txt << "year,age,observed,predicted,residual,abs_residual,n_at_age,"
          "longline_selectivity,selected_numbers\n";
 
-  for (std::size_t i = 0; i < std::min<std::size_t>(25, residual_rows.size()); ++i) {
+  for (std::size_t i = 0; i < std::min<std::size_t>(25, residual_rows.size());
+       ++i) {
     const auto &r = residual_rows[i];
-    txt << r.year << "," << r.age << "," << r.observed << ","
-        << r.predicted << "," << r.residual << "," << r.abs_residual
-        << "," << r.n_at_age << "," << r.sel << "," << r.selected << "\n";
+    txt << r.year << "," << r.age << "," << r.observed << "," << r.predicted
+        << "," << r.residual << "," << r.abs_residual << "," << r.n_at_age
+        << "," << r.sel << "," << r.selected << "\n";
   }
 
   std::array<double, kAges> mean_obs{};

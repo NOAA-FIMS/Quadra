@@ -1,7 +1,7 @@
 #pragma once
 
-#include "bigeye_level21_m_at_age_helpers.hpp"
 #include "../objective/bigeye_quadra_objective.hpp"
+#include "bigeye_level21_m_at_age_helpers.hpp"
 
 #include <algorithm>
 #include <array>
@@ -91,18 +91,22 @@ inline void write_level21_plus_group_audit(
   txt << "Level 21 Plus Group Audit\n";
   txt << "=========================\n\n";
   txt << "Purpose\n-------\n";
-  txt << "Audit whether the terminal age is accumulating biomass or distorting the\n";
-  txt << "longline tail age composition under age-based M and dome-shaped selectivity.\n\n";
+  txt << "Audit whether the terminal age is accumulating biomass or distorting "
+         "the\n";
+  txt << "longline tail age composition under age-based M and dome-shaped "
+         "selectivity.\n\n";
 
   txt << "Initialization\n--------------\n";
   txt << "r0," << r0 << "\n";
   txt << "fbar," << fbar << "\n";
   txt << "plus_before_equilibrium," << plus_before_equilibrium << "\n";
-  txt << "plus_init_denominator_1_minus_exp_minus_mplus," << plus_init_denominator << "\n";
+  txt << "plus_init_denominator_1_minus_exp_minus_mplus,"
+      << plus_init_denominator << "\n";
   txt << "plus_after_equilibrium_and_init_dev," << n[last] << "\n\n";
 
   csv << "section,year,age,n,m,ll_sel,ps_sel,total_sel,z,annual_survival,"
-      << "plus_inflow,plus_survival,plus_next,pred_ll_comp,obs_ll_comp,residual\n";
+      << "plus_inflow,plus_survival,plus_next,pred_ll_comp,obs_ll_comp,"
+         "residual\n";
 
   txt << "Initial state by age\n--------------------\n";
   txt << "age,n,m,ll_sel,ps_sel,total_sel,z,annual_survival\n";
@@ -111,16 +115,17 @@ inline void write_level21_plus_group_audit(
     const double total_sel = sel_ll[i] + sel_ps[i];
     const double z = m_at_age[i] + fbar * total_sel;
     const double surv = std::exp(-z);
-    txt << (a + 1) << "," << n[i] << "," << m_at_age[i] << ","
-        << sel_ll[i] << "," << sel_ps[i] << "," << total_sel << ","
-        << z << "," << surv << "\n";
-    csv << "initial,NA," << (a + 1) << "," << n[i] << "," << m_at_age[i]
-        << "," << sel_ll[i] << "," << sel_ps[i] << "," << total_sel << ","
-        << z << "," << surv << ",,,,,,\n";
+    txt << (a + 1) << "," << n[i] << "," << m_at_age[i] << "," << sel_ll[i]
+        << "," << sel_ps[i] << "," << total_sel << "," << z << "," << surv
+        << "\n";
+    csv << "initial,NA," << (a + 1) << "," << n[i] << "," << m_at_age[i] << ","
+        << sel_ll[i] << "," << sel_ps[i] << "," << total_sel << "," << z << ","
+        << surv << ",,,,,,\n";
   }
 
   txt << "\nAnnual plus-group dynamics\n--------------------------\n";
-  txt << "year,n8,n9,n10,z8,z9,z10,s8,s9,s10,inflow_age9_to_plus,plus_survival,plus_next,plus_share_of_ages8_10\n";
+  txt << "year,n8,n9,n10,z8,z9,z10,s8,s9,s10,inflow_age9_to_plus,plus_survival,"
+         "plus_next,plus_share_of_ages8_10\n";
 
   std::map<int, const FleetObservation *> longline_by_year;
   for (const auto &o : obs) {
@@ -146,7 +151,8 @@ inline void write_level21_plus_group_audit(
 
     for (int a = 7; a < kAges; ++a) {
       const auto i = static_cast<std::size_t>(a);
-      const double pred = selected_sum > 0.0 ? selected_ll[i] / selected_sum : 0.0;
+      const double pred =
+          selected_sum > 0.0 ? selected_ll[i] / selected_sum : 0.0;
       const double observed = ll_obs ? ll_obs->age_comp[i] : 0.0;
       csv << "tail_comp," << year << "," << (a + 1) << "," << n[i] << ","
           << m_at_age[i] << "," << sel_ll[i] << "," << sel_ps[i] << ",,,,"
@@ -169,16 +175,15 @@ inline void write_level21_plus_group_audit(
     const double tail_sum = n[7] + n[8] + n[9];
     const double plus_share = tail_sum > 0.0 ? n[9] / tail_sum : 0.0;
 
-    txt << year << "," << n[7] << "," << n[8] << "," << n[9] << ","
-        << z[7] << "," << z[8] << "," << z[9] << ","
-        << surv[7] << "," << surv[8] << "," << surv[9] << ","
-        << inflow_age9_to_plus << "," << plus_survival << ","
+    txt << year << "," << n[7] << "," << n[8] << "," << n[9] << "," << z[7]
+        << "," << z[8] << "," << z[9] << "," << surv[7] << "," << surv[8] << ","
+        << surv[9] << "," << inflow_age9_to_plus << "," << plus_survival << ","
         << plus_next << "," << plus_share << "\n";
 
     csv << "plus_dynamics," << year << ",10," << n[9] << "," << m_at_age[9]
-        << "," << sel_ll[9] << "," << sel_ps[9] << ",,"
-        << z[9] << "," << surv[9] << "," << inflow_age9_to_plus << ","
-        << plus_survival << "," << plus_next << ",,,\n";
+        << "," << sel_ll[9] << "," << sel_ps[9] << ",," << z[9] << ","
+        << surv[9] << "," << inflow_age9_to_plus << "," << plus_survival << ","
+        << plus_next << ",,,\n";
 
     std::array<double, kAges> next{};
     const std::size_t rec_idx =
@@ -191,7 +196,8 @@ inline void write_level21_plus_group_audit(
     const double spawning_biomass =
         level21_bh_sync::spawning_biomass_from_numbers(n, weight, maturity);
     const double expected_recruitment =
-        level21_bh_sync::beverton_holt_recruitment(spawning_biomass, r0, 0.75, phi0);
+        level21_bh_sync::beverton_holt_recruitment(spawning_biomass, r0, 0.75,
+                                                   phi0);
     next[0] = expected_recruitment * std::exp(rec_dev);
     for (int a = 1; a < kAges; ++a) {
       const auto prev = static_cast<std::size_t>(a - 1);
@@ -202,10 +208,14 @@ inline void write_level21_plus_group_audit(
   }
 
   txt << "\nInterpretation\n--------------\n";
-  txt << "If n10 or plus_share grows large while longline age-10 predicted composition\n";
-  txt << "is inconsistent with observations, the terminal age is likely distorting the\n";
-  txt << "tail. If n10 remains modest but ages 8-9 dominate selected numbers, the issue\n";
-  txt << "is more likely longline dome-shaped selectivity or catch-at-age vs selected-\n";
+  txt << "If n10 or plus_share grows large while longline age-10 predicted "
+         "composition\n";
+  txt << "is inconsistent with observations, the terminal age is likely "
+         "distorting the\n";
+  txt << "tail. If n10 remains modest but ages 8-9 dominate selected numbers, "
+         "the issue\n";
+  txt << "is more likely longline dome-shaped selectivity or catch-at-age vs "
+         "selected-\n";
   txt << "numbers age-composition basis.\n";
 }
 

@@ -6,8 +6,7 @@ namespace bigeye_v2 {
 
 // Accumulates survivors into the terminal plus group.
 struct PlusGroup {
-  template <typename T>
-  void operator()(PopulationState<T> &population) const {
+  template <typename T> void operator()(PopulationState<T> &population) const {
     const auto ny = population.survivors_at_age.size();
 
     for (std::size_t y = 0; y + 1 < ny; ++y) {

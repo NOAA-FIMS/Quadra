@@ -16,51 +16,54 @@ namespace pifsc_bigeye_tuna {
 
 struct BigeyeFitReportPaths {
   std::string summary =
-      "examples/NMFS/pifsc_bigeye_tuna/level9_estimated_natural_mortality/outputs/bigeye_level9_fit_summary.csv";
+      "examples/NMFS/pifsc_bigeye_tuna/level9_estimated_natural_mortality/"
+      "outputs/bigeye_level9_fit_summary.csv";
   std::string trajectory =
-      "examples/NMFS/pifsc_bigeye_tuna/level9_estimated_natural_mortality/outputs/bigeye_level9_fitted_trajectory.csv";
+      "examples/NMFS/pifsc_bigeye_tuna/level9_estimated_natural_mortality/"
+      "outputs/bigeye_level9_fitted_trajectory.csv";
   std::string residual_diagnostics =
-      "examples/NMFS/pifsc_bigeye_tuna/level9_estimated_natural_mortality/outputs/bigeye_level9_residual_diagnostics.csv";
+      "examples/NMFS/pifsc_bigeye_tuna/level9_estimated_natural_mortality/"
+      "outputs/bigeye_level9_residual_diagnostics.csv";
   std::string selectivity =
-      "examples/NMFS/pifsc_bigeye_tuna/level9_estimated_natural_mortality/outputs/bigeye_level9_selectivity_at_age.csv";
+      "examples/NMFS/pifsc_bigeye_tuna/level9_estimated_natural_mortality/"
+      "outputs/bigeye_level9_selectivity_at_age.csv";
   std::string recruitment_deviations =
-      "examples/NMFS/pifsc_bigeye_tuna/level9_estimated_natural_mortality/outputs/bigeye_level9_recruitment_deviations.csv";
+      "examples/NMFS/pifsc_bigeye_tuna/level9_estimated_natural_mortality/"
+      "outputs/bigeye_level9_recruitment_deviations.csv";
   std::string objective_components =
-      "examples/NMFS/pifsc_bigeye_tuna/level9_estimated_natural_mortality/outputs/bigeye_level9_objective_components.csv";
+      "examples/NMFS/pifsc_bigeye_tuna/level9_estimated_natural_mortality/"
+      "outputs/bigeye_level9_objective_components.csv";
   std::string laplace_structure_text =
-      "examples/NMFS/pifsc_bigeye_tuna/level9_estimated_natural_mortality/outputs/bigeye_level9_laplace_structure_report.txt";
+      "examples/NMFS/pifsc_bigeye_tuna/level9_estimated_natural_mortality/"
+      "outputs/bigeye_level9_laplace_structure_report.txt";
   std::string laplace_structure_csv =
-      "examples/NMFS/pifsc_bigeye_tuna/level9_estimated_natural_mortality/outputs/bigeye_level9_laplace_structure_report.csv";
+      "examples/NMFS/pifsc_bigeye_tuna/level9_estimated_natural_mortality/"
+      "outputs/bigeye_level9_laplace_structure_report.csv";
   std::string reference_points =
-      "examples/NMFS/pifsc_bigeye_tuna/level9_estimated_natural_mortality/outputs/bigeye_level9_reference_points.csv";
+      "examples/NMFS/pifsc_bigeye_tuna/level9_estimated_natural_mortality/"
+      "outputs/bigeye_level9_reference_points.csv";
 };
 
-inline BigeyeFitReportPaths default_bigeye_report_paths()
-{
+inline BigeyeFitReportPaths default_bigeye_report_paths() {
   return BigeyeFitReportPaths{};
 }
 
-template <class T>
-inline T sqr_report(const T &x)
-{
-  return x * x;
-}
+template <class T> inline T sqr_report(const T &x) { return x * x; }
 
 inline void ensure_level9_fit_sizes(const quadra::OptResult &fit,
-                                    std::size_t n_years)
-{
+                                    std::size_t n_years) {
   if (fit.par.size() < 7)
-    throw std::runtime_error("Level 9 report expected at least 7 fixed effects");
+    throw std::runtime_error(
+        "Level 9 report expected at least 7 fixed effects");
   if (fit.u_hat.size() < n_years)
-    throw std::runtime_error("Level 9 report expected one recruitment deviation per year");
+    throw std::runtime_error(
+        "Level 9 report expected one recruitment deviation per year");
 }
 
-inline std::array<double, kAges> level9_longline_selectivity(
-    double logit_sel_a50_longline,
-    double log_sel_slope_longline)
-{
-  const double a50 =
-      1.0 + 9.0 / (1.0 + std::exp(-logit_sel_a50_longline));
+inline std::array<double, kAges>
+level9_longline_selectivity(double logit_sel_a50_longline,
+                            double log_sel_slope_longline) {
+  const double a50 = 1.0 + 9.0 / (1.0 + std::exp(-logit_sel_a50_longline));
   const double slope = std::exp(log_sel_slope_longline);
 
   std::array<double, kAges> out{};
@@ -70,14 +73,12 @@ inline std::array<double, kAges> level9_longline_selectivity(
   return out;
 }
 
-inline std::array<double, kAges> level9_purse_seine_selectivity()
-{
+inline std::array<double, kAges> level9_purse_seine_selectivity() {
   return {1.00, 1.00, 0.85, 0.55, 0.25, 0.10, 0.04, 0.02, 0.01, 0.005};
 }
 
 inline void write_bigeye_fit_summary(const std::string &path,
-                                     const quadra::OptResult &fit)
-{
+                                     const quadra::OptResult &fit) {
   std::ofstream out(path);
   if (!out)
     throw std::runtime_error("Could not open Level 9 fit summary CSV: " + path);
@@ -94,8 +95,7 @@ inline void write_bigeye_fit_summary(const std::string &path,
   out << "laplace,yes\n";
   out << "random_effects," << fit.u_hat.size() << "\n";
 
-  if (fit.par.size() >= 7)
-  {
+  if (fit.par.size() >= 7) {
     out << "log_r0," << fit.par[0] << "\n";
     out << "r0," << std::exp(fit.par[0]) << "\n";
     out << "log_m," << fit.par[1] << "\n";
@@ -107,24 +107,24 @@ inline void write_bigeye_fit_summary(const std::string &path,
     out << "log_q_purse_seine," << fit.par[4] << "\n";
     out << "q_purse_seine," << std::exp(fit.par[4]) << "\n";
     out << "logit_sel_a50_longline," << fit.par[5] << "\n";
-    out << "sel_a50_longline,"
-        << 1.0 + 9.0 / (1.0 + std::exp(-fit.par[5])) << "\n";
+    out << "sel_a50_longline," << 1.0 + 9.0 / (1.0 + std::exp(-fit.par[5]))
+        << "\n";
     out << "log_sel_slope_longline," << fit.par[6] << "\n";
     out << "sel_slope_longline," << std::exp(fit.par[6]) << "\n";
   }
 }
 
-inline void write_bigeye_recruitment_deviations(
-    const std::string &path,
-    const BigeyeQuadraObjective &objective,
-    const quadra::OptResult &fit)
-{
+inline void
+write_bigeye_recruitment_deviations(const std::string &path,
+                                    const BigeyeQuadraObjective &objective,
+                                    const quadra::OptResult &fit) {
   const auto years = objective.unique_years();
   ensure_level9_fit_sizes(fit, years.size());
 
   std::ofstream out(path);
   if (!out)
-    throw std::runtime_error("Could not open Level 9 recruitment deviations CSV: " + path);
+    throw std::runtime_error(
+        "Could not open Level 9 recruitment deviations CSV: " + path);
 
   out << std::setprecision(12);
   out << "year,rec_dev,recruitment_multiplier\n";
@@ -134,10 +134,10 @@ inline void write_bigeye_recruitment_deviations(
 }
 
 inline void write_bigeye_selectivity_at_age(const std::string &path,
-                                            const quadra::OptResult &fit)
-{
+                                            const quadra::OptResult &fit) {
   if (fit.par.size() < 7)
-    throw std::runtime_error("Level 9 selectivity report expected 7 fixed effects");
+    throw std::runtime_error(
+        "Level 9 selectivity report expected 7 fixed effects");
 
   const auto ll = level9_longline_selectivity(fit.par[5], fit.par[6]);
   const auto ps = level9_purse_seine_selectivity();
@@ -153,11 +153,10 @@ inline void write_bigeye_selectivity_at_age(const std::string &path,
         << ps[static_cast<std::size_t>(a)] << "\n";
 }
 
-inline void write_bigeye_objective_components(
-    const std::string &path,
-    const BigeyeQuadraObjective &objective,
-    const quadra::OptResult &fit)
-{
+inline void
+write_bigeye_objective_components(const std::string &path,
+                                  const BigeyeQuadraObjective &objective,
+                                  const quadra::OptResult &fit) {
   const auto years = objective.unique_years();
   ensure_level9_fit_sizes(fit, years.size());
 
@@ -182,9 +181,8 @@ inline void write_bigeye_objective_components(
   const double min_positive = 1.0e-12;
 
   const auto weight = default_weight_at_age();
-  const auto sel_longline =
-      level9_longline_selectivity(logit_sel_a50_longline,
-                                  log_sel_slope_longline);
+  const auto sel_longline = level9_longline_selectivity(logit_sel_a50_longline,
+                                                        log_sel_slope_longline);
   const auto sel_purse_seine = level9_purse_seine_selectivity();
 
   auto normal_prior = [](double x, double mean, double sd) {
@@ -217,15 +215,13 @@ inline void write_bigeye_objective_components(
   n[static_cast<std::size_t>(kAges - 1)] =
       n[static_cast<std::size_t>(kAges - 1)] / (1.0 - std::exp(-m));
 
-  for (std::size_t t = 0; t < years.size(); ++t)
-  {
+  for (std::size_t t = 0; t < years.size(); ++t) {
     const double rec_dev = fit.u_hat[t];
     rec_prior_nll += 0.5 * std::pow(rec_dev / sigma_rec_dev, 2.0);
 
     double total_catch_hat = 0.0;
 
-    for (int a = 0; a < kAges; ++a)
-    {
+    for (int a = 0; a < kAges; ++a) {
       const auto i = static_cast<std::size_t>(a);
       const double avg_sel = 0.5 * (sel_longline[i] + sel_purse_seine[i]);
       const double f_a = fbar * avg_sel;
@@ -234,8 +230,7 @@ inline void write_bigeye_objective_components(
       total_catch_hat += n[i] * weight[i] * harvest_rate;
     }
 
-    for (const auto &obs : objective.fleet_observations())
-    {
+    for (const auto &obs : objective.fleet_observations()) {
       if (obs.year != years[t])
         continue;
 
@@ -247,8 +242,7 @@ inline void write_bigeye_objective_components(
       double selected_numbers_sum = 0.0;
       std::array<double, kAges> pred_age_comp{};
 
-      for (int a = 0; a < kAges; ++a)
-      {
+      for (int a = 0; a < kAges; ++a) {
         const auto i = static_cast<std::size_t>(a);
         vulnerable_biomass += n[i] * weight[i] * sel[i];
         pred_age_comp[i] = n[i] * sel[i];
@@ -256,35 +250,29 @@ inline void write_bigeye_objective_components(
       }
 
       const double index_hat = fleet_q * vulnerable_biomass;
-      if (obs.index > 0.0)
-      {
-        const double z =
-            (std::log(obs.index) -
-             std::log(std::max(index_hat, min_positive))) /
-            sigma_log_index;
+      if (obs.index > 0.0) {
+        const double z = (std::log(obs.index) -
+                          std::log(std::max(index_hat, min_positive))) /
+                         sigma_log_index;
         index_nll += 0.5 * z * z;
       }
 
       const double catch_hat =
           total_catch_hat * objective.fleet_catch_share(obs.fleet);
-      if (obs.catch_mt > 0.0)
-      {
-        const double z =
-            (std::log(obs.catch_mt) -
-             std::log(std::max(catch_hat, min_positive))) /
-            sigma_log_catch;
+      if (obs.catch_mt > 0.0) {
+        const double z = (std::log(obs.catch_mt) -
+                          std::log(std::max(catch_hat, min_positive))) /
+                         sigma_log_catch;
         catch_nll += 0.5 * z * z;
       }
 
-      for (int a = 0; a < kAges; ++a)
-      {
+      for (int a = 0; a < kAges; ++a) {
         const auto i = static_cast<std::size_t>(a);
         pred_age_comp[i] =
             pred_age_comp[i] / std::max(selected_numbers_sum, min_positive);
       }
 
-      for (int a = 0; a < kAges; ++a)
-      {
+      for (int a = 0; a < kAges; ++a) {
         const auto i = static_cast<std::size_t>(a);
         const double obs_a = std::max(obs.age_comp[i], 0.0);
         if (obs_a > 0.0)
@@ -297,11 +285,9 @@ inline void write_bigeye_objective_components(
     std::array<double, kAges> next{};
     next[0] = r0 * std::exp(rec_dev);
 
-    for (int a = 1; a < kAges; ++a)
-    {
+    for (int a = 1; a < kAges; ++a) {
       const auto prev = static_cast<std::size_t>(a - 1);
-      const double avg_sel =
-          0.5 * (sel_longline[prev] + sel_purse_seine[prev]);
+      const double avg_sel = 0.5 * (sel_longline[prev] + sel_purse_seine[prev]);
       const double f_prev = fbar * avg_sel;
       const double z_prev = m + f_prev;
       next[static_cast<std::size_t>(a)] = n[prev] * std::exp(-z_prev);
@@ -317,14 +303,13 @@ inline void write_bigeye_objective_components(
     n = next;
   }
 
-  const double joint_total =
-      fixed_prior_nll + rec_prior_nll + index_nll + catch_nll +
-      age_comp_nll_value;
+  const double joint_total = fixed_prior_nll + rec_prior_nll + index_nll +
+                             catch_nll + age_comp_nll_value;
 
   std::ofstream out(path);
   if (!out)
-    throw std::runtime_error("Could not open Level 9 objective components CSV: " +
-                             path);
+    throw std::runtime_error(
+        "Could not open Level 9 objective components CSV: " + path);
 
   out << std::setprecision(12);
   out << "component,value\n";
@@ -336,11 +321,10 @@ inline void write_bigeye_objective_components(
   out << "joint_total," << joint_total << "\n";
 }
 
-inline void write_bigeye_fitted_trajectory(
-    const std::string &path,
-    const BigeyeQuadraObjective &objective,
-    const quadra::OptResult &fit)
-{
+inline void
+write_bigeye_fitted_trajectory(const std::string &path,
+                               const BigeyeQuadraObjective &objective,
+                               const quadra::OptResult &fit) {
   const auto years = objective.unique_years();
   ensure_level9_fit_sizes(fit, years.size());
 
@@ -367,8 +351,7 @@ inline void write_bigeye_fitted_trajectory(
   out << std::setprecision(12);
   out << "year,recruitment,total_biomass,ssb_proxy,fbar\n";
 
-  for (std::size_t t = 0; t < years.size(); ++t)
-  {
+  for (std::size_t t = 0; t < years.size(); ++t) {
     const double total_biomass = biomass_from_numbers(n, weight);
     const double ssb_proxy = ssb_from_numbers(n, weight, maturity);
     out << years[t] << "," << r0 * std::exp(fit.u_hat[t]) << ","
@@ -376,11 +359,9 @@ inline void write_bigeye_fitted_trajectory(
 
     std::array<double, kAges> next{};
     next[0] = r0 * std::exp(fit.u_hat[t]);
-    for (int a = 1; a < kAges; ++a)
-    {
+    for (int a = 1; a < kAges; ++a) {
       const auto prev = static_cast<std::size_t>(a - 1);
-      const double avg_sel =
-          0.5 * (sel_longline[prev] + sel_purse_seine[prev]);
+      const double avg_sel = 0.5 * (sel_longline[prev] + sel_purse_seine[prev]);
       const double z = m + fbar * avg_sel;
       next[static_cast<std::size_t>(a)] = n[prev] * std::exp(-z);
     }
@@ -393,28 +374,25 @@ inline void write_bigeye_fitted_trajectory(
   }
 }
 
-inline void write_bigeye_residual_diagnostics(
-    const std::string &path,
-    const BigeyeQuadraObjective &objective,
-    const quadra::OptResult &fit)
-{
+inline void
+write_bigeye_residual_diagnostics(const std::string &path,
+                                  const BigeyeQuadraObjective &objective,
+                                  const quadra::OptResult &fit) {
   // Minimal placeholder until residual writer is specialized for Level 9.
   std::ofstream out(path);
   if (!out)
-    throw std::runtime_error("Could not open Level 9 residual diagnostics CSV: " +
-                             path);
+    throw std::runtime_error(
+        "Could not open Level 9 residual diagnostics CSV: " + path);
   out << "metric,value,note\n";
   out << "status,not_specialized,Level 9 residual writer not yet specialized\n";
   out << "n_years," << objective.unique_years().size() << ",observed years\n";
 }
 
-inline void write_bigeye_report_suite(
-    const BigeyeFitReportPaths &paths,
-    const std::vector<Observation> &,
-    const BigeyeQuadraObjective &objective,
-    const quadra::ParameterVector &,
-    const quadra::OptResult &fit)
-{
+inline void write_bigeye_report_suite(const BigeyeFitReportPaths &paths,
+                                      const std::vector<Observation> &,
+                                      const BigeyeQuadraObjective &objective,
+                                      const quadra::ParameterVector &,
+                                      const quadra::OptResult &fit) {
   write_bigeye_fit_summary(paths.summary, fit);
   write_bigeye_fitted_trajectory(paths.trajectory, objective, fit);
   write_bigeye_residual_diagnostics(paths.residual_diagnostics, objective, fit);

@@ -6,8 +6,7 @@
 
 namespace bigeye_v2 {
 
-template <typename T>
-struct ObservationContext {
+template <typename T> struct ObservationContext {
   const FleetParameters<T> *parameters = nullptr;
   const PopulationState<T> *population = nullptr;
   FleetState<T> *fleet = nullptr;

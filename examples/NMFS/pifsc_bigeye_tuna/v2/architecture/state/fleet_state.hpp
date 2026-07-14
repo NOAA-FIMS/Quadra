@@ -7,8 +7,7 @@
 
 namespace bigeye_v2 {
 
-template <typename T>
-struct FleetState {
+template <typename T> struct FleetState {
   std::array<T, kAges> selectivity_at_age{};
   std::array<T, kAges> f_at_age{};
   std::array<T, kAges> z_at_age{};

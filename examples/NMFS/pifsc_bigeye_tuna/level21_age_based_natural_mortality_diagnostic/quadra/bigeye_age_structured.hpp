@@ -50,15 +50,13 @@ double logistic_selectivity(double age, double a50, double slope) {
 std::array<double, kAges> default_weight_at_age() {
   // Provisional bigeye-tuna-like weight-at-age schedule in kg.
   // Diagnostic placeholder only; replace with stock-specific assessment inputs.
-  return {3.0, 10.0, 22.0, 38.0, 55.0,
-          72.0, 88.0, 102.0, 115.0, 128.0};
+  return {3.0, 10.0, 22.0, 38.0, 55.0, 72.0, 88.0, 102.0, 115.0, 128.0};
 }
 
 std::array<double, kAges> default_maturity_at_age() {
   // Provisional bigeye-tuna-like maturity-at-age schedule.
   // Diagnostic placeholder only; replace with stock-specific assessment inputs.
-  return {0.00, 0.00, 0.05, 0.20, 0.45,
-          0.70, 0.85, 0.95, 1.00, 1.00};
+  return {0.00, 0.00, 0.05, 0.20, 0.45, 0.70, 0.85, 0.95, 1.00, 1.00};
 }
 
 #ifndef LEVEL21_BH_SYNC_HELPERS_DEFINED
@@ -67,21 +65,18 @@ namespace level21_bh_sync {
 
 inline double bh_min_positive() { return 1.0e-12; }
 
-inline double beverton_holt_recruitment(double spawning_biomass,
-                                        double r0,
-                                        double steepness,
-                                        double phi0) {
-  const double denom =
-      0.2 * r0 * phi0 * (1.0 - steepness) +
-      spawning_biomass * (steepness - 0.2);
+inline double beverton_holt_recruitment(double spawning_biomass, double r0,
+                                        double steepness, double phi0) {
+  const double denom = 0.2 * r0 * phi0 * (1.0 - steepness) +
+                       spawning_biomass * (steepness - 0.2);
   return (0.8 * r0 * steepness * spawning_biomass) /
          std::max(denom, bh_min_positive());
 }
 
-inline double spawning_biomass_from_numbers(
-    const std::array<double, kAges> &n,
-    const std::array<double, kAges> &weight,
-    const std::array<double, kAges> &maturity) {
+inline double
+spawning_biomass_from_numbers(const std::array<double, kAges> &n,
+                              const std::array<double, kAges> &weight,
+                              const std::array<double, kAges> &maturity) {
   double out = 0.0;
   for (int a = 0; a < kAges; ++a) {
     const auto i = static_cast<std::size_t>(a);
@@ -92,7 +87,6 @@ inline double spawning_biomass_from_numbers(
 
 } // namespace level21_bh_sync
 #endif
-
 
 std::vector<std::string> split_csv_line(const std::string &line) {
   std::vector<std::string> out;
@@ -202,7 +196,8 @@ std::vector<AgeStructuredRow> run_deterministic_age_structured_model(
 
   std::array<double, kAges> n = unfished_equilibrium_numbers(r0, m);
   const double unfished_ssb = ssb_from_numbers(n, weight, maturity);
-  const double phi0 = unfished_ssb / std::max(r0, level21_bh_sync::bh_min_positive());
+  const double phi0 =
+      unfished_ssb / std::max(r0, level21_bh_sync::bh_min_positive());
 
   std::vector<AgeStructuredRow> rows;
   rows.reserve(observations.size());
@@ -238,7 +233,8 @@ std::vector<AgeStructuredRow> run_deterministic_age_structured_model(
     const double spawning_biomass =
         level21_bh_sync::spawning_biomass_from_numbers(n, weight, maturity);
     const double expected_recruitment =
-        level21_bh_sync::beverton_holt_recruitment(spawning_biomass, r0, 0.75, phi0);
+        level21_bh_sync::beverton_holt_recruitment(spawning_biomass, r0, 0.75,
+                                                   phi0);
     next[0] = expected_recruitment;
 
     for (int a = 1; a < kAges; ++a) {

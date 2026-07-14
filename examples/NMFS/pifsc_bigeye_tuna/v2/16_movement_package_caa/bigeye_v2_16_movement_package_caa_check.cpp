@@ -15,9 +15,8 @@ int main() {
 
   std::vector<PopulationState<double>> populations(2);
   for (auto &pop : populations) {
-    pop.numbers_at_age.assign(
-        static_cast<std::size_t>(data.n_years),
-        std::array<double, kAges>{});
+    pop.numbers_at_age.assign(static_cast<std::size_t>(data.n_years),
+                              std::array<double, kAges>{});
   }
 
   populations[0].numbers_at_age[0][0] = 1000.0;

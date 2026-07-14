@@ -1,9 +1,9 @@
 #pragma once
 
 #include "../../../common/bigeye_constants.hpp"
+#include "../../../common/model_data.hpp"
 #include "../../parameters/life_history_parameters.hpp"
 #include "../../state/life_history_state.hpp"
-#include "../../../common/model_data.hpp"
 
 #include <cmath>
 
@@ -13,8 +13,7 @@ namespace bigeye_v2 {
 // Computes natural mortality, weight, and maturity at age.
 struct BigeyeLifeHistory {
   template <typename T>
-  void operator()(const BigeyeModelData<T> &,
-                  const LifeHistoryParameters<T> &p,
+  void operator()(const BigeyeModelData<T> &, const LifeHistoryParameters<T> &p,
                   LifeHistoryState<T> &life) const {
     const T adult_m = T(0.45);
     const T m_young = adult_m * std::exp(p.log_m_young_offset);

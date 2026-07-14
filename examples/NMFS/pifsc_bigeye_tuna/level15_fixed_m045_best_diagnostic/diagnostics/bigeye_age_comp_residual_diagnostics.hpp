@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../objective/bigeye_quadra_objective.hpp"
 #include "../../../../../core/optimizer.hpp"
+#include "../objective/bigeye_quadra_objective.hpp"
 
 #include <array>
 #include <cmath>
@@ -15,23 +15,20 @@
 
 namespace pifsc_bigeye_tuna {
 
-inline std::array<double, kAges> level15_fixed_purse_seine_age_selectivity()
-{
+inline std::array<double, kAges> level15_fixed_purse_seine_age_selectivity() {
   return {1.00, 1.00, 0.85, 0.55, 0.25, 0.10, 0.04, 0.02, 0.01, 0.005};
 }
 
 inline void write_level15_age_comp_residual_diagnostics(
-    const std::string &text_path,
-    const std::string &csv_path,
-    const BigeyeQuadraObjective &objective,
-    const quadra::OptResult &fit)
-{
+    const std::string &text_path, const std::string &csv_path,
+    const BigeyeQuadraObjective &objective, const quadra::OptResult &fit) {
   constexpr int kBaseFixed = 5;
   constexpr int kInitialDevs = kAges;
   constexpr int kRecruitmentOffset = kBaseFixed + kInitialDevs;
 
   if (fit.par.size() < static_cast<std::size_t>(kRecruitmentOffset))
-    throw std::runtime_error("Level 15 age-comp diagnostics expected Level 13/15 parameter layout");
+    throw std::runtime_error(
+        "Level 15 age-comp diagnostics expected Level 13/15 parameter layout");
 
   const double r0 = std::exp(fit.par[0]);
   const double m = 0.45;
@@ -49,9 +46,8 @@ inline void write_level15_age_comp_residual_diagnostics(
 
   std::array<double, kAges> ll_sel{};
   for (int a = 0; a < kAges; ++a)
-    ll_sel[static_cast<std::size_t>(a)] =
-        logistic_selectivity(static_cast<double>(a + 1), sel_a50_longline,
-                             sel_slope_longline);
+    ll_sel[static_cast<std::size_t>(a)] = logistic_selectivity(
+        static_cast<double>(a + 1), sel_a50_longline, sel_slope_longline);
 
   std::array<double, kAges> n{};
   n[0] = r0;
@@ -81,10 +77,14 @@ inline void write_level15_age_comp_residual_diagnostics(
   txt << "=============================================\n\n";
   txt << "Interpretation\n";
   txt << "--------------\n";
-  txt << "Residuals are observed minus predicted age-composition proportions after\n";
-  txt << "propagating the fitted initial numbers and recruitment deviations. Large\n";
-  txt << "fleet/year/age patterns indicate where the age-composition likelihood is\n";
-  txt << "driving compensation through recruitment, initial numbers, or selectivity.\n\n";
+  txt << "Residuals are observed minus predicted age-composition proportions "
+         "after\n";
+  txt << "propagating the fitted initial numbers and recruitment deviations. "
+         "Large\n";
+  txt << "fleet/year/age patterns indicate where the age-composition "
+         "likelihood is\n";
+  txt << "driving compensation through recruitment, initial numbers, or "
+         "selectivity.\n\n";
 
   csv << "section,year,fleet,age,observed,predicted,residual,abs_residual\n";
 
@@ -100,10 +100,8 @@ inline void write_level15_age_comp_residual_diagnostics(
   txt << "----\n";
   txt << "year,fleet,age,observed,predicted,residual,abs_residual\n";
 
-  for (std::size_t t = 0; t < years.size(); ++t)
-  {
-    for (const auto &o : obs)
-    {
+  for (std::size_t t = 0; t < years.size(); ++t) {
+    for (const auto &o : obs) {
       if (o.year != years[t])
         continue;
 
@@ -112,8 +110,7 @@ inline void write_level15_age_comp_residual_diagnostics(
 
       std::array<double, kAges> pred{};
       double denom = 0.0;
-      for (int a = 0; a < kAges; ++a)
-      {
+      for (int a = 0; a < kAges; ++a) {
         const auto i = static_cast<std::size_t>(a);
         pred[i] = n[i] * sel[i];
         denom += pred[i];
@@ -121,8 +118,7 @@ inline void write_level15_age_comp_residual_diagnostics(
       if (denom <= 0.0)
         denom = 1.0;
 
-      for (int a = 0; a < kAges; ++a)
-      {
+      for (int a = 0; a < kAges; ++a) {
         const auto i = static_cast<std::size_t>(a);
         pred[i] /= denom;
         const double residual = o.age_comp[i] - pred[i];
@@ -132,8 +128,8 @@ inline void write_level15_age_comp_residual_diagnostics(
             << o.age_comp[i] << "," << pred[i] << "," << residual << ","
             << abs_residual << "\n";
         csv << "age_residual," << o.year << "," << o.fleet << "," << (a + 1)
-            << "," << o.age_comp[i] << "," << pred[i] << "," << residual
-            << "," << abs_residual << "\n";
+            << "," << o.age_comp[i] << "," << pred[i] << "," << residual << ","
+            << abs_residual << "\n";
 
         auto &fs = fleet_summary[o.fleet];
         fs.sum_abs += abs_residual;
@@ -148,12 +144,10 @@ inline void write_level15_age_comp_residual_diagnostics(
     }
 
     std::array<double, kAges> next{};
-    const double rec_dev =
-        t < fit.u_hat.size() ? fit.u_hat[t] : 0.0;
+    const double rec_dev = t < fit.u_hat.size() ? fit.u_hat[t] : 0.0;
     next[0] = r0 * std::exp(rec_dev);
 
-    for (int a = 1; a < kAges; ++a)
-    {
+    for (int a = 1; a < kAges; ++a) {
       const auto prev = static_cast<std::size_t>(a - 1);
       const double avg_sel_prev = 0.5 * (ll_sel[prev] + ps_sel[prev]);
       const double z_prev = m + fbar * avg_sel_prev;
@@ -170,9 +164,9 @@ inline void write_level15_age_comp_residual_diagnostics(
   txt << "\nFleet summary\n";
   txt << "-------------\n";
   txt << "fleet,mean_abs_residual,max_abs_residual,n\n";
-  for (const auto &kv : fleet_summary)
-  {
-    const double mean_abs = kv.second.n > 0 ? kv.second.sum_abs / kv.second.n : 0.0;
+  for (const auto &kv : fleet_summary) {
+    const double mean_abs =
+        kv.second.n > 0 ? kv.second.sum_abs / kv.second.n : 0.0;
     txt << kv.first << "," << mean_abs << "," << kv.second.max_abs << ","
         << kv.second.n << "\n";
     csv << "fleet_summary,0," << kv.first << ",0,0,0," << mean_abs << ","
@@ -182,9 +176,9 @@ inline void write_level15_age_comp_residual_diagnostics(
   txt << "\nWorst years\n";
   txt << "-----------\n";
   txt << "year,mean_abs_residual,max_abs_residual,n\n";
-  for (const auto &kv : year_summary)
-  {
-    const double mean_abs = kv.second.n > 0 ? kv.second.sum_abs / kv.second.n : 0.0;
+  for (const auto &kv : year_summary) {
+    const double mean_abs =
+        kv.second.n > 0 ? kv.second.sum_abs / kv.second.n : 0.0;
     txt << kv.first << "," << mean_abs << "," << kv.second.max_abs << ","
         << kv.second.n << "\n";
     csv << "year_summary," << kv.first << ",all,0,0,0," << mean_abs << ","

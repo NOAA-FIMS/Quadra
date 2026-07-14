@@ -41,9 +41,10 @@ struct FixedEffectGeometryReport {
 };
 
 template <class Objective>
-double bigeye_profiled_laplace_value_at_fixed(
-    Objective &objective, quadra::ParameterVector params,
-    const std::vector<double> &theta, quadra::LaplaceOptions opts) {
+double bigeye_profiled_laplace_value_at_fixed(Objective &objective,
+                                              quadra::ParameterVector params,
+                                              const std::vector<double> &theta,
+                                              quadra::LaplaceOptions opts) {
   for (std::size_t i = 0; i < theta.size() && i < params.params.size(); ++i) {
     params.params[i].value = theta[i];
   }
@@ -74,10 +75,11 @@ double bigeye_profiled_laplace_value_at_fixed(
 }
 
 template <class Objective>
-Eigen::MatrixXd bigeye_fd_fixed_hessian(
-    Objective &objective, const quadra::ParameterVector &params,
-    const quadra::OptResult &fit, quadra::LaplaceOptions opts,
-    double rel_step = 1.0e-4) {
+Eigen::MatrixXd bigeye_fd_fixed_hessian(Objective &objective,
+                                        const quadra::ParameterVector &params,
+                                        const quadra::OptResult &fit,
+                                        quadra::LaplaceOptions opts,
+                                        double rel_step = 1.0e-4) {
   const std::size_t n = fit.par.size();
   Eigen::MatrixXd H = Eigen::MatrixXd::Zero(static_cast<Eigen::Index>(n),
                                             static_cast<Eigen::Index>(n));
@@ -133,8 +135,7 @@ Eigen::MatrixXd bigeye_fd_fixed_hessian(
       const double fmp = value_at(xmp);
       const double fmm = value_at(xmm);
 
-      const double hij =
-          (fpp - fpm - fmp + fmm) / (4.0 * h[i] * h[j]);
+      const double hij = (fpp - fpm - fmp + fmm) / (4.0 * h[i] * h[j]);
 
       H(static_cast<Eigen::Index>(i), static_cast<Eigen::Index>(j)) = hij;
       H(static_cast<Eigen::Index>(j), static_cast<Eigen::Index>(i)) = hij;
@@ -144,8 +145,9 @@ Eigen::MatrixXd bigeye_fd_fixed_hessian(
   return H;
 }
 
-inline std::vector<std::string> bigeye_fixed_effect_names(
-    const quadra::ParameterVector &params, const quadra::OptResult &fit) {
+inline std::vector<std::string>
+bigeye_fixed_effect_names(const quadra::ParameterVector &params,
+                          const quadra::OptResult &fit) {
   if (fit.fixed_gradient_names.size() == fit.par.size())
     return fit.fixed_gradient_names;
 
@@ -171,7 +173,7 @@ inline Eigen::MatrixXd covariance_to_correlation(const Eigen::MatrixXd &cov) {
       const double denom = std::sqrt(std::max(0.0, vi) * std::max(0.0, vj));
 
       cor(i, j) = denom > 0.0 ? cov(i, j) / denom
-                               : std::numeric_limits<double>::quiet_NaN();
+                              : std::numeric_limits<double>::quiet_NaN();
     }
   }
 
@@ -205,9 +207,9 @@ FixedEffectGeometryReport make_bigeye_fixed_effect_geometry_report(
 
   report.min_eigenvalue =
       evals.size() > 0 ? evals[0] : std::numeric_limits<double>::quiet_NaN();
-  report.max_eigenvalue =
-      evals.size() > 0 ? evals[evals.size() - 1]
-                       : std::numeric_limits<double>::quiet_NaN();
+  report.max_eigenvalue = evals.size() > 0
+                              ? evals[evals.size() - 1]
+                              : std::numeric_limits<double>::quiet_NaN();
 
   report.positive_definite = report.min_eigenvalue > 0.0;
   report.condition_number_abs =
@@ -230,9 +232,9 @@ FixedEffectGeometryReport make_bigeye_fixed_effect_geometry_report(
 
     for (Eigen::Index i = 0; i < evecs.rows(); ++i) {
       const std::size_t ui = static_cast<std::size_t>(i);
-      const std::string name =
-          ui < report.names.size() ? report.names[ui]
-                                    : ("fixed_" + std::to_string(ui));
+      const std::string name = ui < report.names.size()
+                                   ? report.names[ui]
+                                   : ("fixed_" + std::to_string(ui));
       wd.loadings.push_back({name, evecs(i, d)});
     }
 
@@ -247,8 +249,9 @@ FixedEffectGeometryReport make_bigeye_fixed_effect_geometry_report(
   return report;
 }
 
-inline void write_bigeye_fixed_effect_geometry_text(
-    const FixedEffectGeometryReport &report, const std::string &path) {
+inline void
+write_bigeye_fixed_effect_geometry_text(const FixedEffectGeometryReport &report,
+                                        const std::string &path) {
   std::ofstream out(path);
   if (!out)
     throw std::runtime_error("Could not open fixed-effect geometry report: " +
@@ -258,10 +261,9 @@ inline void write_bigeye_fixed_effect_geometry_text(
   out << "============================\n\n";
 
   out << std::setprecision(15);
-  out << "available:             " << (report.available ? "yes" : "no")
+  out << "available:             " << (report.available ? "yes" : "no") << "\n";
+  out << "positive_definite:     " << (report.positive_definite ? "yes" : "no")
       << "\n";
-  out << "positive_definite:     "
-      << (report.positive_definite ? "yes" : "no") << "\n";
   out << "covariance_available:  "
       << (report.covariance_available ? "yes" : "no") << "\n";
   out << "min_eigenvalue:        " << report.min_eigenvalue << "\n";
@@ -311,12 +313,14 @@ inline void write_bigeye_fixed_effect_geometry_text(
   out << "\nInterpretation notes\n";
   out << "--------------------\n";
   out << "Small eigenvalues identify weakly curved fixed-effect directions.\n";
-  out << "Large loadings in the same weak direction indicate parameter combinations\n";
+  out << "Large loadings in the same weak direction indicate parameter "
+         "combinations\n";
   out << "that may be difficult for the data to separate.\n";
 }
 
-inline void write_bigeye_fixed_effect_geometry_csv(
-    const FixedEffectGeometryReport &report, const std::string &path) {
+inline void
+write_bigeye_fixed_effect_geometry_csv(const FixedEffectGeometryReport &report,
+                                       const std::string &path) {
   std::ofstream out(path);
   if (!out)
     throw std::runtime_error("Could not open fixed-effect geometry CSV: " +
@@ -344,8 +348,7 @@ inline void write_bigeye_fixed_effect_geometry_csv(
   }
 
   for (std::size_t i = 0; i < report.eigenvalues.size(); ++i)
-    out << "eigenvalue,value," << i << "," << report.eigenvalues[i]
-        << ",\n";
+    out << "eigenvalue,value," << i << "," << report.eigenvalues[i] << ",\n";
 
   for (const auto &wd : report.weak_directions) {
     for (const auto &x : wd.loadings) {
@@ -358,9 +361,8 @@ inline void write_bigeye_fixed_effect_geometry_csv(
   if (report.covariance_available) {
     for (Eigen::Index i = 0; i < report.correlation.rows(); ++i) {
       for (Eigen::Index j = 0; j < report.correlation.cols(); ++j) {
-        out << "correlation,value,"
-            << report.names[static_cast<std::size_t>(i)] << "_vs_"
-            << report.names[static_cast<std::size_t>(j)] << ","
+        out << "correlation,value," << report.names[static_cast<std::size_t>(i)]
+            << "_vs_" << report.names[static_cast<std::size_t>(j)] << ","
             << report.correlation(i, j) << ",\n";
       }
     }

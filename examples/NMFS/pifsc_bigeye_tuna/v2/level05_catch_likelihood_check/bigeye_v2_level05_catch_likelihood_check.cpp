@@ -24,10 +24,7 @@ int main() {
 
   BigeyeModelData<double> data;
   data.n_years = 3;
-  data.observed_catch_biomass_by_year = {
-      1326.1639007786976,
-      1350.0,
-      1300.0};
+  data.observed_catch_biomass_by_year = {1326.1639007786976, 1350.0, 1300.0};
 
   BigeyeModelParameters<double> p;
   p.log_m_young_offset = std::log(0.75);
@@ -52,18 +49,16 @@ int main() {
   constexpr double expected_total_nll = 14.695989739827853;
 
   if (!nearly_equal(d.catch_nll, expected_catch_nll)) {
-    std::cerr << std::setprecision(17)
-              << "FAIL: catch_nll got " << d.catch_nll
-              << " expected " << expected_catch_nll
-              << " diff " << (d.catch_nll - expected_catch_nll) << "\n";
+    std::cerr << std::setprecision(17) << "FAIL: catch_nll got " << d.catch_nll
+              << " expected " << expected_catch_nll << " diff "
+              << (d.catch_nll - expected_catch_nll) << "\n";
     return EXIT_FAILURE;
   }
 
   if (!nearly_equal(d.total_nll, expected_total_nll)) {
-    std::cerr << std::setprecision(17)
-              << "FAIL: total_nll got " << d.total_nll
-              << " expected " << expected_total_nll
-              << " diff " << (d.total_nll - expected_total_nll) << "\n";
+    std::cerr << std::setprecision(17) << "FAIL: total_nll got " << d.total_nll
+              << " expected " << expected_total_nll << " diff "
+              << (d.total_nll - expected_total_nll) << "\n";
     return EXIT_FAILURE;
   }
 

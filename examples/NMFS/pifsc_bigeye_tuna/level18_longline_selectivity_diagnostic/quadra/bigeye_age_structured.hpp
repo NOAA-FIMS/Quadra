@@ -50,15 +50,13 @@ double logistic_selectivity(double age, double a50, double slope) {
 std::array<double, kAges> default_weight_at_age() {
   // Provisional bigeye-tuna-like weight-at-age schedule in kg.
   // Diagnostic placeholder only; replace with stock-specific assessment inputs.
-  return {3.0, 10.0, 22.0, 38.0, 55.0,
-          72.0, 88.0, 102.0, 115.0, 128.0};
+  return {3.0, 10.0, 22.0, 38.0, 55.0, 72.0, 88.0, 102.0, 115.0, 128.0};
 }
 
 std::array<double, kAges> default_maturity_at_age() {
   // Provisional bigeye-tuna-like maturity-at-age schedule.
   // Diagnostic placeholder only; replace with stock-specific assessment inputs.
-  return {0.00, 0.00, 0.05, 0.20, 0.45,
-          0.70, 0.85, 0.95, 1.00, 1.00};
+  return {0.00, 0.00, 0.05, 0.20, 0.45, 0.70, 0.85, 0.95, 1.00, 1.00};
 }
 
 std::vector<std::string> split_csv_line(const std::string &line) {

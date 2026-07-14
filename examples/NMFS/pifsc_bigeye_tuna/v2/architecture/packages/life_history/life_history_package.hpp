@@ -1,9 +1,9 @@
 #pragma once
 
+#include "../../../common/model_data.hpp"
 #include "../../parameters/life_history_parameters.hpp"
 #include "../../state/life_history_state.hpp"
 #include "../../steps/life_history/life_history.hpp"
-#include "../../../common/model_data.hpp"
 
 namespace bigeye_v2 {
 

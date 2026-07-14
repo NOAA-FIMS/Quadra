@@ -70,8 +70,8 @@ public:
 
   template <class T> T operator()(const std::vector<T> &par) const {
     if (par.size() < 8 + n_years()) {
-      throw std::runtime_error(
-          "BigeyeQuadraObjective expected 8 fixed effects plus recruitment deviations");
+      throw std::runtime_error("BigeyeQuadraObjective expected 8 fixed effects "
+                               "plus recruitment deviations");
     }
 
     const T log_r0 = par[0];
@@ -109,12 +109,10 @@ public:
     std::array<T, kAges> sel_purse_seine{};
 
     for (int a = 0; a < kAges; ++a) {
-      sel_longline[static_cast<std::size_t>(a)] =
-          logistic_selectivity_t(T(a + 1), sel_a50_longline,
-                                 sel_slope_longline);
-      sel_purse_seine[static_cast<std::size_t>(a)] =
-          logistic_selectivity_t(T(a + 1), sel_a50_purse_seine,
-                                 sel_slope_purse_seine);
+      sel_longline[static_cast<std::size_t>(a)] = logistic_selectivity_t(
+          T(a + 1), sel_a50_longline, sel_slope_longline);
+      sel_purse_seine[static_cast<std::size_t>(a)] = logistic_selectivity_t(
+          T(a + 1), sel_a50_purse_seine, sel_slope_purse_seine);
     }
 
     std::array<T, kAges> n{};
@@ -192,8 +190,7 @@ public:
         const T catch_hat = total_catch_hat * T(fleet_catch_share(obs.fleet));
         if (obs.catch_mt > 0.0) {
           const T z =
-              (log_t(T(obs.catch_mt)) -
-               log_t(max_t(catch_hat, min_positive))) /
+              (log_t(T(obs.catch_mt)) - log_t(max_t(catch_hat, min_positive))) /
               sigma_log_catch;
           nll = nll + T(0.5) * square_t(z);
         }

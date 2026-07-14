@@ -54,9 +54,8 @@ int main() {
   PopulationState<double> pop;
   FixedRecruitment{}(data, pp, pop);
 
-  pop.numbers_at_age.assign(
-      static_cast<std::size_t>(data.n_years),
-      std::array<double, kAges>{});
+  pop.numbers_at_age.assign(static_cast<std::size_t>(data.n_years),
+                            std::array<double, kAges>{});
 
   for (int a = 0; a < kAges; ++a) {
     pop.numbers_at_age[0][a] = 1000.0;
@@ -83,31 +82,26 @@ int main() {
   }
 
   if (!nearly_equal(pop.numbers_at_age[1][1], expected_y1_age2)) {
-    std::cerr << std::setprecision(17)
-              << "FAIL: aging/survival y1 age2 got "
-              << pop.numbers_at_age[1][1]
-              << " expected " << expected_y1_age2
+    std::cerr << std::setprecision(17) << "FAIL: aging/survival y1 age2 got "
+              << pop.numbers_at_age[1][1] << " expected " << expected_y1_age2
               << " diff " << (pop.numbers_at_age[1][1] - expected_y1_age2)
               << "\n";
     return EXIT_FAILURE;
   }
 
   if (!nearly_equal(pop.numbers_at_age[1][9], expected_y1_age10)) {
-    std::cerr << std::setprecision(17)
-              << "FAIL: plus group y1 age10 got "
-              << pop.numbers_at_age[1][9]
-              << " expected " << expected_y1_age10
+    std::cerr << std::setprecision(17) << "FAIL: plus group y1 age10 got "
+              << pop.numbers_at_age[1][9] << " expected " << expected_y1_age10
               << " diff " << (pop.numbers_at_age[1][9] - expected_y1_age10)
               << "\n";
     return EXIT_FAILURE;
   }
 
   if (!nearly_equal(pop.spawning_biomass_by_year[0], expected_ssb_y0)) {
-    std::cerr << std::setprecision(17)
-              << "FAIL: ssb y0 got " << pop.spawning_biomass_by_year[0]
-              << " expected " << expected_ssb_y0
-              << " diff " << (pop.spawning_biomass_by_year[0] - expected_ssb_y0)
-              << "\n";
+    std::cerr << std::setprecision(17) << "FAIL: ssb y0 got "
+              << pop.spawning_biomass_by_year[0] << " expected "
+              << expected_ssb_y0 << " diff "
+              << (pop.spawning_biomass_by_year[0] - expected_ssb_y0) << "\n";
     return EXIT_FAILURE;
   }
 

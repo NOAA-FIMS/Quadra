@@ -17,21 +17,16 @@ namespace pifsc_bigeye_tuna {
 
 template <class Objective>
 double bigeye_wiggle_profiled_laplace_value_at_fixed(
-    Objective &objective,
-    quadra::ParameterVector params,
-    const std::vector<double> &theta,
-    quadra::LaplaceOptions opts)
-{
-  for (std::size_t i = 0; i < theta.size() && i < params.params.size(); ++i)
-  {
+    Objective &objective, quadra::ParameterVector params,
+    const std::vector<double> &theta, quadra::LaplaceOptions opts) {
+  for (std::size_t i = 0; i < theta.size() && i < params.params.size(); ++i) {
     params.params[i].value = theta[i];
   }
 
   std::vector<int> fixed_idx;
   std::vector<int> random_idx;
 
-  for (std::size_t i = 0; i < params.params.size(); ++i)
-  {
+  for (std::size_t i = 0; i < params.params.size(); ++i) {
     if (params.params[i].is_random)
       random_idx.push_back(static_cast<int>(i));
     else
@@ -39,8 +34,7 @@ double bigeye_wiggle_profiled_laplace_value_at_fixed(
   }
 
   Eigen::VectorXd x(static_cast<Eigen::Index>(fixed_idx.size()));
-  for (std::size_t i = 0; i < fixed_idx.size(); ++i)
-  {
+  for (std::size_t i = 0; i < fixed_idx.size(); ++i) {
     x[static_cast<Eigen::Index>(i)] = params.params[fixed_idx[i]].value;
   }
 
@@ -54,16 +48,14 @@ double bigeye_wiggle_profiled_laplace_value_at_fixed(
   return res.value;
 }
 
-inline std::vector<std::string> bigeye_wiggle_fixed_effect_names(
-    const quadra::ParameterVector &params,
-    const quadra::OptResult &fit)
-{
+inline std::vector<std::string>
+bigeye_wiggle_fixed_effect_names(const quadra::ParameterVector &params,
+                                 const quadra::OptResult &fit) {
   if (fit.fixed_gradient_names.size() == fit.par.size())
     return fit.fixed_gradient_names;
 
   std::vector<std::string> names;
-  for (const auto &p : params.params)
-  {
+  for (const auto &p : params.params) {
     if (!p.is_random)
       names.push_back(p.name);
   }
@@ -74,8 +66,7 @@ inline std::vector<std::string> bigeye_wiggle_fixed_effect_names(
   return names;
 }
 
-struct BigeyeWiggleRow
-{
+struct BigeyeWiggleRow {
   std::size_t index = 0;
   std::string name;
   double base_value = std::numeric_limits<double>::quiet_NaN();
@@ -90,8 +81,7 @@ struct BigeyeWiggleRow
   double abs_sensitivity = std::numeric_limits<double>::quiet_NaN();
 };
 
-struct BigeyeWiggleDiagnostics
-{
+struct BigeyeWiggleDiagnostics {
   double relative_step = 0.05;
   double absolute_min_step = 1.0e-3;
   std::vector<BigeyeWiggleRow> rows;
@@ -99,13 +89,9 @@ struct BigeyeWiggleDiagnostics
 
 template <class Objective>
 BigeyeWiggleDiagnostics make_bigeye_fixed_effect_wiggle_diagnostics(
-    Objective &objective,
-    const quadra::ParameterVector &params,
-    const quadra::OptResult &fit,
-    quadra::LaplaceOptions opts,
-    double relative_step = 0.05,
-    double absolute_min_step = 1.0e-3)
-{
+    Objective &objective, const quadra::ParameterVector &params,
+    const quadra::OptResult &fit, quadra::LaplaceOptions opts,
+    double relative_step = 0.05, double absolute_min_step = 1.0e-3) {
   BigeyeWiggleDiagnostics out;
   out.relative_step = relative_step;
   out.absolute_min_step = absolute_min_step;
@@ -118,8 +104,7 @@ BigeyeWiggleDiagnostics make_bigeye_fixed_effect_wiggle_diagnostics(
   const double f0 = bigeye_wiggle_profiled_laplace_value_at_fixed(
       objective, params, fit.par, opts);
 
-  for (std::size_t i = 0; i < fit.par.size(); ++i)
-  {
+  for (std::size_t i = 0; i < fit.par.size(); ++i) {
     BigeyeWiggleRow row;
     row.index = i;
     row.name = i < names.size() ? names[i] : ("fixed_" + std::to_string(i));
@@ -150,8 +135,7 @@ BigeyeWiggleDiagnostics make_bigeye_fixed_effect_wiggle_diagnostics(
   }
 
   std::sort(out.rows.begin(), out.rows.end(),
-            [](const BigeyeWiggleRow &a, const BigeyeWiggleRow &b)
-            {
+            [](const BigeyeWiggleRow &a, const BigeyeWiggleRow &b) {
               return a.abs_sensitivity < b.abs_sensitivity;
             });
 
@@ -159,9 +143,7 @@ BigeyeWiggleDiagnostics make_bigeye_fixed_effect_wiggle_diagnostics(
 }
 
 inline void write_bigeye_fixed_effect_wiggle_diagnostics_csv(
-    const BigeyeWiggleDiagnostics &diagnostics,
-    const std::string &path)
-{
+    const BigeyeWiggleDiagnostics &diagnostics, const std::string &path) {
   std::ofstream out(path);
   if (!out)
     throw std::runtime_error("Could not open wiggle diagnostics CSV: " + path);
@@ -171,27 +153,17 @@ inline void write_bigeye_fixed_effect_wiggle_diagnostics_csv(
       << "abs_sensitivity\n";
 
   out << std::setprecision(15);
-  for (const auto &row : diagnostics.rows)
-  {
-    out << row.index << ","
-        << row.name << ","
-        << row.base_value << ","
-        << row.step << ","
-        << row.f_base << ","
-        << row.f_minus << ","
-        << row.f_plus << ","
-        << row.delta_minus << ","
-        << row.delta_plus << ","
-        << row.central_gradient << ","
-        << row.central_curvature << ","
+  for (const auto &row : diagnostics.rows) {
+    out << row.index << "," << row.name << "," << row.base_value << ","
+        << row.step << "," << row.f_base << "," << row.f_minus << ","
+        << row.f_plus << "," << row.delta_minus << "," << row.delta_plus << ","
+        << row.central_gradient << "," << row.central_curvature << ","
         << row.abs_sensitivity << "\n";
   }
 }
 
 inline void write_bigeye_fixed_effect_wiggle_diagnostics_text(
-    const BigeyeWiggleDiagnostics &diagnostics,
-    const std::string &path)
-{
+    const BigeyeWiggleDiagnostics &diagnostics, const std::string &path) {
   std::ofstream out(path);
   if (!out)
     throw std::runtime_error("Could not open wiggle diagnostics text: " + path);
@@ -204,10 +176,14 @@ inline void write_bigeye_fixed_effect_wiggle_diagnostics_text(
 
   out << "Interpretation\n";
   out << "--------------\n";
-  out << "Each fixed effect is perturbed plus/minus one step while random effects are\n";
-  out << "re-solved through the Laplace machinery. Small objective changes indicate a\n";
-  out << "locally weak or compensable parameter. Large asymmetric changes may indicate\n";
-  out << "nonlinearity, boundary behavior, or a poor local quadratic approximation.\n\n";
+  out << "Each fixed effect is perturbed plus/minus one step while random "
+         "effects are\n";
+  out << "re-solved through the Laplace machinery. Small objective changes "
+         "indicate a\n";
+  out << "locally weak or compensable parameter. Large asymmetric changes may "
+         "indicate\n";
+  out << "nonlinearity, boundary behavior, or a poor local quadratic "
+         "approximation.\n\n";
 
   out << "Rows sorted by abs_sensitivity ascending\n";
   out << "----------------------------------------\n";
@@ -215,37 +191,23 @@ inline void write_bigeye_fixed_effect_wiggle_diagnostics_text(
       << "delta_minus,delta_plus,central_gradient,central_curvature,"
       << "abs_sensitivity\n";
 
-  for (const auto &row : diagnostics.rows)
-  {
-    out << row.index << ","
-        << row.name << ","
-        << row.base_value << ","
-        << row.step << ","
-        << row.f_base << ","
-        << row.f_minus << ","
-        << row.f_plus << ","
-        << row.delta_minus << ","
-        << row.delta_plus << ","
-        << row.central_gradient << ","
-        << row.central_curvature << ","
+  for (const auto &row : diagnostics.rows) {
+    out << row.index << "," << row.name << "," << row.base_value << ","
+        << row.step << "," << row.f_base << "," << row.f_minus << ","
+        << row.f_plus << "," << row.delta_minus << "," << row.delta_plus << ","
+        << row.central_gradient << "," << row.central_curvature << ","
         << row.abs_sensitivity << "\n";
   }
 }
 
 template <class Objective>
 void write_bigeye_fixed_effect_wiggle_diagnostics(
-    const std::string &text_path,
-    const std::string &csv_path,
-    Objective &objective,
-    const quadra::ParameterVector &params,
-    const quadra::OptResult &fit,
-    quadra::LaplaceOptions opts,
-    double relative_step = 0.05,
-    double absolute_min_step = 1.0e-3)
-{
-  const auto diagnostics =
-      make_bigeye_fixed_effect_wiggle_diagnostics(
-          objective, params, fit, opts, relative_step, absolute_min_step);
+    const std::string &text_path, const std::string &csv_path,
+    Objective &objective, const quadra::ParameterVector &params,
+    const quadra::OptResult &fit, quadra::LaplaceOptions opts,
+    double relative_step = 0.05, double absolute_min_step = 1.0e-3) {
+  const auto diagnostics = make_bigeye_fixed_effect_wiggle_diagnostics(
+      objective, params, fit, opts, relative_step, absolute_min_step);
 
   write_bigeye_fixed_effect_wiggle_diagnostics_text(diagnostics, text_path);
   write_bigeye_fixed_effect_wiggle_diagnostics_csv(diagnostics, csv_path);

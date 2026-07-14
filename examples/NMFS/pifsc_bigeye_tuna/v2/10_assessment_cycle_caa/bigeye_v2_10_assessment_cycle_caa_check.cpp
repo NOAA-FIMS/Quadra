@@ -35,8 +35,7 @@ int main() {
   state.fleets.resize(1);
 
   state.populations[0].numbers_at_age.assign(
-      static_cast<std::size_t>(data.n_years),
-      std::array<double, kAges>{});
+      static_cast<std::size_t>(data.n_years), std::array<double, kAges>{});
 
   for (int a = 0; a < kAges; ++a) {
     state.populations[0].numbers_at_age[0][a] = 1000.0;
@@ -56,11 +55,9 @@ int main() {
 
   if (!nearly_equal(state.populations[0].numbers_at_age[1][1],
                     expected_pop_y1_age2)) {
-    std::cerr << std::setprecision(17)
-              << "FAIL: population y1 age2 got "
-              << state.populations[0].numbers_at_age[1][1]
-              << " expected " << expected_pop_y1_age2
-              << " diff "
+    std::cerr << std::setprecision(17) << "FAIL: population y1 age2 got "
+              << state.populations[0].numbers_at_age[1][1] << " expected "
+              << expected_pop_y1_age2 << " diff "
               << (state.populations[0].numbers_at_age[1][1] -
                   expected_pop_y1_age2)
               << "\n";
@@ -74,11 +71,9 @@ int main() {
 
   if (!nearly_equal(state.fleets[0].total_catch_biomass_by_year[0],
                     expected_total_catch_y0)) {
-    std::cerr << std::setprecision(17)
-              << "FAIL: total catch y0 got "
-              << state.fleets[0].total_catch_biomass_by_year[0]
-              << " expected " << expected_total_catch_y0
-              << " diff "
+    std::cerr << std::setprecision(17) << "FAIL: total catch y0 got "
+              << state.fleets[0].total_catch_biomass_by_year[0] << " expected "
+              << expected_total_catch_y0 << " diff "
               << (state.fleets[0].total_catch_biomass_by_year[0] -
                   expected_total_catch_y0)
               << "\n";

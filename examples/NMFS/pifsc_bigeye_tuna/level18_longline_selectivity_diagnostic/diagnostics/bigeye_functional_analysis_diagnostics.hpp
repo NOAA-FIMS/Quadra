@@ -31,10 +31,9 @@ bigeye_max_fixed_gradient_index(const quadra::OptResult &fit) {
 }
 
 template <class Objective>
-Eigen::MatrixXd bigeye_fd_huu(Objective &objective,
-                                   const quadra::ParameterVector & /*params*/,
-                                   const quadra::OptResult &fit,
-                                   double rel_step = 1.0e-4) {
+Eigen::MatrixXd
+bigeye_fd_huu(Objective &objective, const quadra::ParameterVector & /*params*/,
+              const quadra::OptResult &fit, double rel_step = 1.0e-4) {
   const std::size_t n_fixed = fit.par.size();
   const std::size_t n_random = fit.u_hat.size();
 

@@ -12,20 +12,20 @@
 // DO NOT EDIT BY HAND.
 // ============================================================
 
+#include "../../common/model_data.hpp"
+#include "../packages/fleet/fleet_context.hpp"
+#include "../packages/fleet/fleet_package.hpp"
+#include "../packages/life_history/life_history_package.hpp"
+#include "../packages/likelihood/likelihood_context.hpp"
+#include "../packages/likelihood/likelihood_package.hpp"
+#include "../packages/movement/movement_context.hpp"
+#include "../packages/movement/movement_package.hpp"
+#include "../packages/observation/observation_context.hpp"
+#include "../packages/observation/observation_package.hpp"
+#include "../packages/population/population_context.hpp"
+#include "../packages/population/population_package.hpp"
 #include "../parameters/assessment_parameters.hpp"
 #include "../state/assessment_state.hpp"
-#include "../../common/model_data.hpp"
-#include "../packages/life_history/life_history_package.hpp"
-#include "../packages/fleet/fleet_package.hpp"
-#include "../packages/fleet/fleet_context.hpp"
-#include "../packages/population/population_package.hpp"
-#include "../packages/population/population_context.hpp"
-#include "../packages/movement/movement_package.hpp"
-#include "../packages/movement/movement_context.hpp"
-#include "../packages/observation/observation_package.hpp"
-#include "../packages/observation/observation_context.hpp"
-#include "../packages/likelihood/likelihood_package.hpp"
-#include "../packages/likelihood/likelihood_context.hpp"
 
 namespace bigeye_v2 {
 
@@ -46,36 +46,27 @@ struct GeneratedAssessmentCycleFromIR {
       return;
     }
 
-    FleetContext<T> fleet_context{
-        &parameters.fleets[0],
-        &state.life,
-        &state.populations[0],
-        &state.fleets[0]};
+    FleetContext<T> fleet_context{&parameters.fleets[0], &state.life,
+                                  &state.populations[0], &state.fleets[0]};
 
-    PopulationContext<T> population_context{
-        &parameters.populations[0],
-        &state.life,
-        &state.fleets[0],
-        &state.populations[0]};
+    PopulationContext<T> population_context{&parameters.populations[0],
+                                            &state.life, &state.fleets[0],
+                                            &state.populations[0]};
 
-    MovementContext<T> movement_context{
-        &parameters.movement,
-        &state.populations};
+    MovementContext<T> movement_context{&parameters.movement,
+                                        &state.populations};
 
     ObservationContext<T> observation_context{
-        &parameters.fleets[0],
-        &state.populations[0],
-        &state.fleets[0]};
+        &parameters.fleets[0], &state.populations[0], &state.fleets[0]};
 
     LikelihoodContext<T> likelihood_context{
-        &parameters.fleets[0],
-        &state.fleets[0],
-        &state.likelihood};
+        &parameters.fleets[0], &state.fleets[0], &state.likelihood};
 
     // Phase 0: lifehistory - compute life-history state
     LifeHistoryPackage{}(data, parameters.life, state.life);
 
-    // Phase 1: fleet_bootstrap - initialize fleet mortality before population dynamics
+    // Phase 1: fleet_bootstrap - initialize fleet mortality before population
+    // dynamics
     FleetPackage{}(data, fleet_context);
 
     // Phase 2: population - advance population state
@@ -92,7 +83,6 @@ struct GeneratedAssessmentCycleFromIR {
 
     // Phase 6: likelihood - evaluate likelihood components
     LikelihoodPackage{}(data, likelihood_context);
-
   }
 };
 

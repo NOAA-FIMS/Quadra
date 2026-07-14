@@ -1,8 +1,8 @@
 #pragma once
 
-#include "movement_context.hpp"
-#include "../../steps/movement/identity_movement.hpp"
 #include "../../../common/model_data.hpp"
+#include "../../steps/movement/identity_movement.hpp"
+#include "movement_context.hpp"
 
 namespace bigeye_v2 {
 

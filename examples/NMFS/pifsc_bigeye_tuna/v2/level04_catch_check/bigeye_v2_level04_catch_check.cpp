@@ -48,33 +48,27 @@ int main() {
 
   for (int y = 0; y < data.n_years; ++y) {
     if (!nearly_equal(d.catch_numbers_at_age[y][0], expected_catch_n_age_1)) {
-      std::cerr << std::setprecision(17)
-                << "FAIL: catch_numbers_at_age[" << y << "][0] got "
-                << d.catch_numbers_at_age[y][0]
-                << " expected " << expected_catch_n_age_1
-                << " diff "
+      std::cerr << std::setprecision(17) << "FAIL: catch_numbers_at_age[" << y
+                << "][0] got " << d.catch_numbers_at_age[y][0] << " expected "
+                << expected_catch_n_age_1 << " diff "
                 << (d.catch_numbers_at_age[y][0] - expected_catch_n_age_1)
                 << "\n";
       return EXIT_FAILURE;
     }
 
     if (!nearly_equal(d.catch_numbers_at_age[y][4], expected_catch_n_age_5)) {
-      std::cerr << std::setprecision(17)
-                << "FAIL: catch_numbers_at_age[" << y << "][4] got "
-                << d.catch_numbers_at_age[y][4]
-                << " expected " << expected_catch_n_age_5
-                << " diff "
+      std::cerr << std::setprecision(17) << "FAIL: catch_numbers_at_age[" << y
+                << "][4] got " << d.catch_numbers_at_age[y][4] << " expected "
+                << expected_catch_n_age_5 << " diff "
                 << (d.catch_numbers_at_age[y][4] - expected_catch_n_age_5)
                 << "\n";
       return EXIT_FAILURE;
     }
 
     if (!nearly_equal(d.catch_numbers_at_age[y][9], expected_catch_n_age_10)) {
-      std::cerr << std::setprecision(17)
-                << "FAIL: catch_numbers_at_age[" << y << "][9] got "
-                << d.catch_numbers_at_age[y][9]
-                << " expected " << expected_catch_n_age_10
-                << " diff "
+      std::cerr << std::setprecision(17) << "FAIL: catch_numbers_at_age[" << y
+                << "][9] got " << d.catch_numbers_at_age[y][9] << " expected "
+                << expected_catch_n_age_10 << " diff "
                 << (d.catch_numbers_at_age[y][9] - expected_catch_n_age_10)
                 << "\n";
       return EXIT_FAILURE;
@@ -82,11 +76,9 @@ int main() {
 
     if (!nearly_equal(d.total_catch_biomass_by_year[y],
                       expected_total_catch_biomass)) {
-      std::cerr << std::setprecision(17)
-                << "FAIL: total_catch_biomass_by_year[" << y << "] got "
-                << d.total_catch_biomass_by_year[y]
-                << " expected " << expected_total_catch_biomass
-                << " diff "
+      std::cerr << std::setprecision(17) << "FAIL: total_catch_biomass_by_year["
+                << y << "] got " << d.total_catch_biomass_by_year[y]
+                << " expected " << expected_total_catch_biomass << " diff "
                 << (d.total_catch_biomass_by_year[y] -
                     expected_total_catch_biomass)
                 << "\n";

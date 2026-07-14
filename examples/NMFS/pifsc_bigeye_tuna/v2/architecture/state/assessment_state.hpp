@@ -9,8 +9,7 @@
 
 namespace bigeye_v2 {
 
-template <typename T>
-struct AssessmentState {
+template <typename T> struct AssessmentState {
   LifeHistoryState<T> life;
   std::vector<PopulationState<T>> populations;
   std::vector<FleetState<T>> fleets;

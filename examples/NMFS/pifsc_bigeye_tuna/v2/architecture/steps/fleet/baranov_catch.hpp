@@ -1,9 +1,9 @@
 #pragma once
 
+#include "../../../common/model_data.hpp"
 #include "../../state/fleet_state.hpp"
 #include "../../state/life_history_state.hpp"
 #include "../../state/population_state.hpp"
-#include "../../../common/model_data.hpp"
 
 #include <array>
 #include <cmath>
@@ -38,10 +38,9 @@ namespace bigeye_v2 {
 //------------------------------------------------------------
 struct BaranovCatch {
   template <typename T>
-  void operator()(const BigeyeModelData<T> &data,
-                  const LifeHistoryState<T> &life,
-                  const PopulationState<T> &population,
-                  FleetState<T> &fleet) const {
+  void
+  operator()(const BigeyeModelData<T> &data, const LifeHistoryState<T> &life,
+             const PopulationState<T> &population, FleetState<T> &fleet) const {
     const auto ny = static_cast<std::size_t>(data.n_years);
 
     fleet.catch_numbers_at_age.assign(ny, std::array<T, kAges>{});
@@ -52,14 +51,13 @@ struct BaranovCatch {
       for (int a = 0; a < kAges; ++a) {
         const T z = fleet.z_at_age[a];
 
-        const T cn =
-            population.numbers_at_age[y][a] *
-            (fleet.f_at_age[a] / z) *
-            (T(1.0) - std::exp(-z));
+        const T cn = population.numbers_at_age[y][a] * (fleet.f_at_age[a] / z) *
+                     (T(1.0) - std::exp(-z));
 
         fleet.catch_numbers_at_age[y][a] = cn;
         fleet.catch_biomass_at_age[y][a] = cn * life.weight_at_age[a];
-        fleet.total_catch_biomass_by_year[y] += fleet.catch_biomass_at_age[y][a];
+        fleet.total_catch_biomass_by_year[y] +=
+            fleet.catch_biomass_at_age[y][a];
       }
     }
   }

@@ -1,9 +1,9 @@
 #pragma once
 
+#include "../../../common/model_data.hpp"
 #include "../../parameters/fleet_parameters.hpp"
 #include "../../state/fleet_state.hpp"
 #include "../../state/likelihood_state.hpp"
-#include "../../../common/model_data.hpp"
 
 #include <cmath>
 
@@ -23,9 +23,7 @@ struct LognormalIndexLikelihood {
       const T r = (std::log(obs) - std::log(pred)) / parameters.index_sigma;
 
       likelihood.index_nll +=
-          T(0.5) * r * r +
-          std::log(parameters.index_sigma) +
-          std::log(obs);
+          T(0.5) * r * r + std::log(parameters.index_sigma) + std::log(obs);
     }
 
     likelihood.total_nll += likelihood.index_nll;

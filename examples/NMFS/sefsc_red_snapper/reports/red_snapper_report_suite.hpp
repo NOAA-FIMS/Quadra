@@ -30,9 +30,8 @@ struct RedSnapperReportPaths {
   std::string laplace_structure_csv =
       "examples/NMFS/sefsc_red_snapper/outputs/"
       "red_snapper_laplace_structure_report.csv";
-  std::string reference_points =
-      "examples/NMFS/sefsc_red_snapper/outputs/"
-      "red_snapper_reference_points.csv";
+  std::string reference_points = "examples/NMFS/sefsc_red_snapper/outputs/"
+                                 "red_snapper_reference_points.csv";
 };
 
 inline RedSnapperReportPaths default_red_snapper_report_paths() {
@@ -50,7 +49,8 @@ inline void write_red_snapper_report_suite(
   write_selectivity_at_age(paths.selectivity, fit);
   write_recruitment_deviations(paths.recruitment_deviations, fit);
   write_objective_components(paths.objective_components, observations, fit);
-  write_red_snapper_reference_points_csv(paths.reference_points, observations, fit);
+  write_red_snapper_reference_points_csv(paths.reference_points, observations,
+                                         fit);
   write_red_snapper_laplace_structure_report(paths.laplace_structure_text,
                                              paths.laplace_structure_csv,
                                              objective, params, fit);

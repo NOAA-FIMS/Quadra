@@ -32,8 +32,7 @@ namespace bigeye_v2 {
 //------------------------------------------------------------
 struct FishingMortality {
   template <typename T>
-  void operator()(const FleetParameters<T> &p,
-                  const LifeHistoryState<T> &life,
+  void operator()(const FleetParameters<T> &p, const LifeHistoryState<T> &life,
                   FleetState<T> &fleet) const {
     for (int a = 0; a < kAges; ++a) {
       fleet.f_at_age[a] = p.fbar * fleet.selectivity_at_age[a];

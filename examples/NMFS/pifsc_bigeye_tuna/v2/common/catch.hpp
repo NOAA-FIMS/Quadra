@@ -26,10 +26,8 @@ struct BaranovCatch {
       for (int a = 0; a < kAges; ++a) {
         const T z = d.z_at_age[a];
 
-        const T catch_numbers =
-            d.numbers_at_age[y][a] *
-            (d.f_at_age[a] / z) *
-            (T(1.0) - std::exp(-z));
+        const T catch_numbers = d.numbers_at_age[y][a] * (d.f_at_age[a] / z) *
+                                (T(1.0) - std::exp(-z));
 
         d.catch_numbers_at_age[y][a] = catch_numbers;
         d.catch_biomass_at_age[y][a] = catch_numbers * d.weight_at_age[a];

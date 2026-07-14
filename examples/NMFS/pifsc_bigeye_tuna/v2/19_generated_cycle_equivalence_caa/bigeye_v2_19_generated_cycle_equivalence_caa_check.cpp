@@ -25,8 +25,7 @@ bool check_close(const std::string &name, double handwritten, double generated,
 
   if (diff > tol && first_failure.empty()) {
     std::ostringstream os;
-    os << std::setprecision(17)
-       << "FAIL: " << name << "\n"
+    os << std::setprecision(17) << "FAIL: " << name << "\n"
        << "  handwritten = " << handwritten << "\n"
        << "  generated   = " << generated << "\n"
        << "  abs diff    = " << diff << "\n"
@@ -46,17 +45,16 @@ bool check_array(const std::string &name,
 
   for (int age = 0; age < bigeye_v2::kAges; ++age) {
     ok = check_close(name + "[age " + std::to_string(age + 1) + "]",
-                     handwritten[age], generated[age], tol) && ok;
+                     handwritten[age], generated[age], tol) &&
+         ok;
   }
 
   return ok;
 }
 
 template <typename T>
-bool check_vector(const std::string &name,
-                  const std::vector<T> &handwritten,
-                  const std::vector<T> &generated,
-                  double tol = 1.0e-10) {
+bool check_vector(const std::string &name, const std::vector<T> &handwritten,
+                  const std::vector<T> &generated, double tol = 1.0e-10) {
   bool ok = true;
 
   if (handwritten.size() != generated.size()) {
@@ -71,8 +69,9 @@ bool check_vector(const std::string &name,
   }
 
   for (std::size_t i = 0; i < handwritten.size(); ++i) {
-    ok = check_close(name + "[" + std::to_string(i) + "]",
-                     handwritten[i], generated[i], tol) && ok;
+    ok = check_close(name + "[" + std::to_string(i) + "]", handwritten[i],
+                     generated[i], tol) &&
+         ok;
   }
 
   return ok;
@@ -98,16 +97,17 @@ bool check_vector_array(
   }
 
   for (std::size_t y = 0; y < handwritten.size(); ++y) {
-    ok = check_array(name + "[year " + std::to_string(y) + "]",
-                     handwritten[y], generated[y], tol) && ok;
+    ok = check_array(name + "[year " + std::to_string(y) + "]", handwritten[y],
+                     generated[y], tol) &&
+         ok;
   }
 
   return ok;
 }
 
 void print_status(const std::string &name, bool ok) {
-  std::cout << std::left << std::setw(28) << name
-            << (ok ? "PASS" : "FAIL") << "\n";
+  std::cout << std::left << std::setw(28) << name << (ok ? "PASS" : "FAIL")
+            << "\n";
 }
 
 } // namespace
@@ -160,15 +160,17 @@ int main() {
   bool all_ok = true;
 
   bool life_ok = true;
-  life_ok = check_array("LifeHistoryState.m_at_age",
-                        handwritten.life.m_at_age,
-                        generated.life.m_at_age) && life_ok;
+  life_ok = check_array("LifeHistoryState.m_at_age", handwritten.life.m_at_age,
+                        generated.life.m_at_age) &&
+            life_ok;
   life_ok = check_array("LifeHistoryState.weight_at_age",
                         handwritten.life.weight_at_age,
-                        generated.life.weight_at_age) && life_ok;
+                        generated.life.weight_at_age) &&
+            life_ok;
   life_ok = check_array("LifeHistoryState.maturity_at_age",
                         handwritten.life.maturity_at_age,
-                        generated.life.maturity_at_age) && life_ok;
+                        generated.life.maturity_at_age) &&
+            life_ok;
   print_status("LifeHistoryState", life_ok);
   all_ok = life_ok && all_ok;
 
@@ -181,15 +183,16 @@ int main() {
                                      handwritten.populations[0].numbers_at_age,
                                      generated.populations[0].numbers_at_age) &&
                   population_ok;
-  population_ok = check_vector_array("PopulationState.survivors_at_age",
-                                     handwritten.populations[0].survivors_at_age,
-                                     generated.populations[0].survivors_at_age) &&
-                  population_ok;
-  population_ok = check_vector(
-                      "PopulationState.spawning_biomass_by_year",
-                      handwritten.populations[0].spawning_biomass_by_year,
-                      generated.populations[0].spawning_biomass_by_year) &&
-                  population_ok;
+  population_ok =
+      check_vector_array("PopulationState.survivors_at_age",
+                         handwritten.populations[0].survivors_at_age,
+                         generated.populations[0].survivors_at_age) &&
+      population_ok;
+  population_ok =
+      check_vector("PopulationState.spawning_biomass_by_year",
+                   handwritten.populations[0].spawning_biomass_by_year,
+                   generated.populations[0].spawning_biomass_by_year) &&
+      population_ok;
   print_status("PopulationState", population_ok);
   all_ok = population_ok && all_ok;
 
@@ -198,12 +201,10 @@ int main() {
                          handwritten.fleets[0].selectivity_at_age,
                          generated.fleets[0].selectivity_at_age) &&
              fleet_ok;
-  fleet_ok = check_array("FleetState.f_at_age",
-                         handwritten.fleets[0].f_at_age,
+  fleet_ok = check_array("FleetState.f_at_age", handwritten.fleets[0].f_at_age,
                          generated.fleets[0].f_at_age) &&
              fleet_ok;
-  fleet_ok = check_array("FleetState.z_at_age",
-                         handwritten.fleets[0].z_at_age,
+  fleet_ok = check_array("FleetState.z_at_age", handwritten.fleets[0].z_at_age,
                          generated.fleets[0].z_at_age) &&
              fleet_ok;
   fleet_ok = check_vector_array("FleetState.catch_numbers_at_age",
@@ -222,31 +223,31 @@ int main() {
                           handwritten.fleets[0].predicted_index_by_year,
                           generated.fleets[0].predicted_index_by_year) &&
              fleet_ok;
-  fleet_ok = check_vector_array(
-                 "FleetState.predicted_catch_age_proportion",
-                 handwritten.fleets[0].predicted_catch_age_proportion,
-                 generated.fleets[0].predicted_catch_age_proportion) &&
-             fleet_ok;
+  fleet_ok =
+      check_vector_array("FleetState.predicted_catch_age_proportion",
+                         handwritten.fleets[0].predicted_catch_age_proportion,
+                         generated.fleets[0].predicted_catch_age_proportion) &&
+      fleet_ok;
   print_status("FleetState", fleet_ok);
   all_ok = fleet_ok && all_ok;
 
   bool likelihood_ok = true;
-  likelihood_ok = check_close("LikelihoodState.catch_nll",
-                              handwritten.likelihood.catch_nll,
-                              generated.likelihood.catch_nll) &&
-                  likelihood_ok;
-  likelihood_ok = check_close("LikelihoodState.index_nll",
-                              handwritten.likelihood.index_nll,
-                              generated.likelihood.index_nll) &&
-                  likelihood_ok;
+  likelihood_ok =
+      check_close("LikelihoodState.catch_nll", handwritten.likelihood.catch_nll,
+                  generated.likelihood.catch_nll) &&
+      likelihood_ok;
+  likelihood_ok =
+      check_close("LikelihoodState.index_nll", handwritten.likelihood.index_nll,
+                  generated.likelihood.index_nll) &&
+      likelihood_ok;
   likelihood_ok = check_close("LikelihoodState.agecomp_nll",
                               handwritten.likelihood.agecomp_nll,
                               generated.likelihood.agecomp_nll) &&
                   likelihood_ok;
-  likelihood_ok = check_close("LikelihoodState.total_nll",
-                              handwritten.likelihood.total_nll,
-                              generated.likelihood.total_nll) &&
-                  likelihood_ok;
+  likelihood_ok =
+      check_close("LikelihoodState.total_nll", handwritten.likelihood.total_nll,
+                  generated.likelihood.total_nll) &&
+      likelihood_ok;
   print_status("LikelihoodState", likelihood_ok);
   all_ok = likelihood_ok && all_ok;
 

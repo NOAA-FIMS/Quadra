@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../objective/bigeye_quadra_objective.hpp"
 #include "../../../../../core/optimizer.hpp"
+#include "../objective/bigeye_quadra_objective.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -15,8 +15,7 @@
 
 namespace pifsc_bigeye_tuna {
 
-struct RecruitmentDiagnosticRow
-{
+struct RecruitmentDiagnosticRow {
   std::size_t index = 0;
   int year = 0;
   double rec_dev = std::numeric_limits<double>::quiet_NaN();
@@ -26,8 +25,7 @@ struct RecruitmentDiagnosticRow
   double abs_rec_dev = std::numeric_limits<double>::quiet_NaN();
 };
 
-struct RecruitmentDiagnostics
-{
+struct RecruitmentDiagnostics {
   double sigma_rec_dev = 0.35;
   std::size_t n = 0;
   double mean = std::numeric_limits<double>::quiet_NaN();
@@ -41,8 +39,7 @@ struct RecruitmentDiagnostics
   std::vector<RecruitmentDiagnosticRow> rows;
 };
 
-inline double sample_sd(const std::vector<double> &x)
-{
+inline double sample_sd(const std::vector<double> &x) {
   if (x.size() < 2)
     return std::numeric_limits<double>::quiet_NaN();
 
@@ -56,8 +53,7 @@ inline double sample_sd(const std::vector<double> &x)
   return std::sqrt(ss / static_cast<double>(x.size() - 1));
 }
 
-inline double lag1_corr(const std::vector<double> &x)
-{
+inline double lag1_corr(const std::vector<double> &x) {
   if (x.size() < 3)
     return std::numeric_limits<double>::quiet_NaN();
 
@@ -66,8 +62,7 @@ inline double lag1_corr(const std::vector<double> &x)
   a.reserve(x.size() - 1);
   b.reserve(x.size() - 1);
 
-  for (std::size_t i = 1; i < x.size(); ++i)
-  {
+  for (std::size_t i = 1; i < x.size(); ++i) {
     a.push_back(x[i - 1]);
     b.push_back(x[i]);
   }
@@ -81,8 +76,7 @@ inline double lag1_corr(const std::vector<double> &x)
   double va = 0.0;
   double vb = 0.0;
 
-  for (std::size_t i = 0; i < a.size(); ++i)
-  {
+  for (std::size_t i = 0; i < a.size(); ++i) {
     const double da = a[i] - ma;
     const double db = b[i] - mb;
     num += da * db;
@@ -94,14 +88,12 @@ inline double lag1_corr(const std::vector<double> &x)
   return den > 0.0 ? num / den : std::numeric_limits<double>::quiet_NaN();
 }
 
-inline double first_difference_roughness(const std::vector<double> &x)
-{
+inline double first_difference_roughness(const std::vector<double> &x) {
   if (x.size() < 2)
     return std::numeric_limits<double>::quiet_NaN();
 
   double ss = 0.0;
-  for (std::size_t i = 1; i < x.size(); ++i)
-  {
+  for (std::size_t i = 1; i < x.size(); ++i) {
     const double d = x[i] - x[i - 1];
     ss += d * d;
   }
@@ -109,11 +101,10 @@ inline double first_difference_roughness(const std::vector<double> &x)
   return std::sqrt(ss / static_cast<double>(x.size() - 1));
 }
 
-inline RecruitmentDiagnostics make_recruitment_diagnostics(
-    const BigeyeQuadraObjective &objective,
-    const quadra::OptResult &fit,
-    double sigma_rec_dev = 0.35)
-{
+inline RecruitmentDiagnostics
+make_recruitment_diagnostics(const BigeyeQuadraObjective &objective,
+                             const quadra::OptResult &fit,
+                             double sigma_rec_dev = 0.35) {
   RecruitmentDiagnostics out;
   out.sigma_rec_dev = sigma_rec_dev;
 
@@ -124,8 +115,7 @@ inline RecruitmentDiagnostics make_recruitment_diagnostics(
   std::vector<double> devs;
   devs.reserve(n);
 
-  for (std::size_t i = 0; i < n; ++i)
-  {
+  for (std::size_t i = 0; i < n; ++i) {
     const double rec_dev = fit.u_hat[i];
 
     RecruitmentDiagnosticRow row;
@@ -142,49 +132,41 @@ inline RecruitmentDiagnostics make_recruitment_diagnostics(
     devs.push_back(rec_dev);
   }
 
-  if (!devs.empty())
-  {
-    out.mean =
-        std::accumulate(devs.begin(), devs.end(), 0.0) /
-        static_cast<double>(devs.size());
+  if (!devs.empty()) {
+    out.mean = std::accumulate(devs.begin(), devs.end(), 0.0) /
+               static_cast<double>(devs.size());
     out.sd = sample_sd(devs);
     out.lag1_correlation = lag1_corr(devs);
     out.roughness = first_difference_roughness(devs);
 
-    auto max_it = std::max_element(
-        out.rows.begin(), out.rows.end(),
-        [](const RecruitmentDiagnosticRow &a, const RecruitmentDiagnosticRow &b)
-        { return a.abs_rec_dev < b.abs_rec_dev; });
+    auto max_it = std::max_element(out.rows.begin(), out.rows.end(),
+                                   [](const RecruitmentDiagnosticRow &a,
+                                      const RecruitmentDiagnosticRow &b) {
+                                     return a.abs_rec_dev < b.abs_rec_dev;
+                                   });
 
-    if (max_it != out.rows.end())
-    {
+    if (max_it != out.rows.end()) {
       out.max_abs = max_it->abs_rec_dev;
       out.max_abs_year = max_it->year;
     }
   }
 
-  if (std::isfinite(out.sd) && out.sd > 0.75 * sigma_rec_dev)
-  {
-    out.interpretation =
-        "Recruitment deviations are using a substantial fraction of the prior scale.";
-  }
-  else if (std::isfinite(out.sd))
-  {
+  if (std::isfinite(out.sd) && out.sd > 0.75 * sigma_rec_dev) {
+    out.interpretation = "Recruitment deviations are using a substantial "
+                         "fraction of the prior scale.";
+  } else if (std::isfinite(out.sd)) {
     out.interpretation =
         "Recruitment deviations are modest relative to the prior scale.";
-  }
-  else
-  {
+  } else {
     out.interpretation = "Insufficient recruitment deviations for summary.";
   }
 
   return out;
 }
 
-inline void write_recruitment_diagnostics_csv(
-    const RecruitmentDiagnostics &diagnostics,
-    const std::string &path)
-{
+inline void
+write_recruitment_diagnostics_csv(const RecruitmentDiagnostics &diagnostics,
+                                  const std::string &path) {
   std::ofstream out(path);
   if (!out)
     throw std::runtime_error("Could not open recruitment diagnostics CSV: " +
@@ -204,8 +186,7 @@ inline void write_recruitment_diagnostics_csv(
   out << "summary,total_prior_nll,," << diagnostics.total_prior_nll << ",\n";
   out << "summary,interpretation,,\"" << diagnostics.interpretation << "\",\n";
 
-  for (const auto &row : diagnostics.rows)
-  {
+  for (const auto &row : diagnostics.rows) {
     out << "recruitment,rec_dev," << row.year << "," << row.rec_dev
         << ",index=" << row.index << "\n";
     out << "recruitment,multiplier," << row.year << ","
@@ -217,10 +198,9 @@ inline void write_recruitment_diagnostics_csv(
   }
 }
 
-inline void write_recruitment_diagnostics_text(
-    const RecruitmentDiagnostics &diagnostics,
-    const std::string &path)
-{
+inline void
+write_recruitment_diagnostics_text(const RecruitmentDiagnostics &diagnostics,
+                                   const std::string &path) {
   std::ofstream out(path);
   if (!out)
     throw std::runtime_error("Could not open recruitment diagnostics text: " +
@@ -245,33 +225,29 @@ inline void write_recruitment_diagnostics_text(
 
   out << "Interpretation notes\n";
   out << "--------------------\n";
-  out << "Recruitment deviations should be checked for magnitude, persistence, and\n";
-  out << "roughness. Large persistent runs can indicate that recruitment is absorbing\n";
-  out << "misspecified fleet, selectivity, index, or catch processes rather than\n";
+  out << "Recruitment deviations should be checked for magnitude, persistence, "
+         "and\n";
+  out << "roughness. Large persistent runs can indicate that recruitment is "
+         "absorbing\n";
+  out << "misspecified fleet, selectivity, index, or catch processes rather "
+         "than\n";
   out << "representing biological recruitment variation.\n\n";
 
   out << "Rows\n";
   out << "----\n";
   out << "index,year,rec_dev,recruitment_multiplier,prior_z,prior_nll\n";
 
-  for (const auto &row : diagnostics.rows)
-  {
-    out << row.index << ","
-        << row.year << ","
-        << row.rec_dev << ","
-        << row.recruitment_multiplier << ","
-        << row.prior_z << ","
+  for (const auto &row : diagnostics.rows) {
+    out << row.index << "," << row.year << "," << row.rec_dev << ","
+        << row.recruitment_multiplier << "," << row.prior_z << ","
         << row.prior_nll << "\n";
   }
 }
 
 inline void write_recruitment_diagnostics(
-    const std::string &text_path,
-    const std::string &csv_path,
-    const BigeyeQuadraObjective &objective,
-    const quadra::OptResult &fit,
-    double sigma_rec_dev = 0.35)
-{
+    const std::string &text_path, const std::string &csv_path,
+    const BigeyeQuadraObjective &objective, const quadra::OptResult &fit,
+    double sigma_rec_dev = 0.35) {
   const auto diagnostics =
       make_recruitment_diagnostics(objective, fit, sigma_rec_dev);
 

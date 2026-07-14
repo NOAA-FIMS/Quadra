@@ -14,18 +14,14 @@
 
 namespace pifsc_bigeye_tuna {
 
-
-
 inline void write_level16_purse_seine_prediction_decomposition(
-    const std::string &txt_path,
-    const std::string &csv_path,
-    const BigeyeQuadraObjective &objective,
-    const quadra::OptResult &fit)
-{
+    const std::string &txt_path, const std::string &csv_path,
+    const BigeyeQuadraObjective &objective, const quadra::OptResult &fit) {
   std::ofstream txt(txt_path);
   std::ofstream csv(csv_path);
   if (!txt || !csv) {
-    throw std::runtime_error("Cannot write purse-seine prediction decomposition");
+    throw std::runtime_error(
+        "Cannot write purse-seine prediction decomposition");
   }
 
   txt << std::setprecision(15);
@@ -43,7 +39,8 @@ inline void write_level16_purse_seine_prediction_decomposition(
   const double r0 = std::exp(fit.par[0]);
   const double steepness = 0.75;
   const double fbar = std::exp(fit.par[1]);
-  const double q_purse_seine = std::exp(fit.par[2]);  const double m = 0.45;
+  const double q_purse_seine = std::exp(fit.par[2]);
+  const double m = 0.45;
 
   std::array<double, kAges> sel_longline{};
   std::array<double, kAges> sel_purse_seine{};
@@ -71,7 +68,8 @@ inline void write_level16_purse_seine_prediction_decomposition(
   txt << "=============================================\n\n";
   txt << "Purpose\n";
   txt << "-------\n";
-  txt << "Decompose purse-seine predicted age composition into numbers-at-age,\n";
+  txt << "Decompose purse-seine predicted age composition into "
+         "numbers-at-age,\n";
   txt << "purse-seine selectivity, selected numbers, predicted composition,\n";
   txt << "observed composition, and residual.\n\n";
 
@@ -126,20 +124,17 @@ inline void write_level16_purse_seine_prediction_decomposition(
         const double abs_resid = std::abs(resid);
 
         txt << obs.year << "," << (a + 1) << "," << n[i] << ","
-            << sel_purse_seine[i] << "," << selected[i] << "," << pred
-            << "," << obs_a << "," << resid << "," << abs_resid << ","
-            << pred << "\n";
+            << sel_purse_seine[i] << "," << selected[i] << "," << pred << ","
+            << obs_a << "," << resid << "," << abs_resid << "," << pred << "\n";
 
-        csv << "purse_seine_decomposition," << obs.year << "," << (a + 1)
-            << "," << n[i] << "," << sel_purse_seine[i] << ","
-            << selected[i] << "," << pred << "," << obs_a << ","
-            << resid << "," << abs_resid << "," << pred
-            << "," << obs.fleet << "," << obs.index << "," << obs.catch_mt
-            << "\n";
+        csv << "purse_seine_decomposition," << obs.year << "," << (a + 1) << ","
+            << n[i] << "," << sel_purse_seine[i] << "," << selected[i] << ","
+            << pred << "," << obs_a << "," << resid << "," << abs_resid << ","
+            << pred << "," << obs.fleet << "," << obs.index << ","
+            << obs.catch_mt << "\n";
 
-        residual_rows.push_back(
-            {obs.year, a + 1, obs_a, pred, resid, abs_resid, n[i],
-             sel_purse_seine[i], selected[i]});
+        residual_rows.push_back({obs.year, a + 1, obs_a, pred, resid, abs_resid,
+                                 n[i], sel_purse_seine[i], selected[i]});
       }
     }
 
@@ -150,16 +145,18 @@ inline void write_level16_purse_seine_prediction_decomposition(
     }
 
     std::array<double, kAges> next{};
-        const auto weight = default_weight_at_age();
+    const auto weight = default_weight_at_age();
     const auto maturity = default_maturity_at_age();
-const double spawning_biomass =
+    const double spawning_biomass =
         level23_bh_sync::spawning_biomass_from_numbers(n, weight, maturity);
-        const double phi0 =
+    const double phi0 =
         level23_bh_sync::spawning_biomass_from_numbers(n, weight, maturity) /
         std::max(r0, level23_bh_sync::bh_min_positive());
-const double expected_recruitment =
-        level23_bh_sync::beverton_holt_recruitment(spawning_biomass, r0, steepness, phi0);
-    next[0] = expected_recruitment * std::exp(fit.u_hat[static_cast<Eigen::Index>(t)]);
+    const double expected_recruitment =
+        level23_bh_sync::beverton_holt_recruitment(spawning_biomass, r0,
+                                                   steepness, phi0);
+    next[0] = expected_recruitment *
+              std::exp(fit.u_hat[static_cast<Eigen::Index>(t)]);
     for (int a = 1; a < kAges; ++a) {
       const std::size_t prev = static_cast<std::size_t>(a - 1);
       const double z_prev = m + fbar * total_sel[prev];
@@ -181,11 +178,12 @@ const double expected_recruitment =
   txt << "year,age,observed,predicted,residual,abs_residual,n_at_age,"
          "purse_seine_selectivity,selected_numbers\n";
 
-  for (std::size_t i = 0; i < std::min<std::size_t>(20, residual_rows.size()); ++i) {
+  for (std::size_t i = 0; i < std::min<std::size_t>(20, residual_rows.size());
+       ++i) {
     const auto &r = residual_rows[i];
-    txt << r.year << "," << r.age << "," << r.observed << ","
-        << r.predicted << "," << r.residual << "," << r.abs_residual
-        << "," << r.n_at_age << "," << r.sel << "," << r.selected << "\n";
+    txt << r.year << "," << r.age << "," << r.observed << "," << r.predicted
+        << "," << r.residual << "," << r.abs_residual << "," << r.n_at_age
+        << "," << r.sel << "," << r.selected << "\n";
   }
 
   std::array<double, kAges> mean_obs{};

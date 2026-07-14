@@ -15,22 +15,19 @@ struct LognormalCatchLikelihood {
                   BigeyeDerived<T> &d) const {
     d.catch_nll = T(0.0);
 
-    for (std::size_t y = 0; y < data.observed_catch_biomass_by_year.size(); ++y) {
+    for (std::size_t y = 0; y < data.observed_catch_biomass_by_year.size();
+         ++y) {
       const T obs = data.observed_catch_biomass_by_year[y];
       const T pred = d.total_catch_biomass_by_year[y];
 
       const T r = (std::log(obs) - std::log(pred)) / p.catch_sigma;
 
-      d.catch_nll +=
-          T(0.5) * r * r +
-          std::log(p.catch_sigma) +
-          std::log(obs);
+      d.catch_nll += T(0.5) * r * r + std::log(p.catch_sigma) + std::log(obs);
     }
 
     d.total_nll += d.catch_nll;
   }
 };
-
 
 struct LognormalIndexLikelihood {
   template <typename T>
@@ -45,27 +42,23 @@ struct LognormalIndexLikelihood {
 
       const T r = (std::log(obs) - std::log(pred)) / p.index_sigma;
 
-      d.index_nll +=
-          T(0.5) * r * r +
-          std::log(p.index_sigma) +
-          std::log(obs);
+      d.index_nll += T(0.5) * r * r + std::log(p.index_sigma) + std::log(obs);
     }
 
     d.total_nll += d.index_nll;
   }
 };
 
-
 struct MultinomialAgeCompLikelihood {
   template <typename T>
   void operator()(const BigeyeModelData<T> &data,
-                  const BigeyeModelParameters<T> &,
-                  BigeyeDerived<T> &d) const {
+                  const BigeyeModelParameters<T> &, BigeyeDerived<T> &d) const {
     d.agecomp_nll = T(0.0);
 
     const T eps = T(1.0e-12);
 
-    for (std::size_t y = 0; y < data.observed_catch_age_proportion.size(); ++y) {
+    for (std::size_t y = 0; y < data.observed_catch_age_proportion.size();
+         ++y) {
       const T n_eff = data.catch_agecomp_sample_size[y];
 
       for (int a = 0; a < kAges; ++a) {

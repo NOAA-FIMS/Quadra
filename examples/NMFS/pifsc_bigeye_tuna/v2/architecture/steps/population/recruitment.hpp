@@ -1,8 +1,8 @@
 #pragma once
 
+#include "../../../common/model_data.hpp"
 #include "../../parameters/population_parameters.hpp"
 #include "../../state/population_state.hpp"
-#include "../../../common/model_data.hpp"
 
 //------------------------------------------------------------
 // Recruitment
@@ -33,8 +33,8 @@ struct FixedRecruitment {
   void operator()(const BigeyeModelData<T> &data,
                   const PopulationParameters<T> &p,
                   PopulationState<T> &population) const {
-    population.recruits_by_year.assign(
-        static_cast<std::size_t>(data.n_years), p.r0);
+    population.recruits_by_year.assign(static_cast<std::size_t>(data.n_years),
+                                       p.r0);
   }
 };
 

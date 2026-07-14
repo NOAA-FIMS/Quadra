@@ -59,15 +59,13 @@ T age_comp_nll(const std::array<double, kAges> &observed,
   return nll;
 }
 
-template <class T>
-std::array<T, kAges> fixed_purse_seine_age_selectivity()
-{
+template <class T> std::array<T, kAges> fixed_purse_seine_age_selectivity() {
   // Young-fish purse-seine vulnerability pattern.
   // Normalized to max = 1.0. This is intentionally fixed in Level 6
   // to test whether the Level 5 purse-seine a50 ridge was caused by
   // an over-flexible logistic parameterization near the lower age boundary.
-  const std::array<double, kAges> raw = {
-      1.00, 1.00, 0.85, 0.55, 0.25, 0.10, 0.04, 0.02, 0.01, 0.005};
+  const std::array<double, kAges> raw = {1.00, 1.00, 0.85, 0.55, 0.25,
+                                         0.10, 0.04, 0.02, 0.01, 0.005};
 
   std::array<T, kAges> out{};
   for (int a = 0; a < kAges; ++a) {
@@ -87,8 +85,8 @@ public:
 
   template <class T> T operator()(const std::vector<T> &par) const {
     if (par.size() < 6 + n_years()) {
-      throw std::runtime_error(
-          "BigeyeQuadraObjective expected 6 fixed effects plus recruitment deviations");
+      throw std::runtime_error("BigeyeQuadraObjective expected 6 fixed effects "
+                               "plus recruitment deviations");
     }
 
     const T log_r0 = par[0];
@@ -118,9 +116,8 @@ public:
 
     std::array<T, kAges> sel_longline{};
     for (int a = 0; a < kAges; ++a) {
-      sel_longline[static_cast<std::size_t>(a)] =
-          logistic_selectivity_t(T(a + 1), sel_a50_longline,
-                                 sel_slope_longline);
+      sel_longline[static_cast<std::size_t>(a)] = logistic_selectivity_t(
+          T(a + 1), sel_a50_longline, sel_slope_longline);
     }
 
     const auto sel_purse_seine = fixed_purse_seine_age_selectivity<T>();
@@ -198,8 +195,7 @@ public:
         const T catch_hat = total_catch_hat * T(fleet_catch_share(obs.fleet));
         if (obs.catch_mt > 0.0) {
           const T z =
-              (log_t(T(obs.catch_mt)) -
-               log_t(max_t(catch_hat, min_positive))) /
+              (log_t(T(obs.catch_mt)) - log_t(max_t(catch_hat, min_positive))) /
               sigma_log_catch;
           nll = nll + T(0.5) * square_t(z);
         }

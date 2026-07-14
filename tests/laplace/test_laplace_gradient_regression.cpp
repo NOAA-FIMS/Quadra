@@ -5,10 +5,10 @@
 using namespace quadra;
 
 struct GaussianREModel {
-  AD operator()(std::vector<AD>& p) {
+  AD operator()(std::vector<AD> &p) {
     // theta = p[0], u = p[1]
-    const AD& theta = p[0];
-    const AD& u = p[1];
+    const AD &theta = p[0];
+    const AD &u = p[1];
 
     // Joint objective:
     // f(theta,u) = 0.5*(theta - 2)^2 + 0.5*exp(theta)*(u - theta)^2
@@ -24,9 +24,11 @@ struct GaussianREModel {
 
 int main() {
   ParameterVector params;
-  params.add(quadra::Parameter("theta", 1.25, quadra::ParameterTransform::Identity, false));
-  params.add(quadra::Parameter("u", 0.0, quadra::ParameterTransform::Identity, true));
-  
+  params.add(quadra::Parameter("theta", 1.25,
+                               quadra::ParameterTransform::Identity, false));
+  params.add(
+      quadra::Parameter("u", 0.0, quadra::ParameterTransform::Identity, true));
+
   GaussianREModel model;
 
   LaplaceOptions opts = default_laplace_options();

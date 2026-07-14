@@ -17,8 +17,7 @@ struct SpawningBiomass {
     for (std::size_t y = 0; y < ny; ++y) {
       for (int a = 0; a < kAges; ++a) {
         population.spawning_biomass_by_year[y] +=
-            population.numbers_at_age[y][a] *
-            life.weight_at_age[a] *
+            population.numbers_at_age[y][a] * life.weight_at_age[a] *
             life.maturity_at_age[a];
       }
     }

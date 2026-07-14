@@ -29,8 +29,7 @@ namespace bigeye_v2 {
 // Does not handle the plus group.
 //------------------------------------------------------------
 struct Aging {
-  template <typename T>
-  void operator()(PopulationState<T> &population) const {
+  template <typename T> void operator()(PopulationState<T> &population) const {
     const auto ny = population.survivors_at_age.size();
 
     if (population.numbers_at_age.size() < ny) {

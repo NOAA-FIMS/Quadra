@@ -37,8 +37,7 @@ int main() {
   if (!nearly_equal(fleet.predicted_index_by_year[0], expected_y0) ||
       !nearly_equal(fleet.predicted_index_by_year[1], expected_y1) ||
       !nearly_equal(fleet.predicted_index_by_year[2], expected_y2)) {
-    std::cerr << std::setprecision(17)
-              << "FAIL: predicted index values got "
+    std::cerr << std::setprecision(17) << "FAIL: predicted index values got "
               << fleet.predicted_index_by_year[0] << ", "
               << fleet.predicted_index_by_year[1] << ", "
               << fleet.predicted_index_by_year[2] << "\n";

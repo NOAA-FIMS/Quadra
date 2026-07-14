@@ -39,35 +39,27 @@ int main() {
   constexpr double expected_y1_age1 = 1809.6748360719191;
 
   if (!nearly_equal(population.survivors_at_age[0][0], expected_y0_age1)) {
-    std::cerr << std::setprecision(17)
-              << "FAIL: y0 age1 survivor got "
-              << population.survivors_at_age[0][0]
-              << " expected " << expected_y0_age1
-              << " diff " << (population.survivors_at_age[0][0] -
-                               expected_y0_age1)
-              << "\n";
+    std::cerr << std::setprecision(17) << "FAIL: y0 age1 survivor got "
+              << population.survivors_at_age[0][0] << " expected "
+              << expected_y0_age1 << " diff "
+              << (population.survivors_at_age[0][0] - expected_y0_age1) << "\n";
     return EXIT_FAILURE;
   }
 
   if (!nearly_equal(population.survivors_at_age[0][9], expected_y0_age10)) {
-    std::cerr << std::setprecision(17)
-              << "FAIL: y0 age10 survivor got "
-              << population.survivors_at_age[0][9]
-              << " expected " << expected_y0_age10
-              << " diff " << (population.survivors_at_age[0][9] -
-                               expected_y0_age10)
+    std::cerr << std::setprecision(17) << "FAIL: y0 age10 survivor got "
+              << population.survivors_at_age[0][9] << " expected "
+              << expected_y0_age10 << " diff "
+              << (population.survivors_at_age[0][9] - expected_y0_age10)
               << "\n";
     return EXIT_FAILURE;
   }
 
   if (!nearly_equal(population.survivors_at_age[1][0], expected_y1_age1)) {
-    std::cerr << std::setprecision(17)
-              << "FAIL: y1 age1 survivor got "
-              << population.survivors_at_age[1][0]
-              << " expected " << expected_y1_age1
-              << " diff " << (population.survivors_at_age[1][0] -
-                               expected_y1_age1)
-              << "\n";
+    std::cerr << std::setprecision(17) << "FAIL: y1 age1 survivor got "
+              << population.survivors_at_age[1][0] << " expected "
+              << expected_y1_age1 << " diff "
+              << (population.survivors_at_age[1][0] - expected_y1_age1) << "\n";
     return EXIT_FAILURE;
   }
 

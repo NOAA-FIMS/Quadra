@@ -53,21 +53,18 @@ namespace level23_bh_sync {
 
 inline double bh_min_positive() { return 1.0e-12; }
 
-inline double beverton_holt_recruitment(double spawning_biomass,
-                                        double r0,
-                                        double steepness,
-                                        double phi0) {
-  const double denom =
-      std::max(0.2 * r0 * phi0 * (1.0 - steepness) +
-                   spawning_biomass * (steepness - 0.2),
-               bh_min_positive());
+inline double beverton_holt_recruitment(double spawning_biomass, double r0,
+                                        double steepness, double phi0) {
+  const double denom = std::max(0.2 * r0 * phi0 * (1.0 - steepness) +
+                                    spawning_biomass * (steepness - 0.2),
+                                bh_min_positive());
   return (0.8 * r0 * steepness * spawning_biomass) / denom;
 }
 
-inline double spawning_biomass_from_numbers(
-    const std::array<double, kAges> &n,
-    const std::array<double, kAges> &weight,
-    const std::array<double, kAges> &maturity) {
+inline double
+spawning_biomass_from_numbers(const std::array<double, kAges> &n,
+                              const std::array<double, kAges> &weight,
+                              const std::array<double, kAges> &maturity) {
   double out = 0.0;
   for (int a = 0; a < kAges; ++a) {
     const auto i = static_cast<std::size_t>(a);
@@ -79,38 +76,31 @@ inline double spawning_biomass_from_numbers(
 } // namespace level23_bh_sync
 #endif // LEVEL23_BH_SYNC_HELPERS_DEFINED
 
-
 std::array<double, kAges> default_weight_at_age() {
   // Provisional bigeye-tuna-like weight-at-age schedule in kg.
   // Diagnostic placeholder only; replace with stock-specific assessment inputs.
-  return {3.0, 10.0, 22.0, 38.0, 55.0,
-          72.0, 88.0, 102.0, 115.0, 128.0};
+  return {3.0, 10.0, 22.0, 38.0, 55.0, 72.0, 88.0, 102.0, 115.0, 128.0};
 }
 
 std::array<double, kAges> default_maturity_at_age() {
   // Provisional bigeye-tuna-like maturity-at-age schedule.
   // Diagnostic placeholder only; replace with stock-specific assessment inputs.
-  return {0.00, 0.00, 0.05, 0.20, 0.45,
-          0.70, 0.85, 0.95, 1.00, 1.00};
+  return {0.00, 0.00, 0.05, 0.20, 0.45, 0.70, 0.85, 0.95, 1.00, 1.00};
 }
 
-
-inline double beverton_holt_recruitment(double spawning_biomass,
-                                        double r0,
-                                        double steepness,
-                                        double phi0,
+inline double beverton_holt_recruitment(double spawning_biomass, double r0,
+                                        double steepness, double phi0,
                                         double min_positive = 1.0e-12) {
-  const double denom =
-      std::max(0.2 * r0 * phi0 * (1.0 - steepness) +
-                   spawning_biomass * (steepness - 0.2),
-               min_positive);
+  const double denom = std::max(0.2 * r0 * phi0 * (1.0 - steepness) +
+                                    spawning_biomass * (steepness - 0.2),
+                                min_positive);
   return (0.8 * r0 * steepness * spawning_biomass) / denom;
 }
 
-inline double spawning_biomass_from_numbers(
-    const std::array<double, kAges> &n,
-    const std::array<double, kAges> &weight,
-    const std::array<double, kAges> &maturity) {
+inline double
+spawning_biomass_from_numbers(const std::array<double, kAges> &n,
+                              const std::array<double, kAges> &weight,
+                              const std::array<double, kAges> &maturity) {
   double out = 0.0;
   for (int a = 0; a < kAges; ++a) {
     const auto i = static_cast<std::size_t>(a);

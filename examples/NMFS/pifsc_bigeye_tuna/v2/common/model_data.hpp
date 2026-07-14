@@ -7,8 +7,7 @@
 
 namespace bigeye_v2 {
 
-template <typename T>
-struct BigeyeModelData {
+template <typename T> struct BigeyeModelData {
   int n_years = 1;
   std::vector<T> observed_catch_biomass_by_year{};
   std::vector<T> observed_index_by_year{};

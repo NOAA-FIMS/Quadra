@@ -28,12 +28,12 @@ int main() {
   data.catch_agecomp_sample_size = {100.0, 100.0, 100.0};
 
   data.observed_catch_age_proportion = {
-      std::array<double, kAges>{0.02, 0.04, 0.07, 0.10, 0.14,
-                                0.16, 0.17, 0.14, 0.10, 0.06},
-      std::array<double, kAges>{0.02, 0.04, 0.07, 0.10, 0.14,
-                                0.16, 0.17, 0.14, 0.10, 0.06},
-      std::array<double, kAges>{0.02, 0.04, 0.07, 0.10, 0.14,
-                                0.16, 0.17, 0.14, 0.10, 0.06}};
+      std::array<double, kAges>{0.02, 0.04, 0.07, 0.10, 0.14, 0.16, 0.17, 0.14,
+                                0.10, 0.06},
+      std::array<double, kAges>{0.02, 0.04, 0.07, 0.10, 0.14, 0.16, 0.17, 0.14,
+                                0.10, 0.06},
+      std::array<double, kAges>{0.02, 0.04, 0.07, 0.10, 0.14, 0.16, 0.17, 0.14,
+                                0.10, 0.06}};
 
   BigeyeModelParameters<double> p;
   p.log_m_young_offset = std::log(0.75);
@@ -58,37 +58,34 @@ int main() {
   constexpr double expected_prop_age_10 = 0.17628697835557786;
   constexpr double expected_agecomp_nll = 683.1930939334195;
 
-  if (!nearly_equal(d.predicted_catch_age_proportion[0][0], expected_prop_age_1)) {
-    std::cerr << std::setprecision(17)
-              << "FAIL: prop age 1 got "
-              << d.predicted_catch_age_proportion[0][0]
-              << " expected " << expected_prop_age_1
-              << " diff "
+  if (!nearly_equal(d.predicted_catch_age_proportion[0][0],
+                    expected_prop_age_1)) {
+    std::cerr << std::setprecision(17) << "FAIL: prop age 1 got "
+              << d.predicted_catch_age_proportion[0][0] << " expected "
+              << expected_prop_age_1 << " diff "
               << (d.predicted_catch_age_proportion[0][0] - expected_prop_age_1)
               << "\n";
     return EXIT_FAILURE;
   }
 
-  if (!nearly_equal(d.predicted_catch_age_proportion[0][9], expected_prop_age_10)) {
-    std::cerr << std::setprecision(17)
-              << "FAIL: prop age 10 got "
-              << d.predicted_catch_age_proportion[0][9]
-              << " expected " << expected_prop_age_10
-              << " diff "
+  if (!nearly_equal(d.predicted_catch_age_proportion[0][9],
+                    expected_prop_age_10)) {
+    std::cerr << std::setprecision(17) << "FAIL: prop age 10 got "
+              << d.predicted_catch_age_proportion[0][9] << " expected "
+              << expected_prop_age_10 << " diff "
               << (d.predicted_catch_age_proportion[0][9] - expected_prop_age_10)
               << "\n";
     return EXIT_FAILURE;
   }
 
   if (!nearly_equal(d.agecomp_nll, expected_agecomp_nll)) {
-    std::cerr << std::setprecision(17)
-              << "FAIL: agecomp_nll got " << d.agecomp_nll
-              << " expected " << expected_agecomp_nll
-              << " diff " << (d.agecomp_nll - expected_agecomp_nll)
-              << "\n";
+    std::cerr << std::setprecision(17) << "FAIL: agecomp_nll got "
+              << d.agecomp_nll << " expected " << expected_agecomp_nll
+              << " diff " << (d.agecomp_nll - expected_agecomp_nll) << "\n";
     return EXIT_FAILURE;
   }
 
-  std::cout << "PASSED: Bigeye v2 Level07 age composition likelihood regression\n";
+  std::cout
+      << "PASSED: Bigeye v2 Level07 age composition likelihood regression\n";
   return EXIT_SUCCESS;
 }

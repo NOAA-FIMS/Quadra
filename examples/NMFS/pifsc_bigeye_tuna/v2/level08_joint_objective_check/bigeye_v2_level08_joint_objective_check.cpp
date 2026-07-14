@@ -20,25 +20,19 @@ int main() {
   BigeyeModelData<double> data;
   data.n_years = 3;
 
-  data.observed_catch_biomass_by_year = {
-      1326.1639007786976,
-      1350.0,
-      1300.0};
+  data.observed_catch_biomass_by_year = {1326.1639007786976, 1350.0, 1300.0};
 
-  data.observed_index_by_year = {
-      116.46701723019194,
-      120.0,
-      110.0};
+  data.observed_index_by_year = {116.46701723019194, 120.0, 110.0};
 
   data.catch_agecomp_sample_size = {100.0, 100.0, 100.0};
 
   data.observed_catch_age_proportion = {
-      std::array<double, kAges>{0.02, 0.04, 0.07, 0.10, 0.14,
-                                0.16, 0.17, 0.14, 0.10, 0.06},
-      std::array<double, kAges>{0.02, 0.04, 0.07, 0.10, 0.14,
-                                0.16, 0.17, 0.14, 0.10, 0.06},
-      std::array<double, kAges>{0.02, 0.04, 0.07, 0.10, 0.14,
-                                0.16, 0.17, 0.14, 0.10, 0.06}};
+      std::array<double, kAges>{0.02, 0.04, 0.07, 0.10, 0.14, 0.16, 0.17, 0.14,
+                                0.10, 0.06},
+      std::array<double, kAges>{0.02, 0.04, 0.07, 0.10, 0.14, 0.16, 0.17, 0.14,
+                                0.10, 0.06},
+      std::array<double, kAges>{0.02, 0.04, 0.07, 0.10, 0.14, 0.16, 0.17, 0.14,
+                                0.10, 0.06}};
 
   BigeyeModelParameters<double> p;
   p.log_m_young_offset = std::log(0.75);
@@ -62,34 +56,30 @@ int main() {
       expected_catch_nll + expected_index_nll + expected_agecomp_nll;
 
   if (!nearly_equal(d.catch_nll, expected_catch_nll)) {
-    std::cerr << std::setprecision(17)
-              << "FAIL: catch_nll got " << d.catch_nll
-              << " expected " << expected_catch_nll
-              << " diff " << (d.catch_nll - expected_catch_nll) << "\n";
+    std::cerr << std::setprecision(17) << "FAIL: catch_nll got " << d.catch_nll
+              << " expected " << expected_catch_nll << " diff "
+              << (d.catch_nll - expected_catch_nll) << "\n";
     return EXIT_FAILURE;
   }
 
   if (!nearly_equal(d.index_nll, expected_index_nll)) {
-    std::cerr << std::setprecision(17)
-              << "FAIL: index_nll got " << d.index_nll
-              << " expected " << expected_index_nll
-              << " diff " << (d.index_nll - expected_index_nll) << "\n";
+    std::cerr << std::setprecision(17) << "FAIL: index_nll got " << d.index_nll
+              << " expected " << expected_index_nll << " diff "
+              << (d.index_nll - expected_index_nll) << "\n";
     return EXIT_FAILURE;
   }
 
   if (!nearly_equal(d.agecomp_nll, expected_agecomp_nll)) {
-    std::cerr << std::setprecision(17)
-              << "FAIL: agecomp_nll got " << d.agecomp_nll
-              << " expected " << expected_agecomp_nll
+    std::cerr << std::setprecision(17) << "FAIL: agecomp_nll got "
+              << d.agecomp_nll << " expected " << expected_agecomp_nll
               << " diff " << (d.agecomp_nll - expected_agecomp_nll) << "\n";
     return EXIT_FAILURE;
   }
 
   if (!nearly_equal(d.total_nll, expected_total_nll)) {
-    std::cerr << std::setprecision(17)
-              << "FAIL: total_nll got " << d.total_nll
-              << " expected " << expected_total_nll
-              << " diff " << (d.total_nll - expected_total_nll) << "\n";
+    std::cerr << std::setprecision(17) << "FAIL: total_nll got " << d.total_nll
+              << " expected " << expected_total_nll << " diff "
+              << (d.total_nll - expected_total_nll) << "\n";
     return EXIT_FAILURE;
   }
 

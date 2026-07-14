@@ -24,9 +24,8 @@ int main() {
   population.spawning_biomass_by_year = {10000.0, 12000.0};
 
   FleetState<double> fleet;
-  fleet.catch_numbers_at_age.assign(
-      static_cast<std::size_t>(data.n_years),
-      std::array<double, kAges>{});
+  fleet.catch_numbers_at_age.assign(static_cast<std::size_t>(data.n_years),
+                                    std::array<double, kAges>{});
 
   for (int a = 0; a < kAges; ++a) {
     fleet.catch_numbers_at_age[0][a] = static_cast<double>(a + 1);
@@ -45,10 +44,8 @@ int main() {
       !nearly_equal(fleet.predicted_catch_age_proportion[0][9], 10.0 / 55.0)) {
     std::cerr << std::setprecision(17)
               << "FAIL: age composition prediction got age1 "
-              << fleet.predicted_catch_age_proportion[0][0]
-              << " age10 "
-              << fleet.predicted_catch_age_proportion[0][9]
-              << "\n";
+              << fleet.predicted_catch_age_proportion[0][0] << " age10 "
+              << fleet.predicted_catch_age_proportion[0][9] << "\n";
     return EXIT_FAILURE;
   }
 

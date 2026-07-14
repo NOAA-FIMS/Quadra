@@ -14,7 +14,8 @@ inline constexpr int kInitialDevOffset = kLonglineSelOffset + kLonglineSelDevs;
 inline constexpr int kInitialDevs = kAges;
 inline constexpr int kPurseSeineSelOffset = kInitialDevOffset + kInitialDevs;
 inline constexpr int kPurseSeineSelDevs = kAges;
-inline constexpr int kRecruitmentOffset = kPurseSeineSelOffset + kPurseSeineSelDevs;
+inline constexpr int kRecruitmentOffset =
+    kPurseSeineSelOffset + kPurseSeineSelDevs;
 
 } // namespace level21_layout
 } // namespace pifsc_bigeye_tuna

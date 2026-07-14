@@ -20,9 +20,8 @@ int main() {
   data.n_years = 2;
 
   FleetState<double> fleet;
-  fleet.catch_numbers_at_age.assign(
-      static_cast<std::size_t>(data.n_years),
-      std::array<double, kAges>{});
+  fleet.catch_numbers_at_age.assign(static_cast<std::size_t>(data.n_years),
+                                    std::array<double, kAges>{});
 
   for (int a = 0; a < kAges; ++a) {
     fleet.catch_numbers_at_age[0][a] = static_cast<double>(a + 1);
@@ -36,19 +35,17 @@ int main() {
 
   if (!nearly_equal(fleet.predicted_catch_age_proportion[0][0],
                     expected_age1)) {
-    std::cerr << std::setprecision(17)
-              << "FAIL: age1 prop got "
-              << fleet.predicted_catch_age_proportion[0][0]
-              << " expected " << expected_age1 << "\n";
+    std::cerr << std::setprecision(17) << "FAIL: age1 prop got "
+              << fleet.predicted_catch_age_proportion[0][0] << " expected "
+              << expected_age1 << "\n";
     return EXIT_FAILURE;
   }
 
   if (!nearly_equal(fleet.predicted_catch_age_proportion[0][9],
                     expected_age10)) {
-    std::cerr << std::setprecision(17)
-              << "FAIL: age10 prop got "
-              << fleet.predicted_catch_age_proportion[0][9]
-              << " expected " << expected_age10 << "\n";
+    std::cerr << std::setprecision(17) << "FAIL: age10 prop got "
+              << fleet.predicted_catch_age_proportion[0][9] << " expected "
+              << expected_age10 << "\n";
     return EXIT_FAILURE;
   }
 
@@ -58,6 +55,7 @@ int main() {
     return EXIT_FAILURE;
   }
 
-  std::cout << "PASSED: Bigeye v2 CAA catch age composition observation regression\n";
+  std::cout
+      << "PASSED: Bigeye v2 CAA catch age composition observation regression\n";
   return EXIT_SUCCESS;
 }

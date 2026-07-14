@@ -7,8 +7,7 @@
 
 namespace bigeye_v2 {
 
-template <typename T>
-struct BigeyeDerived {
+template <typename T> struct BigeyeDerived {
   std::array<T, kAges> m_at_age{};
   std::array<T, kAges> weight_at_age{};
   std::array<T, kAges> maturity_at_age{};

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../../common/model_data.hpp"
 #include "../packages/fleet/fleet_context.hpp"
 #include "../packages/fleet/fleet_package.hpp"
 #include "../packages/life_history/life_history_package.hpp"
@@ -11,7 +12,6 @@
 #include "../packages/population/population_package.hpp"
 #include "../parameters/assessment_parameters.hpp"
 #include "../state/assessment_state.hpp"
-#include "../../common/model_data.hpp"
 
 namespace bigeye_v2 {
 
@@ -38,27 +38,18 @@ struct AssessmentCycle {
       return;
     }
 
-    FleetContext<T> fleet_context{
-        &parameters.fleets[0],
-        &state.life,
-        &state.populations[0],
-        &state.fleets[0]};
+    FleetContext<T> fleet_context{&parameters.fleets[0], &state.life,
+                                  &state.populations[0], &state.fleets[0]};
 
-    PopulationContext<T> population_context{
-        &parameters.populations[0],
-        &state.life,
-        &state.fleets[0],
-        &state.populations[0]};
+    PopulationContext<T> population_context{&parameters.populations[0],
+                                            &state.life, &state.fleets[0],
+                                            &state.populations[0]};
 
     ObservationContext<T> observation_context{
-        &parameters.fleets[0],
-        &state.populations[0],
-        &state.fleets[0]};
+        &parameters.fleets[0], &state.populations[0], &state.fleets[0]};
 
     LikelihoodContext<T> likelihood_context{
-        &parameters.fleets[0],
-        &state.fleets[0],
-        &state.likelihood};
+        &parameters.fleets[0], &state.fleets[0], &state.likelihood};
 
     // First pass initializes fleet mortality from current population state.
     FleetPackage{}(data, fleet_context);
