@@ -5,8 +5,8 @@
 #include <stdexcept>
 #include <vector>
 
-#include "../laplace.hpp"
 #include "../autodiff/laplace_graph_plan.hpp"
+#include "../laplace.hpp"
 #include "random_effect_objective.hpp"
 #include "sparse_factorization_cache.hpp"
 #include "sparse_huu_factorization.hpp"
@@ -50,7 +50,7 @@ random_indices_as_ints(const ParameterPartition &partition) {
 template <class Model> class RandomEffectHessianWorkspace {
 public:
   RandomEffectHessianWorkspace(Model &model, const std::vector<double> &fixed,
-      const std::vector<double> &random,
+                               const std::vector<double> &random,
                                const ParameterPartition &partition,
                                bool collect_reports = true)
       : model_(model), partition_(partition),
@@ -87,34 +87,29 @@ public:
       random_vertex_to_index_[random_ad_[i].varId] = static_cast<int>(i);
     random_idx_ = random_indices_as_ints(partition_);
     const auto plan_end = std::chrono::steady_clock::now();
-    construction_parameter_ms_ =
-        std::chrono::duration<double, std::milli>(
-            parameter_end - parameter_start).count();
+    construction_parameter_ms_ = std::chrono::duration<double, std::milli>(
+                                     parameter_end - parameter_start)
+                                     .count();
     construction_record_ms_ =
-        std::chrono::duration<double, std::milli>(
-            record_end - record_start).count();
+        std::chrono::duration<double, std::milli>(record_end - record_start)
+            .count();
     construction_plan_ms_ =
-        std::chrono::duration<double, std::milli>(
-            plan_end - plan_start).count();
+        std::chrono::duration<double, std::milli>(plan_end - plan_start)
+            .count();
   }
 
   double construction_parameter_ms() const {
     return construction_parameter_ms_;
   }
 
-  double construction_record_ms() const {
-    return construction_record_ms_;
-  }
+  double construction_record_ms() const { return construction_record_ms_; }
 
-  double construction_plan_ms() const {
-    return construction_plan_ms_;
-  }
+  double construction_plan_ms() const { return construction_plan_ms_; }
 
   RandomEffectHessianResult Evaluate(const std::vector<double> &fixed,
                                      const std::vector<double> &random,
                                      double drop_tol = 0.0) {
-    if (fixed.size() != fixed_ad_.size() ||
-        random.size() != random_ad_.size())
+    if (fixed.size() != fixed_ad_.size() || random.size() != random_ad_.size())
       throw std::invalid_argument(
           "RandomEffectHessianWorkspace parameter length mismatch");
     had::g_ADGraph = &tape_.graph;
@@ -149,11 +144,10 @@ public:
                     random[i] + 0.001 * static_cast<double>(1 + i % 5));
         tape_.forward();
         PropagateRandomHessianRestricted(tape_.graph, graph_plan_);
-        const SparseHessianPattern probe =
-            discover_pattern_from_graph(
-                full_ad_, random_idx_, true, true, 1e-12, false);
-        std::set<std::pair<int, int>> union_pattern(
-            pattern_.begin(), pattern_.end());
+        const SparseHessianPattern probe = discover_pattern_from_graph(
+            full_ad_, random_idx_, true, true, 1e-12, false);
+        std::set<std::pair<int, int>> union_pattern(pattern_.begin(),
+                                                    pattern_.end());
         union_pattern.insert(probe.begin(), probe.end());
         pattern_.assign(union_pattern.begin(), union_pattern.end());
         for (size_t i = 0; i < fixed.size(); ++i)
@@ -174,10 +168,10 @@ public:
         entries.reserve(pattern_.size());
         for (const auto &ij : pattern_)
           entries.emplace_back(ij.first, ij.second, 0.0);
-        hessian_pattern_template_.resize(
-            static_cast<int>(random.size()), static_cast<int>(random.size()));
-        hessian_pattern_template_.setFromTriplets(
-            entries.begin(), entries.end());
+        hessian_pattern_template_.resize(static_cast<int>(random.size()),
+                                         static_cast<int>(random.size()));
+        hessian_pattern_template_.setFromTriplets(entries.begin(),
+                                                  entries.end());
         hessian_pattern_template_.makeCompressed();
       }
       H = hessian_pattern_template_;
@@ -190,10 +184,9 @@ public:
       std::vector<Eigen::Triplet<double>> entries;
       entries.reserve(pattern_.size());
       for (const auto &ij : pattern_) {
-        const double value =
-            hessian_value(
-                full_ad_[random_idx_[static_cast<size_t>(ij.first)]],
-                full_ad_[random_idx_[static_cast<size_t>(ij.second)]]);
+        const double value = hessian_value(
+            full_ad_[random_idx_[static_cast<size_t>(ij.first)]],
+            full_ad_[random_idx_[static_cast<size_t>(ij.second)]]);
         if (std::abs(value) > drop_tol)
           entries.emplace_back(ij.first, ij.second, value);
       }
@@ -208,8 +201,8 @@ public:
     if (collect_reports_) {
       ModelReportContext report_ctx;
       model_.initialize(report_ctx);
-      (void)evaluate_fixed_random<Model, double>(
-          model_, fixed, random, partition_, report_ctx);
+      (void)evaluate_fixed_random<Model, double>(model_, fixed, random,
+                                                 partition_, report_ctx);
       result.reports_m = report_ctx.reports().values();
     }
     result.hessian_random_m = std::move(H);
@@ -224,8 +217,7 @@ public:
   FixedGradientMixedHessianResult
   EvaluateFixedGradientMixedHessian(const std::vector<double> &fixed,
                                     const std::vector<double> &random) {
-    if (fixed.size() != fixed_ad_.size() ||
-        random.size() != random_ad_.size())
+    if (fixed.size() != fixed_ad_.size() || random.size() != random_ad_.size())
       throw std::invalid_argument(
           "RandomEffectHessianWorkspace parameter length mismatch");
     had::g_ADGraph = &tape_.graph;
@@ -240,11 +232,9 @@ public:
     const auto propagate_end = std::chrono::steady_clock::now();
 
     FixedGradientMixedHessianResult result;
-    result.fixed_gradient_m.resize(
-        static_cast<Eigen::Index>(fixed_ad_.size()));
-    result.mixed_hessian_m.resize(
-        static_cast<Eigen::Index>(random_ad_.size()),
-        static_cast<Eigen::Index>(fixed_ad_.size()));
+    result.fixed_gradient_m.resize(static_cast<Eigen::Index>(fixed_ad_.size()));
+    result.mixed_hessian_m.resize(static_cast<Eigen::Index>(random_ad_.size()),
+                                  static_cast<Eigen::Index>(fixed_ad_.size()));
     result.mixed_hessian_m.setZero();
     for (size_t j = 0; j < fixed_ad_.size(); ++j) {
       result.fixed_gradient_m[static_cast<Eigen::Index>(j)] =
@@ -254,21 +244,19 @@ public:
       const int outer_fixed = fixed_vertex_to_index_[outer];
       const int outer_random = random_vertex_to_index_[outer];
       tape_.graph.ForEachSoEdge(
-          outer, [this, &result, outer_fixed, outer_random](
-                     had::VertexId inner, had::Real value) {
-        const int inner_fixed =
-            inner < fixed_vertex_to_index_.size()
-                ? fixed_vertex_to_index_[inner]
-                : -1;
-        const int inner_random =
-            inner < random_vertex_to_index_.size()
-                ? random_vertex_to_index_[inner]
-                : -1;
-        if (outer_random >= 0 && inner_fixed >= 0)
-          result.mixed_hessian_m(outer_random, inner_fixed) = value;
-        else if (outer_fixed >= 0 && inner_random >= 0)
-          result.mixed_hessian_m(inner_random, outer_fixed) = value;
-      });
+          outer, [this, &result, outer_fixed, outer_random](had::VertexId inner,
+                                                            had::Real value) {
+            const int inner_fixed = inner < fixed_vertex_to_index_.size()
+                                        ? fixed_vertex_to_index_[inner]
+                                        : -1;
+            const int inner_random = inner < random_vertex_to_index_.size()
+                                         ? random_vertex_to_index_[inner]
+                                         : -1;
+            if (outer_random >= 0 && inner_fixed >= 0)
+              result.mixed_hessian_m(outer_random, inner_fixed) = value;
+            else if (outer_fixed >= 0 && inner_random >= 0)
+              result.mixed_hessian_m(inner_random, outer_fixed) = value;
+          });
     };
     for (const auto &parameter : fixed_ad_)
       extract_mixed_tree(parameter.varId);
@@ -276,20 +264,20 @@ public:
       extract_mixed_tree(parameter.varId);
     const auto extract_end = std::chrono::steady_clock::now();
     result.replay_ms =
-        std::chrono::duration<double, std::milli>(
-            replay_end - replay_start).count();
+        std::chrono::duration<double, std::milli>(replay_end - replay_start)
+            .count();
     result.propagate_ms =
-        std::chrono::duration<double, std::milli>(
-            propagate_end - replay_end).count();
+        std::chrono::duration<double, std::milli>(propagate_end - replay_end)
+            .count();
     result.extract_ms =
-        std::chrono::duration<double, std::milli>(
-            extract_end - propagate_end).count();
+        std::chrono::duration<double, std::milli>(extract_end - propagate_end)
+            .count();
     return result;
   }
 
-  Eigen::VectorXd solve_newton_system(
-      const Eigen::SparseMatrix<double> &hessian,
-      const Eigen::VectorXd &rhs) {
+  Eigen::VectorXd
+  solve_newton_system(const Eigen::SparseMatrix<double> &hessian,
+                      const Eigen::VectorXd &rhs) {
     try {
       if (!newton_factorization_.analyzed())
         newton_factorization_.analyze_pattern(hessian);
@@ -302,8 +290,8 @@ public:
     return newton_factorization_.solve(rhs);
   }
 
-  double factorize_terminal_hessian(
-      const Eigen::SparseMatrix<double> &hessian) {
+  double
+  factorize_terminal_hessian(const Eigen::SparseMatrix<double> &hessian) {
     try {
       if (!newton_factorization_.analyzed())
         newton_factorization_.analyze_pattern(hessian);
@@ -344,14 +332,13 @@ public:
     return tape_.graph.vertices.size();
   }
 
-  std::shared_ptr<const had::SharedHessianTopology>
-  FreezeHessianTopology(
+  std::shared_ptr<const had::SharedHessianTopology> FreezeHessianTopology(
       std::shared_ptr<const had::SharedHessianTopology> candidate = nullptr) {
     return tape_.graph.FreezeHessianTopology(std::move(candidate));
   }
 
 private:
-  double hessian_value(const AD& a, const AD& b) const {
+  double hessian_value(const AD &a, const AD &b) const {
     if (a.varId == b.varId)
       return tape_.graph.selfSoEdges[a.varId];
     return GetOffDiagonalHessian(tape_.graph, a.varId, b.varId);

@@ -110,8 +110,7 @@ inline std::vector<double> add_scaled_step(const std::vector<double> &x,
 template <class Model>
 inline RandomEffectNewtonResult optimize_random_effects_newton(
     Model &model, RandomEffectHessianWorkspace<Model> &hessian_workspace,
-    const std::vector<double> &fixed,
-    const std::vector<double> &random_initial,
+    const std::vector<double> &fixed, const std::vector<double> &random_initial,
     const ParameterPartition &partition,
     const RandomEffectNewtonOptions &options = RandomEffectNewtonOptions()) {
   if (partition.random_indices_m.empty()) {
@@ -189,14 +188,14 @@ inline RandomEffectNewtonResult optimize_random_effects_newton(
       }
 
       if (solved_newton_system) {
-          solved_newton_system = true;
+        solved_newton_system = true;
 
-          if (lambda > 0.0) {
-            std::cout << "Newton: adaptive damping accepted lambda = " << lambda
-                      << std::endl;
-          }
+        if (lambda > 0.0) {
+          std::cout << "Newton: adaptive damping accepted lambda = " << lambda
+                    << std::endl;
+        }
 
-          break;
+        break;
       }
 
       lambda = (lambda == 0.0) ? lambda_initial : lambda * lambda_growth;
@@ -242,14 +241,13 @@ inline RandomEffectNewtonResult optimize_random_effects_newton(
       const Eigen::VectorXd hessian_step =
           eval.hessian_random_m * (alpha * step);
       const Eigen::VectorXd candidate_gradient = g + hessian_step;
-      const double candidate_objective =
-          eval.objective_value_m + alpha * g.dot(step) +
-          0.5 * alpha * step.dot(hessian_step);
+      const double candidate_objective = eval.objective_value_m +
+                                         alpha * g.dot(step) +
+                                         0.5 * alpha * step.dot(hessian_step);
       candidate_eval = std::move(eval);
       candidate_eval.objective_value_m = candidate_objective;
       candidate_eval.random_m = candidate_u;
-      candidate_eval.full_m =
-          merge_parameters(fixed, candidate_u, partition);
+      candidate_eval.full_m = merge_parameters(fixed, candidate_u, partition);
       candidate_eval.gradient_random_m =
           eigen_to_std_vector(candidate_gradient);
       candidate_eval.gradient_norm_m = candidate_gradient.norm();
@@ -260,8 +258,8 @@ inline RandomEffectNewtonResult optimize_random_effects_newton(
            alpha >= options.min_step_scale_m) {
       candidate_u = add_scaled_step(u, step, alpha);
 
-      candidate_eval = hessian_workspace.Evaluate(
-          fixed, candidate_u, options.hessian_drop_tol_m);
+      candidate_eval = hessian_workspace.Evaluate(fixed, candidate_u,
+                                                  options.hessian_drop_tol_m);
 
       const double armijo_rhs =
           eval.objective_value_m +
@@ -349,9 +347,9 @@ inline RandomEffectNewtonResult optimize_random_effects_newton(
     const ParameterPartition &partition,
     const RandomEffectNewtonOptions &options = RandomEffectNewtonOptions()) {
   RandomEffectHessianWorkspace<Model> workspace(model, fixed, random_initial,
-                                                 partition);
-  return optimize_random_effects_newton(model, workspace, fixed,
-                                        random_initial, partition, options);
+                                                partition);
+  return optimize_random_effects_newton(model, workspace, fixed, random_initial,
+                                        partition, options);
 }
 
 template <class Model>

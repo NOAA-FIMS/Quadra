@@ -17,22 +17,23 @@
 namespace quadra {
 namespace laplace {
 
-template <class CombinedObjectiveFn>
-class PersistentStreamingHdotProviderPool {
+template <class CombinedObjectiveFn> class PersistentStreamingHdotProviderPool {
 public:
   using DirectionProvider = std::function<Eigen::VectorXd(int)>;
-  using Provider = HadQuadraReplayReuseLazyImplicitHdotProvider<
-      CombinedObjectiveFn, DirectionProvider>;
+  using Provider =
+      HadQuadraReplayReuseLazyImplicitHdotProvider<CombinedObjectiveFn,
+                                                   DirectionProvider>;
 
-  PersistentStreamingHdotProviderPool(
-      CombinedObjectiveFn combined_objective, int theta_dim, int random_dim,
-      RandomHessianPattern pattern, std::vector<int> active_directions,
-      double drop_tol = 0.0, std::size_t expected_vertex_count = 0)
+  PersistentStreamingHdotProviderPool(CombinedObjectiveFn combined_objective,
+                                      int theta_dim, int random_dim,
+                                      RandomHessianPattern pattern,
+                                      std::vector<int> active_directions,
+                                      double drop_tol = 0.0,
+                                      std::size_t expected_vertex_count = 0)
       : combined_objective_(std::move(combined_objective)),
         theta_dim_(theta_dim), random_dim_(random_dim),
         pattern_(std::move(pattern)),
-        active_directions_(std::move(active_directions)),
-        drop_tol_(drop_tol),
+        active_directions_(std::move(active_directions)), drop_tol_(drop_tol),
         expected_vertex_count_(expected_vertex_count) {}
 
   void ensure_workers(int requested_workers) {
@@ -52,8 +53,7 @@ public:
         directions.push_back(active_directions_[k]);
       providers_.push_back(std::make_unique<Provider>(
           combined_objective_, DirectionProvider{}, theta_dim_, random_dim_,
-          pattern_, std::move(directions), drop_tol_,
-          expected_vertex_count_));
+          pattern_, std::move(directions), drop_tol_, expected_vertex_count_));
     }
   }
 
@@ -70,8 +70,7 @@ public:
     return count;
   }
 
-  std::shared_ptr<const had::SharedHessianTopology>
-  FreezeHessianTopology(
+  std::shared_ptr<const had::SharedHessianTopology> FreezeHessianTopology(
       std::shared_ptr<const had::SharedHessianTopology> candidate = nullptr) {
     for (auto &provider : providers_)
       candidate = provider->FreezeHessianTopology(candidate);
@@ -178,8 +177,7 @@ public:
 
     cached_logdet_gradient_ = Eigen::VectorXd::Zero(theta_dim_);
     selected_inverse_ =
-        std::make_unique<TakahashiSelectedInverse>(
-            factor_.selected_inverse());
+        std::make_unique<TakahashiSelectedInverse>(factor_.selected_inverse());
     auto direction_provider = [this](int theta_index) -> Eigen::VectorXd {
       return this->u_direction(theta_index);
     };
@@ -191,8 +189,7 @@ public:
             theta_, uhat_, [this](int row, int col) {
               return selected_inverse_->value(row, col);
             });
-        if (contraction.input_gradient.size() !=
-            theta_dim_ + random_dim_)
+        if (contraction.input_gradient.size() != theta_dim_ + random_dim_)
           throw std::runtime_error(
               "reverse Hessian trace contraction returned wrong length.");
         const Eigen::VectorXd random_trace =
@@ -205,11 +202,9 @@ public:
         //
         // The dense direction matrix is still prepared below if the bounded
         // direct contraction falls back to scalar directional Hdot.
-        const Eigen::VectorXd solved_random_trace =
-            factor_.solve(random_trace);
+        const Eigen::VectorXd solved_random_trace = factor_.solve(random_trace);
         for (int direction : active_directions_) {
-          const Eigen::VectorXd cross =
-              cross_derivative_fn_(direction);
+          const Eigen::VectorXd cross = cross_derivative_fn_(direction);
           if (cross.size() != random_dim_)
             throw std::runtime_error(
                 "cross derivative callback returned wrong length.");
@@ -231,8 +226,7 @@ public:
           theta_, uhat_,
           [this](int direction, Eigen::SparseMatrix<double> hdot) {
             if (hdot.nonZeros() > 0)
-              cached_logdet_gradient_[direction] =
-                  0.5 * trace_hdot(hdot);
+              cached_logdet_gradient_[direction] = 0.5 * trace_hdot(hdot);
           });
       trace_terms_prepared_ = true;
       return;
@@ -240,8 +234,7 @@ public:
     prepare_u_directions_from_callback();
     if (options_.hdot_workers > 1 && active_directions_.size() > 1) {
       const int worker_count = std::min(
-          options_.hdot_workers,
-          static_cast<int>(active_directions_.size()));
+          options_.hdot_workers, static_cast<int>(active_directions_.size()));
       std::vector<std::future<std::vector<std::pair<int, double>>>> futures;
       for (int worker = 0; worker < worker_count; ++worker) {
         std::vector<int> directions;
@@ -249,27 +242,21 @@ public:
              k < active_directions_.size();
              k += static_cast<size_t>(worker_count))
           directions.push_back(active_directions_[k]);
-        futures.push_back(std::async(
-            std::launch::async,
-            [this, directions]() {
-              auto local_direction = [this](int j) {
-                return this->u_direction(j);
-              };
-              auto provider =
-                  make_had_quadra_replay_reuse_lazy_implicit_hdot_provider(
-                      combined_objective_, local_direction, theta_dim_,
-                      random_dim_, pattern_, directions,
-                      options_.hdot_drop_tol);
-              std::vector<std::pair<int, double>> values;
-              provider.for_each_sparse(
-                  theta_, uhat_,
-                  [this, &values](
-                      int direction, Eigen::SparseMatrix<double> hdot) {
-                    const double trace = trace_hdot(hdot);
-                    values.emplace_back(direction, 0.5 * trace);
-                  });
-              return values;
-            }));
+        futures.push_back(std::async(std::launch::async, [this, directions]() {
+          auto local_direction = [this](int j) { return this->u_direction(j); };
+          auto provider =
+              make_had_quadra_replay_reuse_lazy_implicit_hdot_provider(
+                  combined_objective_, local_direction, theta_dim_, random_dim_,
+                  pattern_, directions, options_.hdot_drop_tol);
+          std::vector<std::pair<int, double>> values;
+          provider.for_each_sparse(
+              theta_, uhat_,
+              [this, &values](int direction, Eigen::SparseMatrix<double> hdot) {
+                const double trace = trace_hdot(hdot);
+                values.emplace_back(direction, 0.5 * trace);
+              });
+          return values;
+        }));
       }
       for (auto &future : futures)
         for (const auto &entry : future.get())
@@ -282,11 +269,9 @@ public:
             combined_objective_, direction_provider, theta_dim_, random_dim_,
             pattern_, active_directions_, options_.hdot_drop_tol);
     hdot_provider.for_each_sparse(
-        theta_, uhat_,
-        [this](int direction, Eigen::SparseMatrix<double> hdot) {
+        theta_, uhat_, [this](int direction, Eigen::SparseMatrix<double> hdot) {
           if (hdot.nonZeros() > 0)
-            cached_logdet_gradient_[direction] =
-                0.5 * trace_hdot(hdot);
+            cached_logdet_gradient_[direction] = 0.5 * trace_hdot(hdot);
         });
 
     trace_terms_prepared_ = true;
@@ -337,8 +322,7 @@ private:
   mutable std::unique_ptr<TakahashiSelectedInverse> selected_inverse_;
 
   void prepare_u_directions_from_callback() const {
-    Eigen::MatrixXd cross =
-        Eigen::MatrixXd::Zero(random_dim_, theta_dim_);
+    Eigen::MatrixXd cross = Eigen::MatrixXd::Zero(random_dim_, theta_dim_);
     for (int direction : active_directions_) {
       Eigen::VectorXd column = cross_derivative_fn_(direction);
       if (column.size() != random_dim_)

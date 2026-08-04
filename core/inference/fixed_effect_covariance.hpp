@@ -71,15 +71,13 @@ FixedEffectCovarianceResult estimate_fixed_effect_covariance_from_gradient(
   result.correlation_m = Eigen::MatrixXd::Zero(n, n);
   result.steps_m = Eigen::VectorXd::Zero(n);
 
-  if (n == 0 || !(relative_step > 0.0) ||
-      !std::isfinite(relative_step)) {
+  if (n == 0 || !(relative_step > 0.0) || !std::isfinite(relative_step)) {
     result.message_m = "Invalid fixed effects or finite-difference step.";
     return result;
   }
 
   for (Eigen::Index j = 0; j < n; ++j) {
-    double step =
-        relative_step * std::max(1.0, std::abs(theta_hat[j]));
+    double step = relative_step * std::max(1.0, std::abs(theta_hat[j]));
     std::vector<double> plus = theta_hat;
     std::vector<double> minus = theta_hat;
     plus[static_cast<size_t>(j)] += step;
@@ -98,16 +96,14 @@ FixedEffectCovarianceResult estimate_fixed_effect_covariance_from_gradient(
             "Gradient became non-finite while estimating the Hessian.";
         return result;
       }
-      result.hessian_m(i, j) =
-          (gradient_plus[static_cast<size_t>(i)] -
-           gradient_minus[static_cast<size_t>(i)]) /
-          (2.0 * step);
+      result.hessian_m(i, j) = (gradient_plus[static_cast<size_t>(i)] -
+                                gradient_minus[static_cast<size_t>(i)]) /
+                               (2.0 * step);
     }
     result.steps_m[j] = step;
   }
 
-  result.hessian_m =
-      0.5 * (result.hessian_m + result.hessian_m.transpose());
+  result.hessian_m = 0.5 * (result.hessian_m + result.hessian_m.transpose());
   Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> eigen(result.hessian_m);
   if (eigen.info() != Eigen::Success) {
     result.message_m = "Eigendecomposition of fixed Hessian failed.";
@@ -131,8 +127,7 @@ FixedEffectCovarianceResult estimate_fixed_effect_covariance_from_gradient(
     result.message_m = "Cholesky factorization of fixed Hessian failed.";
     return result;
   }
-  result.covariance_m =
-      llt.solve(Eigen::MatrixXd::Identity(n, n));
+  result.covariance_m = llt.solve(Eigen::MatrixXd::Identity(n, n));
   result.covariance_m =
       0.5 * (result.covariance_m + result.covariance_m.transpose());
   if (!matrix_all_finite(result.covariance_m)) {
@@ -141,8 +136,7 @@ FixedEffectCovarianceResult estimate_fixed_effect_covariance_from_gradient(
   }
   result.correlation_m = covariance_to_correlation(result.covariance_m);
   result.success_m = true;
-  result.message_m =
-      "Fixed-effect covariance estimated from exact gradients.";
+  result.message_m = "Fixed-effect covariance estimated from exact gradients.";
   return result;
 }
 

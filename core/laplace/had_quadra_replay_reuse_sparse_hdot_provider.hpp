@@ -62,8 +62,7 @@ inline void retangent_had_quadra_graph(had::ADGraph &graph) {
   for (had::VertexId vid = 1;
        vid < static_cast<had::VertexId>(graph.vertices.size()); ++vid) {
     had::ADVertex &v = graph.vertices[vid];
-    had::ADScalarDirectionalVertex &directional =
-        graph.scalarDirectional[vid];
+    had::ADScalarDirectionalVertex &directional = graph.scalarDirectional[vid];
 
     if (v.op == OpCode::Independent) {
       continue;
@@ -144,8 +143,7 @@ inline void retangent_had_quadra_graph(had::ADGraph &graph) {
 
       directional.dot = (ad * b - a * bd) / (b * b);
       directional.e1Dw = -bd / (b * b);
-      directional.e2Dw =
-          -ad / (b * b) + Real(2.0) * a * bd / (b * b * b);
+      directional.e2Dw = -ad / (b * b) + Real(2.0) * a * bd / (b * b * b);
       directional.soWDot = Real(2.0) * bd / (b * b * b);
       break;
     }

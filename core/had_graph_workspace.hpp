@@ -24,7 +24,8 @@ public:
   HadGraphWorkspace() = default;
 
   ~HadGraphWorkspace() {
-    if (had::g_ADGraph == &graph_) had::g_ADGraph = nullptr;
+    if (had::g_ADGraph == &graph_)
+      had::g_ADGraph = nullptr;
   }
 
   HadGraphWorkspace(const HadGraphWorkspace &) = delete;
@@ -68,8 +69,8 @@ public:
 
     std::fill(graph_.vertexWDotBatch.begin(), graph_.vertexWDotBatch.end(),
               had::Real(0.0));
-    std::fill(graph_.vertexSoWDotBatch.begin(),
-              graph_.vertexSoWDotBatch.end(), had::Real(0.0));
+    std::fill(graph_.vertexSoWDotBatch.begin(), graph_.vertexSoWDotBatch.end(),
+              had::Real(0.0));
     std::fill(graph_.vertexDotBatch.begin(), graph_.vertexDotBatch.end(),
               had::Real(0.0));
     std::fill(graph_.edge1DwBatch.begin(), graph_.edge1DwBatch.end(),

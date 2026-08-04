@@ -8,8 +8,8 @@
 
 #include <Eigen/SparseCholesky>
 
-#include "random_effect_newton.hpp"
 #include "laplace_backend_factory.hpp"
+#include "random_effect_newton.hpp"
 
 namespace quadra {
 
@@ -75,8 +75,7 @@ inline double sparse_ldlt_logdet(const Eigen::SparseMatrix<double> &H,
     auto backend = laplace::CreateLaplaceBackendForHessian(H);
     backend->factorize(H);
     ok = backend->is_spd() && std::isfinite(backend->logdet());
-    return ok ? backend->logdet()
-              : std::numeric_limits<double>::quiet_NaN();
+    return ok ? backend->logdet() : std::numeric_limits<double>::quiet_NaN();
   } catch (...) {
     return std::numeric_limits<double>::quiet_NaN();
   }

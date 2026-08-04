@@ -9,8 +9,8 @@
 #include <utility>
 #include <vector>
 
-#include "had_quadra_replay_reuse_sparse_hdot_provider.hpp"
 #include "../autodiff/laplace_graph_plan.hpp"
+#include "had_quadra_replay_reuse_sparse_hdot_provider.hpp"
 #include "reverse_hessian_trace_contraction.hpp"
 #include "sparse_trace_contraction.hpp"
 
@@ -109,10 +109,8 @@ public:
     std::vector<Eigen::SparseMatrix<double>> out(
         static_cast<size_t>(theta_dim_));
     for_each_sparse(theta, uhat,
-                    [&out](int direction,
-                           Eigen::SparseMatrix<double> hdot) {
-                      out[static_cast<size_t>(direction)] =
-                          std::move(hdot);
+                    [&out](int direction, Eigen::SparseMatrix<double> hdot) {
+                      out[static_cast<size_t>(direction)] = std::move(hdot);
                     });
     return out;
   }
@@ -121,8 +119,7 @@ public:
   // the caller, and release it before continuing.
   template <class Consumer>
   void for_each_sparse(const Eigen::VectorXd &theta,
-                       const Eigen::VectorXd &uhat,
-                       Consumer consumer) const {
+                       const Eigen::VectorXd &uhat, Consumer consumer) const {
     ensure_replayed(theta, uhat);
 
     for (int j : active_directions_) {
@@ -133,8 +130,8 @@ public:
       }
 
       reset_had_quadra_directional_reverse_state(*graph_);
-      seed_had_quadra_lazy_implicit_direction(
-          x_, *graph_, theta_dim_, random_dim_, j, u_direction);
+      seed_had_quadra_lazy_implicit_direction(x_, *graph_, theta_dim_,
+                                              random_dim_, j, u_direction);
       retangent_had_quadra_graph(*graph_);
 
       had::SetAdjoint(y_, had::Real(1.0));
@@ -178,12 +175,10 @@ public:
                   : had::ADGraphMemoryStatistics{};
   }
 
-  std::shared_ptr<const had::SharedHessianTopology>
-  FreezeHessianTopology(
+  std::shared_ptr<const had::SharedHessianTopology> FreezeHessianTopology(
       std::shared_ptr<const had::SharedHessianTopology> candidate = nullptr) {
-    return graph_
-               ? graph_->FreezeHessianTopology(std::move(candidate))
-               : std::move(candidate);
+    return graph_ ? graph_->FreezeHessianTopology(std::move(candidate))
+                  : std::move(candidate);
   }
 
 private:
@@ -227,8 +222,7 @@ private:
       for (int j = 0; j < theta_dim_; ++j)
         fixed_ids.push_back(x_[static_cast<size_t>(j)].varId);
       for (int i = 0; i < random_dim_; ++i)
-        random_ids.push_back(
-            x_[static_cast<size_t>(theta_dim_ + i)].varId);
+        random_ids.push_back(x_[static_cast<size_t>(theta_dim_ + i)].varId);
       graph_plan_.Build(*graph_, fixed_ids, random_ids, y_.varId);
       ++tape_build_count_;
     } else {
@@ -277,7 +271,6 @@ private:
     Hdot.makeCompressed();
     return Hdot;
   }
-
 };
 
 template <class CombinedObjectiveFn, class UDirectionProvider>

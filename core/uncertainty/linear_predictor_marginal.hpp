@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../laplace/sparse_huu_factorization.hpp"
 #include "../laplace/sparse_factorization_cache.hpp"
+#include "../laplace/sparse_huu_factorization.hpp"
 
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
@@ -24,8 +24,7 @@ struct LinearPredictorMarginalResult {
 inline LinearPredictorMarginalResult linear_predictor_marginal_diagonal(
     const SparseLDLTFactorizationCache &factorization,
     const laplace::TakahashiSelectedInverse &selected_inverse,
-    const Eigen::MatrixXd &du_dtheta,
-    const Eigen::MatrixXd &theta_covariance,
+    const Eigen::MatrixXd &du_dtheta, const Eigen::MatrixXd &theta_covariance,
     const Eigen::MatrixXd &X_theta,
     const Eigen::SparseMatrix<double, Eigen::RowMajor> &Z,
     Eigen::Index block_size = 256) {
@@ -33,9 +32,9 @@ inline LinearPredictorMarginalResult linear_predictor_marginal_diagonal(
   const Eigen::Index n = Z.rows();
   const Eigen::Index n_random = Z.cols();
   const Eigen::Index n_fixed = du_dtheta.cols();
-  if (factorization.rows() != n_random ||
-      du_dtheta.rows() != n_random || X_theta.rows() != n ||
-      X_theta.cols() != n_fixed || theta_covariance.rows() != n_fixed ||
+  if (factorization.rows() != n_random || du_dtheta.rows() != n_random ||
+      X_theta.rows() != n || X_theta.cols() != n_fixed ||
+      theta_covariance.rows() != n_fixed ||
       theta_covariance.cols() != n_fixed || block_size < 1) {
     out.message_m = "Non-conformable cached prediction uncertainty inputs.";
     return out;
@@ -76,8 +75,7 @@ inline LinearPredictorMarginalResult linear_predictor_marginal_diagonal(
          first < static_cast<Eigen::Index>(unsupported.size());
          first += block_size) {
       const Eigen::Index count = std::min(
-          block_size,
-          static_cast<Eigen::Index>(unsupported.size()) - first);
+          block_size, static_cast<Eigen::Index>(unsupported.size()) - first);
       Eigen::MatrixXd rhs = Eigen::MatrixXd::Zero(n_random, count);
       for (Eigen::Index local = 0; local < count; ++local) {
         const Eigen::Index row =
@@ -103,10 +101,9 @@ inline LinearPredictorMarginalResult linear_predictor_marginal_diagonal(
     out.std_error_m.resize(n);
     for (Eigen::Index i = 0; i < n; ++i) {
       const double variance = out.marginal_variance_m[i];
-      out.std_error_m[i] =
-          variance >= 0.0 && std::isfinite(variance)
-              ? std::sqrt(variance)
-              : std::numeric_limits<double>::quiet_NaN();
+      out.std_error_m[i] = variance >= 0.0 && std::isfinite(variance)
+                               ? std::sqrt(variance)
+                               : std::numeric_limits<double>::quiet_NaN();
     }
     out.success_m = out.conditional_variance_m.allFinite() &&
                     out.parameter_variance_m.allFinite() &&
@@ -126,10 +123,8 @@ inline LinearPredictorMarginalResult linear_predictor_marginal_diagonal(
 // Sparse solves provide diag(Z H_uu^-1 Z'), while the profiled sensitivity
 // X_theta + Z du/dtheta propagates fixed-parameter uncertainty.
 inline LinearPredictorMarginalResult linear_predictor_marginal_diagonal(
-    const Eigen::SparseMatrix<double> &H_uu,
-    const Eigen::MatrixXd &du_dtheta,
-    const Eigen::MatrixXd &theta_covariance,
-    const Eigen::MatrixXd &X_theta,
+    const Eigen::SparseMatrix<double> &H_uu, const Eigen::MatrixXd &du_dtheta,
+    const Eigen::MatrixXd &theta_covariance, const Eigen::MatrixXd &X_theta,
     const Eigen::SparseMatrix<double, Eigen::RowMajor> &Z) {
   LinearPredictorMarginalResult out;
   const Eigen::Index n = Z.rows();
@@ -166,10 +161,9 @@ inline LinearPredictorMarginalResult linear_predictor_marginal_diagonal(
     out.std_error_m.resize(n);
     for (Eigen::Index i = 0; i < n; ++i) {
       const double variance = out.marginal_variance_m[i];
-      out.std_error_m[i] =
-          variance >= 0.0 && std::isfinite(variance)
-              ? std::sqrt(variance)
-              : std::numeric_limits<double>::quiet_NaN();
+      out.std_error_m[i] = variance >= 0.0 && std::isfinite(variance)
+                               ? std::sqrt(variance)
+                               : std::numeric_limits<double>::quiet_NaN();
     }
     out.success_m = out.conditional_variance_m.allFinite() &&
                     out.parameter_variance_m.allFinite() &&

@@ -4,8 +4,8 @@
 #include <Eigen/Sparse>
 #include <Eigen/SparseCholesky>
 #include <algorithm>
-#include <cstdint>
 #include <cmath>
+#include <cstdint>
 #include <stdexcept>
 #include <unordered_map>
 #include <utility>
@@ -41,8 +41,7 @@ public:
       for (const auto &child_j : children) {
         double sum = 0.0;
         for (const auto &child_k : children)
-          sum += child_k.second *
-                 factor_value(child_k.first, child_j.first);
+          sum += child_k.second * factor_value(child_k.first, child_j.first);
         values_.emplace(pair_key(i, child_j.first), -sum);
       }
       const double d = diagonal[i];
@@ -68,20 +67,19 @@ public:
   double value(int original_row, int original_col) const {
     validate_original_index(original_row);
     validate_original_index(original_col);
-    return factor_value(
-        original_to_factor_[static_cast<size_t>(original_row)],
-        original_to_factor_[static_cast<size_t>(original_col)]);
+    return factor_value(original_to_factor_[static_cast<size_t>(original_row)],
+                        original_to_factor_[static_cast<size_t>(original_col)]);
   }
 
-  double trace_inverse_times(
-      const Eigen::SparseMatrix<double> &derivative) const {
+  double
+  trace_inverse_times(const Eigen::SparseMatrix<double> &derivative) const {
     if (derivative.rows() != n_ || derivative.cols() != n_)
       throw std::invalid_argument(
           "TakahashiSelectedInverse::trace_inverse_times: wrong dimensions.");
     double trace = 0.0;
     for (int outer = 0; outer < derivative.outerSize(); ++outer)
-      for (Eigen::SparseMatrix<double>::InnerIterator it(derivative, outer);
-           it; ++it)
+      for (Eigen::SparseMatrix<double>::InnerIterator it(derivative, outer); it;
+           ++it)
         trace += it.value() * value(it.row(), it.col());
     return trace;
   }
@@ -90,8 +88,8 @@ public:
     if (derivative.rows() != n_ || derivative.cols() != n_)
       return false;
     for (int outer = 0; outer < derivative.outerSize(); ++outer)
-      for (Eigen::SparseMatrix<double>::InnerIterator it(derivative, outer);
-           it; ++it)
+      for (Eigen::SparseMatrix<double>::InnerIterator it(derivative, outer); it;
+           ++it)
         if (!contains(it.row(), it.col()))
           return false;
     return true;
@@ -112,8 +110,7 @@ private:
   static std::uint64_t pair_key(int row, int col) {
     if (row > col)
       std::swap(row, col);
-    return (static_cast<std::uint64_t>(static_cast<std::uint32_t>(row))
-            << 32) |
+    return (static_cast<std::uint64_t>(static_cast<std::uint32_t>(row)) << 32) |
            static_cast<std::uint32_t>(col);
   }
 
@@ -266,8 +263,8 @@ public:
   // trace_inverse_times(), this does not retain all requested inverse columns.
   // It is intended for large derivative matrices whose nonzero pattern touches
   // most latent-variable columns.
-  double trace_inverse_times_streaming(
-      const Eigen::SparseMatrix<double> &Hdot) const {
+  double
+  trace_inverse_times_streaming(const Eigen::SparseMatrix<double> &Hdot) const {
     if (Hdot.rows() != n_ || Hdot.cols() != n_) {
       throw std::invalid_argument(
           "trace_inverse_times_streaming: Hdot has wrong dimensions.");
@@ -277,8 +274,7 @@ public:
     Eigen::VectorXd rhs = Eigen::VectorXd::Zero(n_);
     for (int col = 0; col < Hdot.outerSize(); ++col) {
       bool has_nonzero = false;
-      for (Eigen::SparseMatrix<double>::InnerIterator it(Hdot, col); it;
-           ++it) {
+      for (Eigen::SparseMatrix<double>::InnerIterator it(Hdot, col); it; ++it) {
         has_nonzero = true;
         break;
       }
@@ -288,8 +284,7 @@ public:
       rhs[col] = 1.0;
       const Eigen::VectorXd inverse_column = solve(rhs);
       rhs[col] = 0.0;
-      for (Eigen::SparseMatrix<double>::InnerIterator it(Hdot, col); it;
-           ++it)
+      for (Eigen::SparseMatrix<double>::InnerIterator it(Hdot, col); it; ++it)
         trace += it.value() * inverse_column[it.row()];
     }
     return trace;
@@ -322,8 +317,7 @@ public:
       for (size_t j = 0; j < derivatives.size(); ++j) {
         if (col >= derivatives[j].outerSize())
           continue;
-        for (Eigen::SparseMatrix<double>::InnerIterator it(derivatives[j],
-                                                            col);
+        for (Eigen::SparseMatrix<double>::InnerIterator it(derivatives[j], col);
              it; ++it)
           traces[j] += it.value() * inverse_column[it.row()];
       }
@@ -333,8 +327,8 @@ public:
 
   TakahashiSelectedInverse selected_inverse() const {
     Eigen::SparseMatrix<double> unit_lower = factor_.matrixL();
-    return TakahashiSelectedInverse(
-        unit_lower, factor_.vectorD(), factor_.permutationP());
+    return TakahashiSelectedInverse(unit_lower, factor_.vectorD(),
+                                    factor_.permutationP());
   }
 
   double logdet() const {

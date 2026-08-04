@@ -5,10 +5,10 @@
 #define QUADRA_LAPLACE_HPP
 #pragma once
 
+#include "../external/LBFGSpp/include/LBFGS.h"
 #include "../external/eigen/Eigen/Dense"
 #include "../external/eigen/Eigen/Sparse"
 #include "../external/eigen/Eigen/SparseCholesky"
-#include "../external/LBFGSpp/include/LBFGS.h"
 #include "../model/parameter.hpp"
 #include "autodiff.hpp"
 #include "evaluation.hpp"
@@ -181,8 +181,7 @@ laplace_pattern_cache() {
   return cache;
 }
 
-inline void laplace_pattern_hash_combine(std::size_t &seed,
-                                         std::size_t value) {
+inline void laplace_pattern_hash_combine(std::size_t &seed, std::size_t value) {
   seed ^= value + std::size_t{0x9e3779b9} + (seed << 6) + (seed >> 2);
 }
 
@@ -198,12 +197,9 @@ laplace_pattern_cache_key(const had::ADGraph &graph,
   // models with equal latent dimension but different sparse precision
   // structures cannot share a stale pattern.
   for (const auto &vertex : graph.vertices) {
-    laplace_pattern_hash_combine(
-        key, static_cast<std::size_t>(vertex.op));
-    laplace_pattern_hash_combine(key,
-                                 static_cast<std::size_t>(vertex.left));
-    laplace_pattern_hash_combine(key,
-                                 static_cast<std::size_t>(vertex.right));
+    laplace_pattern_hash_combine(key, static_cast<std::size_t>(vertex.op));
+    laplace_pattern_hash_combine(key, static_cast<std::size_t>(vertex.left));
+    laplace_pattern_hash_combine(key, static_cast<std::size_t>(vertex.right));
   }
 
   for (const int full_index : random_idx) {
@@ -224,10 +220,11 @@ laplace_pattern_cache_key(const had::ADGraph &graph,
 // NOTE: this is still a numeric sparsity pattern. If a structurally
 // nonzero Hessian entry evaluates to exactly zero at the discovery point,
 // it can be missed. Diagonals are included by default for Newton stability.
-inline SparseHessianPattern discover_pattern_from_graph(
-    const std::vector<AD> &p_full, const std::vector<int> &random_idx,
-    bool symmetric = true, bool include_diagonal = true, double tol = 1e-12,
-    bool verbose = true) {
+inline SparseHessianPattern
+discover_pattern_from_graph(const std::vector<AD> &p_full,
+                            const std::vector<int> &random_idx,
+                            bool symmetric = true, bool include_diagonal = true,
+                            double tol = 1e-12, bool verbose = true) {
   if (verbose)
     std::cout << "Quadra: Discovering Hessian pattern from AD graph for "
               << random_idx.size() << " random variables ...\n";
@@ -501,8 +498,7 @@ inline void propagate_first_order(had::ADGraph &graph,
   }
 }
 
-template <typename Model>
-struct FirstOrderJointEvaluation {
+template <typename Model> struct FirstOrderJointEvaluation {
   double value = 0.0;
   Eigen::VectorXd fixed_gradient;
   Eigen::VectorXd random_gradient;
@@ -550,10 +546,12 @@ Eigen::MatrixXd dense_random_hessian_from_gradient_fd(
     Eigen::VectorXd minus = random;
     plus[column] += step;
     minus[column] -= step;
-    const auto gplus = evaluate_joint_first_order(
-        model, params, theta, plus, fixed_idx, random_idx).random_gradient;
-    const auto gminus = evaluate_joint_first_order(
-        model, params, theta, minus, fixed_idx, random_idx).random_gradient;
+    const auto gplus = evaluate_joint_first_order(model, params, theta, plus,
+                                                  fixed_idx, random_idx)
+                           .random_gradient;
+    const auto gminus = evaluate_joint_first_order(model, params, theta, minus,
+                                                   fixed_idx, random_idx)
+                            .random_gradient;
     hessian.col(column) = (gplus - gminus) / (2.0 * step);
   }
   return 0.5 * (hessian + hessian.transpose());
@@ -1201,15 +1199,15 @@ std::vector<Eigen::SparseMatrix<double>> random_hessian_directional_exact_all(
     for (size_t k = 0; k < fixed_idx.size(); ++k) {
       const double d = (static_cast<Eigen::Index>(k) == theta_i) ? 1.0 : 0.0;
       p_full[static_cast<size_t>(fixed_idx[k])].dot = d;
-      had::VertexDot(
-          graph, p_full[static_cast<size_t>(fixed_idx[k])].varId) = d;
+      had::VertexDot(graph, p_full[static_cast<size_t>(fixed_idx[k])].varId) =
+          d;
     }
 
     for (size_t r = 0; r < random_idx.size(); ++r) {
       const double d = du_dtheta(static_cast<Eigen::Index>(r), theta_i);
       p_full[static_cast<size_t>(random_idx[r])].dot = d;
-      had::VertexDot(
-          graph, p_full[static_cast<size_t>(random_idx[r])].varId) = d;
+      had::VertexDot(graph, p_full[static_cast<size_t>(random_idx[r])].varId) =
+          d;
     }
 
     laplace::reset_had_quadra_directional_reverse_state(graph);
