@@ -415,6 +415,10 @@ public:
       : model(m), params(p), fixed_idx(std::move(fixed)),
         random_idx(std::move(random)), options(opts) {
     laplace_pattern_cache().clear();
+    last_u_star.reserve(random_idx.size());
+    for (int index : random_idx) {
+      last_u_star.push_back(params.params[static_cast<size_t>(index)].value);
+    }
   }
 
   double operator()(const VectorXd &x, VectorXd &grad) {
@@ -509,6 +513,16 @@ public:
 
     const double gnorm = safe_eigen_norm(grad);
 
+    if (std::isfinite(res.value) && std::isfinite(gnorm) &&
+        (!best_available || res.value < best_fx)) {
+      best_fx = res.value;
+      best_grad_norm = gnorm;
+      best_x = x;
+      best_grad = grad;
+      best_u_star = u_star;
+      best_available = true;
+    }
+
     if (std::isfinite(gnorm) && gnorm <= epsilon) {
       if (!has_best_converged || !std::isfinite(best_converged_fx) ||
           res.value < best_converged_fx) {
@@ -541,7 +555,9 @@ public:
 template <typename Model>
 OptResult
 optimize_lbfgs(Model &model, ParameterVector &params,
-               const LaplaceOptions &options = default_laplace_options()) {
+               const LaplaceOptions &options = default_laplace_options(),
+               int max_iterations = 100,
+               double gradient_tolerance = 1.0e-4) {
   using namespace LBFGSpp;
   using namespace Eigen;
 
@@ -563,14 +579,15 @@ optimize_lbfgs(Model &model, ParameterVector &params,
   fun.print_every = 25;
 
   LBFGSParam<double> param;
-  param.max_iterations = 100;
+  param.max_iterations = max_iterations;
   param.m = 20;
   param.max_linesearch = 50;
 #ifdef QUADRA_LBFGS_GRAD_TOL
   param.epsilon = QUADRA_LBFGS_GRAD_TOL;
 #else
-  param.epsilon = 1.0e-4;
+  param.epsilon = gradient_tolerance;
 #endif
+  param.epsilon_rel = 0.0;
   fun.epsilon = param.epsilon;
 
   LBFGSSolver<double> solver(param);
@@ -604,7 +621,7 @@ optimize_lbfgs(Model &model, ParameterVector &params,
 
       const bool quadra_requested_tol_met =
           std::isfinite(quadra_final_fixed_grad_norm) &&
-          quadra_final_fixed_grad_norm <= 1.0e-4;
+          quadra_final_fixed_grad_norm <= param.epsilon;
 
       std::cout << "L-BFGS minimize status report" << std::endl;
       std::cout << "  iterations returned by solver: " << niter << std::endl;
@@ -612,8 +629,9 @@ optimize_lbfgs(Model &model, ParameterVector &params,
       std::cout << "  final fixed-gradient norm: "
                 << quadra_final_fixed_grad_norm << std::endl;
       std::cout << "  requested gradient tolerance: " << std::scientific
-                << 1.0e-4 << std::defaultfloat << std::endl;
-      std::cout << "  configured max-iteration field: " << 400
+                << param.epsilon << std::defaultfloat << std::endl;
+      std::cout << "  configured max-iteration field: "
+                << param.max_iterations
                 << " (LBFGSpp max_iterations)" << std::endl;
       std::cout << "  requested tolerance met: "
                 << (quadra_requested_tol_met ? "yes" : "no") << std::endl;

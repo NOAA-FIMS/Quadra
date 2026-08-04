@@ -9,6 +9,7 @@
 #include <Eigen/SparseCholesky>
 
 #include "random_effect_newton.hpp"
+#include "laplace_backend_factory.hpp"
 
 namespace quadra {
 
@@ -27,6 +28,7 @@ struct LaplaceObjectiveResult {
   double log_det_hessian_m = 0.0;
   double laplace_objective_m = 0.0;
   double gradient_norm_random_m = 0.0;
+  double random_step_norm_m = 0.0;
 
   int n_random_m = 0;
   int newton_iterations_m = 0;
@@ -69,29 +71,15 @@ inline double sparse_ldlt_logdet(const Eigen::SparseMatrix<double> &H,
     return std::numeric_limits<double>::quiet_NaN();
   }
 
-  Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> solver;
-  solver.compute(H);
-
-  if (solver.info() != Eigen::Success) {
+  try {
+    auto backend = laplace::CreateLaplaceBackendForHessian(H);
+    backend->factorize(H);
+    ok = backend->is_spd() && std::isfinite(backend->logdet());
+    return ok ? backend->logdet()
+              : std::numeric_limits<double>::quiet_NaN();
+  } catch (...) {
     return std::numeric_limits<double>::quiet_NaN();
   }
-
-  const auto &D = solver.vectorD();
-
-  double logdet = 0.0;
-
-  for (int i = 0; i < D.size(); ++i) {
-    const double di = D[i];
-
-    if (!(di > 0.0) || !std::isfinite(di)) {
-      return std::numeric_limits<double>::quiet_NaN();
-    }
-
-    logdet += std::log(di);
-  }
-
-  ok = true;
-  return logdet;
 }
 
 // Evaluate the Laplace approximation:
@@ -123,6 +111,7 @@ inline LaplaceObjectiveResult evaluate_laplace_objective(
   result.full_m = newton.full_m;
   result.joint_objective_m = newton.objective_value_m;
   result.gradient_norm_random_m = newton.gradient_norm_m;
+  result.random_step_norm_m = newton.step_norm_m;
   result.newton_iterations_m = newton.iterations_m;
   result.converged_m = newton.converged_m;
   result.message_m = newton.message_m;

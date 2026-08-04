@@ -12,6 +12,7 @@
 #include "laplace_objective.hpp"
 #include "random_effect_hessian.hpp"
 #include "sparse_factorization_cache.hpp"
+#include "../autodiff/laplace_graph_plan.hpp"
 
 namespace quadra {
 
@@ -84,9 +85,20 @@ inline Eigen::MatrixXd ad_mixed_hessian(Model &model,
 
   AD objective = model.template evaluate<AD>(full_ad, ctx);
 
-  had::ZeroAdjoints(graph);
-  had::SetAdjoint(objective, 1.0);
-  had::PropagateAdjointDirectional();
+  std::vector<had::VertexId> fixed_ids;
+  std::vector<had::VertexId> random_ids;
+  fixed_ids.reserve(n_fixed);
+  random_ids.reserve(n_random);
+  for (size_t i = 0; i < n_fixed; ++i)
+    fixed_ids.push_back(
+        full_ad[static_cast<size_t>(partition.fixed_indices_m[i])].varId);
+  for (size_t i = 0; i < n_random; ++i)
+    random_ids.push_back(
+        full_ad[static_cast<size_t>(partition.random_indices_m[i])].varId);
+
+  LaplaceGraphPlan graph_plan;
+  graph_plan.Build(graph, fixed_ids, random_ids, objective.varId);
+  PropagateLaplaceHessianRestricted(graph, graph_plan);
 
   Eigen::MatrixXd H = Eigen::MatrixXd::Zero(static_cast<Eigen::Index>(n_random),
                                             static_cast<Eigen::Index>(n_fixed));

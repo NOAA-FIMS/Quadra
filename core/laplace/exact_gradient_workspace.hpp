@@ -48,8 +48,9 @@ public:
   ExactGradientWorkspace(const ExactGradientWorkspace &) = delete;
   ExactGradientWorkspace &operator=(const ExactGradientWorkspace &) = delete;
 
-  ExactGradientWorkspace(ExactGradientWorkspace &&) = default;
-  ExactGradientWorkspace &operator=(ExactGradientWorkspace &&) = default;
+  ExactGradientWorkspace(ExactGradientWorkspace &&) = delete;
+  ExactGradientWorkspace &operator=(ExactGradientWorkspace &&) = delete;
+
 
   template <class Builder>
   had::AReal Build(Builder &&builder, std::vector<had::AReal> *fixed_effects,

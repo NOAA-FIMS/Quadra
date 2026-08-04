@@ -23,11 +23,17 @@ class HadGraphWorkspace {
 public:
   HadGraphWorkspace() = default;
 
+  ~HadGraphWorkspace() {
+    if (had::g_ADGraph == &graph_) had::g_ADGraph = nullptr;
+  }
+
   HadGraphWorkspace(const HadGraphWorkspace &) = delete;
   HadGraphWorkspace &operator=(const HadGraphWorkspace &) = delete;
 
-  HadGraphWorkspace(HadGraphWorkspace &&) = default;
-  HadGraphWorkspace &operator=(HadGraphWorkspace &&) = default;
+  // Moving would change graph_'s address while the thread-local active graph
+  // pointer may still refer to the source object.
+  HadGraphWorkspace(HadGraphWorkspace &&) = delete;
+  HadGraphWorkspace &operator=(HadGraphWorkspace &&) = delete;
 
   had::ADGraph &Graph() { return graph_; }
   const had::ADGraph &Graph() const { return graph_; }
@@ -39,7 +45,8 @@ public:
   std::size_t VertexCount() const { return graph_.vertices.size(); }
 
   void Clear() {
-    graph_ = had::ADGraph();
+    graph_.Clear();
+    Activate();
     built_ = false;
     output_var_id_ = 0;
   }
@@ -59,33 +66,21 @@ public:
   void ResetAdjoints() {
     Activate();
 
-    for (auto &vertex : graph_.vertices) {
-      vertex.w = had::Real(0.0);
-      vertex.wDot = had::Real(0.0);
-      vertex.soWDot = had::Real(0.0);
-      vertex.dot = had::Real(0.0);
+    std::fill(graph_.vertexWDotBatch.begin(), graph_.vertexWDotBatch.end(),
+              had::Real(0.0));
+    std::fill(graph_.vertexSoWDotBatch.begin(),
+              graph_.vertexSoWDotBatch.end(), had::Real(0.0));
+    std::fill(graph_.vertexDotBatch.begin(), graph_.vertexDotBatch.end(),
+              had::Real(0.0));
+    std::fill(graph_.edge1DwBatch.begin(), graph_.edge1DwBatch.end(),
+              had::Real(0.0));
+    std::fill(graph_.edge2DwBatch.begin(), graph_.edge2DwBatch.end(),
+              had::Real(0.0));
 
-      if (!vertex.wDotBatch.empty()) {
-        std::fill(vertex.wDotBatch.begin(), vertex.wDotBatch.end(),
-                  had::Real(0.0));
-      }
-      if (!vertex.soWDotBatch.empty()) {
-        std::fill(vertex.soWDotBatch.begin(), vertex.soWDotBatch.end(),
-                  had::Real(0.0));
-      }
-      if (!vertex.dotBatch.empty()) {
-        std::fill(vertex.dotBatch.begin(), vertex.dotBatch.end(),
-                  had::Real(0.0));
-      }
-      if (!vertex.e1.dwBatch.empty()) {
-        std::fill(vertex.e1.dwBatch.begin(), vertex.e1.dwBatch.end(),
-                  had::Real(0.0));
-      }
-      if (!vertex.e2.dwBatch.empty()) {
-        std::fill(vertex.e2.dwBatch.begin(), vertex.e2.dwBatch.end(),
-                  had::Real(0.0));
-      }
-    }
+    for (auto &vertex : graph_.vertices)
+      vertex.w = had::Real(0.0);
+    for (auto &directional : graph_.scalarDirectional)
+      directional = had::ADScalarDirectionalVertex{};
 
     if (graph_.soEdges.size() < graph_.vertices.size()) {
       graph_.soEdges.resize(graph_.vertices.size());

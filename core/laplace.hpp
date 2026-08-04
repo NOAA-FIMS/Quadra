@@ -8,6 +8,7 @@
 #include "../external/eigen/Eigen/Dense"
 #include "../external/eigen/Eigen/Sparse"
 #include "../external/eigen/Eigen/SparseCholesky"
+#include "../external/LBFGSpp/include/LBFGS.h"
 #include "../model/parameter.hpp"
 #include "autodiff.hpp"
 #include "evaluation.hpp"
@@ -82,7 +83,7 @@ inline std::vector<int> build_random_index(const ParameterVector &params) {
   return idx;
 }
 
-std::vector<double>
+inline std::vector<double>
 build_u_init_from_cache(const std::vector<int> &random_idx) {
   return std::vector<double>(random_idx.size(), 0.0);
 }
@@ -174,9 +175,43 @@ std::vector<T> pack_params(const std::vector<T> &u, const std::vector<T> &x,
 // errors and keeps this file independent of the exact autodiff helper API.
 using SparseHessianPattern = std::vector<std::pair<int, int>>;
 
-inline std::unordered_map<int, SparseHessianPattern> &laplace_pattern_cache() {
-  static std::unordered_map<int, SparseHessianPattern> cache;
+inline std::unordered_map<std::size_t, SparseHessianPattern> &
+laplace_pattern_cache() {
+  static std::unordered_map<std::size_t, SparseHessianPattern> cache;
   return cache;
+}
+
+inline void laplace_pattern_hash_combine(std::size_t &seed,
+                                         std::size_t value) {
+  seed ^= value + std::size_t{0x9e3779b9} + (seed << 6) + (seed >> 2);
+}
+
+inline std::size_t
+laplace_pattern_cache_key(const had::ADGraph &graph,
+                          const std::vector<AD> &p_full,
+                          const std::vector<int> &random_idx) {
+  std::size_t key = graph.vertices.size();
+  laplace_pattern_hash_combine(key, random_idx.size());
+
+  // Hessian sparsity is a property of the recorded expression graph, not just
+  // the number of random effects. Include operation and parent topology so
+  // models with equal latent dimension but different sparse precision
+  // structures cannot share a stale pattern.
+  for (const auto &vertex : graph.vertices) {
+    laplace_pattern_hash_combine(
+        key, static_cast<std::size_t>(vertex.op));
+    laplace_pattern_hash_combine(key,
+                                 static_cast<std::size_t>(vertex.left));
+    laplace_pattern_hash_combine(key,
+                                 static_cast<std::size_t>(vertex.right));
+  }
+
+  for (const int full_index : random_idx) {
+    laplace_pattern_hash_combine(
+        key, static_cast<std::size_t>(p_full[full_index].varId));
+  }
+
+  return key;
 }
 
 //==================================================
@@ -191,9 +226,11 @@ inline std::unordered_map<int, SparseHessianPattern> &laplace_pattern_cache() {
 // it can be missed. Diagonals are included by default for Newton stability.
 inline SparseHessianPattern discover_pattern_from_graph(
     const std::vector<AD> &p_full, const std::vector<int> &random_idx,
-    bool symmetric = true, bool include_diagonal = true, double tol = 1e-12) {
-  std::cout << "Quadra: Discovering Hessian pattern from AD graph for "
-            << random_idx.size() << " random variables ...\n";
+    bool symmetric = true, bool include_diagonal = true, double tol = 1e-12,
+    bool verbose = true) {
+  if (verbose)
+    std::cout << "Quadra: Discovering Hessian pattern from AD graph for "
+              << random_idx.size() << " random variables ...\n";
 
   const int n = static_cast<int>(random_idx.size());
   SparseHessianPattern pattern;
@@ -257,8 +294,9 @@ inline SparseHessianPattern discover_pattern_from_graph(
   for (const auto &ij : unique_pairs)
     pattern.emplace_back(ij.first, ij.second);
 
-  std::cout << "Quadra: Model structure aware now => Hessian pattern has "
-            << pattern.size() << " entries.\n";
+  if (verbose)
+    std::cout << "Quadra: Model structure aware now => Hessian pattern has "
+              << pattern.size() << " entries.\n";
   return pattern;
 }
 
@@ -269,15 +307,16 @@ get_pattern(const ADScope &scope, const std::vector<AD> &p_full,
   // nested derivative/logdet helper evaluations.
   had::g_ADGraph = &scope.graph;
 
-  const int n = static_cast<int>(random_idx.size());
   auto &cache = laplace_pattern_cache();
+  const std::size_t key =
+      laplace_pattern_cache_key(scope.graph, p_full, random_idx);
 
-  auto it = cache.find(n);
+  auto it = cache.find(key);
   if (it != cache.end())
     return it->second;
 
   auto pattern = discover_pattern_from_graph(p_full, random_idx);
-  auto res = cache.emplace(n, std::move(pattern));
+  auto res = cache.emplace(key, std::move(pattern));
   return res.first->second;
 }
 
@@ -444,6 +483,82 @@ inline double sparse_logdet_llt(const Eigen::SparseMatrix<double> &H) {
 //==================================================
 // Solve for random effects u* via Newton
 //==================================================
+inline void propagate_first_order(had::ADGraph &graph,
+                                  had::VertexId objective_vertex) {
+  had::ZeroAdjoints(graph);
+  graph.vertices[objective_vertex].w = 1.0;
+  for (had::VertexId vertex_id =
+           static_cast<had::VertexId>(graph.vertices.size() - 1);
+       vertex_id > 0; --vertex_id) {
+    had::ADVertex &vertex = graph.vertices[vertex_id];
+    if (vertex.e1.to == vertex_id)
+      continue;
+    const double adjoint = vertex.w;
+    graph.vertices[vertex.e1.to].w += adjoint * vertex.e1.w;
+    if (vertex.e2.to != vertex_id) {
+      graph.vertices[vertex.e2.to].w += adjoint * vertex.e2.w;
+    }
+  }
+}
+
+template <typename Model>
+struct FirstOrderJointEvaluation {
+  double value = 0.0;
+  Eigen::VectorXd fixed_gradient;
+  Eigen::VectorXd random_gradient;
+};
+
+template <typename Model>
+FirstOrderJointEvaluation<Model> evaluate_joint_first_order(
+    Model &model, ParameterVector &params, const Eigen::VectorXd &theta,
+    const Eigen::VectorXd &random, const std::vector<int> &fixed_idx,
+    const std::vector<int> &random_idx) {
+  had::ADGraph graph;
+  ADScope scope(graph);
+  std::vector<AD> full;
+  full.reserve(params.size());
+  for (int i = 0; i < params.size(); ++i)
+    full.emplace_back(AD(0.0));
+  inject_fixed_params(theta, full, fixed_idx);
+  std::vector<double> random_std(random.data(), random.data() + random.size());
+  inject_random_params(random_std, full, random_idx);
+  AD objective = model(full);
+  propagate_first_order(graph, objective.varId);
+  FirstOrderJointEvaluation<Model> out;
+  out.value = graph.vertices[objective.varId].primal;
+  out.fixed_gradient.resize(static_cast<Eigen::Index>(fixed_idx.size()));
+  out.random_gradient.resize(static_cast<Eigen::Index>(random_idx.size()));
+  for (size_t i = 0; i < fixed_idx.size(); ++i)
+    out.fixed_gradient[static_cast<Eigen::Index>(i)] =
+        had::GetAdjoint(full[fixed_idx[i]]);
+  for (size_t i = 0; i < random_idx.size(); ++i)
+    out.random_gradient[static_cast<Eigen::Index>(i)] =
+        had::GetAdjoint(full[random_idx[i]]);
+  return out;
+}
+
+template <typename Model>
+Eigen::MatrixXd dense_random_hessian_from_gradient_fd(
+    Model &model, ParameterVector &params, const Eigen::VectorXd &theta,
+    const Eigen::VectorXd &random, const std::vector<int> &fixed_idx,
+    const std::vector<int> &random_idx, double relative_step = 1e-5) {
+  const Eigen::Index n = random.size();
+  Eigen::MatrixXd hessian(n, n);
+  for (Eigen::Index column = 0; column < n; ++column) {
+    const double step = relative_step * std::max(1.0, std::abs(random[column]));
+    Eigen::VectorXd plus = random;
+    Eigen::VectorXd minus = random;
+    plus[column] += step;
+    minus[column] -= step;
+    const auto gplus = evaluate_joint_first_order(
+        model, params, theta, plus, fixed_idx, random_idx).random_gradient;
+    const auto gminus = evaluate_joint_first_order(
+        model, params, theta, minus, fixed_idx, random_idx).random_gradient;
+    hessian.col(column) = (gplus - gminus) / (2.0 * step);
+  }
+  return 0.5 * (hessian + hessian.transpose());
+}
+
 template <typename Model>
 std::vector<double> solve_random_effects_laplace(
     Model &model, ParameterVector &params, const Eigen::VectorXd &x,
@@ -458,94 +573,40 @@ std::vector<double> solve_random_effects_laplace(
                               : std::vector<double>(random_idx.size(), 0.0);
 
   for (int iter = 0; iter < max_iter; ++iter) {
-
-    // --------------------------------------------------
-    // AD scope: binds graph, clears graph
-    // --------------------------------------------------
     ADScope scope(graph);
-
-    // --------------------------------------------------
-    // Build full AD parameter vector
-    // --------------------------------------------------
     std::vector<AD> p_full;
     p_full.reserve(params.size());
-
-    for (int i = 0; i < params.size(); ++i) {
+    for (int i = 0; i < params.size(); ++i)
       p_full.emplace_back(AD(0.0));
-    }
-
     inject_fixed_params(x, p_full, fixed_idx);
     inject_random_params(u, p_full, random_idx);
-
-    // --------------------------------------------------
-    // Forward pass
-    // --------------------------------------------------
     AD nll = model(p_full);
-
-    // --------------------------------------------------
-    // Reverse pass
-    // --------------------------------------------------
     scope.backward(nll);
 
-    // --------------------------------------------------
-    // Gradient wrt random effects
-    // --------------------------------------------------
-    Eigen::VectorXd g(random_idx.size());
+    Eigen::VectorXd gradient(random_idx.size());
+    for (size_t i = 0; i < random_idx.size(); ++i)
+      gradient[static_cast<Eigen::Index>(i)] =
+          scope.grad(p_full[random_idx[i]]);
 
-    for (size_t i = 0; i < random_idx.size(); ++i) {
-      g[i] = scope.grad(p_full[random_idx[i]]);
-    }
-
-    if (g.norm() < tol) {
-      if (false)
-        std::cout << "Newton: " << "inner iter = " << std::setw(3) << iter + 1
-                  << ", fx = " << std::setw(14) << std::fixed
-                  << std::setprecision(6) << nll.val
-                  << ", |grad| = " << std::setw(12) << std::fixed
-                  << std::setprecision(6) << g.norm() << "\n";
+    if (gradient.norm() < tol)
       return u;
-    }
 
-    // --------------------------------------------------
-    // Sparse Hessian wrt random effects
-    // --------------------------------------------------
     const auto &pattern = get_pattern(scope, p_full, random_idx);
-
-    Eigen::SparseMatrix<double> H =
+    Eigen::SparseMatrix<double> hessian =
         extract_sparse_hessian(scope, p_full, random_idx, pattern);
-
-    // Optional diagnostics
-    // std::cout << "pattern nnz = " << H.nonZeros() << "\n";
-
-    // --------------------------------------------------
-    // Sparse Newton solve: H step = g
-    // --------------------------------------------------
     Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> solver;
-    solver.compute(H);
-
-    if (solver.info() != Eigen::Success) {
-      throw std::runtime_error("Sparse Hessian factorization failed in "
-                               "solve_random_effects_laplace");
-    }
-
-    Eigen::VectorXd step = solver.solve(g);
-
+    solver.compute(hessian);
     if (solver.info() != Eigen::Success) {
       throw std::runtime_error(
-          "Sparse Hessian solve failed in solve_random_effects_laplace");
+          "solve_random_effects_laplace: Newton factorization failed");
     }
-    if (false)
-      std::cout << "Newton: " << "inner iter = " << std::setw(3) << iter + 1
-                << ", fx = " << std::setw(14) << std::fixed
-                << std::setprecision(6) << nll.val
-                << ", |grad| = " << std::setw(12) << std::fixed
-                << std::setprecision(6) << g.norm() << "\n";
-    // --------------------------------------------------
-    // Newton update
-    // --------------------------------------------------
-    for (size_t i = 0; i < u.size(); ++i) {
-      u[i] -= step[i];
+    const Eigen::VectorXd step = solver.solve(gradient);
+    if (solver.info() != Eigen::Success) {
+      throw std::runtime_error(
+          "solve_random_effects_laplace: Newton solve failed");
     }
+    for (size_t i = 0; i < u.size(); ++i)
+      u[i] -= step[static_cast<Eigen::Index>(i)];
   }
 
   return u;
@@ -1060,14 +1121,14 @@ Eigen::SparseMatrix<double> random_hessian_directional_exact(
     const double d = (static_cast<Eigen::Index>(k) == theta_i) ? 1.0 : 0.0;
 
     p_full[fixed_idx[k]].dot = d;
-    graph.vertices[p_full[fixed_idx[k]].varId].dot = d;
+    had::VertexDot(graph, p_full[fixed_idx[k]].varId) = d;
   }
 
   for (size_t r = 0; r < random_idx.size(); ++r) {
     const double d = du[static_cast<Eigen::Index>(r)];
 
     p_full[random_idx[r]].dot = d;
-    graph.vertices[p_full[random_idx[r]].varId].dot = d;
+    had::VertexDot(graph, p_full[random_idx[r]].varId) = d;
   }
 
   AD nll = model(p_full);
@@ -1140,13 +1201,15 @@ std::vector<Eigen::SparseMatrix<double>> random_hessian_directional_exact_all(
     for (size_t k = 0; k < fixed_idx.size(); ++k) {
       const double d = (static_cast<Eigen::Index>(k) == theta_i) ? 1.0 : 0.0;
       p_full[static_cast<size_t>(fixed_idx[k])].dot = d;
-      graph.vertices[p_full[static_cast<size_t>(fixed_idx[k])].varId].dot = d;
+      had::VertexDot(
+          graph, p_full[static_cast<size_t>(fixed_idx[k])].varId) = d;
     }
 
     for (size_t r = 0; r < random_idx.size(); ++r) {
       const double d = du_dtheta(static_cast<Eigen::Index>(r), theta_i);
       p_full[static_cast<size_t>(random_idx[r])].dot = d;
-      graph.vertices[p_full[static_cast<size_t>(random_idx[r])].varId].dot = d;
+      had::VertexDot(
+          graph, p_full[static_cast<size_t>(random_idx[r])].varId) = d;
     }
 
     laplace::reset_had_quadra_directional_reverse_state(graph);
@@ -1308,7 +1371,6 @@ Eigen::VectorXd laplace_logdet_gradient_exact(
   inject_random_params(u, p_pattern, random_idx);
 
   AD nll_pattern = model(p_pattern);
-
   pattern_scope.backward(nll_pattern);
 
   const auto &get_pattern_for_logdet =
@@ -1352,17 +1414,18 @@ Eigen::VectorXd laplace_logdet_gradient_exact(
 
   const auto timing_hdot_start = std::chrono::steady_clock::now();
 
+  // Preserve the scalar-generic API's trusted per-direction propagation.
+  // The newer persistent sparse workspace and direct reverse contraction are
+  // used by the model-aware API, where their structural assumptions are
+  // explicitly validated. Applying that workspace implicitly here changes
+  // gradients for legacy vector-generic models such as Poisson random
+  // intercepts.
   Eigen::VectorXd grad = Eigen::VectorXd::Zero(theta.size());
-
   const auto Hdots = random_hessian_directional_exact_all(
       model, params, theta, u_hat, dU, get_pattern_for_logdet);
-
   for (Eigen::Index i = 0; i < theta.size(); ++i) {
-    const Eigen::SparseMatrix<double> &Hdot =
-        Hdots[static_cast<std::size_t>(i)];
-
-    grad[i] =
-        0.5 * logdet_directional_derivative_from_hdot(solver, Hdot, options);
+    grad[i] = 0.5 * logdet_directional_derivative_from_hdot(
+                        solver, Hdots[static_cast<std::size_t>(i)], options);
   }
 
 #ifdef QUADRA_DEBUG_LOGDET_THETA_ONLY_VS_TOTAL
