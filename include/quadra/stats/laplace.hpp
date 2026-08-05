@@ -134,8 +134,8 @@ public:
 
     try {
       Eigen::SparseMatrix<double> hessian =
-          laplace_objective_add_diagonal_jitter(
-              result.hessian_random_m, options_.logdet_jitter_m);
+          laplace_objective_add_diagonal_jitter(result.hessian_random_m,
+                                                options_.logdet_jitter_m);
       const auto structured = structured_runtime_.evaluate(hessian);
       result.log_det_hessian_m = structured.logdet;
       result.logdet_ok_m = std::isfinite(structured.logdet);
@@ -143,8 +143,8 @@ public:
       result.structure_detected_m = structured.detected_structure;
     } catch (const std::exception &error) {
       result.logdet_ok_m = false;
-      result.message_m += std::string(" Structured logdet failed: ") +
-                          error.what();
+      result.message_m +=
+          std::string(" Structured logdet failed: ") + error.what();
     }
 
     if (result.logdet_ok_m) {
@@ -232,8 +232,7 @@ public:
     pattern_ = pattern;
     last_random_ = discovery.u_hat_m;
 
-    const int fixed_size =
-        static_cast<int>(partition_.fixed_indices_m.size());
+    const int fixed_size = static_cast<int>(partition_.fixed_indices_m.size());
     std::vector<int> all_directions;
     all_directions.reserve(static_cast<std::size_t>(fixed_size));
     for (int j = 0; j < fixed_size; ++j) {
@@ -256,8 +255,8 @@ public:
                  Eigen::VectorXd(discovery.mixed_hessian_m.col(j))))
                 .eval();
       }
-      auto direction = [&discovery_directions](int j)
-          -> const Eigen::VectorXd & {
+      auto direction =
+          [&discovery_directions](int j) -> const Eigen::VectorXd & {
         return discovery_directions[static_cast<std::size_t>(j)];
       };
       const auto discovery_hdots = prototype->compute(
@@ -281,10 +280,10 @@ public:
       const unsigned int hardware = std::thread::hardware_concurrency();
       const unsigned int automatic_workers =
           hardware == 0 ? 4u : std::min(4u, hardware);
-      const std::size_t requested = engine_options.hdot_workers == 0
-                                        ? automatic_workers
-                                        : static_cast<std::size_t>(
-                                              engine_options.hdot_workers);
+      const std::size_t requested =
+          engine_options.hdot_workers == 0
+              ? automatic_workers
+              : static_cast<std::size_t>(engine_options.hdot_workers);
       worker_count = std::min(active_directions_.size(), requested);
     }
     std::vector<std::vector<int>> worker_directions(worker_count);
@@ -321,10 +320,9 @@ public:
     const auto objective_start = Clock::now();
     result.objective = objective_evaluator_->evaluate(fixed);
     const auto objective_end = Clock::now();
-    result.timings.objective_ms =
-        std::chrono::duration<double, std::milli>(objective_end -
-                                                  objective_start)
-            .count();
+    result.timings.objective_ms = std::chrono::duration<double, std::milli>(
+                                      objective_end - objective_start)
+                                      .count();
     if (!result.objective.converged_m || !result.objective.logdet_ok_m) {
       result.gradient.assign(fixed.size(), std::nan(""));
       result.timings.total_ms =
@@ -342,22 +340,22 @@ public:
 
     const auto factorization_start = Clock::now();
     laplace::SparseHuuFactorization factor(result.objective.hessian_random_m);
-    result.timings.factorization_ms =
-        std::chrono::duration<double, std::milli>(Clock::now() -
-                                                  factorization_start)
-            .count();
+    result.timings.factorization_ms = std::chrono::duration<double, std::milli>(
+                                          Clock::now() - factorization_start)
+                                          .count();
     const auto sensitivity_start = Clock::now();
     std::vector<Eigen::VectorXd> mode_directions(fixed.size());
     for (int fixed_index : active_directions_) {
       mode_directions[static_cast<std::size_t>(fixed_index)] =
-          (-factor.solve(Eigen::VectorXd(cross_derivative(fixed_index)))).eval();
+          (-factor.solve(Eigen::VectorXd(cross_derivative(fixed_index))))
+              .eval();
     }
     result.timings.mode_sensitivity_ms =
         std::chrono::duration<double, std::milli>(Clock::now() -
                                                   sensitivity_start)
             .count();
-    auto u_direction = [&mode_directions](int fixed_index)
-        -> const Eigen::VectorXd & {
+    auto u_direction =
+        [&mode_directions](int fixed_index) -> const Eigen::VectorXd & {
       return mode_directions[static_cast<std::size_t>(fixed_index)];
     };
     const auto hdot_start = Clock::now();
@@ -379,12 +377,11 @@ public:
     auto run_worker = [&](std::size_t worker) {
       try {
         if (direct_tridiagonal_trace) {
-          worker_trace_terms[worker] =
-              hdot_tapes_[worker]->compute_trace_terms(
-                  fixed_eigen, random_eigen, u_direction,
-                  [&factor](int row, int col) {
-                    return factor.tridiagonal_selected_inverse(row, col);
-                  });
+          worker_trace_terms[worker] = hdot_tapes_[worker]->compute_trace_terms(
+              fixed_eigen, random_eigen, u_direction,
+              [&factor](int row, int col) {
+                return factor.tridiagonal_selected_inverse(row, col);
+              });
         } else {
           worker_hdots[worker] = hdot_tapes_[worker]->compute(
               fixed_eigen, random_eigen, u_direction);
@@ -435,12 +432,13 @@ public:
       if (direct_tridiagonal_trace) {
         for (std::size_t worker = 0; worker < hdot_tapes_.size(); ++worker) {
           if (!worker_trace_terms[worker].empty()) {
-            trace_term += worker_trace_terms[worker][static_cast<std::size_t>(j)];
+            trace_term +=
+                worker_trace_terms[worker][static_cast<std::size_t>(j)];
           }
         }
       } else {
-        trace_term = factor.trace_inverse_times(
-            hdots[static_cast<std::size_t>(j)]);
+        trace_term =
+            factor.trace_inverse_times(hdots[static_cast<std::size_t>(j)]);
       }
       exact_gradient[j] += 0.5 * trace_term;
     }
@@ -567,10 +565,10 @@ inline std::vector<double> add_scaled(const std::vector<double> &values,
   return result;
 }
 
-inline std::vector<double> lbfgs_direction(
-    const std::vector<double> &gradient,
-    const std::deque<std::vector<double>> &steps,
-    const std::deque<std::vector<double>> &gradient_changes) {
+inline std::vector<double>
+lbfgs_direction(const std::vector<double> &gradient,
+                const std::deque<std::vector<double>> &steps,
+                const std::deque<std::vector<double>> &gradient_changes) {
   if (steps.empty()) {
     std::vector<double> direction = gradient;
     for (double &value : direction) {
@@ -627,18 +625,17 @@ inline std::vector<double> lbfgs_direction(
 // Objective and gradient are always computed together, and every line-search
 // evaluation reuses the latent mode and both AD tapes owned by the evaluator.
 template <class Model>
-LaplaceOptimizerResult optimize_laplace(
-    ExactLaplaceEvaluator<Model> &evaluator,
-    const std::vector<double> &fixed_initial,
-    const LaplaceOptimizerOptions &options = {}) {
+LaplaceOptimizerResult
+optimize_laplace(ExactLaplaceEvaluator<Model> &evaluator,
+                 const std::vector<double> &fixed_initial,
+                 const LaplaceOptimizerOptions &options = {}) {
   if (fixed_initial.empty()) {
     throw std::invalid_argument(
         "optimize_laplace: fixed_initial cannot be empty");
   }
   if (options.max_iterations < 0 || options.memory < 0 ||
       !(options.gradient_tolerance >= 0.0) ||
-      !(options.step_tolerance >= 0.0) ||
-      !(options.initial_step_scale > 0.0) ||
+      !(options.step_tolerance >= 0.0) || !(options.initial_step_scale > 0.0) ||
       !(options.maximum_direction_norm > 0.0) ||
       !(options.minimum_step_scale > 0.0) ||
       options.minimum_step_scale > options.initial_step_scale ||
@@ -660,8 +657,7 @@ LaplaceOptimizerResult optimize_laplace(
   std::deque<std::vector<double>> gradient_changes;
   for (int iteration = 0; iteration < options.max_iterations; ++iteration) {
     const double gradient_norm = detail::norm(current.gradient);
-    result.history.push_back({iteration,
-                              current.objective.laplace_objective_m,
+    result.history.push_back({iteration, current.objective.laplace_objective_m,
                               gradient_norm, 0.0, 0.0});
     result.iterations = iteration;
     if (gradient_norm <= options.gradient_tolerance) {
@@ -716,8 +712,7 @@ LaplaceOptimizerResult optimize_laplace(
     std::vector<double> gradient_change =
         detail::subtract(candidate.gradient, current.gradient);
     const double curvature = detail::dot(step, gradient_change);
-    if (options.memory > 0 && curvature > 1.0e-14 &&
-        std::isfinite(curvature)) {
+    if (options.memory > 0 && curvature > 1.0e-14 && std::isfinite(curvature)) {
       steps.push_back(step);
       gradient_changes.push_back(std::move(gradient_change));
       while (static_cast<int>(steps.size()) > options.memory) {

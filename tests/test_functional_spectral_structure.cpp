@@ -28,12 +28,10 @@ int main() {
                "largest eigenvalue mismatch");
   expect_close(spectrum.eigenvalues_desc[1], 1.0,
                "smallest eigenvalue mismatch");
-  expect_close(spectrum.cumulative_share[0], 0.8,
-               "cumulative share mismatch");
+  expect_close(spectrum.cumulative_share[0], 0.8, "cumulative share mismatch");
   expect_close(spectrum.participation_ratio, 25.0 / 17.0,
                "participation ratio mismatch");
-  expect_close(spectrum.stable_rank, 17.0 / 16.0,
-               "stable rank mismatch");
+  expect_close(spectrum.stable_rank, 17.0 / 16.0, "stable rank mismatch");
   expect_close(spectrum.leading_spectral_gap_ratio, 4.0,
                "spectral gap mismatch");
   if (!(spectrum.normalized_spectral_entropy > 0.0 &&

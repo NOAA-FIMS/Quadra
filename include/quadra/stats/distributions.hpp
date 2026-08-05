@@ -8,13 +8,11 @@
 namespace quadra {
 namespace stats {
 
-template <typename T>
-T normal_logpdf(const T &x, const T &mean, const T &sd) {
+template <typename T> T normal_logpdf(const T &x, const T &mean, const T &sd) {
   return quadra::dnorm(x, mean, sd, true);
 }
 
-template <typename T>
-T normal_nll(const T &x, const T &mean, const T &sd) {
+template <typename T> T normal_nll(const T &x, const T &mean, const T &sd) {
   return -normal_logpdf(x, mean, sd);
 }
 

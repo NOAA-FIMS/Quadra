@@ -59,9 +59,8 @@ csv_get_spectral_rows(const std::string &csv_path) {
       continue;
     const std::string prefix = "cumulative_share=";
     rows.push_back({rank, value,
-                    extra.rfind(prefix, 0) == 0
-                        ? extra.substr(prefix.size())
-                        : std::string()});
+                    extra.rfind(prefix, 0) == 0 ? extra.substr(prefix.size())
+                                                : std::string()});
   }
   return rows;
 }

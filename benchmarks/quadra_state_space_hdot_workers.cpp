@@ -24,8 +24,7 @@ public:
                      quadra::ParameterTransform::Identity, false);
     parameters_m.add("log_observation_sd", std::log(0.45),
                      quadra::ParameterTransform::Identity, false);
-    parameters_m.add("mean", 0.1, quadra::ParameterTransform::Identity,
-                     false);
+    parameters_m.add("mean", 0.1, quadra::ParameterTransform::Identity, false);
     for (int i = 0; i < n; ++i) {
       parameters_m.add("state_" + std::to_string(i), 0.0,
                        quadra::ParameterTransform::Identity, true);
@@ -43,8 +42,7 @@ public:
   template <class T>
   T evaluate_impl(const std::vector<T> &parameters,
                   quadra::ModelReportContext &) const {
-    const T phi =
-        quadra::stats::correlation_from_unconstrained(parameters[0]);
+    const T phi = quadra::stats::correlation_from_unconstrained(parameters[0]);
     using std::exp;
     const T process_sd = exp(parameters[1]);
     const T observation_sd = exp(parameters[2]);
@@ -97,8 +95,7 @@ int main() {
          "complexity,symbolic_reuse,objective_rebuilds,hdot_rebuilds,"
          "objective_difference,gradient_max_abs_difference,success\n";
 
-  const std::vector<double> fixed =
-      {0.35, std::log(0.7), std::log(0.45), 0.1};
+  const std::vector<double> fixed = {0.35, std::log(0.7), std::log(0.45), 0.1};
   for (int n : {100, 300, 1000}) {
     TmbStyleGaussianStateSpace model(n);
     std::vector<double> random(static_cast<std::size_t>(n), 0.0);
@@ -115,8 +112,9 @@ int main() {
     for (int requested_workers : {1, 2, 0}) {
       quadra::laplace::ExactLaplaceGradientEngineOptions engine_options;
       engine_options.hdot_workers = requested_workers;
-      std::unique_ptr<quadra::stats::ExactLaplaceEvaluator<
-          TmbStyleGaussianStateSpace>> evaluator;
+      std::unique_ptr<
+          quadra::stats::ExactLaplaceEvaluator<TmbStyleGaussianStateSpace>>
+          evaluator;
       const double setup_ms = milliseconds([&]() {
         evaluator.reset(new quadra::stats::ExactLaplaceEvaluator<
                         TmbStyleGaussianStateSpace>(
@@ -151,9 +149,9 @@ int main() {
           objective_difference < 1.0e-10 && gradient_difference < 1.0e-10 &&
           diagnostics.is_tridiagonal() && diagnostics.bandwidth == 1;
 
-      std::cout << "gaussian_ar1_state_space," << n << ","
-                << requested_workers << "," << evaluator->hdot_worker_count()
-                << "," << evaluator->hdot_shared_topology_owner_count() << ","
+      std::cout << "gaussian_ar1_state_space," << n << "," << requested_workers
+                << "," << evaluator->hdot_worker_count() << ","
+                << evaluator->hdot_shared_topology_owner_count() << ","
                 << evaluator->hdot_shared_operation_owner_count() << ","
                 << evaluator->hdot_operation_count() << ","
                 << (evaluator->hdot_worker_count() - 1) *
@@ -163,8 +161,7 @@ int main() {
                 << (evaluator->hdot_worker_count() - 1) *
                        evaluator->hdot_operation_count() * 2 *
                        sizeof(had::VertexId)
-                << ","
-                << result.active_directions.size() << "," << setup_ms
+                << "," << result.active_directions.size() << "," << setup_ms
                 << "," << warm_ms << "," << result.timings.objective_ms << ","
                 << result.timings.factorization_ms << ","
                 << result.timings.mode_sensitivity_ms << ","
@@ -172,9 +169,8 @@ int main() {
                 << "," << result.timings.total_ms << ","
                 << serial_warm_ms / warm_ms << ","
                 << serial_hdot_ms / result.timings.hdot_ms << ","
-                << setup_ms / serial_setup_ms << "," << diagnostics.nnz
-                << "," << diagnostics.fill_ratio << ","
-                << diagnostics.bandwidth << ","
+                << setup_ms / serial_setup_ms << "," << diagnostics.nnz << ","
+                << diagnostics.fill_ratio << "," << diagnostics.bandwidth << ","
                 << quadra::laplace::ToString(diagnostics.structure) << ","
                 << quadra::laplace::ToString(diagnostics.backend) << ","
                 << quadra::laplace::ToString(diagnostics.solver) << ","

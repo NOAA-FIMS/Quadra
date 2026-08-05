@@ -170,8 +170,7 @@ public:
 
   int tape_build_count() const { return tape_build_count_; }
 
-  bool replay_matches(const Eigen::VectorXd &theta,
-                      const Eigen::VectorXd &uhat,
+  bool replay_matches(const Eigen::VectorXd &theta, const Eigen::VectorXd &uhat,
                       double relative_tolerance = 1e-11) const {
     ensure_replayed(theta, uhat);
     std::vector<double> values;

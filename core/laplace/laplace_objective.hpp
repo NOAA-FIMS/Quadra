@@ -9,8 +9,8 @@
 #include <Eigen/SparseCholesky>
 
 #include "laplace_backend_factory.hpp"
-#include "random_effect_newton.hpp"
 #include "persistent_structured_runtime.hpp"
+#include "random_effect_newton.hpp"
 
 namespace quadra {
 

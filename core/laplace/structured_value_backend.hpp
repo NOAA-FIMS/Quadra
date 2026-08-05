@@ -160,8 +160,8 @@ inline double logdet_banded_values_ldlt(const BandedValues &H,
 
   const int bw = std::min(H.bandwidth, std::max(0, n - 1));
   const int stride = bw + 1;
-  const std::size_t required = static_cast<std::size_t>(n) *
-                               static_cast<std::size_t>(stride);
+  const std::size_t required =
+      static_cast<std::size_t>(n) * static_cast<std::size_t>(stride);
   workspace.factor.resize(required);
   std::fill(workspace.factor.begin(), workspace.factor.end(), 0.0);
   std::vector<double> &work = workspace.factor;

@@ -33,14 +33,11 @@ namespace laplace {
 template <class CombinedObjectiveFn>
 class AutoReplayCachedLaplaceGradientContext {
 public:
-  AutoReplayCachedLaplaceGradientContext(CombinedObjectiveFn combined_objective,
-                                         int theta_dim, int random_dim,
-                                         RandomHessianPattern pattern,
-                                         const Eigen::VectorXd &discovery_theta,
-                                         const Eigen::VectorXd &discovery_uhat,
-                                         double discovery_tol = 0.0,
-                                         double drop_tol = 0.0,
-                                         bool discover_directions = true)
+  AutoReplayCachedLaplaceGradientContext(
+      CombinedObjectiveFn combined_objective, int theta_dim, int random_dim,
+      RandomHessianPattern pattern, const Eigen::VectorXd &discovery_theta,
+      const Eigen::VectorXd &discovery_uhat, double discovery_tol = 0.0,
+      double drop_tol = 0.0, bool discover_directions = true)
       : combined_objective_(std::move(combined_objective)),
         theta_dim_(theta_dim), random_dim_(random_dim),
         pattern_(std::move(pattern)), discovery_tol_(discovery_tol),
@@ -61,11 +58,11 @@ public:
     if (discover_directions) {
       discover_active_directions(discovery_theta, discovery_uhat);
     } else {
-      discovery_.active_directions.reserve(static_cast<std::size_t>(theta_dim_));
+      discovery_.active_directions.reserve(
+          static_cast<std::size_t>(theta_dim_));
       discovery_.hdot_norms.assign(static_cast<std::size_t>(theta_dim_),
                                    std::nan(""));
-      discovery_.hdot_nonzeros.assign(static_cast<std::size_t>(theta_dim_),
-                                      -1);
+      discovery_.hdot_nonzeros.assign(static_cast<std::size_t>(theta_dim_), -1);
       for (int j = 0; j < theta_dim_; ++j) {
         discovery_.active_directions.push_back(j);
       }

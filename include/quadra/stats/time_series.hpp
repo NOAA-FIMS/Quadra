@@ -13,8 +13,8 @@ namespace stats {
 //   x[0] ~ Normal(mean, innovation_sd / sqrt(1 - phi^2))
 //   x[t] ~ Normal(mean + phi * (x[t - 1] - mean), innovation_sd)
 template <typename T>
-T ar1_stationary_logpdf(const std::vector<T> &x, const T &mean,
-                        const T &phi, const T &innovation_sd) {
+T ar1_stationary_logpdf(const std::vector<T> &x, const T &mean, const T &phi,
+                        const T &innovation_sd) {
   using std::sqrt;
   if (x.empty()) {
     return T(0.0);

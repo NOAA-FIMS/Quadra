@@ -29,8 +29,7 @@ struct PersistentStructuredRuntimeState {
     }
     if (std::holds_alternative<SparseMatrixValues>(values) &&
         recommendation.backend == LaplaceBackendKind::SparseLDLT) {
-      sparse_ldlt_workspace.factorize(
-          std::get<SparseMatrixValues>(values).H);
+      sparse_ldlt_workspace.factorize(std::get<SparseMatrixValues>(values).H);
       return sparse_ldlt_workspace.logdet();
     }
     return logdet_structured_values(values);

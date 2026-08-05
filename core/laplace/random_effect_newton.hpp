@@ -56,9 +56,9 @@ struct RandomEffectNewtonResult {
   laplace::BackendRecommendation backend_m;
 };
 
-inline bool solve_diagonal_newton_system(
-    const Eigen::SparseMatrix<double> &H, const Eigen::VectorXd &rhs,
-    Eigen::VectorXd &solution) {
+inline bool solve_diagonal_newton_system(const Eigen::SparseMatrix<double> &H,
+                                         const Eigen::VectorXd &rhs,
+                                         Eigen::VectorXd &solution) {
   solution.resize(H.rows());
   for (int i = 0; i < H.rows(); ++i) {
     const double diagonal = H.coeff(i, i);
@@ -70,9 +70,10 @@ inline bool solve_diagonal_newton_system(
   return solution.allFinite();
 }
 
-inline bool solve_tridiagonal_newton_system(
-    const Eigen::SparseMatrix<double> &H, const Eigen::VectorXd &rhs,
-    Eigen::VectorXd &solution) {
+inline bool
+solve_tridiagonal_newton_system(const Eigen::SparseMatrix<double> &H,
+                                const Eigen::VectorXd &rhs,
+                                Eigen::VectorXd &solution) {
   const int n = static_cast<int>(H.rows());
   if (n == 0) {
     solution.resize(0);
@@ -89,8 +90,8 @@ inline bool solve_tridiagonal_newton_system(
   for (int i = 1; i < n; ++i) {
     const double off_diagonal = H.coeff(i, i - 1);
     multiplier[i - 1] = off_diagonal / diagonal[i - 1];
-    diagonal[i] = H.coeff(i, i) -
-                  multiplier[i - 1] * multiplier[i - 1] * diagonal[i - 1];
+    diagonal[i] =
+        H.coeff(i, i) - multiplier[i - 1] * multiplier[i - 1] * diagonal[i - 1];
     if (!(diagonal[i] > 0.0) || !std::isfinite(diagonal[i])) {
       return false;
     }
@@ -100,8 +101,8 @@ inline bool solve_tridiagonal_newton_system(
   solution.resize(n);
   solution[n - 1] = transformed_rhs[n - 1] / diagonal[n - 1];
   for (int i = n - 2; i >= 0; --i) {
-    solution[i] = transformed_rhs[i] / diagonal[i] -
-                  multiplier[i] * solution[i + 1];
+    solution[i] =
+        transformed_rhs[i] / diagonal[i] - multiplier[i] * solution[i + 1];
   }
   return solution.allFinite();
 }
@@ -166,8 +167,7 @@ inline std::vector<double> add_scaled_step(const std::vector<double> &x,
 // with optional conservative backtracking.
 template <class HessianEvaluator>
 inline RandomEffectNewtonResult optimize_random_effects_newton_with_evaluator(
-    const std::vector<double> &fixed,
-    const std::vector<double> &random_initial,
+    const std::vector<double> &fixed, const std::vector<double> &random_initial,
     const ParameterPartition &partition,
     const RandomEffectNewtonOptions &options, HessianEvaluator &&evaluate) {
   if (partition.random_indices_m.empty()) {
@@ -229,8 +229,7 @@ inline RandomEffectNewtonResult optimize_random_effects_newton_with_evaluator(
       result.backend_m = structure_detector.Analyze(H_damped);
       bool solved = false;
       if (options.automatic_structure_m &&
-          result.backend_m.backend ==
-              laplace::LaplaceBackendKind::Diagonal) {
+          result.backend_m.backend == laplace::LaplaceBackendKind::Diagonal) {
         solved = solve_diagonal_newton_system(H_damped, -g, step);
       } else if (options.automatic_structure_m &&
                  result.backend_m.backend ==
@@ -246,14 +245,14 @@ inline RandomEffectNewtonResult optimize_random_effects_newton_with_evaluator(
       }
 
       if (solved) {
-          solved_newton_system = true;
+        solved_newton_system = true;
 
-          if (lambda > 0.0) {
-            std::cout << "Newton: adaptive damping accepted lambda = " << lambda
-                      << std::endl;
-          }
+        if (lambda > 0.0) {
+          std::cout << "Newton: adaptive damping accepted lambda = " << lambda
+                    << std::endl;
+        }
 
-          break;
+        break;
       }
 
       lambda = (lambda == 0.0) ? lambda_initial : lambda * lambda_growth;

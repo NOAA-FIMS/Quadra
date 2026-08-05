@@ -233,7 +233,8 @@ public:
           if (distance == 0) {
             trace += it.value() * inverse_diagonal_[row];
           } else if (distance == 1) {
-            trace += it.value() * inverse_first_off_diagonal_[std::min(row, col)];
+            trace +=
+                it.value() * inverse_first_off_diagonal_[std::min(row, col)];
           }
         }
         if (!hdot_is_tridiagonal) {
@@ -391,8 +392,7 @@ public:
 
   double tridiagonal_selected_inverse(int row, int col) const {
     if (!has_tridiagonal_selected_inverse_) {
-      throw std::logic_error(
-          "tridiagonal selected inverse is not available");
+      throw std::logic_error("tridiagonal selected inverse is not available");
     }
     if (row < 0 || col < 0 || row >= n_ || col >= n_) {
       throw std::out_of_range("selected inverse index out of range");

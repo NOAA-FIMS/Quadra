@@ -60,13 +60,12 @@ private:
     ModelReportContext context;
     model_->initialize(context);
     return evaluate_fixed_random<Model, double>(*model_, fixed, random,
-                                                 partition_, context);
+                                                partition_, context);
   }
 
   RandomEffectHessianResult evaluate_impl(const std::vector<double> &fixed,
                                           const std::vector<double> &random,
-                                          double drop_tol,
-                                          bool allow_rebuild) {
+                                          double drop_tol, bool allow_rebuild) {
     if (fixed.size() != fixed_size_ || random.size() != random_size_) {
       throw std::invalid_argument(
           "ReusableRandomEffectTape::evaluate: parameter dimensions changed");
@@ -90,8 +89,9 @@ private:
       }
       const auto replay_probe = workspace_->Evaluate(fixed, probe, drop_tol);
       const double direct_probe = direct_value(fixed, probe);
-      const double probe_scale = 1.0 + std::max(std::abs(direct_probe),
-                                                std::abs(replay_probe.objective_value_m));
+      const double probe_scale =
+          1.0 + std::max(std::abs(direct_probe),
+                         std::abs(replay_probe.objective_value_m));
       stale = std::abs(direct_probe - replay_probe.objective_value_m) >
               1e-11 * probe_scale;
       topology_probe_validated_ = !stale;

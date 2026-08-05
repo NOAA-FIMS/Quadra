@@ -12,13 +12,11 @@ namespace {
 quadra::SparseHessianPattern discover(bool coupled, bool zero_at_point) {
   quadra::TapeContext tape;
   quadra::ADScope scope(tape.graph);
-  std::vector<quadra::AD> x =
-      quadra::to_ad(std::vector<double>{0.0, 0.0});
+  std::vector<quadra::AD> x = quadra::to_ad(std::vector<double>{0.0, 0.0});
 
   quadra::AD objective = x[0] * x[0] + x[1] * x[1];
   if (coupled) {
-    objective = objective +
-                (zero_at_point ? x[0] * x[0] * x[1] : x[0] * x[1]);
+    objective = objective + (zero_at_point ? x[0] * x[0] * x[1] : x[0] * x[1]);
   }
   scope.backward(objective);
   return quadra::get_pattern(scope, x, {0, 1});

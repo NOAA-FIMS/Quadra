@@ -28,8 +28,9 @@ struct ReusableHdotTimings {
 template <class CombinedObjectiveFn> class ReusableTotalHdotTape {
 public:
   using DirectionProvider = std::function<Eigen::VectorXd(int)>;
-  using Provider = HadQuadraReplayReuseLazyImplicitHdotProvider<
-      CombinedObjectiveFn, DirectionProvider>;
+  using Provider =
+      HadQuadraReplayReuseLazyImplicitHdotProvider<CombinedObjectiveFn,
+                                                   DirectionProvider>;
 
   ReusableTotalHdotTape(CombinedObjectiveFn objective, int theta_dim,
                         int random_dim, RandomHessianPattern pattern,
@@ -45,8 +46,9 @@ public:
 
   ReusableTotalHdotTape(ReusableTotalHdotTape &prototype,
                         std::vector<int> active_directions)
-      : objective_fn_(prototype.objective_fn_), theta_dim_(prototype.theta_dim_),
-        random_dim_(prototype.random_dim_), pattern_(prototype.pattern_),
+      : objective_fn_(prototype.objective_fn_),
+        theta_dim_(prototype.theta_dim_), random_dim_(prototype.random_dim_),
+        pattern_(prototype.pattern_),
         active_directions_(std::move(active_directions)),
         drop_tol_(prototype.drop_tol_) {
     validate_active_directions();
@@ -65,10 +67,10 @@ public:
   }
 
   template <class UDirectionProvider, class SelectedInverseAccessor>
-  std::vector<double> compute_trace_terms(
-      const Eigen::VectorXd &theta, const Eigen::VectorXd &uhat,
-      UDirectionProvider &&u_direction_provider,
-      SelectedInverseAccessor &&selected_inverse) {
+  std::vector<double>
+  compute_trace_terms(const Eigen::VectorXd &theta, const Eigen::VectorXd &uhat,
+                      UDirectionProvider &&u_direction_provider,
+                      SelectedInverseAccessor &&selected_inverse) {
     using Clock = std::chrono::steady_clock;
     last_timings_ = {};
     DirectionProvider directions(
@@ -145,9 +147,9 @@ private:
     }
   }
 
-  void build_provider(
-      const Eigen::VectorXd &theta, const Eigen::VectorXd &uhat,
-      std::shared_ptr<const had::SharedHessianTopology> topology) {
+  void
+  build_provider(const Eigen::VectorXd &theta, const Eigen::VectorXd &uhat,
+                 std::shared_ptr<const had::SharedHessianTopology> topology) {
     discovery_theta_ = theta;
     discovery_uhat_ = uhat;
     topology_validated_theta_ = theta;

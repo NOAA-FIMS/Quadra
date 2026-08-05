@@ -121,12 +121,11 @@ int main(int argc, char **argv) {
   const auto &rec = first.recommendation;
   const auto &state = runtime.state();
 
-  std::cout << std::setprecision(17) << kind << "," << n << "," << initial.nonZeros()
-            << "," << rec.bandwidth << "," << ql::ToString(rec.structure) << ","
-            << ql::ToString(rec.backend) << ","
-            << state.sparse_ldlt_workspace.symbolic_analysis_count() << ","
-            << state.sparse_ldlt_workspace.numeric_factorization_count() << ","
-            << elapsed_ms << "," << difference
-            << "\n";
+  std::cout << std::setprecision(17) << kind << "," << n << ","
+            << initial.nonZeros() << "," << rec.bandwidth << ","
+            << ql::ToString(rec.structure) << "," << ql::ToString(rec.backend)
+            << "," << state.sparse_ldlt_workspace.symbolic_analysis_count()
+            << "," << state.sparse_ldlt_workspace.numeric_factorization_count()
+            << "," << elapsed_ms << "," << difference << "\n";
   return std::abs(difference) <= 1.0e-9 ? 0 : 2;
 }

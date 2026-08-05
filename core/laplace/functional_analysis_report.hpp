@@ -165,12 +165,10 @@ struct FunctionalSpectralStructureSummary {
   double eigen_sum = std::numeric_limits<double>::quiet_NaN();
   double largest_eigen_share = std::numeric_limits<double>::quiet_NaN();
   double effective_rank_entropy = std::numeric_limits<double>::quiet_NaN();
-  double normalized_spectral_entropy =
-      std::numeric_limits<double>::quiet_NaN();
+  double normalized_spectral_entropy = std::numeric_limits<double>::quiet_NaN();
   double participation_ratio = std::numeric_limits<double>::quiet_NaN();
   double stable_rank = std::numeric_limits<double>::quiet_NaN();
-  double leading_spectral_gap_ratio =
-      std::numeric_limits<double>::quiet_NaN();
+  double leading_spectral_gap_ratio = std::numeric_limits<double>::quiet_NaN();
 
   std::size_t eigen_count_for_50 = 0;
   std::size_t eigen_count_for_90 = 0;
@@ -758,13 +756,12 @@ summarize_spectral_structure(const Eigen::MatrixXd &H) {
   out.normalized_spectral_entropy =
       vals.size() > 1 ? entropy / std::log(static_cast<double>(vals.size()))
                       : 0.0;
-  const double squared_sum = std::inner_product(
-      vals.begin(), vals.end(), vals.begin(), 0.0);
+  const double squared_sum =
+      std::inner_product(vals.begin(), vals.end(), vals.begin(), 0.0);
   out.participation_ratio =
       squared_sum > 0.0 ? total * total / squared_sum : 0.0;
-  out.stable_rank = vals.front() > 0.0
-                        ? squared_sum / (vals.front() * vals.front())
-                        : 0.0;
+  out.stable_rank =
+      vals.front() > 0.0 ? squared_sum / (vals.front() * vals.front()) : 0.0;
   out.leading_spectral_gap_ratio =
       vals.size() > 1 && vals[1] > 0.0
           ? vals.front() / vals[1]
@@ -801,8 +798,8 @@ inline FunctionalAnalysisReport make_functional_analysis_report(
   report.optimization = optimization;
   report.laplace_structure =
       summarize_laplace_hessian_structure(Huu, nonzero_tol);
-  report.backend_selection = laplace::analyze_hessian_structure(
-      Huu.sparseView(nonzero_tol, 1.0));
+  report.backend_selection =
+      laplace::analyze_hessian_structure(Huu.sparseView(nonzero_tol, 1.0));
 
   const Eigen::MatrixXd cov = covariance_from_positive_definite_hessian(Huu);
   report.uncertainty = summarize_covariance_correlation(cov);
@@ -867,7 +864,7 @@ write_functional_analysis_report_text(const FunctionalAnalysisReport &report,
       << "\n";
   out << "symbolic_reuse:             "
       << (report.backend_selection.supports_symbolic_reuse ? "supported"
-                                                             : "not required")
+                                                           : "not required")
       << "\n";
   out << "selection_reason:           "
       << report.backend_selection.backend_reason << "\n\n";
@@ -892,8 +889,8 @@ write_functional_analysis_report_text(const FunctionalAnalysisReport &report,
       << report.spectral_structure.normalized_spectral_entropy << "\n";
   out << "participation_ratio:        "
       << report.spectral_structure.participation_ratio << "\n";
-  out << "stable_rank:                "
-      << report.spectral_structure.stable_rank << "\n";
+  out << "stable_rank:                " << report.spectral_structure.stable_rank
+      << "\n";
   out << "leading_gap_ratio:          "
       << report.spectral_structure.leading_spectral_gap_ratio << "\n";
   out << "eigen_count_for_50%:        "
@@ -905,11 +902,11 @@ write_functional_analysis_report_text(const FunctionalAnalysisReport &report,
   out << "eigen_count_for_99%:        "
       << report.spectral_structure.eigen_count_for_99 << "\n\n";
   out << "rank,eigenvalue,cumulative_curvature_share\n";
-  for (std::size_t i = 0;
-       i < report.spectral_structure.eigenvalues_desc.size(); ++i) {
+  for (std::size_t i = 0; i < report.spectral_structure.eigenvalues_desc.size();
+       ++i) {
     out << (i + 1) << ","
-        << report.spectral_structure.signed_eigenvalues_desc[i]
-        << "," << report.spectral_structure.cumulative_share[i] << "\n";
+        << report.spectral_structure.signed_eigenvalues_desc[i] << ","
+        << report.spectral_structure.cumulative_share[i] << "\n";
   }
   out << "\n";
 
@@ -1123,8 +1120,8 @@ write_functional_analysis_report_csv(const FunctionalAnalysisReport &report,
       << laplace::ToString(report.backend_selection.backend) << ",\n";
   out << "backend_selection,solver_recommendation,,"
       << laplace::ToString(report.backend_selection.solver) << ",\n";
-  out << "backend_selection,bandwidth,,"
-      << report.backend_selection.bandwidth << ",\n";
+  out << "backend_selection,bandwidth,," << report.backend_selection.bandwidth
+      << ",\n";
   out << "backend_selection,expected_complexity,,"
       << report.backend_selection.complexity << ",\n";
   out << "backend_selection,supports_symbolic_reuse,,"
@@ -1161,12 +1158,12 @@ write_functional_analysis_report_csv(const FunctionalAnalysisReport &report,
       << report.spectral_structure.eigen_count_for_95 << ",\n";
   out << "spectral_structure,eigen_count_for_99%,,"
       << report.spectral_structure.eigen_count_for_99 << ",\n";
-  for (std::size_t i = 0;
-       i < report.spectral_structure.eigenvalues_desc.size(); ++i) {
+  for (std::size_t i = 0; i < report.spectral_structure.eigenvalues_desc.size();
+       ++i) {
     out << "spectral_eigenvalue,eigenvalue,rank_" << (i + 1) << ","
         << report.spectral_structure.signed_eigenvalues_desc[i]
-        << ",cumulative_share="
-        << report.spectral_structure.cumulative_share[i] << "\n";
+        << ",cumulative_share=" << report.spectral_structure.cumulative_share[i]
+        << "\n";
   }
 
   out << "huu_structure,random_effects,,"

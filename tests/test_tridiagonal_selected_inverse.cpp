@@ -19,8 +19,8 @@ int main() {
 
   quadra::laplace::SparseHuuFactorization factorization(
       quadra::laplace::dense_to_sparse(H));
-  const double actual = factorization.trace_inverse_times(
-      quadra::laplace::dense_to_sparse(Hdot));
+  const double actual =
+      factorization.trace_inverse_times(quadra::laplace::dense_to_sparse(Hdot));
   const double expected = (H.inverse() * Hdot).trace();
   if (std::abs(actual - expected) > 1e-12) {
     std::cerr << "tridiagonal selected-inverse trace mismatch: got " << actual

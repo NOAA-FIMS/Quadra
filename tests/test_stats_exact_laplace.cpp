@@ -13,8 +13,7 @@ class ThetaDependentRandomModel
     : public quadra::QuadraModel<ThetaDependentRandomModel> {
 public:
   ThetaDependentRandomModel() {
-    parameters_m.add("theta", 0.4, quadra::ParameterTransform::Identity,
-                     false);
+    parameters_m.add("theta", 0.4, quadra::ParameterTransform::Identity, false);
     parameters_m.add("u", 0.0, quadra::ParameterTransform::Identity, true);
   }
 
@@ -28,8 +27,7 @@ public:
                   quadra::ModelReportContext &) const {
     const T theta = parameters[0];
     const T u = parameters[1];
-    return T(0.5) * theta * theta +
-           T(0.5) * (T(1.0) + exp(theta)) * u * u;
+    return T(0.5) * theta * theta + T(0.5) * (T(1.0) + exp(theta)) * u * u;
   }
 
 private:
@@ -50,8 +48,7 @@ public:
   }
   const quadra::ParameterSet &parameters() const { return parameters_m; }
   template <typename T>
-  T evaluate_impl(const std::vector<T> &p,
-                  quadra::ModelReportContext &) const {
+  T evaluate_impl(const std::vector<T> &p, quadra::ModelReportContext &) const {
     T objective = T(0.5) * (p[1] * p[1] + p[2] * p[2]);
     if (quadra::value_of(p[0]) > 0.0) {
       objective += T(0.2) * p[1] * p[2];
@@ -63,12 +60,10 @@ private:
   quadra::ParameterSet parameters_m;
 };
 
-class TwoFixedEffectModel
-    : public quadra::QuadraModel<TwoFixedEffectModel> {
+class TwoFixedEffectModel : public quadra::QuadraModel<TwoFixedEffectModel> {
 public:
   TwoFixedEffectModel() {
-    parameters_m.add("theta", 0.4, quadra::ParameterTransform::Identity,
-                     false);
+    parameters_m.add("theta", 0.4, quadra::ParameterTransform::Identity, false);
     parameters_m.add("scale", -0.1, quadra::ParameterTransform::Identity,
                      false);
     parameters_m.add("location", 0.2, quadra::ParameterTransform::Identity,
@@ -80,8 +75,7 @@ public:
   }
   const quadra::ParameterSet &parameters() const { return parameters_m; }
   template <typename T>
-  T evaluate_impl(const std::vector<T> &p,
-                  quadra::ModelReportContext &) const {
+  T evaluate_impl(const std::vector<T> &p, quadra::ModelReportContext &) const {
     return T(0.5) * p[2] * p[2] +
            T(0.5) * (T(1.0) + exp(p[0]) + exp(p[1])) * p[3] * p[3];
   }
@@ -100,8 +94,7 @@ int main() {
       model, {0.4}, {0.0}, model.parameters(), options);
   const auto result = evaluator.evaluate({0.4}, {0.0});
 
-  const double expected =
-      0.4 + 0.5 * std::exp(0.4) / (1.0 + std::exp(0.4));
+  const double expected = 0.4 + 0.5 * std::exp(0.4) / (1.0 + std::exp(0.4));
   if (!result.success || std::abs(result.gradient[0] - expected) > 1e-10) {
     std::cerr << "exact gradient mismatch: got " << result.gradient[0]
               << ", expected " << expected << "\n";
@@ -133,8 +126,8 @@ int main() {
           quadra::laplace::LaplaceBackendKind::Diagonal ||
       !automatic_first.structure_detected_m ||
       automatic_warm.structure_detected_m ||
-      std::abs(automatic_first.laplace_objective_m - result.objective.laplace_objective_m) >
-          1e-12) {
+      std::abs(automatic_first.laplace_objective_m -
+               result.objective.laplace_objective_m) > 1e-12) {
     std::cerr << "automatic persistent Laplace evaluator failed\n";
     return 1;
   }
@@ -153,9 +146,9 @@ int main() {
     return 1;
   }
 
-  quadra::stats::ExactLaplaceEvaluator<BranchingStructureModel>
-      branching_exact(branching_model, {-1.0}, {0.0, 0.0},
-                      branching_model.parameters(), options);
+  quadra::stats::ExactLaplaceEvaluator<BranchingStructureModel> branching_exact(
+      branching_model, {-1.0}, {0.0, 0.0}, branching_model.parameters(),
+      options);
   const auto rebuilt_exact = branching_exact.evaluate({1.0}, {0.0, 0.0});
   if (!rebuilt_exact.success ||
       branching_exact.hdot_tape_rebuild_count() != 1) {
@@ -180,8 +173,8 @@ int main() {
   quadra::laplace::ExactLaplaceGradientEngineOptions worker_options;
   worker_options.hdot_workers = 2;
   quadra::stats::ExactLaplaceEvaluator<TwoFixedEffectModel> two_fixed(
-      two_fixed_model, {0.4, -0.1, 0.2}, {0.0},
-      two_fixed_model.parameters(), options, worker_options);
+      two_fixed_model, {0.4, -0.1, 0.2}, {0.0}, two_fixed_model.parameters(),
+      options, worker_options);
   const auto two_fixed_result = two_fixed.evaluate({0.4, -0.1, 0.2});
   if (!two_fixed_result.success ||
       two_fixed_result.active_directions != std::vector<int>({0, 1}) ||
@@ -193,8 +186,8 @@ int main() {
   }
   worker_options.hdot_workers = 1;
   quadra::stats::ExactLaplaceEvaluator<TwoFixedEffectModel> serial_two_fixed(
-      two_fixed_model, {0.4, -0.1, 0.2}, {0.0},
-      two_fixed_model.parameters(), options, worker_options);
+      two_fixed_model, {0.4, -0.1, 0.2}, {0.0}, two_fixed_model.parameters(),
+      options, worker_options);
   const auto serial_two_fixed_result =
       serial_two_fixed.evaluate({0.4, -0.1, 0.2});
   if (!serial_two_fixed_result.success ||

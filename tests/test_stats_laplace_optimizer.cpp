@@ -11,8 +11,7 @@ DECLARE_ADGRAPH();
 class CurvatureModel : public quadra::QuadraModel<CurvatureModel> {
 public:
   CurvatureModel() {
-    parameters_m.add("theta", 0.4, quadra::ParameterTransform::Identity,
-                     false);
+    parameters_m.add("theta", 0.4, quadra::ParameterTransform::Identity, false);
     parameters_m.add("u", 0.0, quadra::ParameterTransform::Identity, true);
   }
 
@@ -42,7 +41,8 @@ int main() {
 
   quadra::stats::ExactLaplaceEvaluator<CurvatureModel> evaluator(
       model, {0.4}, {0.0}, model.parameters(), objective_options);
-  const double initial_objective = evaluator.evaluate({0.4}).objective.laplace_objective_m;
+  const double initial_objective =
+      evaluator.evaluate({0.4}).objective.laplace_objective_m;
 
   quadra::stats::LaplaceOptimizerOptions optimizer_options;
   optimizer_options.gradient_tolerance = 1.0e-10;
@@ -71,9 +71,9 @@ int main() {
     return 1;
   }
 
-  const auto convenience = quadra::stats::optimize_laplace(
-      model, {0.4}, {0.0}, model.parameters(), optimizer_options,
-      objective_options);
+  const auto convenience =
+      quadra::stats::optimize_laplace(model, {0.4}, {0.0}, model.parameters(),
+                                      optimizer_options, objective_options);
   if (!convenience.converged ||
       std::abs(convenience.fixed[0] - result.fixed[0]) > 1.0e-9) {
     std::cerr << "automatic optimizer construction failed\n";

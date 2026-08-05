@@ -12,8 +12,7 @@ namespace {
 quadra::AD objective(const std::vector<quadra::AD> &x) {
   quadra::AD out = exp(x[0]) + x[0] * x[1];
   for (std::size_t i = 1; i < x.size(); ++i) {
-    out += exp(0.1 * x[i]) + 0.3 * x[i - 1] * x[i] +
-           0.05 * x[i] * x[i] * x[i];
+    out += exp(0.1 * x[i]) + 0.3 * x[i - 1] * x[i] + 0.05 * x[i] * x[i] * x[i];
   }
   return out;
 }
