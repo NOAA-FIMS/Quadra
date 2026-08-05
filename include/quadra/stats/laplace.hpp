@@ -99,18 +99,25 @@ public:
                          partition_parameters(parameters), options) {}
 
   LaplaceObjectiveResult evaluate(const std::vector<double> &fixed) {
+    using Clock = std::chrono::steady_clock;
+    const auto total_start = Clock::now();
+    const auto tape_start = total_start;
     if (!tape_) {
       tape_.reset(new laplace::ReusableRandomEffectTape<Model>(
-          *model_, fixed, random_, partition_));
+          *model_, fixed, random_, partition_,
+          options_.compute_mixed_derivatives_m));
     }
+    const auto tape_end = Clock::now();
     const std::size_t rebuilds_before = tape_->rebuild_count();
     auto evaluate_hessian = [&](const std::vector<double> &random) {
       return tape_->evaluate(fixed, random,
                              options_.newton_m.hessian_drop_tol_m);
     };
+    const auto mode_start = Clock::now();
     RandomEffectNewtonResult newton =
         optimize_random_effects_newton_with_evaluator(
             fixed, random_, partition_, options_.newton_m, evaluate_hessian);
+    const auto mode_end = Clock::now();
 
     LaplaceObjectiveResult result;
     result.fixed_m = fixed;
@@ -128,10 +135,17 @@ public:
     result.reports_m = newton.reports_m;
     result.n_random_m = static_cast<int>(partition_.random_indices_m.size());
     result.tape_rebuilt_m = tape_->rebuild_count() != rebuilds_before;
+    result.tape_setup_ms_m =
+        std::chrono::duration<double, std::milli>(tape_end - tape_start)
+            .count();
+    result.mode_solve_ms_m =
+        std::chrono::duration<double, std::milli>(mode_end - mode_start)
+            .count();
     if (result.tape_rebuilt_m) {
       structured_runtime_.reset();
     }
 
+    const auto logdet_start = Clock::now();
     try {
       Eigen::SparseMatrix<double> hessian =
           laplace_objective_add_diagonal_jitter(result.hessian_random_m,
@@ -146,6 +160,9 @@ public:
       result.message_m +=
           std::string(" Structured logdet failed: ") + error.what();
     }
+    result.logdet_ms_m = std::chrono::duration<double, std::milli>(
+                             Clock::now() - logdet_start)
+                             .count();
 
     if (result.logdet_ok_m) {
       result.laplace_objective_m =
@@ -160,6 +177,9 @@ public:
     if (result.converged_m) {
       random_ = result.u_hat_m;
     }
+    result.total_ms_m = std::chrono::duration<double, std::milli>(
+                            Clock::now() - total_start)
+                            .count();
     return result;
   }
 
@@ -206,6 +226,9 @@ public:
       const laplace::ExactLaplaceGradientEngineOptions &engine_options = {})
       : model_(&model), partition_(partition),
         objective_options_(objective_options), last_random_(discovery_random) {
+    // Exact marginal gradients require the joint fixed gradient and H_u,theta
+    // even when a caller disables them for ordinary value-only evaluations.
+    objective_options_.compute_mixed_derivatives_m = true;
     objective_evaluator_.reset(new LaplaceEvaluator<Model>(
         model, discovery_random, partition_, objective_options_));
     LaplaceObjectiveResult discovery =

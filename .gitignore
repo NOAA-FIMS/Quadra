@@ -8,8 +8,15 @@
 
 # Local binaries
 tests/test_curvature_depends_on_theta
+tests/test_laplace_backend_factory
+tests/test_public_api_headers
+tests/test_stats_laplace_optimizer
+tests/test_exact_laplace_gradient_vs_fd
+tests/test_stats_exact_laplace
 examples/normal_mean
 benchmarks/quadra_state_space_hdot_workers
+benchmarks/framework/model_form_backend_benchmark
+benchmarks/framework/laplace_model_catalog_benchmark
 
 # macOS
 .DS_Store

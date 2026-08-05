@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://noaa-fims.github.io/Quadra/benchmark-result-v1.schema.json",
+  "title": "Quadra benchmark result",
+  "type": "object",
+  "required": [
+    "schema_version", "benchmark", "model_form", "phase", "sample",
+    "dimension", "hessian_nnz", "backend", "elapsed_ms", "success"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "benchmark": {"type": "string", "minLength": 1},
+    "model_form": {
+      "enum": ["diagonal", "tridiagonal", "banded", "block_diagonal",
+               "arrowhead", "general_sparse", "nearly_dense", "dense",
+               "parameter_dependent"]
+    },
+    "phase": {
+      "enum": ["record", "replay", "gradient", "hessian", "mode_solve",
+               "pattern_discovery", "symbolic_analysis", "factorization",
+               "logdet", "hdot", "cold_total", "warm_total"]
+    },
+    "sample": {"type": "integer", "minimum": 0},
+    "dimension": {"type": "integer", "minimum": 1},
+    "hessian_nnz": {"type": "integer", "minimum": 0},
+    "bandwidth": {"type": "integer", "minimum": 0},
+    "backend": {"type": "string", "minLength": 1},
+    "elapsed_ms": {"type": "number", "minimum": 0},
+    "peak_rss_bytes": {"type": "integer", "minimum": 0},
+    "objective": {"type": "number"},
+    "gradient_norm": {"type": "number", "minimum": 0},
+    "graph_vertices": {"type": "integer", "minimum": 0},
+    "active_vertices": {"type": "integer", "minimum": 0},
+    "tape_rebuilds": {"type": "integer", "minimum": 0},
+    "compiler": {"type": "string"},
+    "compiler_flags": {"type": "string"},
+    "git_revision": {"type": "string"},
+    "success": {"type": "boolean"},
+    "message": {"type": "string"}
+  },
+  "additionalProperties": false
+}

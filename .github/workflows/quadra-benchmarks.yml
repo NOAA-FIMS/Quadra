@@ -26,6 +26,19 @@ jobs:
 
       - uses: r-lib/actions/setup-r@v2
 
+      - name: Validate model-form backend catalog
+        run: |
+          mkdir -p benchmarks/outputs
+          make benchmarks/framework/model_form_backend_benchmark
+          ./benchmarks/framework/model_form_backend_benchmark 128 10 \
+            > benchmarks/outputs/model_form_backend.jsonl
+          make benchmarks/framework/laplace_model_catalog_benchmark
+          python3 benchmarks/framework/run_laplace_catalog.py \
+            --dimension 128 --repetitions 10 \
+            --output benchmarks/outputs/laplace_model_catalog.jsonl
+          python3 benchmarks/framework/validate_results.py \
+            benchmarks/outputs/model_form_backend.jsonl \
+            benchmarks/outputs/laplace_model_catalog.jsonl
 
       - name: Build random intercept benchmark
         run: |

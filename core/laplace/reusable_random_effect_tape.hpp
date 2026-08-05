@@ -18,9 +18,11 @@ template <class Model> class ReusableRandomEffectTape {
 public:
   ReusableRandomEffectTape(Model &model, const std::vector<double> &fixed,
                            const std::vector<double> &random,
-                           const ParameterPartition &partition)
+                           const ParameterPartition &partition,
+                           bool compute_mixed_derivatives = true)
       : model_(&model), partition_(partition), fixed_size_(fixed.size()),
-        random_size_(random.size()) {
+        random_size_(random.size()),
+        compute_mixed_derivatives_(compute_mixed_derivatives) {
     if (fixed_size_ != partition_.fixed_indices_m.size() ||
         random_size_ != partition_.random_indices_m.size()) {
       throw std::invalid_argument(
@@ -45,6 +47,7 @@ private:
   std::unique_ptr<RandomEffectHessianWorkspace<Model>> workspace_;
   std::size_t rebuild_count_ = 0;
   bool topology_probe_validated_ = false;
+  bool compute_mixed_derivatives_ = true;
   std::vector<double> topology_probe_fixed_;
 
   void record(const std::vector<double> &fixed,
@@ -96,6 +99,8 @@ private:
               1e-11 * probe_scale;
       topology_probe_validated_ = !stale;
       result = workspace_->Evaluate(fixed, random, drop_tol);
+      if (topology_probe_validated_)
+        (void)workspace_->FreezeHessianTopology();
     }
 
     if (allow_rebuild && stale) {
@@ -104,12 +109,14 @@ private:
       return evaluate_impl(fixed, random, drop_tol, false);
     }
 
-    const auto fixed_mixed =
-        workspace_->EvaluateFixedGradientMixedHessian(fixed, random);
-    result.gradient_fixed_m.assign(fixed_mixed.fixed_gradient_m.data(),
-                                   fixed_mixed.fixed_gradient_m.data() +
-                                       fixed_mixed.fixed_gradient_m.size());
-    result.mixed_hessian_m = fixed_mixed.mixed_hessian_m;
+    if (compute_mixed_derivatives_) {
+      const auto fixed_mixed =
+          workspace_->EvaluateFixedGradientMixedHessian(fixed, random);
+      result.gradient_fixed_m.assign(fixed_mixed.fixed_gradient_m.data(),
+                                     fixed_mixed.fixed_gradient_m.data() +
+                                         fixed_mixed.fixed_gradient_m.size());
+      result.mixed_hessian_m = fixed_mixed.mixed_hessian_m;
+    }
     return result;
   }
 };

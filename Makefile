@@ -670,6 +670,17 @@ benchmarks/random_intercept/benchmark_random_intercept: benchmarks/random_interc
 benchmark-state-space: benchmarks/state_space/benchmark_state_space
 	./benchmarks/state_space/benchmark_state_space
 
+.PHONY: benchmark-model-forms
+benchmark-model-forms: benchmarks/framework/model_form_backend_benchmark benchmarks/framework/laplace_model_catalog_benchmark
+	./benchmarks/framework/model_form_backend_benchmark
+	./benchmarks/framework/laplace_model_catalog_benchmark
+
+benchmarks/framework/model_form_backend_benchmark: benchmarks/framework/model_form_backend_benchmark.cpp core/laplace/laplace_backend_factory.hpp
+	$(CXX) $(CXXFLAGS) -I. -Iexternal/eigen $< -o $@
+
+benchmarks/framework/laplace_model_catalog_benchmark: benchmarks/framework/laplace_model_catalog_benchmark.cpp include/quadra/stats/laplace.hpp core/laplace/laplace_objective.hpp core/laplace/reusable_random_effect_tape.hpp core/laplace/random_effect_hessian.hpp core/autodiff/laplace_graph_plan.hpp core/had_quadra.hpp
+	$(CXX) $(CXXFLAGS) -I. -Iexternal/eigen $< -o $@
+
 benchmarks/state_space/benchmark_state_space: benchmarks/state_space/benchmark_state_space.cpp include/quadra/quadra.hpp
 	$(CXX) $(CXXFLAGS) -I. -I./external/eigen -I./external/had -I./external/LBFGSpp/include -o $@ benchmarks/state_space/benchmark_state_space.cpp
 

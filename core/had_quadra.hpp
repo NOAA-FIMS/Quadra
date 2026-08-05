@@ -359,6 +359,9 @@ struct SharedHessianTopology {
   std::vector<std::uint32_t> offsets;
   std::vector<BTNodeIndex> roots;
   std::vector<SharedHessianTopologyNode> nodes;
+  mutable std::once_flag random_destination_once;
+  mutable std::vector<std::uint32_t> random_destination_e1;
+  mutable std::vector<std::uint32_t> random_destination_e2;
   mutable std::once_flag mixed_destination_once;
   mutable std::vector<std::uint32_t> mixed_destination_e1;
   mutable std::vector<std::uint32_t> mixed_destination_e2;
@@ -374,7 +377,8 @@ struct SharedHessianTopology {
     return offsets.capacity() * sizeof(std::uint32_t) +
            roots.capacity() * sizeof(BTNodeIndex) +
            nodes.capacity() * sizeof(SharedHessianTopologyNode) +
-           (mixed_destination_e1.capacity() + mixed_destination_e2.capacity() +
+           (random_destination_e1.capacity() + random_destination_e2.capacity() +
+            mixed_destination_e1.capacity() + mixed_destination_e2.capacity() +
             trace_destination_e1.capacity() + trace_destination_e2.capacity()) *
                sizeof(std::uint32_t);
   }

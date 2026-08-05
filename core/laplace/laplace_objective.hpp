@@ -17,6 +17,7 @@ namespace quadra {
 struct LaplaceObjectiveOptions {
   RandomEffectNewtonOptions newton_m;
   bool include_constant_m = true;
+  bool compute_mixed_derivatives_m = true;
   double logdet_jitter_m = 0.0;
 };
 
@@ -47,6 +48,13 @@ struct LaplaceObjectiveResult {
   laplace::BackendRecommendation backend_m;
   bool structure_detected_m = false;
   bool tape_rebuilt_m = false;
+
+  // Coarse public timings used by performance diagnostics. Fine-grained exact
+  // gradient/Hdot timings remain on ExactLaplaceResult.
+  double tape_setup_ms_m = 0.0;
+  double mode_solve_ms_m = 0.0;
+  double logdet_ms_m = 0.0;
+  double total_ms_m = 0.0;
 };
 
 inline Eigen::SparseMatrix<double>
