@@ -62,10 +62,11 @@ std::vector<std::pair<int, int>> band_edges(int n, int width) {
 std::vector<ModelCase> catalog(int n) {
   std::vector<ModelCase> out;
   out.push_back({"diagonal", {n, {}}, ql::LaplaceBackendKind::Diagonal});
-  out.push_back({"tridiagonal", {n, band_edges(n, 1)},
+  out.push_back({"tridiagonal",
+                 {n, band_edges(n, 1)},
                  ql::LaplaceBackendKind::Tridiagonal});
-  out.push_back({"banded", {n, band_edges(n, 4)},
-                 ql::LaplaceBackendKind::Banded});
+  out.push_back(
+      {"banded", {n, band_edges(n, 4)}, ql::LaplaceBackendKind::Banded});
 
   std::vector<std::pair<int, int>> blocks;
   constexpr int block_size = 8;
@@ -73,8 +74,8 @@ std::vector<ModelCase> catalog(int n) {
     for (int i = start; i < std::min(n, start + block_size); ++i)
       for (int j = i + 1; j < std::min(n, start + block_size); ++j)
         blocks.emplace_back(i, j);
-  out.push_back({"block_diagonal", {n, blocks},
-                 ql::LaplaceBackendKind::Banded});
+  out.push_back(
+      {"block_diagonal", {n, blocks}, ql::LaplaceBackendKind::Banded});
 
   std::vector<std::pair<int, int>> sparse = band_edges(n, 1);
   for (int i = 0; i < n / 3; i += 7) {
@@ -82,15 +83,14 @@ std::vector<ModelCase> catalog(int n) {
     if (i != j)
       sparse.emplace_back(std::min(i, j), std::max(i, j));
   }
-  out.push_back({"general_sparse", {n, sparse},
-                 ql::LaplaceBackendKind::SparseLDLT});
+  out.push_back(
+      {"general_sparse", {n, sparse}, ql::LaplaceBackendKind::SparseLDLT});
 
   std::vector<std::pair<int, int>> dense;
   for (int i = 0; i < n; ++i)
     for (int j = i + 1; j < n; ++j)
       dense.emplace_back(i, j);
-  out.push_back(
-      {"dense", {n, dense}, ql::LaplaceBackendKind::DenseLDLT});
+  out.push_back({"dense", {n, dense}, ql::LaplaceBackendKind::DenseLDLT});
   return out;
 }
 
@@ -120,11 +120,11 @@ void emit(const ModelCase &model, const std::string &phase, int sample,
             << "{\"schema_version\":1,\"benchmark\":"
                "\"laplace_model_catalog\",\"model_form\":\""
             << model.form << "\",\"phase\":\"" << phase
-            << "\",\"sample\":" << sample << ",\"dimension\":"
-            << model.model.random_size << ",\"hessian_nnz\":"
-            << result.hessian_random_m.nonZeros() << ",\"bandwidth\":"
-            << result.backend_m.bandwidth << ",\"backend\":\""
-            << ql::ToString(result.backend_m.backend)
+            << "\",\"sample\":" << sample
+            << ",\"dimension\":" << model.model.random_size
+            << ",\"hessian_nnz\":" << result.hessian_random_m.nonZeros()
+            << ",\"bandwidth\":" << result.backend_m.bandwidth
+            << ",\"backend\":\"" << ql::ToString(result.backend_m.backend)
             << "\",\"elapsed_ms\":" << elapsed_ms
             << ",\"objective\":" << result.laplace_objective_m
             << ",\"gradient_norm\":" << result.gradient_norm_random_m
@@ -159,44 +159,43 @@ int main(int argc, char **argv) {
         model_case.model, random, partition(n), options);
 
     std::ostringstream library_diagnostics;
-    std::streambuf *normal_output = std::cout.rdbuf(library_diagnostics.rdbuf());
+    std::streambuf *normal_output =
+        std::cout.rdbuf(library_diagnostics.rdbuf());
     const auto cold_start = Clock::now();
     quadra::LaplaceObjectiveResult result = evaluator.evaluate(fixed);
-    const double cold_ms = std::chrono::duration<double, std::milli>(
-                               Clock::now() - cold_start)
-                               .count();
+    const double cold_ms =
+        std::chrono::duration<double, std::milli>(Clock::now() - cold_start)
+            .count();
     std::cout.rdbuf(normal_output);
-    const bool cold_ok = result.converged_m && result.logdet_ok_m &&
-                         std::isfinite(result.laplace_objective_m) &&
-                         result.gradient_norm_random_m <= 1.0e-8 &&
-                         result.backend_m.backend ==
-                             model_case.expected_backend;
+    const bool cold_ok =
+        result.converged_m && result.logdet_ok_m &&
+        std::isfinite(result.laplace_objective_m) &&
+        result.gradient_norm_random_m <= 1.0e-8 &&
+        result.backend_m.backend == model_case.expected_backend;
     all_ok = all_ok && cold_ok;
     emit(model_case, "cold_total", 0, result, cold_ms, cold_ok,
          cold_ok ? "" : "Laplace convergence or backend mismatch");
     emit(model_case, "record", 0, result, result.tape_setup_ms_m, cold_ok);
-    emit(model_case, "mode_solve", 0, result, result.mode_solve_ms_m,
-         cold_ok);
+    emit(model_case, "mode_solve", 0, result, result.mode_solve_ms_m, cold_ok);
     emit(model_case, "logdet", 0, result, result.logdet_ms_m, cold_ok);
 
     for (int sample = 0; sample < repetitions; ++sample) {
       normal_output = std::cout.rdbuf(library_diagnostics.rdbuf());
       const auto start = Clock::now();
       result = evaluator.evaluate(fixed);
-      const double elapsed_ms = std::chrono::duration<double, std::milli>(
-                                    Clock::now() - start)
-                                    .count();
+      const double elapsed_ms =
+          std::chrono::duration<double, std::milli>(Clock::now() - start)
+              .count();
       std::cout.rdbuf(normal_output);
-      const bool warm_ok = result.converged_m && result.logdet_ok_m &&
-                           !result.tape_rebuilt_m &&
-                           result.gradient_norm_random_m <= 1.0e-8 &&
-                           result.backend_m.backend ==
-                               model_case.expected_backend;
+      const bool warm_ok =
+          result.converged_m && result.logdet_ok_m && !result.tape_rebuilt_m &&
+          result.gradient_norm_random_m <= 1.0e-8 &&
+          result.backend_m.backend == model_case.expected_backend;
       all_ok = all_ok && warm_ok;
       emit(model_case, "warm_total", sample, result, elapsed_ms, warm_ok,
            warm_ok ? "" : "warm replay or backend mismatch");
-      emit(model_case, "mode_solve", sample + 1, result,
-           result.mode_solve_ms_m, warm_ok);
+      emit(model_case, "mode_solve", sample + 1, result, result.mode_solve_ms_m,
+           warm_ok);
       emit(model_case, "logdet", sample + 1, result, result.logdet_ms_m,
            warm_ok);
     }

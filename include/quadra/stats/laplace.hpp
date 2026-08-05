@@ -160,9 +160,9 @@ public:
       result.message_m +=
           std::string(" Structured logdet failed: ") + error.what();
     }
-    result.logdet_ms_m = std::chrono::duration<double, std::milli>(
-                             Clock::now() - logdet_start)
-                             .count();
+    result.logdet_ms_m =
+        std::chrono::duration<double, std::milli>(Clock::now() - logdet_start)
+            .count();
 
     if (result.logdet_ok_m) {
       result.laplace_objective_m =
@@ -177,9 +177,9 @@ public:
     if (result.converged_m) {
       random_ = result.u_hat_m;
     }
-    result.total_ms_m = std::chrono::duration<double, std::milli>(
-                            Clock::now() - total_start)
-                            .count();
+    result.total_ms_m =
+        std::chrono::duration<double, std::milli>(Clock::now() - total_start)
+            .count();
     return result;
   }
 

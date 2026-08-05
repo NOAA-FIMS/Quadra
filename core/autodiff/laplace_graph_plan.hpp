@@ -279,9 +279,9 @@ inline bool PropagateRandomHessianFrozen(had::ADGraph &graph,
   try {
     std::call_once(topology->random_destination_once, [&]() {
       topology->random_destination_e1.assign(topology->nodes.size(),
-                                              no_destination);
+                                             no_destination);
       topology->random_destination_e2.assign(topology->nodes.size(),
-                                              no_destination);
+                                             no_destination);
       const auto set_destination = [&](std::vector<std::uint32_t> &destinations,
                                        std::size_t source_slot,
                                        had::VertexId target,
@@ -306,11 +306,11 @@ inline bool PropagateRandomHessianFrozen(had::ADGraph &graph,
         const std::size_t end = topology->offsets[id + 1];
         for (std::size_t slot = begin; slot < end; ++slot) {
           const had::VertexId key = topology->nodes[slot].key;
-          set_destination(topology->random_destination_e1, slot,
-                          vertex.e1.to, key);
+          set_destination(topology->random_destination_e1, slot, vertex.e1.to,
+                          key);
           if (vertex.e2.to != id)
-            set_destination(topology->random_destination_e2, slot,
-                            vertex.e2.to, key);
+            set_destination(topology->random_destination_e2, slot, vertex.e2.to,
+                            key);
         }
       }
     });
@@ -323,8 +323,7 @@ inline bool PropagateRandomHessianFrozen(had::ADGraph &graph,
   ResetHessianSweepPreserveStorage(graph, plan.random_reverse_order());
   graph.vertices[plan.objective()].w = had::Real(1.0);
   const auto accumulate = [&](std::uint32_t destination,
-                              had::VertexId diagonal_vertex,
-                              had::Real value) {
+                              had::VertexId diagonal_vertex, had::Real value) {
     if (destination == diagonal_destination)
       graph.selfSoEdges[diagonal_vertex] += value;
     else if (destination != no_destination)
@@ -375,8 +374,7 @@ inline bool PropagateRandomHessianFrozen(had::ADGraph &graph,
           if (e1.to == e2.to)
             graph.selfSoEdges[e1.to] += had::Real(2.0) * e1.w * e2.w * diagonal;
           else
-            AddOffDiagonalHessian(graph, e1.to, e2.to,
-                                  e1.w * e2.w * diagonal);
+            AddOffDiagonalHessian(graph, e1.to, e2.to, e1.w * e2.w * diagonal);
         }
       }
     }
@@ -389,11 +387,9 @@ inline bool PropagateRandomHessianFrozen(had::ADGraph &graph,
             graph.selfSoEdges[e1.to] += adjoint * vertex.soW;
         } else if (e1.to == e2.to) {
           if (e1_active)
-            graph.selfSoEdges[e1.to] +=
-                had::Real(2.0) * adjoint * vertex.soW;
+            graph.selfSoEdges[e1.to] += had::Real(2.0) * adjoint * vertex.soW;
         } else if (e1_active && e2_active) {
-          AddOffDiagonalHessian(graph, e1.to, e2.to,
-                                adjoint * vertex.soW);
+          AddOffDiagonalHessian(graph, e1.to, e2.to, adjoint * vertex.soW);
         }
       }
       vertex.w = had::Real(0.0);
@@ -406,9 +402,10 @@ inline bool PropagateRandomHessianFrozen(had::ADGraph &graph,
   return true;
 }
 
-inline void PropagateRandomHessianRestricted(
-    had::ADGraph &graph, const LaplaceGraphPlan &plan,
-    std::size_t *operation_count = nullptr) {
+inline void
+PropagateRandomHessianRestricted(had::ADGraph &graph,
+                                 const LaplaceGraphPlan &plan,
+                                 std::size_t *operation_count = nullptr) {
   if (PropagateRandomHessianFrozen(graph, plan, operation_count))
     return;
   PropagateHessianRestricted(

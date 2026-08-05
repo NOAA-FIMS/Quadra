@@ -40,8 +40,9 @@ precision_from_edges(int n, const std::vector<std::pair<int, int>> &edges,
     row_sum[static_cast<std::size_t>(j)] += std::abs(value);
   }
   for (int i = 0; i < n; ++i)
-    entries.emplace_back(i, i, 2.0 + row_sum[static_cast<std::size_t>(i)] +
-                                   (nearly_dense ? 0.5 : 0.0));
+    entries.emplace_back(i, i,
+                         2.0 + row_sum[static_cast<std::size_t>(i)] +
+                             (nearly_dense ? 0.5 : 0.0));
   Eigen::SparseMatrix<double> out(n, n);
   out.setFromTriplets(entries.begin(), entries.end());
   out.makeCompressed();
@@ -98,8 +99,7 @@ std::vector<ModelCase> catalog(int n) {
         nearly_dense.emplace_back(i, j);
     }
   }
-  out.push_back({"nearly_dense",
-                 precision_from_edges(n, nearly_dense, true),
+  out.push_back({"nearly_dense", precision_from_edges(n, nearly_dense, true),
                  ql::LaplaceBackendKind::DenseLDLT});
   out.push_back({"dense", precision_from_edges(n, dense, true),
                  ql::LaplaceBackendKind::DenseLDLT});
@@ -121,11 +121,11 @@ void emit(const ModelCase &model, const std::string &phase, int sample,
             << "{\"schema_version\":1,\"benchmark\":"
                "\"model_form_backend\",\"model_form\":\""
             << model.form << "\",\"phase\":\"" << phase
-            << "\",\"sample\":" << sample << ",\"dimension\":"
-            << model.hessian.rows() << ",\"hessian_nnz\":"
-            << model.hessian.nonZeros() << ",\"bandwidth\":"
-            << recommendation.bandwidth << ",\"backend\":\""
-            << ql::ToString(recommendation.backend)
+            << "\",\"sample\":" << sample
+            << ",\"dimension\":" << model.hessian.rows()
+            << ",\"hessian_nnz\":" << model.hessian.nonZeros()
+            << ",\"bandwidth\":" << recommendation.bandwidth
+            << ",\"backend\":\"" << ql::ToString(recommendation.backend)
             << "\",\"elapsed_ms\":" << elapsed_ms
             << ",\"success\":" << (success ? "true" : "false")
             << ",\"message\":\"" << message << "\"}\n";
@@ -149,14 +149,14 @@ int main(int argc, char **argv) {
   for (const ModelCase &model : catalog(n)) {
     ql::BackendRecommendation recommendation;
     const auto cold_start = Clock::now();
-    auto backend = ql::CreateLaplaceBackendForHessian(
-        model.hessian, &recommendation, options);
+    auto backend = ql::CreateLaplaceBackendForHessian(model.hessian,
+                                                      &recommendation, options);
     backend->factorize(model.hessian);
-    const double cold_ms = std::chrono::duration<double, std::milli>(
-                               Clock::now() - cold_start)
-                               .count();
-    const double difference = std::abs(backend->logdet() -
-                                       dense_logdet(model.hessian));
+    const double cold_ms =
+        std::chrono::duration<double, std::milli>(Clock::now() - cold_start)
+            .count();
+    const double difference =
+        std::abs(backend->logdet() - dense_logdet(model.hessian));
     const bool correct = recommendation.backend == model.expected &&
                          backend->is_spd() && difference <= 1.0e-9;
     all_ok = all_ok && correct;
@@ -166,9 +166,9 @@ int main(int argc, char **argv) {
     for (int sample = 0; sample < repetitions; ++sample) {
       const auto start = Clock::now();
       backend->factorize(model.hessian);
-      const double elapsed_ms = std::chrono::duration<double, std::milli>(
-                                    Clock::now() - start)
-                                    .count();
+      const double elapsed_ms =
+          std::chrono::duration<double, std::milli>(Clock::now() - start)
+              .count();
       emit(model, "factorization", sample, recommendation, elapsed_ms,
            backend->is_spd());
     }

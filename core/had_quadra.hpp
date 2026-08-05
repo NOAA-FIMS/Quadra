@@ -377,9 +377,10 @@ struct SharedHessianTopology {
     return offsets.capacity() * sizeof(std::uint32_t) +
            roots.capacity() * sizeof(BTNodeIndex) +
            nodes.capacity() * sizeof(SharedHessianTopologyNode) +
-           (random_destination_e1.capacity() + random_destination_e2.capacity() +
-            mixed_destination_e1.capacity() + mixed_destination_e2.capacity() +
-            trace_destination_e1.capacity() + trace_destination_e2.capacity()) *
+           (random_destination_e1.capacity() +
+            random_destination_e2.capacity() + mixed_destination_e1.capacity() +
+            mixed_destination_e2.capacity() + trace_destination_e1.capacity() +
+            trace_destination_e2.capacity()) *
                sizeof(std::uint32_t);
   }
 };
