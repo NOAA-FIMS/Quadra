@@ -160,6 +160,8 @@ public:
       throw std::runtime_error(
           "SparseHuuFactorization: SimplicialLDLT factorization failed.");
     }
+
+    initialize_tridiagonal_selected_inverse();
   }
 
   Eigen::VectorXd solve(const Eigen::VectorXd &rhs) const {
@@ -209,6 +211,38 @@ public:
     if (Hdot.rows() != n_ || Hdot.cols() != n_) {
       throw std::invalid_argument(
           "trace_inverse_times: Hdot has wrong dimensions.");
+    }
+
+    // For a tridiagonal SPD matrix, the diagonal and first off-diagonal of
+    // Huu^{-1} follow directly from the LDL' factors.  These are the only
+    // inverse entries needed when Hdot has the same sparsity, so the trace is
+    // O(n) rather than n sparse solves followed by a dense n-by-n workspace.
+    if (has_tridiagonal_selected_inverse_) {
+      bool hdot_is_tridiagonal = true;
+      double trace = 0.0;
+      for (int outer = 0; outer < Hdot.outerSize(); ++outer) {
+        for (Eigen::SparseMatrix<double>::InnerIterator it(Hdot, outer); it;
+             ++it) {
+          const int row = static_cast<int>(it.row());
+          const int col = static_cast<int>(it.col());
+          const int distance = std::abs(row - col);
+          if (distance > 1 && it.value() != 0.0) {
+            hdot_is_tridiagonal = false;
+            break;
+          }
+          if (distance == 0) {
+            trace += it.value() * inverse_diagonal_[row];
+          } else if (distance == 1) {
+            trace += it.value() * inverse_first_off_diagonal_[std::min(row, col)];
+          }
+        }
+        if (!hdot_is_tridiagonal) {
+          break;
+        }
+      }
+      if (hdot_is_tridiagonal) {
+        return trace;
+      }
     }
 
     std::vector<int> columns;
@@ -351,12 +385,83 @@ public:
 
   int rows() const { return n_; }
 
+  bool has_tridiagonal_selected_inverse() const {
+    return has_tridiagonal_selected_inverse_;
+  }
+
+  double tridiagonal_selected_inverse(int row, int col) const {
+    if (!has_tridiagonal_selected_inverse_) {
+      throw std::logic_error(
+          "tridiagonal selected inverse is not available");
+    }
+    if (row < 0 || col < 0 || row >= n_ || col >= n_) {
+      throw std::out_of_range("selected inverse index out of range");
+    }
+    const int distance = std::abs(row - col);
+    if (distance == 0) {
+      return inverse_diagonal_[row];
+    }
+    if (distance == 1) {
+      return inverse_first_off_diagonal_[std::min(row, col)];
+    }
+    throw std::invalid_argument(
+        "only tridiagonal selected-inverse entries are cached");
+  }
+
   const Eigen::SparseMatrix<double> &matrix() const { return Huu_; }
 
 private:
+  void initialize_tridiagonal_selected_inverse() {
+    for (int outer = 0; outer < Huu_.outerSize(); ++outer) {
+      for (Eigen::SparseMatrix<double>::InnerIterator it(Huu_, outer); it;
+           ++it) {
+        if (std::abs(it.row() - it.col()) > 1 && it.value() != 0.0) {
+          return;
+        }
+      }
+    }
+
+    Eigen::VectorXd diagonal(n_);
+    Eigen::VectorXd multiplier = Eigen::VectorXd::Zero(std::max(0, n_ - 1));
+    diagonal[0] = Huu_.coeff(0, 0);
+    if (!(diagonal[0] > 0.0) || !std::isfinite(diagonal[0])) {
+      return;
+    }
+
+    for (int i = 1; i < n_; ++i) {
+      const double lower = Huu_.coeff(i, i - 1);
+      const double upper = Huu_.coeff(i - 1, i);
+      const double scale = 1.0 + std::max(std::abs(lower), std::abs(upper));
+      if (std::abs(lower - upper) > 1e-12 * scale) {
+        return;
+      }
+      const double off_diagonal = 0.5 * (lower + upper);
+      multiplier[i - 1] = off_diagonal / diagonal[i - 1];
+      diagonal[i] = Huu_.coeff(i, i) -
+                    multiplier[i - 1] * multiplier[i - 1] * diagonal[i - 1];
+      if (!(diagonal[i] > 0.0) || !std::isfinite(diagonal[i])) {
+        return;
+      }
+    }
+
+    inverse_diagonal_.resize(n_);
+    inverse_first_off_diagonal_.resize(std::max(0, n_ - 1));
+    inverse_diagonal_[n_ - 1] = 1.0 / diagonal[n_ - 1];
+    for (int i = n_ - 2; i >= 0; --i) {
+      inverse_first_off_diagonal_[i] =
+          -multiplier[i] * inverse_diagonal_[i + 1];
+      inverse_diagonal_[i] =
+          1.0 / diagonal[i] - multiplier[i] * inverse_first_off_diagonal_[i];
+    }
+    has_tridiagonal_selected_inverse_ = true;
+  }
+
   Eigen::SparseMatrix<double> Huu_;
   int n_;
   Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> factor_;
+  bool has_tridiagonal_selected_inverse_ = false;
+  Eigen::VectorXd inverse_diagonal_;
+  Eigen::VectorXd inverse_first_off_diagonal_;
 };
 
 inline Eigen::SparseMatrix<double> dense_to_sparse(const Eigen::MatrixXd &H,

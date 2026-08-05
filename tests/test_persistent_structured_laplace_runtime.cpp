@@ -155,10 +155,42 @@ void test_reset_forces_redetection() {
   }
 }
 
+void test_structure_expansion_forces_redetection() {
+  PersistentStructuredLaplaceRuntime runtime(detector_options());
+  const int n = 30;
+  std::vector<Eigen::Triplet<double>> diagonal_entries;
+  for (int i = 0; i < n; ++i) {
+    diagonal_entries.emplace_back(i, i, 4.0 + 0.01 * i);
+  }
+  Eigen::SparseMatrix<double> diagonal(n, n);
+  diagonal.setFromTriplets(diagonal_entries.begin(), diagonal_entries.end());
+
+  const auto first = runtime.evaluate(diagonal);
+  if (first.recommendation.backend != LaplaceBackendKind::Diagonal) {
+    throw std::runtime_error("expected initial diagonal backend");
+  }
+
+  const auto tridiagonal = make_tridiagonal_scaled(n, 1.0);
+  const auto second = runtime.evaluate(tridiagonal);
+  if (!second.detected_structure ||
+      second.recommendation.backend != LaplaceBackendKind::Tridiagonal) {
+    throw std::runtime_error(
+        "diagonal-to-tridiagonal expansion was not redetected");
+  }
+  expect_close(second.logdet, LogDetSparseLDLT(tridiagonal),
+               "expanded tridiagonal runtime");
+
+  const auto third = runtime.evaluate(make_tridiagonal_scaled(n, 1.03));
+  if (third.detected_structure) {
+    throw std::runtime_error("stable expanded structure was redetected");
+  }
+}
+
 int main() {
   test_tridiagonal_runtime_reuses_structure();
   test_banded_runtime_reuses_structure();
   test_reset_forces_redetection();
+  test_structure_expansion_forces_redetection();
 
   std::cout << "persistent structured Laplace runtime tests passed\n";
   return 0;

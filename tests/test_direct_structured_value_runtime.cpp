@@ -124,6 +124,17 @@ void test_direct_banded() {
   }
 
   expect_close(state.logdet(), logdet_banded_values_ldlt(H), "direct banded");
+
+  const double *const workspace_data = state.banded_workspace.factor.data();
+  const std::size_t workspace_capacity =
+      state.banded_workspace.factor.capacity();
+  for (int iteration = 0; iteration < 10; ++iteration) {
+    state.update_direct(make_banded(80, 5, 0.98 + 0.001 * iteration));
+    if (state.banded_workspace.factor.data() != workspace_data ||
+        state.banded_workspace.factor.capacity() != workspace_capacity) {
+      throw std::runtime_error("direct banded workspace was reallocated");
+    }
+  }
 }
 
 int main() {

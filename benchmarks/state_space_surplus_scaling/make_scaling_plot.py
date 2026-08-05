@@ -23,6 +23,8 @@ def main() -> int:
 
     quadra = []
     tmb = []
+    quadra_rss = []
+    tmb_rss = []
 
     for row in rows:
         n = int(row["n"])
@@ -30,20 +32,36 @@ def main() -> int:
         t = float(row["tmb_ms"])
         quadra.append((n, q))
         tmb.append((n, t))
+        quadra_rss.append((n, float(row["quadra_peak_rss_mib"])))
+        tmb_rss.append((n, float(row["tmb_peak_rss_mib"])))
 
     quadra.sort()
     tmb.sort()
+    quadra_rss.sort()
+    tmb_rss.sort()
 
-    plt.figure()
-    plt.plot([x for x, _ in quadra], [y for _, y in quadra], marker="o", label="Quadra analytic tridiagonal")
-    plt.plot([x for x, _ in tmb], [y for _, y in tmb], marker="o", label="TMB AD/Laplace")
-    plt.xlabel("Number of years / latent states scale")
-    plt.ylabel("Milliseconds per fixed-theta Laplace evaluation")
-    plt.yscale("log")
-    plt.title("State-space surplus production Laplace scaling")
-    plt.legend()
-    plt.tight_layout()
-    plt.savefig(out_path, dpi=200)
+    fig, axes = plt.subplots(1, 2, figsize=(12, 4.8))
+    axes[0].plot([x for x, _ in quadra], [y for _, y in quadra], marker="o", label="Quadra persistent tridiagonal")
+    axes[0].plot([x for x, _ in tmb], [y for _, y in tmb], marker="^", label="TMB AD/Laplace")
+    axes[0].set_xlabel("Number of latent-state years")
+    axes[0].set_ylabel("Milliseconds per fixed-theta evaluation")
+    axes[0].set_yscale("log")
+    axes[0].set_title("Runtime")
+    axes[0].grid(alpha=0.3)
+    axes[0].legend()
+
+    axes[1].plot([x for x, _ in quadra_rss], [y for _, y in quadra_rss], marker="o", label="Quadra persistent tridiagonal")
+    axes[1].plot([x for x, _ in tmb_rss], [y for _, y in tmb_rss], marker="^", label="TMB AD/Laplace")
+    axes[1].set_xlabel("Number of latent-state years")
+    axes[1].set_ylabel("Peak RSS (MiB)")
+    axes[1].set_yscale("log")
+    axes[1].set_title("Peak resident memory")
+    axes[1].grid(alpha=0.3)
+    axes[1].legend()
+
+    fig.suptitle("Matched state-space surplus-production Laplace scaling")
+    fig.tight_layout()
+    fig.savefig(out_path, dpi=200)
 
     print(f"wrote {out_path}")
     return 0

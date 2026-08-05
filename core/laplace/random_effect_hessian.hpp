@@ -21,6 +21,8 @@ struct RandomEffectHessianResult {
   std::vector<double> random_m;
   std::vector<double> full_m;
   std::vector<double> gradient_random_m;
+  std::vector<double> gradient_fixed_m;
+  Eigen::MatrixXd mixed_hessian_m;
 
   Eigen::SparseMatrix<double> hessian_random_m;
 
@@ -417,6 +419,7 @@ evaluate_random_effect_hessian(Model &model, const std::vector<double> &fixed,
   PropagateRandomHessianRestricted(tape.graph, graph_plan);
 
   Eigen::VectorXd g = extract_gradient(random_ad);
+  Eigen::VectorXd g_fixed = extract_gradient(fixed_ad);
 
   const std::vector<int> random_idx = random_indices_as_ints(partition);
 
@@ -434,6 +437,17 @@ evaluate_random_effect_hessian(Model &model, const std::vector<double> &fixed,
   result.hessian_random_m = H;
 
   result.gradient_random_m.resize(static_cast<size_t>(g.size()));
+  result.gradient_fixed_m.assign(g_fixed.data(),
+                                 g_fixed.data() + g_fixed.size());
+  result.mixed_hessian_m =
+      Eigen::MatrixXd::Zero(random_ad.size(), fixed_ad.size());
+  for (int i = 0; i < result.mixed_hessian_m.rows(); ++i) {
+    for (int j = 0; j < result.mixed_hessian_m.cols(); ++j) {
+      result.mixed_hessian_m(i, j) =
+          had::GetAdjoint(random_ad[static_cast<std::size_t>(i)],
+                          fixed_ad[static_cast<std::size_t>(j)]);
+    }
+  }
 
   for (int i = 0; i < g.size(); ++i) {
     result.gradient_random_m[static_cast<size_t>(i)] = g[i];

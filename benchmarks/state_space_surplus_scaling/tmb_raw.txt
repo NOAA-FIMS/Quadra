@@ -1,11 +1,162 @@
+BEGIN n=25
 TMB scaled fixed-theta state-space surplus benchmark
 ===================================================
-reps per n = 10 
+reps per n = 10
 
        n     objective        avg_ms
-      25    -17.776006      0.100000
-      50    -34.453635      0.600000
-     100    -72.908190      2.200000
-     250   -188.418306     14.200000
-     500   -380.974141     67.200000
-    1000   -766.105237    347.400000
+      25    -17.776006      0.200000
+        0.62 real         0.42 user         0.03 sys
+           209207296  maximum resident set size
+                   0  average shared memory size
+                   0  average unshared data size
+                   0  average unshared stack size
+               15396  page reclaims
+                  19  page faults
+                   0  swaps
+                   0  block input operations
+                   0  block output operations
+                   0  messages sent
+                   0  messages received
+                   0  signals received
+                   9  voluntary context switches
+                  45  involuntary context switches
+          5241304739  instructions retired
+          1646105115  cycles elapsed
+           169281408  peak memory footprint
+PEAK_RSS_BYTES n=25 value=209207296
+END n=25
+BEGIN n=50
+TMB scaled fixed-theta state-space surplus benchmark
+===================================================
+reps per n = 10
+
+       n     objective        avg_ms
+      50    -34.453635      0.700000
+        0.48 real         0.43 user         0.03 sys
+           201326592  maximum resident set size
+                   0  average shared memory size
+                   0  average unshared data size
+                   0  average unshared stack size
+               14920  page reclaims
+                  19  page faults
+                   0  swaps
+                   0  block input operations
+                   0  block output operations
+                   0  messages sent
+                   0  messages received
+                   0  signals received
+                   8  voluntary context switches
+                  52  involuntary context switches
+          5405425816  instructions retired
+          1696141694  cycles elapsed
+           168068992  peak memory footprint
+PEAK_RSS_BYTES n=50 value=201326592
+END n=50
+BEGIN n=100
+TMB scaled fixed-theta state-space surplus benchmark
+===================================================
+reps per n = 10
+
+       n     objective        avg_ms
+     100    -72.908190      2.400000
+        0.53 real         0.48 user         0.03 sys
+           227835904  maximum resident set size
+                   0  average shared memory size
+                   0  average unshared data size
+                   0  average unshared stack size
+               16548  page reclaims
+                  19  page faults
+                   0  swaps
+                   0  block input operations
+                   0  block output operations
+                   0  messages sent
+                   0  messages received
+                   0  signals received
+                   7  voluntary context switches
+                  72  involuntary context switches
+          5960967190  instructions retired
+          1884051971  cycles elapsed
+           187713280  peak memory footprint
+PEAK_RSS_BYTES n=100 value=227835904
+END n=100
+BEGIN n=250
+TMB scaled fixed-theta state-space surplus benchmark
+===================================================
+reps per n = 10
+
+       n     objective        avg_ms
+     250   -188.418306     16.000000
+        0.91 real         0.83 user         0.06 sys
+           417595392  maximum resident set size
+                   0  average shared memory size
+                   0  average unshared data size
+                   0  average unshared stack size
+               28100  page reclaims
+                  52  page faults
+                   0  swaps
+                   0  block input operations
+                   0  block output operations
+                   0  messages sent
+                   0  messages received
+                   0  signals received
+                   9  voluntary context switches
+                 159  involuntary context switches
+         10306326665  instructions retired
+          3249949458  cycles elapsed
+           345393344  peak memory footprint
+PEAK_RSS_BYTES n=250 value=417595392
+END n=250
+BEGIN n=500
+TMB scaled fixed-theta state-space surplus benchmark
+===================================================
+reps per n = 10
+
+       n     objective        avg_ms
+     500   -380.974141     73.900000
+        2.44 real         2.21 user         0.16 sys
+          1049182208  maximum resident set size
+                   0  average shared memory size
+                   0  average unshared data size
+                   0  average unshared stack size
+               66667  page reclaims
+                  23  page faults
+                   0  swaps
+                   0  block input operations
+                   0  block output operations
+                   0  messages sent
+                   0  messages received
+                   0  signals received
+                   9  voluntary context switches
+                1860  involuntary context switches
+         28799017140  instructions retired
+          8586498911  cycles elapsed
+           814157056  peak memory footprint
+PEAK_RSS_BYTES n=500 value=1049182208
+END n=500
+BEGIN n=1000
+TMB scaled fixed-theta state-space surplus benchmark
+===================================================
+reps per n = 10
+
+       n     objective        avg_ms
+    1000   -766.105237    390.700000
+        9.98 real         9.00 user         0.66 sys
+          2849718272  maximum resident set size
+                   0  average shared memory size
+                   0  average unshared data size
+                   0  average unshared stack size
+              408298  page reclaims
+                  28  page faults
+                   0  swaps
+                   0  block input operations
+                   0  block output operations
+                   0  messages sent
+                   0  messages received
+                   0  signals received
+                  11  voluntary context switches
+                7343  involuntary context switches
+        127583421645  instructions retired
+         34980689438  cycles elapsed
+          3229491968  peak memory footprint
+PEAK_RSS_BYTES n=1000 value=2849718272
+END n=1000

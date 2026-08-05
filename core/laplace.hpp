@@ -217,9 +217,9 @@ laplace_pattern_cache_key(const had::ADGraph &graph,
 // edge-pushed Hessian storage that had::PropagateAdjoint() has already
 // populated inside scope.backward(nll).
 //
-// NOTE: this is still a numeric sparsity pattern. If a structurally
-// nonzero Hessian entry evaluates to exactly zero at the discovery point,
-// it can be missed. Diagonals are included by default for Newton stability.
+// Pattern membership is determined from graph topology, not the derivative
+// value at the discovery point. This conservatively retains structural edges
+// whose current second derivative happens to be zero.
 inline SparseHessianPattern
 discover_pattern_from_graph(const std::vector<AD> &p_full,
                             const std::vector<int> &random_idx,
@@ -273,9 +273,6 @@ discover_pattern_from_graph(const std::vector<AD> &p_full,
     const auto &tree = had::g_ADGraph->soEdges[hi];
 
     for (const auto &node : tree.nodes) {
-      if (std::abs(node.val) <= tol)
-        continue;
-
       auto lo_it = random_var_to_local.find(node.key);
       if (lo_it == random_var_to_local.end())
         continue;
@@ -294,6 +291,7 @@ discover_pattern_from_graph(const std::vector<AD> &p_full,
   if (verbose)
     std::cout << "Quadra: Model structure aware now => Hessian pattern has "
               << pattern.size() << " entries.\n";
+  (void)tol;
   return pattern;
 }
 

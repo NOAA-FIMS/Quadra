@@ -159,6 +159,7 @@ public:
     }
 
     analyzed_m = true;
+    ++symbolic_analysis_count_m;
     pattern_rows_m = H.rows();
     pattern_cols_m = H.cols();
     pattern_nnz_m = H.nonZeros();
@@ -188,6 +189,7 @@ public:
     }
 
     factorized_m = true;
+    ++numeric_factorization_count_m;
   }
 
   void compute(const SparseMatrix &H) {
@@ -201,6 +203,8 @@ public:
 
     analyzed_m = true;
     factorized_m = true;
+    ++symbolic_analysis_count_m;
+    ++numeric_factorization_count_m;
     pattern_rows_m = H.rows();
     pattern_cols_m = H.cols();
     pattern_nnz_m = H.nonZeros();
@@ -252,11 +256,27 @@ public:
     return value;
   }
 
+  void reset() {
+    analyzed_m = false;
+    factorized_m = false;
+    pattern_rows_m = 0;
+    pattern_cols_m = 0;
+    pattern_nnz_m = 0;
+    symbolic_analysis_count_m = 0;
+    numeric_factorization_count_m = 0;
+  }
+
   bool analyzed() const { return analyzed_m; }
   bool factorized() const { return factorized_m; }
   int rows() const { return pattern_rows_m; }
   int cols() const { return pattern_cols_m; }
   int nonzeros() const { return pattern_nnz_m; }
+  std::size_t symbolic_analysis_count() const {
+    return symbolic_analysis_count_m;
+  }
+  std::size_t numeric_factorization_count() const {
+    return numeric_factorization_count_m;
+  }
 
   Eigen::SparseMatrix<double> matrixL() const {
     if (!factorized_m)
@@ -289,6 +309,8 @@ private:
   int pattern_rows_m = 0;
   int pattern_cols_m = 0;
   int pattern_nnz_m = 0;
+  std::size_t symbolic_analysis_count_m = 0;
+  std::size_t numeric_factorization_count_m = 0;
 };
 
 inline double sparse_logdet_compute(const Eigen::SparseMatrix<double> &H) {

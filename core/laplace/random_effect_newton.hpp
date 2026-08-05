@@ -4,12 +4,13 @@
 #include <limits>
 #include <stdexcept>
 #include <string>
-#include <utility>
 #include <vector>
 
 #include <Eigen/SparseCholesky>
 
 #include "random_effect_hessian.hpp"
+#include "structure_detector.hpp"
+#include "structured_value_factory.hpp"
 
 namespace quadra {
 
@@ -23,6 +24,9 @@ struct RandomEffectNewtonOptions {
   double hessian_drop_tol_m = 0.0;
   bool use_backtracking_m = true;
   bool quadratic_objective_m = false;
+  // Detect diagonal/tridiagonal structure and use its O(n) Newton solve.
+  // General banded and sparse models retain the sparse LDLT fallback.
+  bool automatic_structure_m = true;
 };
 
 struct RandomEffectNewtonResult {
@@ -31,6 +35,8 @@ struct RandomEffectNewtonResult {
   std::vector<double> u_hat_m;
   std::vector<double> full_m;
   std::vector<double> gradient_random_m;
+  std::vector<double> gradient_fixed_m;
+  Eigen::MatrixXd mixed_hessian_m;
 
   Eigen::SparseMatrix<double> hessian_random_m;
 
@@ -47,7 +53,58 @@ struct RandomEffectNewtonResult {
   std::string message_m;
 
   std::vector<ReportValue> reports_m;
+  laplace::BackendRecommendation backend_m;
 };
+
+inline bool solve_diagonal_newton_system(
+    const Eigen::SparseMatrix<double> &H, const Eigen::VectorXd &rhs,
+    Eigen::VectorXd &solution) {
+  solution.resize(H.rows());
+  for (int i = 0; i < H.rows(); ++i) {
+    const double diagonal = H.coeff(i, i);
+    if (!(diagonal > 0.0) || !std::isfinite(diagonal)) {
+      return false;
+    }
+    solution[i] = rhs[i] / diagonal;
+  }
+  return solution.allFinite();
+}
+
+inline bool solve_tridiagonal_newton_system(
+    const Eigen::SparseMatrix<double> &H, const Eigen::VectorXd &rhs,
+    Eigen::VectorXd &solution) {
+  const int n = static_cast<int>(H.rows());
+  if (n == 0) {
+    solution.resize(0);
+    return true;
+  }
+
+  Eigen::VectorXd diagonal(n);
+  Eigen::VectorXd multiplier = Eigen::VectorXd::Zero(std::max(0, n - 1));
+  Eigen::VectorXd transformed_rhs = rhs;
+  diagonal[0] = H.coeff(0, 0);
+  if (!(diagonal[0] > 0.0) || !std::isfinite(diagonal[0])) {
+    return false;
+  }
+  for (int i = 1; i < n; ++i) {
+    const double off_diagonal = H.coeff(i, i - 1);
+    multiplier[i - 1] = off_diagonal / diagonal[i - 1];
+    diagonal[i] = H.coeff(i, i) -
+                  multiplier[i - 1] * multiplier[i - 1] * diagonal[i - 1];
+    if (!(diagonal[i] > 0.0) || !std::isfinite(diagonal[i])) {
+      return false;
+    }
+    transformed_rhs[i] -= multiplier[i - 1] * transformed_rhs[i - 1];
+  }
+
+  solution.resize(n);
+  solution[n - 1] = transformed_rhs[n - 1] / diagonal[n - 1];
+  for (int i = n - 2; i >= 0; --i) {
+    solution[i] = transformed_rhs[i] / diagonal[i] -
+                  multiplier[i] * solution[i + 1];
+  }
+  return solution.allFinite();
+}
 
 inline double vector_norm(const std::vector<double> &x) {
   double out = 0.0;
@@ -107,12 +164,12 @@ inline std::vector<double> add_scaled_step(const std::vector<double> &x,
 //   u <- u + alpha * step
 //
 // with optional conservative backtracking.
-template <class Model>
-inline RandomEffectNewtonResult optimize_random_effects_newton(
-    Model &model, RandomEffectHessianWorkspace<Model> &hessian_workspace,
-    const std::vector<double> &fixed, const std::vector<double> &random_initial,
+template <class HessianEvaluator>
+inline RandomEffectNewtonResult optimize_random_effects_newton_with_evaluator(
+    const std::vector<double> &fixed,
+    const std::vector<double> &random_initial,
     const ParameterPartition &partition,
-    const RandomEffectNewtonOptions &options = RandomEffectNewtonOptions()) {
+    const RandomEffectNewtonOptions &options, HessianEvaluator &&evaluate) {
   if (partition.random_indices_m.empty()) {
     throw std::invalid_argument(
         "optimize_random_effects_newton: partition has no random effects");
@@ -130,12 +187,12 @@ inline RandomEffectNewtonResult optimize_random_effects_newton(
 
   std::vector<double> u = random_initial;
 
-  RandomEffectHessianResult eval =
-      hessian_workspace.Evaluate(fixed, u, options.hessian_drop_tol_m);
+  RandomEffectHessianResult eval = evaluate(u);
 
   RandomEffectNewtonResult result;
   result.fixed_m = fixed;
   result.u_initial_m = random_initial;
+  laplace::StructureDetector structure_detector;
 
   for (int iter = 0; iter < options.max_iterations_m; ++iter) {
     result.iterations_m = iter;
@@ -169,33 +226,34 @@ inline RandomEffectNewtonResult optimize_random_effects_newton(
         H_damped.makeCompressed();
       }
 
-      if (lambda == 0.0) {
-        try {
-          step = hessian_workspace.solve_newton_system(H_damped, -g);
-          if (step.allFinite())
-            solved_newton_system = true;
-        } catch (const std::exception &) {
-          solved_newton_system = false;
-        }
+      result.backend_m = structure_detector.Analyze(H_damped);
+      bool solved = false;
+      if (options.automatic_structure_m &&
+          result.backend_m.backend ==
+              laplace::LaplaceBackendKind::Diagonal) {
+        solved = solve_diagonal_newton_system(H_damped, -g, step);
+      } else if (options.automatic_structure_m &&
+                 result.backend_m.backend ==
+                     laplace::LaplaceBackendKind::Tridiagonal) {
+        solved = solve_tridiagonal_newton_system(H_damped, -g, step);
       } else {
         Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> solver;
         solver.compute(H_damped);
         if (solver.info() == Eigen::Success) {
           step = solver.solve(-g);
-          solved_newton_system =
-              solver.info() == Eigen::Success && step.allFinite();
+          solved = solver.info() == Eigen::Success && step.allFinite();
         }
       }
 
-      if (solved_newton_system) {
-        solved_newton_system = true;
+      if (solved) {
+          solved_newton_system = true;
 
-        if (lambda > 0.0) {
-          std::cout << "Newton: adaptive damping accepted lambda = " << lambda
-                    << std::endl;
-        }
+          if (lambda > 0.0) {
+            std::cout << "Newton: adaptive damping accepted lambda = " << lambda
+                      << std::endl;
+          }
 
-        break;
+          break;
       }
 
       lambda = (lambda == 0.0) ? lambda_initial : lambda * lambda_growth;
@@ -244,7 +302,7 @@ inline RandomEffectNewtonResult optimize_random_effects_newton(
       const double candidate_objective = eval.objective_value_m +
                                          alpha * g.dot(step) +
                                          0.5 * alpha * step.dot(hessian_step);
-      candidate_eval = std::move(eval);
+      candidate_eval = eval;
       candidate_eval.objective_value_m = candidate_objective;
       candidate_eval.random_m = candidate_u;
       candidate_eval.full_m = merge_parameters(fixed, candidate_u, partition);
@@ -258,8 +316,7 @@ inline RandomEffectNewtonResult optimize_random_effects_newton(
            alpha >= options.min_step_scale_m) {
       candidate_u = add_scaled_step(u, step, alpha);
 
-      candidate_eval = hessian_workspace.Evaluate(fixed, candidate_u,
-                                                  options.hessian_drop_tol_m);
+      candidate_eval = evaluate(candidate_u);
 
       const double armijo_rhs =
           eval.objective_value_m +
@@ -274,11 +331,6 @@ inline RandomEffectNewtonResult optimize_random_effects_newton(
       alpha *= 0.5;
     }
 
-    // A damped Newton direction can cease to be useful far from the
-    // conditional mode, especially when observation likelihoods add strong
-    // curvature. Fall back to a normalized steepest-descent direction before
-    // declaring the inner solve failed. This retains an Armijo decrease and
-    // lets subsequent iterations return to Newton steps.
     if (!accepted && !options.quadratic_objective_m) {
       Eigen::VectorXd descent = -g;
       const double descent_norm = descent.norm();
@@ -287,8 +339,7 @@ inline RandomEffectNewtonResult optimize_random_effects_newton(
         alpha = options.initial_step_scale_m;
         while (alpha >= options.min_step_scale_m) {
           candidate_u = add_scaled_step(u, descent, alpha);
-          candidate_eval = hessian_workspace.Evaluate(
-              fixed, candidate_u, options.hessian_drop_tol_m);
+          candidate_eval = evaluate(candidate_u);
           const double armijo_rhs =
               eval.objective_value_m +
               options.sufficient_decrease_m * alpha * g.dot(descent);
@@ -309,7 +360,7 @@ inline RandomEffectNewtonResult optimize_random_effects_newton(
     }
 
     u = candidate_u;
-    eval = std::move(candidate_eval);
+    eval = candidate_eval;
     result.iterations_m = iter + 1;
 
     if (eval.gradient_norm_m <= options.gradient_tolerance_m) {
@@ -326,6 +377,8 @@ inline RandomEffectNewtonResult optimize_random_effects_newton(
   result.u_hat_m = u;
   result.full_m = eval.full_m;
   result.gradient_random_m = eval.gradient_random_m;
+  result.gradient_fixed_m = eval.gradient_fixed_m;
+  result.mixed_hessian_m = eval.mixed_hessian_m;
   result.hessian_random_m = eval.hessian_random_m;
   result.objective_value_m = eval.objective_value_m;
   result.gradient_norm_m = eval.gradient_norm_m;
@@ -346,10 +399,12 @@ inline RandomEffectNewtonResult optimize_random_effects_newton(
     const std::vector<double> &random_initial,
     const ParameterPartition &partition,
     const RandomEffectNewtonOptions &options = RandomEffectNewtonOptions()) {
-  RandomEffectHessianWorkspace<Model> workspace(model, fixed, random_initial,
-                                                partition);
-  return optimize_random_effects_newton(model, workspace, fixed, random_initial,
-                                        partition, options);
+  auto evaluate = [&](const std::vector<double> &random) {
+    return evaluate_random_effect_hessian(model, fixed, random, partition,
+                                          options.hessian_drop_tol_m);
+  };
+  return optimize_random_effects_newton_with_evaluator(
+      fixed, random_initial, partition, options, evaluate);
 }
 
 template <class Model>

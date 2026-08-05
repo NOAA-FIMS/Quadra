@@ -1,10 +1,11 @@
 # State-space surplus production scaling benchmark
 
-This benchmark compares fixed-theta Laplace objective evaluation for the same
+This benchmark compares fixed-theta Laplace objective evaluation and isolated
+process peak resident memory (RSS) for the same
 state-space surplus production model in:
 
 ```text
-Quadra analytic latent-state tridiagonal implementation
+Quadra persistent latent-state tridiagonal implementation
 TMB AD/Laplace implementation
 ```
 
@@ -34,12 +35,14 @@ over latent log-biomass states.
 
 Representative run:
 
-| n | Quadra ms/eval | TMB ms/eval | Quadra speedup |
-|---:|---:|---:|---:|
-| 25 | 0.027 | 0.100 | 3.7x |
-| 50 | 0.060 | 0.600 | 9.9x |
-| 100 | 0.117 | 2.200 | 18.7x |
-| 250 | 0.255 | 14.100 | 55.2x |
+| n | Quadra ms | TMB ms | Speedup | Quadra RSS MiB | TMB RSS MiB | RSS ratio |
+|---:|---:|---:|---:|---:|---:|---:|
+| 25 | 0.011 | 0.2 | 18.2x | 1.09 | 199.52 | 182.4x |
+| 50 | 0.026 | 0.7 | 27.4x | 1.06 | 192.00 | 180.7x |
+| 100 | 0.052 | 2.4 | 46.2x | 1.11 | 217.28 | 195.9x |
+| 250 | 0.113 | 16.0 | 141.1x | 1.16 | 398.25 | 344.4x |
+| 500 | 0.228 | 73.9 | 324.1x | 1.39 | 1000.58 | 719.5x |
+| 1000 | 0.423 | 390.7 | 923.8x | 1.88 | 2717.70 | 1449.4x |
 
 Objectives matched to numerical precision.
 
@@ -48,15 +51,16 @@ Objectives matched to numerical precision.
 This benchmark does **not** show that Quadra is universally faster than TMB.
 
 It shows that when the model has known latent Markov structure and Quadra
-exploits the analytic tridiagonal Hessian, the Laplace evaluation can scale
-nearly linearly and substantially outperform a generic AD/Laplace path.
+exploits persistent tridiagonal structure, the Laplace evaluation and its
+memory footprint can scale far better than a generic AD/Laplace path.
 
 ## Run
 
 From the repository root:
 
 ```bash
-./run_state_space_surplus_scaling_artifact.sh 10 25,50,100,250
+./benchmarks/state_space_surplus_scaling/run_benchmark.sh \
+  10 25,50,100,250,500,1000
 ```
 
 Outputs are written to:
@@ -65,3 +69,6 @@ Outputs are written to:
 benchmarks/state_space_surplus_scaling/results.csv
 benchmarks/state_space_surplus_scaling/scaling_plot.png
 ```
+
+Each model and size runs in a separate measured process. Compilation happens
+before measurement, and peak RSS is normalized to MiB in `results.csv`.

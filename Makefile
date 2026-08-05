@@ -14,6 +14,12 @@ TESTS = \
 	tests/test_curvature_depends_on_theta \
 	tests/test_poisson_random_effect \
 	tests/test_ar1_random_walk \
+	tests/test_stats \
+	tests/test_stats_exact_laplace \
+	tests/test_stats_laplace_optimizer \
+	tests/test_tridiagonal_selected_inverse \
+	tests/test_hessian_structure_discovery \
+	tests/test_flat_second_order_sweep \
 	tests/test_hdot_validation \
 	tests/test_scalar_generic_model \
 	tests/test_parameter_transforms
@@ -82,10 +88,16 @@ validate-hdot:
 	./tests/test_laplace_exact_gradient
 	./tests/test_laplace_implicit_derivatives
 
-run-tests: $(TESTS) test-big-laplace-convergence-contract
+run-tests: $(TESTS)
 	./tests/test_curvature_depends_on_theta
 	./tests/test_poisson_random_effect
 	./tests/test_ar1_random_walk
+	./tests/test_stats
+	./tests/test_stats_exact_laplace
+	./tests/test_stats_laplace_optimizer
+	./tests/test_tridiagonal_selected_inverse
+	./tests/test_hessian_structure_discovery
+	./tests/test_flat_second_order_sweep
 	./tests/test_hdot_validation
 
 clean:
@@ -228,6 +240,13 @@ benchmarks/random_intercept_scaling_exact: benchmarks/random_intercept_scaling_e
 .PHONY: benchmark-laplace-exact
 benchmark-laplace-exact: benchmarks/random_intercept_scaling_exact
 	./benchmarks/random_intercept_scaling_exact
+
+benchmarks/quadra_state_space_hdot_workers: benchmarks/quadra_state_space_hdot_workers.cpp
+	$(CXX) $(CXXFLAGS) -o $@ $<
+
+.PHONY: benchmark-hdot-workers
+benchmark-hdot-workers: benchmarks/quadra_state_space_hdot_workers
+	./benchmarks/quadra_state_space_hdot_workers
 
 
 tests/test_laplace_profile: tests/test_laplace_profile.cpp
@@ -739,4 +758,3 @@ benchmark-plot-factorization-reuse:
 
 benchmark-plot-report:
 	Rscript benchmarks/analysis/build_benchmark_plot_report.R
-

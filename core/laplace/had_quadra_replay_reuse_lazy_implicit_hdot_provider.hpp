@@ -170,6 +170,22 @@ public:
 
   int tape_build_count() const { return tape_build_count_; }
 
+  bool replay_matches(const Eigen::VectorXd &theta,
+                      const Eigen::VectorXd &uhat,
+                      double relative_tolerance = 1e-11) const {
+    ensure_replayed(theta, uhat);
+    std::vector<double> values;
+    values.reserve(static_cast<std::size_t>(theta_dim_ + random_dim_));
+    for (int j = 0; j < theta_dim_; ++j)
+      values.push_back(theta[j]);
+    for (int i = 0; i < random_dim_; ++i)
+      values.push_back(uhat[i]);
+    const double direct = combined_objective_(values);
+    const double replayed = y_.val;
+    const double scale = 1.0 + std::max(std::abs(direct), std::abs(replayed));
+    return std::abs(direct - replayed) <= relative_tolerance * scale;
+  }
+
   had::ADGraphMemoryStatistics graph_memory_statistics() const {
     return graph_ ? had::MeasureADGraphMemory(*graph_)
                   : had::ADGraphMemoryStatistics{};

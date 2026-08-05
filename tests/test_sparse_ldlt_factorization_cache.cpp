@@ -42,6 +42,9 @@ int main() {
 
   const Eigen::MatrixXd actual = cache.solve(B);
 
+  const double expected_logdet = direct.vectorD().array().log().sum();
+  const double logdet_error = std::abs(cache.logdet() - expected_logdet);
+
   const double error = (actual - expected).cwiseAbs().maxCoeff();
 
   if (!std::isfinite(error) || error > 1.0e-12) {
@@ -51,6 +54,13 @@ int main() {
 
   if (!cache.analyzed() || !cache.factorized()) {
     std::cerr << "FAIL: cache flags not set\n";
+    return 1;
+  }
+
+  cache.factorize(H);
+  if (cache.symbolic_analysis_count() != 1 ||
+      cache.numeric_factorization_count() != 2 || logdet_error > 1.0e-12) {
+    std::cerr << "FAIL: sparse LDLT symbolic reuse/logdet mismatch\n";
     return 1;
   }
 

@@ -11,9 +11,10 @@ out_path <- args[[2]]
 
 d <- read.csv(csv_path)
 
-png(out_path, width = 1200, height = 800, res = 160)
+png(out_path, width = 1800, height = 800, res = 160)
 
 ylim <- range(c(d$quadra_ms, d$tmb_ms), finite = TRUE)
+par(mfrow = c(1, 2))
 
 plot(
   d$n,
@@ -25,19 +26,42 @@ plot(
   ylim = ylim,
   xlab = "Number of years / latent-state scale",
   ylab = "Milliseconds per fixed-theta Laplace evaluation",
-  main = "State-space surplus production Laplace scaling"
+  main = "Runtime"
 )
 
 lines(d$n, d$tmb_ms, type = "b", pch = 17, lwd = 2)
 
 legend(
   "topleft",
-  legend = c("Quadra analytic tridiagonal", "TMB AD/Laplace"),
+  legend = c("Quadra persistent tridiagonal", "TMB AD/Laplace"),
   pch = c(16, 17),
   lwd = 2,
   bty = "n"
 )
 
+grid()
+
+rss_ylim <- range(c(d$quadra_peak_rss_mib, d$tmb_peak_rss_mib), finite = TRUE)
+plot(
+  d$n,
+  d$quadra_peak_rss_mib,
+  type = "b",
+  log = "y",
+  pch = 16,
+  lwd = 2,
+  ylim = rss_ylim,
+  xlab = "Number of years / latent-state scale",
+  ylab = "Peak RSS (MiB)",
+  main = "Peak resident memory"
+)
+lines(d$n, d$tmb_peak_rss_mib, type = "b", pch = 17, lwd = 2)
+legend(
+  "topleft",
+  legend = c("Quadra persistent tridiagonal", "TMB AD/Laplace"),
+  pch = c(16, 17),
+  lwd = 2,
+  bty = "n"
+)
 grid()
 
 dev.off()

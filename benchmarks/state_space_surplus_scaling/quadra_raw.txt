@@ -1,10 +1,156 @@
-Quadra scaled analytic latent-state tridiagonal Laplace benchmark
+BEGIN n=25
+Quadra scaled analytic direct-runtime latent-state tridiagonal Laplace benchmark
 reps per n = 10
 
-       n     objective         joint        logdet           nnz     grad_norm        avg_ms
-      25    -17.776006    -57.773976    124.104991            70      0.000244      0.031688
-      50    -34.453635   -116.343847    253.836400           145      0.000274      0.071017
-     100    -72.908190   -233.173849    502.481149           295      0.000282      0.138442
-     250   -188.418307   -583.810308   1248.415393           745      0.000870      0.297133
-     500   -380.974146  -1168.243381   2491.639126          1495      0.003095      0.493433
-    1000   -766.105237  -2337.128952   4978.086619          2995      0.003207      0.783133
+       n     objective         joint        logdet           nnz     grad_norm     analytic_ms      direct_rt_ms    rt_speedup
+      25    -17.776006    -57.773976    124.104991            70      0.000244        0.014671          0.011004      1.333200
+        0.11 real         0.00 user         0.00 sys
+             1146880  maximum resident set size
+                   0  average shared memory size
+                   0  average unshared data size
+                   0  average unshared stack size
+                 252  page reclaims
+                   1  page faults
+                   0  swaps
+                   0  block input operations
+                   0  block output operations
+                   0  messages sent
+                   0  messages received
+                   0  signals received
+                   0  voluntary context switches
+                   4  involuntary context switches
+            19368318  instructions retired
+             7553534  cycles elapsed
+              868864  peak memory footprint
+PEAK_RSS_BYTES n=25 value=1146880
+END n=25
+BEGIN n=50
+Quadra scaled analytic direct-runtime latent-state tridiagonal Laplace benchmark
+reps per n = 10
+
+       n     objective         joint        logdet           nnz     grad_norm     analytic_ms      direct_rt_ms    rt_speedup
+      50    -34.453635   -116.343847    253.836400           145      0.000274        0.030888          0.025575      1.207722
+        0.00 real         0.00 user         0.00 sys
+             1114112  maximum resident set size
+                   0  average shared memory size
+                   0  average unshared data size
+                   0  average unshared stack size
+                 250  page reclaims
+                   1  page faults
+                   0  swaps
+                   0  block input operations
+                   0  block output operations
+                   0  messages sent
+                   0  messages received
+                   0  signals received
+                   0  voluntary context switches
+                   4  involuntary context switches
+            25333936  instructions retired
+             7230684  cycles elapsed
+              836096  peak memory footprint
+PEAK_RSS_BYTES n=50 value=1114112
+END n=50
+BEGIN n=100
+Quadra scaled analytic direct-runtime latent-state tridiagonal Laplace benchmark
+reps per n = 10
+
+       n     objective         joint        logdet           nnz     grad_norm     analytic_ms      direct_rt_ms    rt_speedup
+     100    -72.908190   -233.173849    502.481149           295      0.000282        0.059467          0.051954      1.144599
+        0.00 real         0.00 user         0.00 sys
+             1163264  maximum resident set size
+                   0  average shared memory size
+                   0  average unshared data size
+                   0  average unshared stack size
+                 251  page reclaims
+                   1  page faults
+                   0  swaps
+                   0  block input operations
+                   0  block output operations
+                   0  messages sent
+                   0  messages received
+                   0  signals received
+                   0  voluntary context switches
+                   4  involuntary context switches
+            36316621  instructions retired
+             9549938  cycles elapsed
+              868928  peak memory footprint
+PEAK_RSS_BYTES n=100 value=1163264
+END n=100
+BEGIN n=250
+Quadra scaled analytic direct-runtime latent-state tridiagonal Laplace benchmark
+reps per n = 10
+
+       n     objective         joint        logdet           nnz     grad_norm     analytic_ms      direct_rt_ms    rt_speedup
+     250   -188.418307   -583.810308   1248.415393           745      0.000870        0.132075          0.113429      1.164383
+        0.00 real         0.00 user         0.00 sys
+             1212416  maximum resident set size
+                   0  average shared memory size
+                   0  average unshared data size
+                   0  average unshared stack size
+                 254  page reclaims
+                   1  page faults
+                   0  swaps
+                   0  block input operations
+                   0  block output operations
+                   0  messages sent
+                   0  messages received
+                   0  signals received
+                   0  voluntary context switches
+                   4  involuntary context switches
+            63165221  instructions retired
+            14994458  cycles elapsed
+              918080  peak memory footprint
+PEAK_RSS_BYTES n=250 value=1212416
+END n=250
+BEGIN n=500
+Quadra scaled analytic direct-runtime latent-state tridiagonal Laplace benchmark
+reps per n = 10
+
+       n     objective         joint        logdet           nnz     grad_norm     analytic_ms      direct_rt_ms    rt_speedup
+     500   -380.974146  -1168.243381   2491.639126          1495      0.003095        0.256629          0.228033      1.125402
+        0.00 real         0.00 user         0.00 sys
+             1458176  maximum resident set size
+                   0  average shared memory size
+                   0  average unshared data size
+                   0  average unshared stack size
+                 271  page reclaims
+                   1  page faults
+                   0  swaps
+                   0  block input operations
+                   0  block output operations
+                   0  messages sent
+                   0  messages received
+                   0  signals received
+                   0  voluntary context switches
+                   5  involuntary context switches
+           107169754  instructions retired
+            24147521  cycles elapsed
+             1147392  peak memory footprint
+PEAK_RSS_BYTES n=500 value=1458176
+END n=500
+BEGIN n=1000
+Quadra scaled analytic direct-runtime latent-state tridiagonal Laplace benchmark
+reps per n = 10
+
+       n     objective         joint        logdet           nnz     grad_norm     analytic_ms      direct_rt_ms    rt_speedup
+    1000   -766.105237  -2337.128952   4978.086619          2995      0.003207        0.498608          0.422929      1.178940
+        0.01 real         0.01 user         0.00 sys
+             1966080  maximum resident set size
+                   0  average shared memory size
+                   0  average unshared data size
+                   0  average unshared stack size
+                 302  page reclaims
+                   1  page faults
+                   0  swaps
+                   0  block input operations
+                   0  block output operations
+                   0  messages sent
+                   0  messages received
+                   0  signals received
+                   0  voluntary context switches
+                   8  involuntary context switches
+           188169706  instructions retired
+            41905038  cycles elapsed
+             1721088  peak memory footprint
+PEAK_RSS_BYTES n=1000 value=1966080
+END n=1000
