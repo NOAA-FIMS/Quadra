@@ -24,12 +24,8 @@ TESTS = \
 	tests/test_scalar_generic_model \
 	tests/test_parameter_transforms
 
-EXAMPLES = \
-	examples/fisheries_random_year_effects \
-	examples/fisheries_age_selectivity_random_walk \
-	examples/fisheries_index_cpue_laplace \
-	examples/normal_mean_ad \
-	examples/transformed_parameters
+EXAMPLES := $(patsubst examples/%.cpp,examples/%,$(wildcard examples/*.cpp))
+BIG_EXAMPLES := $(patsubst examples/big/%.cpp,examples/big/%,$(wildcard examples/big/*.cpp))
 
 all: $(TESTS) $(EXAMPLES)
 
@@ -43,8 +39,7 @@ examples/%: examples/%.cpp
 	$(CXX) $(CXXFLAGS) -o $@ $<
 
 run-examples: examples
-
-	@for ex in $(EXAMPLES); do \
+	@set -e; for ex in $(EXAMPLES); do \
 		echo ""; \
 		echo "======================================"; \
 		echo "Running $$ex"; \
@@ -53,8 +48,24 @@ run-examples: examples
 	done
 
 clean-examples:
-
 	rm -f $(EXAMPLES)
+
+big-examples: $(BIG_EXAMPLES)
+
+examples/big/%: examples/big/%.cpp
+	$(CXX) $(CXXFLAGS) -o $@ $<
+
+run-big-examples: big-examples
+	@set -e; for ex in $(BIG_EXAMPLES); do \
+		echo ""; \
+		echo "======================================"; \
+		echo "Running $$ex"; \
+		echo "======================================"; \
+		$(QUADRA_TIME_CMD) ./$$ex; \
+	done
+
+clean-big-examples:
+	rm -f $(BIG_EXAMPLES)
 
 validate-hdot:
 	$(CXX) $(CXXFLAGS) -DQUADRA_VALIDATE_HDOT -o tests/test_hdot_validation tests/test_hdot_validation.cpp
@@ -476,43 +487,6 @@ CXXFLAGS ?= -std=c++17 -O3 \
 	-I./external/eigen \
 	-I./external/had \
 	-I./external/LBFGSpp/include
-
-EXAMPLES := $(patsubst examples/%.cpp,examples/%,$(wildcard examples/*.cpp))
-BIG_EXAMPLES := $(patsubst examples/big/%.cpp,examples/big/%,$(wildcard examples/big/*.cpp))
-
-examples: $(EXAMPLES)
-
-big-examples: $(BIG_EXAMPLES)
-
-examples/%: examples/%.cpp
-	$(CXX) $(CXXFLAGS) -o $@ $<
-
-examples/big/%: examples/big/%.cpp
-	$(CXX) $(CXXFLAGS) -o $@ $<
-
-run-examples: examples
-	@for ex in $(EXAMPLES); do \
-		echo ""; \
-		echo "======================================"; \
-		echo "Running $$ex"; \
-		echo "======================================"; \
-		$(QUADRA_TIME_CMD) ./$$ex; \
-	done
-
-run-big-examples: big-examples
-	@for ex in $(BIG_EXAMPLES); do \
-		echo ""; \
-		echo "======================================"; \
-		echo "Running $$ex"; \
-		echo "======================================"; \
-		$(QUADRA_TIME_CMD) ./$$ex; \
-	done
-
-clean-examples:
-	rm -f $(EXAMPLES)
-
-clean-big-examples:
-	rm -f $(BIG_EXAMPLES)
 
 .PHONY: test-contracts
 test-contracts:
