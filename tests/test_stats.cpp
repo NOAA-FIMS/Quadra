@@ -90,14 +90,14 @@ int main() {
       counts, weights, concentration);
   assert(std::isfinite(robust_dm));
   assert(close(robust_dm, direct_dm));
-  assert(close(quadra::stats::dirichlet_multinomial_nll(
-                   counts, weights, concentration),
-               -robust_dm));
+  assert(close(
+      quadra::stats::dirichlet_multinomial_nll(counts, weights, concentration),
+      -robust_dm));
 
   const std::vector<double> scaled_weights = {2.0, 8.0, 0.0};
-  assert(close(quadra::stats::dirichlet_multinomial_logpmf(
-                   counts, scaled_weights, 1.2),
-               robust_dm));
+  assert(close(
+      quadra::stats::dirichlet_multinomial_logpmf(counts, scaled_weights, 1.2),
+      robust_dm));
 
   const double expected = manual_ar1_logpdf(x, mean, phi, innovation_sd);
   assert(close(ar1_stationary_logpdf(x, mean, phi, innovation_sd), expected));

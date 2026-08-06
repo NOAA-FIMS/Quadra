@@ -149,8 +149,7 @@ T ddirichlet_multinomial(const std::vector<int> &x, const std::vector<T> &p,
 template <typename T>
 T ddirichlet_multinomial_robust(const std::vector<int> &x,
                                 const std::vector<T> &weight,
-                                const T &concentration,
-                                bool give_log = true) {
+                                const T &concentration, bool give_log = true) {
   if (x.empty()) {
     throw std::invalid_argument(
         "ddirichlet_multinomial_robust: x and weight must not be empty");
@@ -160,8 +159,7 @@ T ddirichlet_multinomial_robust(const std::vector<int> &x,
         "ddirichlet_multinomial_robust: x and weight must have equal length");
   }
   const double concentration_value = quadra::value_of(concentration);
-  if (!(concentration_value > 0.0) ||
-      !std::isfinite(concentration_value)) {
+  if (!(concentration_value > 0.0) || !std::isfinite(concentration_value)) {
     throw std::domain_error(
         "ddirichlet_multinomial_robust: concentration must be finite and "
         "positive");
