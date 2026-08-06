@@ -261,6 +261,35 @@ public:
     for (int j = 0; j < fixed_size; ++j) {
       all_directions.push_back(j);
     }
+    laplace::SparseHuuFactorization discovery_factor(
+        discovery.hessian_random_m);
+    bool direct_tridiagonal =
+        discovery_factor.has_tridiagonal_selected_inverse();
+    if (direct_tridiagonal) {
+      for (const auto &entry : pattern_) {
+        if (std::abs(entry.first - entry.second) > 1) {
+          direct_tridiagonal = false;
+          break;
+        }
+      }
+    }
+    const double discovery_density =
+        static_cast<double>(discovery.hessian_random_m.nonZeros()) /
+        static_cast<double>(std::max<Eigen::Index>(
+            1, discovery.hessian_random_m.rows() *
+                   discovery.hessian_random_m.cols()));
+    dense_third_order_ = !direct_tridiagonal && discovery_density > 0.5;
+    if (engine_options.hdot_workers < 0) {
+      throw std::invalid_argument(
+          "ExactLaplaceEvaluator: hdot_workers cannot be negative");
+    }
+    if (dense_third_order_) {
+      // The dense backend uses forward third-order polarization and never
+      // consumes a reverse-Hdot tape. Keep every fixed direction active and
+      // avoid recording an otherwise dead graph.
+      active_directions_ = all_directions;
+      return;
+    }
     std::unique_ptr<laplace::ReusableTotalHdotTape<CombinedObjective>>
         prototype(new laplace::ReusableTotalHdotTape<CombinedObjective>(
             CombinedObjective{model_, partition_}, fixed_size,
@@ -293,10 +322,6 @@ public:
       }
     } else {
       active_directions_ = all_directions;
-    }
-    if (engine_options.hdot_workers < 0) {
-      throw std::invalid_argument(
-          "ExactLaplaceEvaluator: hdot_workers cannot be negative");
     }
     std::size_t worker_count = 1;
     if (active_directions_.size() > 1) {
@@ -393,13 +418,7 @@ public:
         }
       }
     }
-    const double hessian_density =
-        static_cast<double>(result.objective.hessian_random_m.nonZeros()) /
-        static_cast<double>(std::max<Eigen::Index>(
-            1, result.objective.hessian_random_m.rows() *
-                   result.objective.hessian_random_m.cols()));
-    const bool dense_third_order =
-        !direct_tridiagonal_trace && hessian_density > 0.5;
+    const bool dense_third_order = dense_third_order_;
     std::vector<std::vector<double>> worker_trace_terms(hdot_tapes_.size());
     std::vector<std::vector<Eigen::SparseMatrix<double>>> worker_hdots(
         hdot_tapes_.size());
@@ -524,6 +543,7 @@ public:
     return count;
   }
   std::size_t hdot_worker_count() const { return hdot_tapes_.size(); }
+  bool uses_dense_third_order() const { return dense_third_order_; }
   std::size_t hdot_shared_topology_owner_count() const {
     return hdot_tapes_.empty()
                ? 0
@@ -554,6 +574,7 @@ private:
       hdot_tapes_;
   std::vector<std::vector<int>> hdot_worker_directions_;
   std::vector<double> last_random_;
+  bool dense_third_order_ = false;
 
   static Eigen::VectorXd to_eigen(const std::vector<double> &values) {
     return Eigen::Map<const Eigen::VectorXd>(

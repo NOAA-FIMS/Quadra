@@ -84,6 +84,31 @@ private:
   quadra::ParameterSet parameters_m;
 };
 
+class DenseRandomModel : public quadra::QuadraModel<DenseRandomModel> {
+public:
+  DenseRandomModel() {
+    parameters_m.add("theta", 0.2, quadra::ParameterTransform::Identity,
+                     false);
+    for (int i = 0; i < 3; ++i)
+      parameters_m.add("u" + std::to_string(i), 0.0,
+                       quadra::ParameterTransform::Identity, true);
+  }
+  std::vector<std::string> parameter_names_impl() const {
+    return parameters_m.names();
+  }
+  const quadra::ParameterSet &parameters() const { return parameters_m; }
+  template <typename T>
+  T evaluate_impl(const std::vector<T> &p, quadra::ModelReportContext &) const {
+    const T random_sum = p[1] + p[2] + p[3];
+    return T(0.5) * p[0] * p[0] +
+           T(0.5) * (p[1] * p[1] + p[2] * p[2] + p[3] * p[3]) +
+           T(0.5) * (T(1.0) + exp(p[0])) * random_sum * random_sum;
+  }
+
+private:
+  quadra::ParameterSet parameters_m;
+};
+
 int main() {
   ThetaDependentRandomModel model;
   quadra::LaplaceObjectiveOptions options;
@@ -202,6 +227,23 @@ int main() {
       std::cerr << "parallel Hdot gradient differs from serial reference\n";
       return 1;
     }
+  }
+
+  DenseRandomModel dense_model;
+  quadra::laplace::ExactLaplaceGradientEngineOptions dense_options;
+  dense_options.discover_active_directions = false;
+  quadra::stats::ExactLaplaceEvaluator<DenseRandomModel> dense_evaluator(
+      dense_model, {0.2}, {0.0, 0.0, 0.0}, dense_model.parameters(), options,
+      dense_options);
+  const auto dense_first = dense_evaluator.evaluate({0.2});
+  const auto dense_perturbed = dense_evaluator.evaluate({0.2001});
+  if (!dense_first.success || !dense_perturbed.success ||
+      !dense_evaluator.uses_dense_third_order() ||
+      dense_evaluator.hdot_worker_count() != 0 ||
+      dense_evaluator.hdot_tape_rebuild_count() != 0 ||
+      dense_evaluator.objective_tape_rebuild_count() != 0) {
+    std::cerr << "dense inference recorded or rebuilt an unused Hdot graph\n";
+    return 1;
   }
 
   std::cout << "PASS: public stats exact Laplace gradient\n";
