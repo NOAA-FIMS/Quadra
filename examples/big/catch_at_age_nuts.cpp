@@ -93,6 +93,7 @@ int main() {
                                            fit.diagnostics.bulk_ess.end());
   const auto worst_tail = std::min_element(fit.diagnostics.tail_ess.begin(),
                                            fit.diagnostics.tail_ess.end());
+  const auto health = quadra::sampling::assess_nuts_health(fit);
   const std::size_t worst_rhat_parameter =
       static_cast<std::size_t>(worst_rhat - fit.diagnostics.split_rhat.begin());
   std::vector<std::string> parameter_names{
@@ -112,8 +113,11 @@ int main() {
             << parameter_names[worst_rhat_parameter] << ")\n"
             << "minimum bulk ESS: " << *worst_bulk << "\n"
             << "minimum tail ESS: " << *worst_tail << "\n"
+            << "minimum BFMI: " << health.min_bfmi << "\n"
             << "divergences: " << divergences << "\n"
-            << "max-depth hits: " << depth_hits << "\n";
+            << "max-depth hits: " << depth_hits << "\n"
+            << "sampler health: " << (health.passed ? "PASS" : "FAIL")
+            << "\n";
   for (std::size_t chain = 0; chain < fit.chains.size(); ++chain) {
     const auto &diagnostics = fit.chains[chain].diagnostics;
     std::cout << "chain " << chain + 1
@@ -123,7 +127,5 @@ int main() {
               << " depth_hits=" << diagnostics.max_depth_hits
               << " BFMI=" << diagnostics.energy_bfmi << "\n";
   }
-  return divergences > 20 || *worst_rhat > 1.2
-             ? 1
-             : 0;
+  return health.passed ? 0 : 1;
 }

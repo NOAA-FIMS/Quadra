@@ -24,6 +24,27 @@ struct MultiChainResult {
   MultiChainDiagnostics diagnostics;
 };
 
+struct NutsHealthThresholds {
+  double max_rhat = 1.01;
+  double min_bulk_ess = 100.0;
+  double min_tail_ess = 100.0;
+  double min_bfmi = 0.3;
+  int max_divergences = 0;
+  int max_depth_hits = 0;
+  int max_mass_matrix_update_failures = 0;
+};
+
+struct NutsHealthAssessment {
+  bool passed = false;
+  double max_rhat = std::numeric_limits<double>::quiet_NaN();
+  double min_bulk_ess = std::numeric_limits<double>::quiet_NaN();
+  double min_tail_ess = std::numeric_limits<double>::quiet_NaN();
+  double min_bfmi = std::numeric_limits<double>::quiet_NaN();
+  int divergences = 0;
+  int depth_hits = 0;
+  int mass_matrix_update_failures = 0;
+};
+
 namespace detail {
 
 inline double quantile(std::vector<double> values, double probability) {
@@ -278,6 +299,60 @@ compute_multi_chain_diagnostics(const std::vector<NutsResult> &chains) {
         detail::effective_sample_size(
             detail::indicator_chains(split, upper, false)));
   }
+  return out;
+}
+
+inline NutsHealthAssessment assess_nuts_health(
+    const MultiChainResult &result,
+    const NutsHealthThresholds &thresholds = {}) {
+  if (result.chains.empty() || result.diagnostics.split_rhat.empty() ||
+      result.diagnostics.bulk_ess.empty() ||
+      result.diagnostics.tail_ess.empty() ||
+      result.diagnostics.bulk_ess.size() !=
+          result.diagnostics.split_rhat.size() ||
+      result.diagnostics.tail_ess.size() !=
+          result.diagnostics.split_rhat.size())
+    throw std::invalid_argument(
+        "assess_nuts_health requires populated chains and diagnostics");
+  if (!(thresholds.max_rhat >= 1.0) ||
+      !(thresholds.min_bulk_ess >= 0.0) ||
+      !(thresholds.min_tail_ess >= 0.0) ||
+      !(thresholds.min_bfmi >= 0.0) ||
+      !std::isfinite(thresholds.max_rhat) ||
+      !std::isfinite(thresholds.min_bulk_ess) ||
+      !std::isfinite(thresholds.min_tail_ess) ||
+      !std::isfinite(thresholds.min_bfmi) ||
+      thresholds.max_divergences < 0 || thresholds.max_depth_hits < 0 ||
+      thresholds.max_mass_matrix_update_failures < 0)
+    throw std::invalid_argument("assess_nuts_health: invalid thresholds");
+  NutsHealthAssessment out;
+  out.max_rhat = *std::max_element(result.diagnostics.split_rhat.begin(),
+                                   result.diagnostics.split_rhat.end());
+  out.min_bulk_ess = *std::min_element(result.diagnostics.bulk_ess.begin(),
+                                       result.diagnostics.bulk_ess.end());
+  out.min_tail_ess = *std::min_element(result.diagnostics.tail_ess.begin(),
+                                       result.diagnostics.tail_ess.end());
+  out.min_bfmi = std::numeric_limits<double>::infinity();
+  for (const auto &chain : result.chains) {
+    const auto &diagnostics = chain.diagnostics;
+    out.divergences += diagnostics.divergences;
+    out.depth_hits += diagnostics.max_depth_hits;
+    out.mass_matrix_update_failures +=
+        diagnostics.mass_matrix_update_failures;
+    out.min_bfmi = std::min(out.min_bfmi, diagnostics.energy_bfmi);
+  }
+  out.passed = std::isfinite(out.max_rhat) &&
+               std::isfinite(out.min_bulk_ess) &&
+               std::isfinite(out.min_tail_ess) &&
+               std::isfinite(out.min_bfmi) &&
+               out.max_rhat <= thresholds.max_rhat &&
+               out.min_bulk_ess >= thresholds.min_bulk_ess &&
+               out.min_tail_ess >= thresholds.min_tail_ess &&
+               out.min_bfmi >= thresholds.min_bfmi &&
+               out.divergences <= thresholds.max_divergences &&
+               out.depth_hits <= thresholds.max_depth_hits &&
+               out.mass_matrix_update_failures <=
+                   thresholds.max_mass_matrix_update_failures;
   return out;
 }
 

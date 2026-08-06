@@ -107,6 +107,12 @@ int main() {
   const auto multi = quadra::sampling::sample_nuts_chains(
       [](std::size_t) { return CorrelatedGaussian{}; }, initial_states,
       multi_options, true);
+  quadra::sampling::NutsHealthThresholds health_thresholds;
+  health_thresholds.max_rhat = 1.05;
+  health_thresholds.max_divergences = 5;
+  health_thresholds.max_depth_hits = 5;
+  const auto health =
+      quadra::sampling::assess_nuts_health(multi, health_thresholds);
   std::vector<quadra::sampling::NutsResult> scale_mismatch(4);
   for (std::size_t chain = 0; chain < scale_mismatch.size(); ++chain) {
     const double scale = chain < 2 ? 1.0 : 3.0;
@@ -160,6 +166,7 @@ int main() {
       rejected_metric.inverse_mass[0] != 1.0 ||
       rejected_metric.inverse_mass[3] != 1.0 ||
       !(result.diagnostics.energy_bfmi > 0.0) ||
+      !health.passed ||
       multi.chains.size() != 4 || multi.diagnostics.split_rhat[0] > 1.05 ||
       multi.diagnostics.split_rhat[1] > 1.05 ||
       multi.diagnostics.bulk_ess[0] < 100.0 ||
