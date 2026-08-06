@@ -550,6 +550,10 @@ struct ADGraph {
     selfSoEdgesDot.clear();
   }
 
+  inline void ZeroFirstOrderAdjoints() {
+    for (ADVertex &v : vertices) v.w = Real(0.0);
+  }
+
   inline void ReserveRecordedVertices(const std::size_t count) {
     vertices.reserve(count);
   }
@@ -1199,12 +1203,7 @@ inline bool operator==(const AReal &l, const AReal &r) {
 
 //////////////// Misc functions ///////////////////////////
 inline Real square(const Real x) { return x * x; }
-inline AReal square(const AReal &x) {
-  Real sqX = x.val * x.val;
-  AReal ret = NewAReal(sqX);
-  AddEdge(ret, x, Real(2.0) * x.val, Real(2.0), Real(0.0));
-  return ret;
-}
+inline AReal square(const AReal &x) { return x * x; }
 inline AReal sqrt(const AReal &x) {
   Real sqrtX = std::sqrt(x.val);
   Real invSqrtX = Real(1.0) / sqrtX;

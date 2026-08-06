@@ -6,6 +6,7 @@
 #include <cmath>
 #include <cstdint>
 #include <limits>
+#include <memory>
 #include <random>
 #include <stdexcept>
 #include <utility>
@@ -50,6 +51,79 @@ LogDensityEvaluation evaluate_ad_log_density(LogDensity &log_density,
   return out;
 }
 
+template <class LogDensity> class ReusableAdLogDensity {
+public:
+  ReusableAdLogDensity(LogDensity &log_density,
+                       const std::vector<double> &initial)
+      : log_density_(&log_density) {
+    q_ad_.reserve(initial.size());
+    for (double value : initial) q_ad_.emplace_back(value);
+    target_ad_ = (*log_density_)(q_ad_);
+  }
+
+  LogDensityEvaluation evaluate(const std::vector<double> &q) {
+    if (q.size() != q_ad_.size())
+      throw std::invalid_argument(
+          "ReusableAdLogDensity: parameter dimension changed");
+    had::g_ADGraph = &graph_;
+    for (std::size_t i = 0; i < q.size(); ++i)
+      had::SetValue(q_ad_[i], q[i]);
+    graph_.Forward();
+    target_ad_.val = graph_.vertices[target_ad_.varId].primal;
+
+    LogDensityEvaluation out;
+    out.log_density = target_ad_.val;
+    out.gradient.resize(q.size());
+    if (!std::isfinite(out.log_density)) return out;
+    graph_.ZeroFirstOrderAdjoints();
+    had::SetAdjoint(target_ad_, 1.0);
+    had::PropagateFirstOrderAdjoint();
+    out.finite = true;
+    for (std::size_t i = 0; i < q.size(); ++i) {
+      out.gradient[i] = had::GetAdjoint(q_ad_[i]);
+      out.finite = out.finite && std::isfinite(out.gradient[i]);
+    }
+    return out;
+  }
+
+  std::size_t vertex_count() const { return graph_.vertices.size(); }
+  std::size_t unsupported_replay_vertex_count() const {
+    std::size_t count = 0;
+    for (std::size_t i = 0; i < graph_.vertices.size(); ++i) {
+      const auto &vertex = graph_.vertices[i];
+      if (vertex.op == had::OpCode::Independent && vertex.e1.to != i) ++count;
+    }
+    return count;
+  }
+
+private:
+  LogDensity *log_density_;
+  had::ADGraph graph_;
+  std::vector<AD> q_ad_;
+  AD target_ad_;
+};
+
+template <class LogDensity> class AdLogDensityEvaluator {
+public:
+  AdLogDensityEvaluator(LogDensity &target, const std::vector<double> &initial,
+                        bool reuse_graph)
+      : target_(&target) {
+    if (reuse_graph)
+      reusable_.reset(new ReusableAdLogDensity<LogDensity>(target, initial));
+  }
+
+  LogDensityEvaluation operator()(const std::vector<double> &q) {
+    return reusable_ ? reusable_->evaluate(q)
+                     : evaluate_ad_log_density(*target_, q);
+  }
+
+  bool reuses_graph() const { return static_cast<bool>(reusable_); }
+
+private:
+  LogDensity *target_;
+  std::unique_ptr<ReusableAdLogDensity<LogDensity>> reusable_;
+};
+
 struct NutsOptions {
   int warmup = 500;
   int samples = 500;
@@ -58,6 +132,8 @@ struct NutsOptions {
   double initial_step_size = 0.0;
   double divergence_threshold = 1000.0;
   bool adapt_diagonal_mass = true;
+  // Disable for targets whose C++ control flow changes with parameter values.
+  bool reuse_ad_graph = true;
   std::uint64_t seed = 5489u;
 };
 
@@ -101,7 +177,7 @@ bool leapfrog(LogDensity &target, std::vector<double> &q,
     momentum[i] += 0.5 * step * state.gradient[i];
   for (std::size_t i = 0; i < q.size(); ++i)
     q[i] += step * inverse_mass[i] * momentum[i];
-  state = evaluate_ad_log_density(target, q);
+  state = target(q);
   if (!state.finite) return false;
   for (std::size_t i = 0; i < q.size(); ++i)
     momentum[i] += 0.5 * step * state.gradient[i];
@@ -257,14 +333,16 @@ NutsResult sample_nuts(LogDensity &target, std::vector<double> initial,
   std::uniform_real_distribution<double> uniform(0.0, 1.0);
   std::normal_distribution<double> normal(0.0, 1.0);
   std::vector<double> inverse_mass(initial.size(), 1.0);
-  LogDensityEvaluation current = evaluate_ad_log_density(target, initial);
+  AdLogDensityEvaluator<LogDensity> evaluator(target, initial,
+                                               options.reuse_ad_graph);
+  LogDensityEvaluation current = evaluator(initial);
   if (!current.finite)
     throw std::runtime_error("sample_nuts: initial state is non-finite");
 
   double step_size = options.initial_step_size > 0.0
                          ? options.initial_step_size
-                         : detail::reasonable_step_size(target, initial, current,
-                                                        inverse_mass);
+                         : detail::reasonable_step_size(
+                               evaluator, initial, current, inverse_mass);
   double mu = std::log(10.0 * step_size);
   double log_step_bar = std::log(step_size);
   double h_bar = 0.0;
@@ -296,12 +374,12 @@ NutsResult sample_nuts(LogDensity &target, std::vector<double> initial,
       const int direction = uniform(rng) < 0.5 ? -1 : 1;
       detail::Tree extension =
           direction < 0
-              ? detail::build_tree(target, tree.q_minus, tree.p_minus,
+              ? detail::build_tree(evaluator, tree.q_minus, tree.p_minus,
                                    tree.state_minus, log_slice, direction,
                                    depth, step_size, inverse_mass,
                                    initial_joint,
                                    options.divergence_threshold, rng)
-              : detail::build_tree(target, tree.q_plus, tree.p_plus,
+              : detail::build_tree(evaluator, tree.q_plus, tree.p_plus,
                                    tree.state_plus, log_slice, direction,
                                    depth, step_size, inverse_mass,
                                    initial_joint,
@@ -367,8 +445,8 @@ NutsResult sample_nuts(LogDensity &target, std::vector<double> initial,
             const double variance = m2[i] / (mass_count - 1);
             inverse_mass[i] = 1.0 / std::max(1.0e-3, variance);
           }
-          step_size = detail::reasonable_step_size(target, initial, current,
-                                                    inverse_mass);
+          step_size = detail::reasonable_step_size(
+              evaluator, initial, current, inverse_mass);
           mu = std::log(10.0 * step_size);
           log_step_bar = std::log(step_size);
           h_bar = 0.0;

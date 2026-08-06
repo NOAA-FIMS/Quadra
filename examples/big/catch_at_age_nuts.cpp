@@ -38,6 +38,23 @@ int main() {
   initial.resize(static_cast<std::size_t>(10 + model.data.n_years), 0.0);
 
   NoncenteredCatchAtAgePosterior posterior{&model};
+  quadra::sampling::ReusableAdLogDensity<NoncenteredCatchAtAgePosterior>
+      replay_check(posterior, initial);
+  std::vector<double> replay_probe = initial;
+  for (std::size_t i = 0; i < replay_probe.size(); ++i)
+    replay_probe[i] += 1.0e-3 * static_cast<double>(i + 1);
+  const auto replayed = replay_check.evaluate(replay_probe);
+  const auto fresh =
+      quadra::sampling::evaluate_ad_log_density(posterior, replay_probe);
+  double max_gradient_difference = 0.0;
+  for (std::size_t i = 0; i < replay_probe.size(); ++i)
+    max_gradient_difference =
+        std::max(max_gradient_difference,
+                 std::abs(replayed.gradient[i] - fresh.gradient[i]));
+  if (std::abs(replayed.log_density - fresh.log_density) > 1.0e-10 ||
+      max_gradient_difference > 1.0e-10 ||
+      replay_check.unsupported_replay_vertex_count() != 0)
+    throw std::runtime_error("catch-at-age AD replay validation failed");
   quadra::sampling::NutsOptions options;
   options.warmup = 100;
   options.samples = 100;
