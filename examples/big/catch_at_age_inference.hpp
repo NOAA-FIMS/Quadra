@@ -16,6 +16,7 @@
 
 #include <Eigen/Dense>
 
+#include <chrono>
 #include <cmath>
 #include <iostream>
 #include <string>
@@ -24,9 +25,9 @@
 
 namespace example {
 
-template <typename Objective>
+template <typename Gradient>
 inline void run_big_catch_at_age_inference(
-    Objective &objective, const CatchAtAgeLaplaceModel &model,
+    Gradient &gradient, const CatchAtAgeLaplaceModel &model,
     const std::vector<double> &final_random_effects,
     const std::vector<std::string> &parameter_names,
     const std::vector<double> &theta_hat,
@@ -41,8 +42,13 @@ inline void run_big_catch_at_age_inference(
 
   const Eigen::MatrixXd &du_dtheta = implicit_workspace.du_dtheta_m;
 
-  auto covariance =
-      estimate_fixed_effect_covariance(objective, theta_hat, 1.0e-4);
+  const auto covariance_start = std::chrono::steady_clock::now();
+  auto covariance = estimate_fixed_effect_covariance_from_gradient(
+      gradient, theta_hat, 1.0e-4);
+  const double covariance_ms =
+      std::chrono::duration<double, std::milli>(
+          std::chrono::steady_clock::now() - covariance_start)
+          .count();
 
   if (!covariance.success_m) {
     std::cout << "Covariance estimation failed: " << covariance.message_m
@@ -50,7 +56,9 @@ inline void run_big_catch_at_age_inference(
     return;
   }
 
-  std::cout << "\nCovariance estimation succeeded\n";
+  std::cout << "\nCovariance estimation succeeded in " << covariance_ms
+            << " ms using " << 2 * theta_hat.size()
+            << " exact-gradient evaluations\n";
 
   auto report =
       build_fixed_effect_report(parameter_names, theta_hat, covariance);
@@ -188,8 +196,7 @@ inline void run_big_catch_at_age_inference(
     {
       auto grad_blocks = quadra::evaluate_profiled_ad_gradient_blocks(
           [&model](const auto &theta, const auto &u) {
-            return evaluate_terminal_depletion_ad(model, theta,
-                                                  std::vector<double>{});
+            return evaluate_terminal_depletion_ad(model, theta, u);
           },
           theta_hat, final_random_effects);
 
@@ -206,8 +213,7 @@ inline void run_big_catch_at_age_inference(
     {
       auto grad_blocks = quadra::evaluate_profiled_ad_gradient_blocks(
           [&model](const auto &theta, const auto &u) {
-            return evaluate_terminal_ssb_proxy_ad(model, theta,
-                                                  std::vector<double>{});
+            return evaluate_terminal_ssb_proxy_ad(model, theta, u);
           },
           theta_hat, final_random_effects);
 
@@ -224,7 +230,7 @@ inline void run_big_catch_at_age_inference(
     {
       auto grad_blocks = quadra::evaluate_profiled_ad_gradient_blocks(
           [&model](const auto &theta, const auto &u) {
-            return evaluate_mean_f_ad(model, theta, std::vector<double>{});
+            return evaluate_mean_f_ad(model, theta, u);
           },
           theta_hat, final_random_effects);
 
@@ -249,21 +255,21 @@ inline void run_big_catch_at_age_inference(
         {"terminal_depletion", [&model](const std::vector<quadra::AD> &theta,
                                         const std::vector<quadra::AD> &u) {
            return evaluate_terminal_depletion_ad(model, theta,
-                                                 std::vector<double>{});
+                                                 u);
          }});
 
     quantities.push_back(
         {"terminal_ssb_proxy", [&model](const std::vector<quadra::AD> &theta,
                                         const std::vector<quadra::AD> &u) {
            return evaluate_terminal_ssb_proxy_ad(model, theta,
-                                                 std::vector<double>{});
+                                                 u);
          }});
 
     quantities.push_back({"mean_fishing_mortality",
                           [&model](const std::vector<quadra::AD> &theta,
                                    const std::vector<quadra::AD> &u) {
                             return evaluate_mean_f_ad(model, theta,
-                                                      std::vector<double>{});
+                                                      u);
                           }});
 
     const auto profiled_report =

@@ -24,21 +24,19 @@ Eigen::MatrixXd dense_hdot_third_order_polarized(
   Eigen::MatrixXd out(nr, nr);
   for (int a = 0; a < nr; ++a) {
     for (int b = 0; b <= a; ++b) {
-      double mixed = 0.0;
-      for (int st : {-1, 1}) {
-        for (int sa : {-1, 1}) {
-          for (int sb : {-1, 1}) {
-            std::vector<double> direction = total_direction;
-            for (double &value : direction) value *= st;
-            direction[static_cast<std::size_t>(random_indices[a])] += sa;
-            direction[static_cast<std::size_t>(random_indices[b])] += sb;
-            mixed += static_cast<double>(st * sa * sb) *
-                     had::third_directional_derivative(objective, x,
-                                                       direction);
-          }
-        }
-      }
-      out(a, b) = out(b, a) = mixed / 48.0;
+      auto cubic = [&](int st, int sa, int sb) {
+        std::vector<double> direction = total_direction;
+        for (double &value : direction) value *= st;
+        direction[static_cast<std::size_t>(random_indices[a])] += sa;
+        direction[static_cast<std::size_t>(random_indices[b])] += sb;
+        return had::third_directional_derivative(objective, x, direction);
+      };
+      // Four-term polarization for a symmetric trilinear form. The usual
+      // eight-term identity pairs opposite directions, whose cubic
+      // directional derivatives differ only by sign.
+      const double mixed = cubic(1, 1, 1) - cubic(1, 1, -1) -
+                           cubic(1, -1, 1) - cubic(-1, 1, 1);
+      out(a, b) = out(b, a) = mixed / 24.0;
     }
   }
   return out;

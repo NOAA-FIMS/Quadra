@@ -103,10 +103,10 @@ evaluate_catch_at_age_derived_quantities(const CatchAtAgeLaplaceModel &model,
   return out;
 }
 
-template <typename T>
+template <typename T, typename U>
 inline T evaluate_terminal_ssb_proxy_ad(const CatchAtAgeLaplaceModel &model,
                                         const std::vector<T> &theta,
-                                        const std::vector<double> &u) {
+                                        const std::vector<U> &u) {
   if (theta.size() < 9 ||
       u.size() < static_cast<std::size_t>(model.data.n_years)) {
     return T(0.0);
@@ -165,10 +165,10 @@ inline T evaluate_terminal_ssb_proxy_ad(const CatchAtAgeLaplaceModel &model,
   return terminal_ssb;
 }
 
-template <typename T>
+template <typename T, typename U>
 inline T evaluate_terminal_depletion_ad(const CatchAtAgeLaplaceModel &model,
                                         const std::vector<T> &theta,
-                                        const std::vector<double> &u) {
+                                        const std::vector<U> &u) {
   if (theta.size() < 9 ||
       u.size() < static_cast<std::size_t>(model.data.n_years)) {
     return T(0.0);
@@ -232,10 +232,10 @@ inline T evaluate_terminal_depletion_ad(const CatchAtAgeLaplaceModel &model,
   return terminal_ssb / ssb0;
 }
 
-template <typename T>
+template <typename T, typename U>
 inline T evaluate_mean_f_ad(const CatchAtAgeLaplaceModel &model,
                             const std::vector<T> &theta,
-                            const std::vector<double> &) {
+                            const std::vector<U> &) {
   if (theta.size() < 9) {
     return T(0.0);
   }

@@ -65,18 +65,32 @@ int main() {
         parameter_names[static_cast<std::size_t>(index)]);
   }
 
-  auto laplace_objective_for_covariance =
-      [&](const std::vector<double> &theta) -> double {
-    quadra::stats::LaplaceEvaluator<example::CatchAtAgeLaplaceModel>
-        covariance_evaluator(model, final_random_effects, parameters,
-                             objective_options);
-    return covariance_evaluator.evaluate(theta).laplace_objective_m;
+  quadra::laplace::ExactLaplaceGradientEngineOptions inference_engine_options;
+  inference_engine_options.discover_active_directions = false;
+  auto inference_objective_options = objective_options;
+  // Covariance perturbations start extremely close to the fitted mode. Asking
+  // Newton to improve beyond this scale can make its line search reject every
+  // step because of floating-point noise.
+  inference_objective_options.newton_m.gradient_tolerance_m = 1.0e-6;
+  quadra::stats::ExactLaplaceEvaluator<example::CatchAtAgeLaplaceModel>
+      covariance_evaluator(model, fit.par, final_random_effects, parameters,
+                           inference_objective_options,
+                           inference_engine_options);
+  auto laplace_gradient_for_covariance =
+      [&](const std::vector<double> &theta) -> std::vector<double> {
+    const auto evaluation = covariance_evaluator.evaluate(theta);
+    if (!evaluation.success) {
+      throw std::runtime_error(
+          "exact Laplace gradient evaluation failed during inference: " +
+          evaluation.objective.message_m);
+    }
+    return evaluation.gradient;
   };
 
   const auto implicit_workspace = quadra::build_laplace_implicit_workspace(
       model, fit.par, final_random_effects, parameters);
   example::run_big_catch_at_age_inference(
-      laplace_objective_for_covariance, model, final_random_effects,
+      laplace_gradient_for_covariance, model, final_random_effects,
       fixed_parameter_names, fit.par, implicit_workspace);
 
   std::vector<double> full_parameters = fit.par;

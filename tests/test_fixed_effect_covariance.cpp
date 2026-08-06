@@ -20,6 +20,20 @@ struct QuadraticObjective {
   }
 };
 
+struct QuadraticGradient {
+  Eigen::MatrixXd H;
+  int calls = 0;
+
+  std::vector<double> operator()(const std::vector<double> &x) {
+    ++calls;
+    const Eigen::Map<const Eigen::VectorXd> v(
+        x.data(), static_cast<Eigen::Index>(x.size()));
+    const Eigen::VectorXd gradient = H * v;
+    return std::vector<double>(gradient.data(),
+                               gradient.data() + gradient.size());
+  }
+};
+
 int main() {
   QuadraticObjective objective;
   objective.H.resize(2, 2);
@@ -61,9 +75,29 @@ int main() {
     return 1;
   }
 
+  QuadraticGradient gradient{objective.H};
+  const auto gradient_result =
+      quadra::estimate_fixed_effect_covariance_from_gradient(
+          gradient, theta_hat, 1.0e-4);
+  if (!gradient_result.success_m || gradient.calls != 4) {
+    std::cerr << "FAIL: gradient covariance path did not use exactly 2p "
+                 "evaluations\n";
+    return 1;
+  }
+  if ((gradient_result.hessian_m - objective.H).cwiseAbs().maxCoeff() >
+          1.0e-10 ||
+      (gradient_result.covariance_m - expected_covariance)
+              .cwiseAbs()
+              .maxCoeff() >
+          1.0e-10) {
+    std::cerr << "FAIL: gradient covariance path is inaccurate\n";
+    return 1;
+  }
+
   std::cout << "PASS: fixed-effect covariance finite-difference test\n";
   std::cout << "  max Hessian error: " << hessian_error << "\n";
   std::cout << "  max covariance error: " << covariance_error << "\n";
+  std::cout << "  gradient evaluations: " << gradient.calls << "\n";
 
   return 0;
 }

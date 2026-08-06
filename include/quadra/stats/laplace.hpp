@@ -393,6 +393,13 @@ public:
         }
       }
     }
+    const double hessian_density =
+        static_cast<double>(result.objective.hessian_random_m.nonZeros()) /
+        static_cast<double>(std::max<Eigen::Index>(
+            1, result.objective.hessian_random_m.rows() *
+                   result.objective.hessian_random_m.cols()));
+    const bool dense_third_order =
+        !direct_tridiagonal_trace && hessian_density > 0.5;
     std::vector<std::vector<double>> worker_trace_terms(hdot_tapes_.size());
     std::vector<std::vector<Eigen::SparseMatrix<double>>> worker_hdots(
         hdot_tapes_.size());
@@ -413,9 +420,9 @@ public:
         worker_errors[worker] = std::current_exception();
       }
     };
-    if (hdot_tapes_.size() == 1) {
+    if (!dense_third_order && hdot_tapes_.size() == 1) {
       run_worker(0);
-    } else {
+    } else if (!dense_third_order) {
       std::vector<std::thread> workers;
       workers.reserve(hdot_tapes_.size());
       for (std::size_t worker = 0; worker < hdot_tapes_.size(); ++worker) {
@@ -426,7 +433,8 @@ public:
       }
     }
     std::vector<Eigen::SparseMatrix<double>> hdots(fixed.size());
-    for (std::size_t worker = 0; worker < hdot_tapes_.size(); ++worker) {
+    for (std::size_t worker = 0;
+         !dense_third_order && worker < hdot_tapes_.size(); ++worker) {
       if (worker_errors[worker]) {
         std::rethrow_exception(worker_errors[worker]);
       }
@@ -438,12 +446,7 @@ public:
             worker_hdots[worker][static_cast<std::size_t>(direction)]);
       }
     }
-    const double hessian_density =
-        static_cast<double>(result.objective.hessian_random_m.nonZeros()) /
-        static_cast<double>(std::max<Eigen::Index>(
-            1, result.objective.hessian_random_m.rows() *
-                   result.objective.hessian_random_m.cols()));
-    if (!direct_tridiagonal_trace && hessian_density > 0.5) {
+    if (dense_third_order) {
       std::vector<double> combined = fixed;
       combined.insert(combined.end(), result.objective.u_hat_m.begin(),
                       result.objective.u_hat_m.end());
@@ -469,12 +472,14 @@ public:
     result.timings.hdot_ms =
         std::chrono::duration<double, std::milli>(Clock::now() - hdot_start)
             .count();
-    for (const auto &tape : hdot_tapes_) {
-      const auto &timings = tape->last_timings();
-      result.timings.hdot_validation_ms += timings.validation_ms;
-      result.timings.hdot_direction_setup_ms += timings.direction_setup_ms;
-      result.timings.hdot_reverse_ms += timings.reverse_ms;
-      result.timings.hdot_contraction_ms += timings.contraction_ms;
+    if (!dense_third_order) {
+      for (const auto &tape : hdot_tapes_) {
+        const auto &timings = tape->last_timings();
+        result.timings.hdot_validation_ms += timings.validation_ms;
+        result.timings.hdot_direction_setup_ms += timings.direction_setup_ms;
+        result.timings.hdot_reverse_ms += timings.reverse_ms;
+        result.timings.hdot_contraction_ms += timings.contraction_ms;
+      }
     }
     Eigen::VectorXd exact_gradient = to_eigen(joint_fixed);
     const auto trace_start = Clock::now();

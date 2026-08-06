@@ -1,4 +1,5 @@
 #include "../examples/big/catch_at_age_derived.hpp"
+#include "../core/laplace/laplace_profiled_ad_gradient.hpp"
 
 #include <cmath>
 #include <iostream>
@@ -38,10 +39,40 @@ int main() {
     return 1;
   }
 
+  const auto depletion_profiled =
+      quadra::evaluate_profiled_ad_gradient_blocks(
+          [&model](const auto &fixed, const auto &random) {
+            return example::evaluate_terminal_depletion_ad(model, fixed,
+                                                            random);
+          },
+          theta, u);
+  const auto ssb_profiled = quadra::evaluate_profiled_ad_gradient_blocks(
+      [&model](const auto &fixed, const auto &random) {
+        return example::evaluate_terminal_ssb_proxy_ad(model, fixed, random);
+      },
+      theta, u);
+  if (!depletion_profiled.success_m || !ssb_profiled.success_m ||
+      std::abs(depletion_profiled.estimate_m -
+               derived.terminal_depletion_m) >
+          1.0e-10 ||
+      std::abs(ssb_profiled.estimate_m - derived.terminal_ssb_proxy_m) >
+          1.0e-8) {
+    std::cerr << "FAIL: profiled derived estimates do not match direct "
+                 "derived estimates\n";
+    return 1;
+  }
+  if (!(depletion_profiled.gradient_random_m.norm() > 0.0) ||
+      !(ssb_profiled.gradient_random_m.norm() > 0.0)) {
+    std::cerr << "FAIL: profiled derived quantities discarded random effects\n";
+    return 1;
+  }
+
   std::cout << "PASS: big catch-at-age derived quantities\n";
   std::cout << "  terminal_ssb_proxy: " << derived.terminal_ssb_proxy_m << "\n";
   std::cout << "  terminal_depletion: " << derived.terminal_depletion_m << "\n";
   std::cout << "  mean_f: " << derived.mean_f_m << "\n";
+  std::cout << "  depletion random-gradient norm: "
+            << depletion_profiled.gradient_random_m.norm() << "\n";
 
   return 0;
 }
