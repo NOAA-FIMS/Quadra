@@ -292,6 +292,9 @@ inline RandomEffectNewtonResult optimize_random_effects_newton_with_evaluator(
     RandomEffectHessianResult candidate_eval;
 
     bool accepted = false;
+    const double objective_roundoff =
+        64.0 * std::numeric_limits<double>::epsilon() *
+        std::max(1.0, std::abs(eval.objective_value_m));
 
     if (options.quadratic_objective_m) {
       candidate_u = add_scaled_step(u, step, alpha);
@@ -322,7 +325,11 @@ inline RandomEffectNewtonResult optimize_random_effects_newton_with_evaluator(
           options.sufficient_decrease_m * alpha * g.dot(step);
 
       if (!options.use_backtracking_m ||
-          candidate_eval.objective_value_m <= armijo_rhs) {
+          candidate_eval.objective_value_m <= armijo_rhs ||
+          (std::isfinite(candidate_eval.objective_value_m) &&
+           candidate_eval.objective_value_m <=
+               eval.objective_value_m + objective_roundoff &&
+           candidate_eval.gradient_norm_m < eval.gradient_norm_m)) {
         accepted = true;
         break;
       }
@@ -342,7 +349,11 @@ inline RandomEffectNewtonResult optimize_random_effects_newton_with_evaluator(
           const double armijo_rhs =
               eval.objective_value_m +
               options.sufficient_decrease_m * alpha * g.dot(descent);
-          if (candidate_eval.objective_value_m <= armijo_rhs) {
+          if (candidate_eval.objective_value_m <= armijo_rhs ||
+              (std::isfinite(candidate_eval.objective_value_m) &&
+               candidate_eval.objective_value_m <=
+                   eval.objective_value_m + objective_roundoff &&
+               candidate_eval.gradient_norm_m < eval.gradient_norm_m)) {
             step = descent;
             accepted = true;
             break;
