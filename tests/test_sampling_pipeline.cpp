@@ -53,8 +53,8 @@ int main() {
   model.observations.assign(3, {});
   for (std::size_t group = 0; group < model.observations.size(); ++group)
     for (int replicate = 0; replicate < 8; ++replicate)
-      model.observations[group].push_back(
-          true_mu + true_tau * true_z[group] + true_sigma * normal(data_rng));
+      model.observations[group].push_back(true_mu + true_tau * true_z[group] +
+                                          true_sigma * normal(data_rng));
 
   quadra::ParameterVector parameters;
   parameters.add({"mu", 0.0, quadra::ParameterTransform::Identity, false});
@@ -63,9 +63,8 @@ int main() {
   for (std::size_t group = 0; group < model.observations.size(); ++group)
     parameters.add({"z[" + std::to_string(group) + "]", 0.0,
                     quadra::ParameterTransform::Identity, false});
-  const auto mode =
-      quadra::optimize_lbfgs(model, parameters,
-                             quadra::default_laplace_options(), 100, 1.0e-6);
+  const auto mode = quadra::optimize_lbfgs(
+      model, parameters, quadra::default_laplace_options(), 100, 1.0e-6);
   if (!mode.converged || mode.par.size() != 5)
     throw std::runtime_error("hierarchical mode fit failed");
 
@@ -81,8 +80,7 @@ int main() {
   workflow_options.health.min_tail_ess = 100.0;
   const auto posterior = quadra::sampling::run_nuts_workflow(
       [&model](std::size_t) { return HierarchicalPosterior{&model}; }, mode.par,
-      {"mu", "log_sigma", "z[0]", "z[1]", "z[2]"},
-      workflow_options);
+      {"mu", "log_sigma", "z[0]", "z[1]", "z[2]"}, workflow_options);
 
   quadra::sampling::PosteriorSimulationOptions simulation_options;
   simulation_options.thin = 8;
@@ -96,8 +94,8 @@ int main() {
               << " divergences=" << posterior.health.divergences
               << " depth_hits=" << posterior.health.depth_hits << "\n";
   const auto predictive = quadra::sampling::simulate_posterior(
-      posterior, {"rep_group_mean[0]", "rep_group_mean[1]",
-                  "rep_group_mean[2]"},
+      posterior,
+      {"rep_group_mean[0]", "rep_group_mean[1]", "rep_group_mean[2]"},
       [](const std::vector<double> &q, std::mt19937_64 &rng) {
         std::normal_distribution<double> standard_normal;
         constexpr double tau = 0.4;
@@ -112,7 +110,8 @@ int main() {
 
   double posterior_mean_mu = 0.0;
   for (const auto &chain : posterior.fit.chains)
-    for (const auto &draw : chain.draws) posterior_mean_mu += draw[0];
+    for (const auto &draw : chain.draws)
+      posterior_mean_mu += draw[0];
   posterior_mean_mu /= posterior.total_draws();
 
   std::ostringstream draws_csv, parameter_csv, chain_csv, predictive_csv,
