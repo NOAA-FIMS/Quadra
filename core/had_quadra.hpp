@@ -2650,6 +2650,24 @@ inline void PropagateAdjointDirectionalBatch() {
                          .count();
 }
 
+// First-order-only reverse sweep for algorithms such as HMC/NUTS that never
+// consume Hessian entries. This avoids allocating and pushing second-order
+// edge maps at every log-density evaluation.
+inline void PropagateFirstOrderAdjoint() {
+  for (VertexId vid = static_cast<VertexId>(g_ADGraph->vertices.size() - 1);
+       vid > 0; --vid) {
+    ADVertex &vertex = g_ADGraph->vertices[vid];
+    ADEdge &e1 = vertex.e1;
+    ADEdge &e2 = vertex.e2;
+    if (e1.to == vid) continue;
+    const Real adjoint = vertex.w;
+    vertex.w = Real(0.0);
+    if (adjoint == Real(0.0)) continue;
+    g_ADGraph->vertices[e1.to].w += adjoint * e1.w;
+    if (e2.to != vid) g_ADGraph->vertices[e2.to].w += adjoint * e2.w;
+  }
+}
+
 inline void PropagateAdjoint() {
   if (g_ADGraph->vertices.size() > g_ADGraph->soEdges.size()) {
     g_ADGraph->soEdges.resize(g_ADGraph->vertices.size());

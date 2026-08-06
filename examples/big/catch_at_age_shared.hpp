@@ -232,7 +232,7 @@ struct CatchAtAgeLaplaceModel {
     // demo optimization surface less sloppy.
     T mean_rec_dev = T(0.0);
     for (int yy = 0; yy < n_years; ++yy) {
-      mean_rec_dev += p[9 + yy];
+      mean_rec_dev += p[10 + yy];
     }
     mean_rec_dev /= T(n_years);
     trace_add_nll(nll, T(0.5) * square(mean_rec_dev / T(0.10)),

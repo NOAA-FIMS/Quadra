@@ -2,6 +2,7 @@
 #define QUADRA_PUBLIC_QUADRA_HPP
 
 #include "inference.hpp"
+#include "sampling.hpp"
 #include "io.hpp"
 #include "laplace.hpp"
 #include "model.hpp"
