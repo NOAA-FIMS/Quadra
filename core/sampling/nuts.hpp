@@ -141,7 +141,13 @@ struct NutsDiagnostics {
   int leapfrog_steps = 0;
   int divergences = 0;
   int max_depth_hits = 0;
+  int warmup_leapfrog_steps = 0;
+  int warmup_divergences = 0;
+  int warmup_max_depth_hits = 0;
+  int mass_matrix_updates = 0;
   double mean_acceptance = 0.0;
+  double warmup_mean_acceptance = 0.0;
+  double energy_bfmi = std::numeric_limits<double>::quiet_NaN();
   double step_size = 0.0;
   std::vector<double> inverse_mass;
 };
@@ -149,6 +155,7 @@ struct NutsDiagnostics {
 struct NutsResult {
   std::vector<std::vector<double>> draws;
   std::vector<double> log_density;
+  std::vector<double> energy;
   NutsDiagnostics diagnostics;
 };
 
@@ -326,7 +333,11 @@ NutsResult sample_nuts(LogDensity &target, std::vector<double> initial,
                        const NutsOptions &options = {}) {
   if (initial.empty() || options.warmup < 0 || options.samples <= 0 ||
       options.max_tree_depth <= 0 || !(options.target_acceptance > 0.0) ||
-      !(options.target_acceptance < 1.0))
+      !(options.target_acceptance < 1.0) ||
+      !(options.initial_step_size >= 0.0) ||
+      !std::isfinite(options.initial_step_size) ||
+      !(options.divergence_threshold > 0.0) ||
+      !std::isfinite(options.divergence_threshold))
     throw std::invalid_argument("sample_nuts: invalid options");
 
   std::mt19937_64 rng(options.seed);
@@ -352,9 +363,19 @@ NutsResult sample_nuts(LogDensity &target, std::vector<double> initial,
   NutsResult result;
   result.draws.reserve(static_cast<std::size_t>(options.samples));
   result.log_density.reserve(static_cast<std::size_t>(options.samples));
+  result.energy.reserve(static_cast<std::size_t>(options.samples));
   const int total_iterations = options.warmup + options.samples;
-  double acceptance_total = 0.0;
-  int acceptance_iterations = 0;
+  double sampling_acceptance_total = 0.0;
+  double warmup_acceptance_total = 0.0;
+  int sampling_acceptance_iterations = 0;
+  int warmup_acceptance_iterations = 0;
+  int dual_averaging_iteration = 0;
+
+  int initial_buffer = std::min(75, options.warmup / 3);
+  int terminal_buffer = std::min(50, options.warmup / 3);
+  int slow_end = options.warmup - terminal_buffer;
+  int mass_window_size = std::min(25, std::max(0, slow_end - initial_buffer));
+  int mass_window_end = initial_buffer + mass_window_size;
 
   for (int iteration = 1; iteration <= total_iterations; ++iteration) {
     std::vector<double> momentum(initial.size());
@@ -412,54 +433,100 @@ NutsResult sample_nuts(LogDensity &target, std::vector<double> initial,
     }
     initial = tree.proposal;
     current = tree.proposal_state;
-    result.diagnostics.leapfrog_steps += tree.leapfrog_steps;
-    result.diagnostics.divergences += tree.divergent ? 1 : 0;
-    result.diagnostics.max_depth_hits +=
-        depth == options.max_tree_depth ? 1 : 0;
     const double acceptance =
         tree.acceptance_count > 0
             ? tree.acceptance_sum / tree.acceptance_count
             : 0.0;
-    acceptance_total += acceptance;
-    ++acceptance_iterations;
 
     if (iteration <= options.warmup) {
-      const double eta = 1.0 / (iteration + 10.0);
+      result.diagnostics.warmup_leapfrog_steps += tree.leapfrog_steps;
+      result.diagnostics.warmup_divergences += tree.divergent ? 1 : 0;
+      result.diagnostics.warmup_max_depth_hits +=
+          depth == options.max_tree_depth ? 1 : 0;
+      warmup_acceptance_total += acceptance;
+      ++warmup_acceptance_iterations;
+      ++dual_averaging_iteration;
+      const double eta = 1.0 / (dual_averaging_iteration + 10.0);
       h_bar = (1.0 - eta) * h_bar +
               eta * (options.target_acceptance - acceptance);
-      const double log_step = mu - std::sqrt(static_cast<double>(iteration)) /
-                                       0.05 * h_bar;
-      const double weight = std::pow(static_cast<double>(iteration), -0.75);
+      const double log_step =
+          mu - std::sqrt(static_cast<double>(dual_averaging_iteration)) /
+                   0.05 * h_bar;
+      const double weight =
+          std::pow(static_cast<double>(dual_averaging_iteration), -0.75);
       log_step_bar = weight * log_step + (1.0 - weight) * log_step_bar;
-      step_size = std::exp(log_step);
+      step_size = std::exp(std::max(-20.0, std::min(5.0, log_step)));
 
-      if (options.adapt_diagonal_mass) {
+      const bool in_mass_window = options.adapt_diagonal_mass &&
+                                  iteration > initial_buffer &&
+                                  iteration <= slow_end;
+      if (in_mass_window) {
         ++mass_count;
         for (std::size_t i = 0; i < initial.size(); ++i) {
           const double delta = initial[i] - mean[i];
           mean[i] += delta / mass_count;
           m2[i] += delta * (initial[i] - mean[i]);
         }
-        if (iteration == std::max(20, options.warmup / 2) && mass_count > 1) {
+        if (iteration == mass_window_end && mass_count > 1) {
           for (std::size_t i = 0; i < inverse_mass.size(); ++i) {
             const double variance = m2[i] / (mass_count - 1);
             inverse_mass[i] = 1.0 / std::max(1.0e-3, variance);
           }
+          ++result.diagnostics.mass_matrix_updates;
           step_size = detail::reasonable_step_size(
               evaluator, initial, current, inverse_mass);
           mu = std::log(10.0 * step_size);
           log_step_bar = std::log(step_size);
           h_bar = 0.0;
+          dual_averaging_iteration = 0;
+          std::fill(mean.begin(), mean.end(), 0.0);
+          std::fill(m2.begin(), m2.end(), 0.0);
+          mass_count = 0;
+          const int remaining = slow_end - mass_window_end;
+          if (remaining > 0) {
+            mass_window_size = std::min(2 * mass_window_size, remaining);
+            mass_window_end += mass_window_size;
+          }
         }
       }
-      if (iteration == options.warmup) step_size = std::exp(log_step_bar);
+      if (iteration == options.warmup)
+        step_size =
+            std::exp(std::max(-20.0, std::min(5.0, log_step_bar)));
     } else {
+      result.diagnostics.leapfrog_steps += tree.leapfrog_steps;
+      result.diagnostics.divergences += tree.divergent ? 1 : 0;
+      result.diagnostics.max_depth_hits +=
+          depth == options.max_tree_depth ? 1 : 0;
+      sampling_acceptance_total += acceptance;
+      ++sampling_acceptance_iterations;
       result.draws.push_back(initial);
       result.log_density.push_back(current.log_density);
+      result.energy.push_back(-initial_joint);
     }
   }
   result.diagnostics.mean_acceptance =
-      acceptance_total / std::max(1, acceptance_iterations);
+      sampling_acceptance_total / std::max(1, sampling_acceptance_iterations);
+  result.diagnostics.warmup_mean_acceptance =
+      warmup_acceptance_total / std::max(1, warmup_acceptance_iterations);
+  if (result.energy.size() > 1) {
+    double mean_energy = 0.0;
+    for (double value : result.energy) mean_energy += value;
+    mean_energy /= result.energy.size();
+    double variance_sum = 0.0;
+    double difference_sum = 0.0;
+    for (std::size_t i = 0; i < result.energy.size(); ++i) {
+      const double centered = result.energy[i] - mean_energy;
+      variance_sum += centered * centered;
+      if (i > 0) {
+        const double difference = result.energy[i] - result.energy[i - 1];
+        difference_sum += difference * difference;
+      }
+    }
+    if (variance_sum > 0.0)
+      result.diagnostics.energy_bfmi =
+          difference_sum / static_cast<double>(result.energy.size() - 1) /
+          (variance_sum / static_cast<double>(result.energy.size()));
+  }
   result.diagnostics.step_size = step_size;
   result.diagnostics.inverse_mass = inverse_mass;
   return result;

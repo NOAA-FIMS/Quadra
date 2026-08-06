@@ -56,9 +56,9 @@ int main() {
       replay_check.unsupported_replay_vertex_count() != 0)
     throw std::runtime_error("catch-at-age AD replay validation failed");
   quadra::sampling::NutsOptions options;
-  options.warmup = 100;
-  options.samples = 100;
-  options.max_tree_depth = 8;
+  options.warmup = 300;
+  options.samples = 200;
+  options.max_tree_depth = 10;
   options.target_acceptance = 0.85;
   options.seed = 20260806;
   const auto fit = quadra::sampling::sample_nuts(posterior, initial, options);
@@ -70,12 +70,21 @@ int main() {
             << "draws: " << fit.draws.size() << "\n"
             << "mean log_M: " << mean_log_m << "\n"
             << "mean acceptance: " << fit.diagnostics.mean_acceptance << "\n"
+            << "warmup acceptance: "
+            << fit.diagnostics.warmup_mean_acceptance << "\n"
             << "step size: " << fit.diagnostics.step_size << "\n"
             << "leapfrog steps: " << fit.diagnostics.leapfrog_steps << "\n"
             << "divergences: " << fit.diagnostics.divergences << "\n"
-            << "max-depth hits: " << fit.diagnostics.max_depth_hits << "\n";
+            << "warmup divergences: "
+            << fit.diagnostics.warmup_divergences << "\n"
+            << "max-depth hits: " << fit.diagnostics.max_depth_hits << "\n"
+            << "warmup max-depth hits: "
+            << fit.diagnostics.warmup_max_depth_hits << "\n"
+            << "energy BFMI: " << fit.diagnostics.energy_bfmi << "\n";
+  std::cout << "mass-matrix updates: "
+            << fit.diagnostics.mass_matrix_updates << "\n";
   return fit.diagnostics.divergences > 10 ||
-                 fit.diagnostics.max_depth_hits > options.samples
+                 fit.diagnostics.max_depth_hits > options.samples / 2
              ? 1
              : 0;
 }

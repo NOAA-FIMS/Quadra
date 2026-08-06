@@ -66,6 +66,8 @@ int main() {
       std::abs(mean[1] + 0.5) > 0.12 ||
       result.diagnostics.divergences > 5 ||
       !(result.diagnostics.mean_acceptance > 0.6) ||
+      result.diagnostics.mass_matrix_updates < 2 ||
+      !(result.diagnostics.energy_bfmi > 0.0) ||
       bounded_result.draws.size() != 25 ||
       std::abs(square_replayed.log_density - square_fresh.log_density) >
           1.0e-14 ||
