@@ -512,6 +512,15 @@ tests/test_delta_method: tests/test_delta_method.cpp core/inference/delta_method
 test-big-catch-at-age-derived: tests/test_big_catch_at_age_derived
 	./tests/test_big_catch_at_age_derived
 
+test-big-catch-at-age-robust-dm: tests/test_big_catch_at_age_robust_dm
+	./tests/test_big_catch_at_age_robust_dm
+
+test-big-laplace-convergence: tests/test_big_laplace_convergence_contract
+	./tests/test_big_laplace_convergence_contract
+
+test-dense-dynamic-hdot: tests/test_dense_dynamic_hdot
+	./tests/test_dense_dynamic_hdot
+
 tests/test_big_catch_at_age_derived: tests/test_big_catch_at_age_derived.cpp examples/big/catch_at_age_derived.hpp examples/big/catch_at_age_shared.hpp
 	$(CXX) $(CXXFLAGS) -I. -I./external/eigen -I./external/had -I./external/LBFGSpp/include -o $@ tests/test_big_catch_at_age_derived.cpp
 

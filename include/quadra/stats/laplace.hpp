@@ -10,6 +10,7 @@
 #include "../../../core/laplace/reusable_total_hdot_tape.hpp"
 #include "../../../core/laplace/sparse_huu_factorization.hpp"
 #include "../../../core/laplace/sparse_laplace_evaluation_result.hpp"
+#include "../../../core/laplace/third_order_dense_hdot.hpp"
 #include "../../../core/model/parameter_partition.hpp"
 
 #include <Eigen/Dense>
@@ -254,7 +255,6 @@ public:
 
     pattern_ = pattern;
     last_random_ = discovery.u_hat_m;
-
     const int fixed_size = static_cast<int>(partition_.fixed_indices_m.size());
     std::vector<int> all_directions;
     all_directions.reserve(static_cast<std::size_t>(fixed_size));
@@ -436,6 +436,34 @@ public:
         }
         hdots[static_cast<std::size_t>(direction)] = std::move(
             worker_hdots[worker][static_cast<std::size_t>(direction)]);
+      }
+    }
+    const double hessian_density =
+        static_cast<double>(result.objective.hessian_random_m.nonZeros()) /
+        static_cast<double>(std::max<Eigen::Index>(
+            1, result.objective.hessian_random_m.rows() *
+                   result.objective.hessian_random_m.cols()));
+    if (!direct_tridiagonal_trace && hessian_density > 0.5) {
+      std::vector<double> combined = fixed;
+      combined.insert(combined.end(), result.objective.u_hat_m.begin(),
+                      result.objective.u_hat_m.end());
+      std::vector<int> random_indices(result.objective.u_hat_m.size());
+      for (std::size_t i = 0; i < random_indices.size(); ++i)
+        random_indices[i] = static_cast<int>(fixed.size() + i);
+      CombinedObjective objective{model_, partition_};
+      for (int j : active_directions_) {
+        std::vector<double> total_direction(combined.size(), 0.0);
+        total_direction[static_cast<std::size_t>(j)] = 1.0;
+        const Eigen::VectorXd &direction =
+            mode_directions[static_cast<std::size_t>(j)];
+        for (int i = 0; i < direction.size(); ++i) {
+          total_direction[fixed.size() + static_cast<std::size_t>(i)] =
+              direction[i];
+        }
+        hdots[static_cast<std::size_t>(j)] =
+            laplace::dense_hdot_third_order_polarized(
+                objective, combined, total_direction, random_indices)
+                .sparseView();
       }
     }
     result.timings.hdot_ms =

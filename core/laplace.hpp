@@ -14,6 +14,7 @@
 #include "evaluation.hpp"
 #include "laplace/laplace_evaluator_exact_gradient_integration.hpp"
 #include "laplace/laplace_gradient_diagnostics.hpp"
+#include "laplace/third_order_dense_hdot.hpp"
 #include <cassert>
 #include <cmath>
 #include <iomanip>
@@ -1417,8 +1418,35 @@ Eigen::VectorXd laplace_logdet_gradient_exact(
   // gradients for legacy vector-generic models such as Poisson random
   // intercepts.
   Eigen::VectorXd grad = Eigen::VectorXd::Zero(theta.size());
-  const auto Hdots = random_hessian_directional_exact_all(
-      model, params, theta, u_hat, dU, get_pattern_for_logdet);
+  std::vector<Eigen::SparseMatrix<double>> Hdots;
+  const double hessian_density =
+      static_cast<double>(H.nonZeros()) /
+      static_cast<double>(std::max<Eigen::Index>(1, H.rows() * H.cols()));
+  if (hessian_density > 0.5) {
+    // Deep dense graphs expose compounding error in the restricted reverse
+    // third-order sweep. Use exact forward third derivatives plus polarization
+    // here; unlike the former centered-Hessian fallback this has no step size.
+    Hdots.resize(static_cast<std::size_t>(theta.size()));
+    std::vector<double> full_x(static_cast<std::size_t>(params.size()), 0.0);
+    for (std::size_t k = 0; k < fixed_idx.size(); ++k)
+      full_x[static_cast<std::size_t>(fixed_idx[k])] = theta[k];
+    for (std::size_t k = 0; k < random_idx.size(); ++k)
+      full_x[static_cast<std::size_t>(random_idx[k])] = u_hat[k];
+    for (Eigen::Index i = 0; i < theta.size(); ++i) {
+      std::vector<double> direction(full_x.size(), 0.0);
+      direction[static_cast<std::size_t>(fixed_idx[i])] = 1.0;
+      for (std::size_t k = 0; k < random_idx.size(); ++k)
+        direction[static_cast<std::size_t>(random_idx[k])] = dU(k, i);
+      Hdots[static_cast<std::size_t>(i)] =
+          laplace::dense_hdot_third_order_polarized(
+              [&model](const auto &p) { return model(p); }, full_x, direction,
+              random_idx)
+              .sparseView();
+    }
+  } else {
+    Hdots = random_hessian_directional_exact_all(
+        model, params, theta, u_hat, dU, get_pattern_for_logdet);
+  }
   for (Eigen::Index i = 0; i < theta.size(); ++i) {
     grad[i] = 0.5 * logdet_directional_derivative_from_hdot(
                         solver, Hdots[static_cast<std::size_t>(i)], options);

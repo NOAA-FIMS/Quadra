@@ -8,7 +8,7 @@ int main() {
   quadra::ParameterSet parameters;
   quadra::ParameterVector optimizer_parameters;
   std::vector<double> fixed;
-  fixed.reserve(9);
+  fixed.reserve(10);
 
   auto add_fixed = [&](const std::string &name, const double value) {
     parameters.add(name, value, quadra::ParameterTransform::Identity, false);
@@ -26,6 +26,7 @@ int main() {
   add_fixed("log_sigma_index", std::log(0.20));
   add_fixed("log_sigma_catch", std::log(0.15));
   add_fixed("log_sigma_rec", std::log(0.35));
+  add_fixed("log_comp_concentration", std::log(40.0));
 
   std::vector<double> random_initial(
       static_cast<std::size_t>(model.data.n_years), 0.0);
@@ -97,6 +98,14 @@ int main() {
   }
   std::cout << "Laplace objective: " << fit.value << "\n";
   std::cout << "fixed gradient norm: " << fit.grad_norm << "\n";
+  if (fit.fixed_gradient.size() == fit.fixed_gradient_names.size()) {
+    std::cout << "fixed gradient components:\n";
+    for (std::size_t i = 0; i < fit.fixed_gradient.size(); ++i) {
+      std::cout << "  " << std::setw(24) << std::left
+                << fit.fixed_gradient_names[i] << std::right << " "
+                << fit.fixed_gradient[i] << "\n";
+    }
+  }
   std::cout << "joint objective: " << result.joint_objective_m << "\n";
   std::cout << "direct joint difference: "
             << direct_joint_objective - result.joint_objective_m << "\n";

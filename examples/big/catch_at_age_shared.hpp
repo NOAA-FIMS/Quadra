@@ -22,6 +22,7 @@
 #include "../../core/model/parameter.hpp"
 
 #include "../../core/optimizer.hpp"
+#include "../../math/distributions.hpp"
 
 // quadra_big_example_plateau_cap_v2
 // Trace evidence: objective is effectively flat by ~150 outer evaluations.
@@ -57,6 +58,19 @@ T logistic_selectivity(const T &age, const T &a50, const T &slope) {
   return T(1.0) / (T(1.0) + exp(-slope * (age - a50)));
 }
 
+template <typename T>
+T bounded_sel50(const T &raw, const int n_ages) {
+  return T(1.0) + T(n_ages - 1) * inv_logit(raw);
+}
+
+template <typename T>
+T normalized_logistic_selectivity(const T &age, const T &a50,
+                                  const T &slope, const int n_ages) {
+  const T numerator = logistic_selectivity(age, a50, slope);
+  const T oldest_age = T(n_ages);
+  return numerator / logistic_selectivity(oldest_age, a50, slope);
+}
+
 template <typename T> T safe_log(const T &x) { return log(x + T(1.0e-12)); }
 
 // quadra_big_example_stabilized_objective
@@ -78,6 +92,7 @@ struct CatchAtAgeData {
   std::vector<double> index_obs;
   std::vector<double> catch_obs;
   std::vector<std::vector<double>> age_comp_obs;
+  std::vector<std::vector<int>> age_comp_counts;
 
   CatchAtAgeData() {
     index_obs.resize(static_cast<std::size_t>(n_years));
@@ -85,6 +100,9 @@ struct CatchAtAgeData {
     age_comp_obs.assign(
         static_cast<std::size_t>(n_years),
         std::vector<double>(static_cast<std::size_t>(n_ages), 0.0));
+    age_comp_counts.assign(
+        static_cast<std::size_t>(n_years),
+        std::vector<int>(static_cast<std::size_t>(n_ages), 0));
 
     for (int y = 0; y < n_years; ++y) {
       const double trend = std::exp(-0.025 * static_cast<double>(y));
@@ -107,6 +125,33 @@ struct CatchAtAgeData {
       for (int a = 0; a < n_ages; ++a) {
         age_comp_obs[static_cast<std::size_t>(y)]
                     [static_cast<std::size_t>(a)] /= total;
+      }
+
+      // Treat each synthetic composition row as a sample of 200 fish. Use a
+      // largest-remainder allocation so every row has exactly that sample
+      // size while retaining the generated proportions as closely as possible.
+      constexpr int composition_sample_size = 200;
+      std::vector<std::pair<double, int>> remainders;
+      remainders.reserve(static_cast<std::size_t>(n_ages));
+      int allocated = 0;
+      for (int a = 0; a < n_ages; ++a) {
+        const double expected =
+            composition_sample_size *
+            age_comp_obs[static_cast<std::size_t>(y)]
+                        [static_cast<std::size_t>(a)];
+        const int count = static_cast<int>(std::floor(expected));
+        age_comp_counts[static_cast<std::size_t>(y)]
+                       [static_cast<std::size_t>(a)] = count;
+        allocated += count;
+        remainders.emplace_back(expected - count, a);
+      }
+      std::stable_sort(remainders.begin(), remainders.end(),
+                       [](const auto &left, const auto &right) {
+                         return left.first > right.first;
+                       });
+      for (int k = 0; k < composition_sample_size - allocated; ++k) {
+        ++age_comp_counts[static_cast<std::size_t>(y)]
+                         [static_cast<std::size_t>(remainders[k].second)];
       }
     }
   }
@@ -153,17 +198,19 @@ struct CatchAtAgeLaplaceModel {
     const T log_sigma_index = p[6];
     const T log_sigma_catch = p[7];
     const T log_sigma_rec = p[8];
+    const T log_comp_concentration = p[9];
 
     const T R0 = exp(log_R0);
     const T M = exp(log_M);
     const T q = exp(log_q);
     const T Fbar = exp(log_Fbar);
-    const T sel50 = T(1.0) + T(n_ages - 1) * inv_logit(sel50_raw);
+    const T sel50 = bounded_sel50(sel50_raw, n_ages);
     const T sel_slope = exp(log_sel_slope);
     const T sigma_index = positive_floor(log_sigma_index, 0.03);
     const T sigma_catch = positive_floor(
         log_sigma_catch, 0.08); // quadra_big_example_model_improvement_v2
     const T sigma_rec = positive_floor(log_sigma_rec, 0.05);
+    const T comp_concentration = positive_floor(log_comp_concentration, 1.0);
 
     std::vector<T> N(static_cast<std::size_t>(n_ages), T(0.0));
     std::vector<T> N_next(static_cast<std::size_t>(n_ages), T(0.0));
@@ -172,8 +219,8 @@ struct CatchAtAgeLaplaceModel {
 
     for (int a = 0; a < n_ages; ++a) {
       const T age = T(a + 1);
-      sel[static_cast<std::size_t>(a)] =
-          logistic_selectivity(age, sel50, sel_slope);
+      sel[static_cast<std::size_t>(a)] = normalized_logistic_selectivity(
+          age, sel50, sel_slope, n_ages);
       N[static_cast<std::size_t>(a)] = R0 * exp(-M * T(a));
     }
 
@@ -211,9 +258,12 @@ struct CatchAtAgeLaplaceModel {
                   "prior_log_sigma_catch");
     trace_add_nll(nll, normal_prior_nll(log_sigma_rec, std::log(0.35), 0.75),
                   "prior_log_sigma_rec");
+    trace_add_nll(nll, normal_prior_nll(log_comp_concentration,
+                                        std::log(40.0), 1.0),
+                  "prior_log_comp_concentration");
 
     for (int y = 0; y < n_years; ++y) {
-      const T rec_dev = p[9 + y];
+      const T rec_dev = p[10 + y];
 
       trace_add_nll(nll, T(0.5) * square(rec_dev / sigma_rec) + log(sigma_rec),
                     "recruitment_prior");
@@ -256,8 +306,17 @@ struct CatchAtAgeLaplaceModel {
       const T catch_sum =
           std::accumulate(catch_at_age.begin(), catch_at_age.end(), T(0.0)) +
           T(1.0e-12);
-
-      const T comp_weight = T(80.0);
+      std::vector<T> predicted_composition(static_cast<std::size_t>(n_ages));
+      for (int a = 0; a < n_ages; ++a) {
+        predicted_composition[static_cast<std::size_t>(a)] =
+            catch_at_age[static_cast<std::size_t>(a)] / catch_sum;
+      }
+      trace_add_nll(
+          nll,
+          -quadra::ddirichlet_multinomial_robust(
+              data.age_comp_counts[static_cast<std::size_t>(y)],
+              predicted_composition, comp_concentration, true),
+          "composition_likelihood");
 
       std::fill(N_next.begin(), N_next.end(), T(0.0));
       N_next[0] = recruitment;
@@ -320,9 +379,9 @@ template <typename Result> double objective_from_result(const Result &result) {
 }
 
 void print_fixed_parameter_report(const std::vector<double> &theta) {
-  if (theta.size() < 9) {
+  if (theta.size() < 10) {
     std::cout
-        << "fixed parameter report unavailable: expected 9 fixed effects, got "
+        << "fixed parameter report unavailable: expected 10 fixed effects, got "
         << theta.size() << "\n";
     return;
   }
@@ -336,6 +395,7 @@ void print_fixed_parameter_report(const std::vector<double> &theta) {
   const double log_sigma_index = theta[6];
   const double log_sigma_catch = theta[7];
   const double log_sigma_rec = theta[8];
+  const double log_comp_concentration = theta[9];
 
   std::cout << "Fixed - effect report" << std::endl;
 
@@ -368,6 +428,8 @@ void print_fixed_parameter_report(const std::vector<double> &theta) {
   }
   std::cout << "sigma_rec_floor_adjusted: " << 0.05 + std::exp(log_sigma_rec)
             << std::endl;
+  std::cout << "composition_concentration_floor_adjusted: "
+            << 1.0 + std::exp(log_comp_concentration) << std::endl;
 }
 
 template <typename Result>
@@ -403,11 +465,11 @@ void print_derived_quantity_report(
     const double sel_slope = std::exp(theta[5]);
 
     std::vector<double> selectivity(static_cast<std::size_t>(n_ages), 0.0);
+    const double sel50 = bounded_sel50(sel50_raw, n_ages);
     for (int a = 0; a < n_ages; ++a) {
       const double age = static_cast<double>(a + 1);
-      const double sel50 = 3.0 + sel50_raw;
       selectivity[static_cast<std::size_t>(a)] =
-          1.0 / (1.0 + std::exp(-(age - sel50) / sel_slope));
+          normalized_logistic_selectivity(age, sel50, sel_slope, n_ages);
     }
 
     std::vector<double> numbers(static_cast<std::size_t>(n_ages),
@@ -524,7 +586,7 @@ evaluate_objective_components(const CatchAtAgeLaplaceModel &model,
                               const std::vector<double> &u) {
   ObjectiveComponents c;
 
-  if (theta.size() < 9 ||
+  if (theta.size() < 10 ||
       u.size() < static_cast<std::size_t>(model.data.n_years)) {
     return c;
   }
@@ -541,6 +603,7 @@ evaluate_objective_components(const CatchAtAgeLaplaceModel &model,
   const double log_sigma_index = theta[6];
   const double log_sigma_catch = theta[7];
   const double log_sigma_rec = theta[8];
+  const double log_comp_concentration = theta[9];
 
   const double R0 = std::exp(log_R0);
   const double M = std::exp(log_M);
@@ -551,6 +614,8 @@ evaluate_objective_components(const CatchAtAgeLaplaceModel &model,
   const double sigma_index = 0.03 + std::exp(log_sigma_index);
   const double sigma_catch = 0.08 + std::exp(log_sigma_catch);
   const double sigma_rec = 0.05 + std::exp(log_sigma_rec);
+  const double comp_concentration =
+      1.0 + std::exp(log_comp_concentration);
 
   c.fixed_priors += normal_prior_nll_double(log_R0, std::log(900.0), 0.55);
   c.fixed_priors += normal_prior_nll_double(log_M, std::log(0.25), 0.22);
@@ -577,11 +642,12 @@ evaluate_objective_components(const CatchAtAgeLaplaceModel &model,
                               R0 / static_cast<double>(n_ages));
 
   std::vector<double> selectivity(static_cast<std::size_t>(n_ages), 0.0);
+  const double sel50 = example::bounded_sel50(sel50_raw, n_ages);
   for (int a = 0; a < n_ages; ++a) {
     const double age = static_cast<double>(a + 1);
-    const double sel50 = 3.0 + sel50_raw;
     selectivity[static_cast<std::size_t>(a)] =
-        1.0 / (1.0 + std::exp(-(age - sel50) / sel_slope));
+        example::normalized_logistic_selectivity(age, sel50, sel_slope,
+                                                 n_ages);
   }
 
   for (int y = 0; y < n_years; ++y) {
@@ -651,7 +717,7 @@ inline double
 composition_proxy_from_age_diagnostic_basis(const CatchAtAgeLaplaceModel &model,
                                             const std::vector<double> &theta,
                                             const std::vector<double> &u) {
-  if (theta.size() < 9 ||
+  if (theta.size() < 10 ||
       u.size() < static_cast<std::size_t>(model.data.n_years)) {
     return 0.0;
   }
@@ -666,11 +732,11 @@ composition_proxy_from_age_diagnostic_basis(const CatchAtAgeLaplaceModel &model,
   const double sel_slope = std::exp(theta[5]);
 
   std::vector<double> selectivity(static_cast<std::size_t>(n_ages), 0.0);
+  const double sel50 = bounded_sel50(sel50_raw, n_ages);
   for (int a = 0; a < n_ages; ++a) {
     const double age = static_cast<double>(a + 1);
-    const double sel50 = 3.0 + sel50_raw;
     selectivity[static_cast<std::size_t>(a)] =
-        1.0 / (1.0 + std::exp(-(age - sel50) / sel_slope));
+        normalized_logistic_selectivity(age, sel50, sel_slope, n_ages);
   }
 
   std::vector<double> numbers(static_cast<std::size_t>(n_ages),
@@ -792,11 +858,11 @@ void print_age_composition_diagnostics(
     const double sel_slope = std::exp(theta[5]);
 
     std::vector<double> selectivity(static_cast<std::size_t>(n_ages), 0.0);
+    const double sel50 = bounded_sel50(sel50_raw, n_ages);
     for (int a = 0; a < n_ages; ++a) {
       const double age = static_cast<double>(a + 1);
-      const double sel50 = 3.0 + sel50_raw;
       selectivity[static_cast<std::size_t>(a)] =
-          1.0 / (1.0 + std::exp(-(age - sel50) / sel_slope));
+          normalized_logistic_selectivity(age, sel50, sel_slope, n_ages);
     }
 
     std::vector<double> numbers(static_cast<std::size_t>(n_ages),
@@ -950,11 +1016,11 @@ void print_index_catch_diagnostics(
     const double sigma_catch = 0.08 + std::exp(log_sigma_catch);
 
     std::vector<double> selectivity(static_cast<std::size_t>(n_ages), 0.0);
+    const double sel50 = bounded_sel50(sel50_raw, n_ages);
     for (int a = 0; a < n_ages; ++a) {
       const double age = static_cast<double>(a + 1);
-      const double sel50 = 3.0 + sel50_raw;
       selectivity[static_cast<std::size_t>(a)] =
-          1.0 / (1.0 + std::exp(-(age - sel50) / sel_slope));
+          normalized_logistic_selectivity(age, sel50, sel_slope, n_ages);
     }
 
     std::vector<double> numbers(static_cast<std::size_t>(n_ages),
@@ -1103,6 +1169,7 @@ inline ActualObjectivePathComponents evaluate_actual_objective_path_components(
   const double log_sigma_index = theta[6];
   const double log_sigma_catch = theta[7];
   const double log_sigma_rec = theta[8];
+  const double log_comp_concentration = theta[9];
 
   const double R0 = std::exp(log_R0);
   const double M = std::exp(log_M);
@@ -1113,6 +1180,8 @@ inline ActualObjectivePathComponents evaluate_actual_objective_path_components(
   const double sigma_index = 0.03 + std::exp(log_sigma_index);
   const double sigma_catch = 0.08 + std::exp(log_sigma_catch);
   const double sigma_rec = 0.05 + std::exp(log_sigma_rec);
+  const double comp_concentration =
+      1.0 + std::exp(log_comp_concentration);
 
   c.fixed_priors +=
       example::normal_prior_nll_double(log_R0, std::log(900.0), 0.55);
@@ -1131,6 +1200,8 @@ inline ActualObjectivePathComponents evaluate_actual_objective_path_components(
       example::normal_prior_nll_double(log_sigma_catch, std::log(0.18), 0.35);
   c.fixed_priors +=
       example::normal_prior_nll_double(log_sigma_rec, std::log(0.35), 0.75);
+  c.fixed_priors += example::normal_prior_nll_double(
+      log_comp_concentration, std::log(40.0), 1.0);
 
   double mean_rec_dev = 0.0;
   for (int y = 0; y < n_years; ++y) {
@@ -1144,11 +1215,12 @@ inline ActualObjectivePathComponents evaluate_actual_objective_path_components(
                               R0 / static_cast<double>(n_ages));
 
   std::vector<double> selectivity(static_cast<std::size_t>(n_ages), 0.0);
+  const double sel50 = example::bounded_sel50(sel50_raw, n_ages);
   for (int a = 0; a < n_ages; ++a) {
     const double age = static_cast<double>(a + 1);
-    const double sel50 = 3.0 + sel50_raw;
     selectivity[static_cast<std::size_t>(a)] =
-        1.0 / (1.0 + std::exp(-(age - sel50) / sel_slope));
+        example::normalized_logistic_selectivity(age, sel50, sel_slope,
+                                                 n_ages);
   }
 
   for (int y = 0; y < n_years; ++y) {
@@ -1164,6 +1236,7 @@ inline ActualObjectivePathComponents evaluate_actual_objective_path_components(
 
     double vulnerable_biomass = 0.0;
     double total_catch = 0.0;
+    std::vector<double> catch_at_age(static_cast<std::size_t>(n_ages), 0.0);
 
     for (int a = 0; a < n_ages; ++a) {
       const double age = static_cast<double>(a + 1);
@@ -1176,7 +1249,9 @@ inline ActualObjectivePathComponents evaluate_actual_objective_path_components(
       vulnerable_biomass += Na * weight * Sa;
 
       if (Z > 1.0e-12) {
-        total_catch += Na * weight * (F_at_age / Z) * (1.0 - std::exp(-Z));
+        catch_at_age[static_cast<std::size_t>(a)] =
+            Na * (F_at_age / Z) * (1.0 - std::exp(-Z));
+        total_catch += catch_at_age[static_cast<std::size_t>(a)] * weight;
       }
     }
 
@@ -1198,23 +1273,9 @@ inline ActualObjectivePathComponents evaluate_actual_objective_path_components(
                                      sigma_catch) +
         std::log(sigma_catch);
 
-    double vulnerable_number_sum = 0.0;
-    for (int a = 0; a < n_ages; ++a) {
-      vulnerable_number_sum += numbers[static_cast<std::size_t>(a)] *
-                               selectivity[static_cast<std::size_t>(a)];
-    }
-
-    for (int a = 0; a < n_ages; ++a) {
-      const double pred = (numbers[static_cast<std::size_t>(a)] *
-                           selectivity[static_cast<std::size_t>(a)]) /
-                          (vulnerable_number_sum + 1.0e-12);
-
-      const double obs = model.data.age_comp_obs[static_cast<std::size_t>(y)]
-                                                [static_cast<std::size_t>(a)];
-
-      c.composition_likelihood +=
-          0.5 * example::square_double((obs - pred) / 0.10);
-    }
+    c.composition_likelihood -= quadra::ddirichlet_multinomial_robust(
+        model.data.age_comp_counts[static_cast<std::size_t>(y)], catch_at_age,
+        comp_concentration, true);
 
     for (int a = n_ages - 1; a >= 1; --a) {
       const double Sa_prev = selectivity[static_cast<std::size_t>(a - 1)];
@@ -1286,10 +1347,13 @@ inline quadra::ParameterVector make_big_laplace_parameter_vector() {
   param_vector.add(quadra::Parameter("log_sigma_index", std::log(0.20),
                                      quadra::ParameterTransform::Identity,
                                      false));
-  param_vector.add(quadra::Parameter("log_sigma_catch", std::log(0.18),
+  param_vector.add(quadra::Parameter("log_sigma_catch", std::log(0.15),
                                      quadra::ParameterTransform::Identity,
                                      false));
   param_vector.add(quadra::Parameter("log_sigma_rec", std::log(0.35),
+                                     quadra::ParameterTransform::Identity,
+                                     false));
+  param_vector.add(quadra::Parameter("log_comp_concentration", std::log(40.0),
                                      quadra::ParameterTransform::Identity,
                                      false));
 

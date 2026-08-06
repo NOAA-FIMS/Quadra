@@ -8,11 +8,14 @@ int main() {
   auto params = example::make_big_laplace_parameter_vector();
 
   quadra::LaplaceOptions opts = quadra::default_laplace_options();
+  opts.use_hutchinson_trace = false;
+  opts.hessian_drop_tol = 0.0;
 
   auto fit = quadra::optimize_lbfgs(model, params, opts);
 
-  const bool ok = std::isfinite(fit.value) && fit.value < 0.0 &&
-                  fit.value > -500.0 && fit.grad_norm < 1.0e-3;
+  const bool ok = std::isfinite(fit.value) && fit.value > 400.0 &&
+                  fit.value < 550.0 && fit.converged &&
+                  fit.grad_norm < 1.0e-4;
 
   if (!ok) {
     std::cerr << "FAIL: big Laplace black-box convergence contract failed\n";
