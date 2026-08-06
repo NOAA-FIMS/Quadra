@@ -275,9 +275,9 @@ public:
     }
     const double discovery_density =
         static_cast<double>(discovery.hessian_random_m.nonZeros()) /
-        static_cast<double>(std::max<Eigen::Index>(
-            1, discovery.hessian_random_m.rows() *
-                   discovery.hessian_random_m.cols()));
+        static_cast<double>(
+            std::max<Eigen::Index>(1, discovery.hessian_random_m.rows() *
+                                          discovery.hessian_random_m.cols()));
     dense_third_order_ = !direct_tridiagonal && discovery_density > 0.5;
     if (engine_options.hdot_workers < 0) {
       throw std::invalid_argument(

@@ -14,8 +14,7 @@ int main() {
   auto fit = quadra::optimize_lbfgs(model, params, opts);
 
   const bool ok = std::isfinite(fit.value) && fit.value > 400.0 &&
-                  fit.value < 550.0 && fit.converged &&
-                  fit.grad_norm < 1.0e-4;
+                  fit.value < 550.0 && fit.converged && fit.grad_norm < 1.0e-4;
 
   if (!ok) {
     std::cerr << "FAIL: big Laplace black-box convergence contract failed\n";

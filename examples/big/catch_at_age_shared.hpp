@@ -58,14 +58,13 @@ T logistic_selectivity(const T &age, const T &a50, const T &slope) {
   return T(1.0) / (T(1.0) + exp(-slope * (age - a50)));
 }
 
-template <typename T>
-T bounded_sel50(const T &raw, const int n_ages) {
+template <typename T> T bounded_sel50(const T &raw, const int n_ages) {
   return T(1.0) + T(n_ages - 1) * inv_logit(raw);
 }
 
 template <typename T>
-T normalized_logistic_selectivity(const T &age, const T &a50,
-                                  const T &slope, const int n_ages) {
+T normalized_logistic_selectivity(const T &age, const T &a50, const T &slope,
+                                  const int n_ages) {
   const T numerator = logistic_selectivity(age, a50, slope);
   const T oldest_age = T(n_ages);
   return numerator / logistic_selectivity(oldest_age, a50, slope);
@@ -135,10 +134,9 @@ struct CatchAtAgeData {
       remainders.reserve(static_cast<std::size_t>(n_ages));
       int allocated = 0;
       for (int a = 0; a < n_ages; ++a) {
-        const double expected =
-            composition_sample_size *
-            age_comp_obs[static_cast<std::size_t>(y)]
-                        [static_cast<std::size_t>(a)];
+        const double expected = composition_sample_size *
+                                age_comp_obs[static_cast<std::size_t>(y)]
+                                            [static_cast<std::size_t>(a)];
         const int count = static_cast<int>(std::floor(expected));
         age_comp_counts[static_cast<std::size_t>(y)]
                        [static_cast<std::size_t>(a)] = count;
@@ -219,8 +217,8 @@ struct CatchAtAgeLaplaceModel {
 
     for (int a = 0; a < n_ages; ++a) {
       const T age = T(a + 1);
-      sel[static_cast<std::size_t>(a)] = normalized_logistic_selectivity(
-          age, sel50, sel_slope, n_ages);
+      sel[static_cast<std::size_t>(a)] =
+          normalized_logistic_selectivity(age, sel50, sel_slope, n_ages);
       N[static_cast<std::size_t>(a)] = R0 * exp(-M * T(a));
     }
 
@@ -258,8 +256,8 @@ struct CatchAtAgeLaplaceModel {
                   "prior_log_sigma_catch");
     trace_add_nll(nll, normal_prior_nll(log_sigma_rec, std::log(0.35), 0.75),
                   "prior_log_sigma_rec");
-    trace_add_nll(nll, normal_prior_nll(log_comp_concentration,
-                                        std::log(40.0), 1.0),
+    trace_add_nll(nll,
+                  normal_prior_nll(log_comp_concentration, std::log(40.0), 1.0),
                   "prior_log_comp_concentration");
 
     for (int y = 0; y < n_years; ++y) {
@@ -311,12 +309,11 @@ struct CatchAtAgeLaplaceModel {
         predicted_composition[static_cast<std::size_t>(a)] =
             catch_at_age[static_cast<std::size_t>(a)] / catch_sum;
       }
-      trace_add_nll(
-          nll,
-          -quadra::ddirichlet_multinomial_robust(
-              data.age_comp_counts[static_cast<std::size_t>(y)],
-              predicted_composition, comp_concentration, true),
-          "composition_likelihood");
+      trace_add_nll(nll,
+                    -quadra::ddirichlet_multinomial_robust(
+                        data.age_comp_counts[static_cast<std::size_t>(y)],
+                        predicted_composition, comp_concentration, true),
+                    "composition_likelihood");
 
       std::fill(N_next.begin(), N_next.end(), T(0.0));
       N_next[0] = recruitment;
@@ -614,8 +611,7 @@ evaluate_objective_components(const CatchAtAgeLaplaceModel &model,
   const double sigma_index = 0.03 + std::exp(log_sigma_index);
   const double sigma_catch = 0.08 + std::exp(log_sigma_catch);
   const double sigma_rec = 0.05 + std::exp(log_sigma_rec);
-  const double comp_concentration =
-      1.0 + std::exp(log_comp_concentration);
+  const double comp_concentration = 1.0 + std::exp(log_comp_concentration);
 
   c.fixed_priors += normal_prior_nll_double(log_R0, std::log(900.0), 0.55);
   c.fixed_priors += normal_prior_nll_double(log_M, std::log(0.25), 0.22);
@@ -646,8 +642,7 @@ evaluate_objective_components(const CatchAtAgeLaplaceModel &model,
   for (int a = 0; a < n_ages; ++a) {
     const double age = static_cast<double>(a + 1);
     selectivity[static_cast<std::size_t>(a)] =
-        example::normalized_logistic_selectivity(age, sel50, sel_slope,
-                                                 n_ages);
+        example::normalized_logistic_selectivity(age, sel50, sel_slope, n_ages);
   }
 
   for (int y = 0; y < n_years; ++y) {
@@ -1180,8 +1175,7 @@ inline ActualObjectivePathComponents evaluate_actual_objective_path_components(
   const double sigma_index = 0.03 + std::exp(log_sigma_index);
   const double sigma_catch = 0.08 + std::exp(log_sigma_catch);
   const double sigma_rec = 0.05 + std::exp(log_sigma_rec);
-  const double comp_concentration =
-      1.0 + std::exp(log_comp_concentration);
+  const double comp_concentration = 1.0 + std::exp(log_comp_concentration);
 
   c.fixed_priors +=
       example::normal_prior_nll_double(log_R0, std::log(900.0), 0.55);
@@ -1200,8 +1194,8 @@ inline ActualObjectivePathComponents evaluate_actual_objective_path_components(
       example::normal_prior_nll_double(log_sigma_catch, std::log(0.18), 0.35);
   c.fixed_priors +=
       example::normal_prior_nll_double(log_sigma_rec, std::log(0.35), 0.75);
-  c.fixed_priors += example::normal_prior_nll_double(
-      log_comp_concentration, std::log(40.0), 1.0);
+  c.fixed_priors += example::normal_prior_nll_double(log_comp_concentration,
+                                                     std::log(40.0), 1.0);
 
   double mean_rec_dev = 0.0;
   for (int y = 0; y < n_years; ++y) {
@@ -1219,8 +1213,7 @@ inline ActualObjectivePathComponents evaluate_actual_objective_path_components(
   for (int a = 0; a < n_ages; ++a) {
     const double age = static_cast<double>(a + 1);
     selectivity[static_cast<std::size_t>(a)] =
-        example::normalized_logistic_selectivity(age, sel50, sel_slope,
-                                                 n_ages);
+        example::normalized_logistic_selectivity(age, sel50, sel_slope, n_ages);
   }
 
   for (int y = 0; y < n_years; ++y) {

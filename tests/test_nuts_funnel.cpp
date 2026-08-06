@@ -12,8 +12,8 @@ struct CenteredFunnel {
     const T log_scale = q[0];
     T log_density = -T(0.5 / 9.0) * log_scale * log_scale;
     for (std::size_t i = 1; i < q.size(); ++i)
-      log_density -= T(0.5) * q[i] * q[i] * exp(-log_scale) +
-                     T(0.5) * log_scale;
+      log_density -=
+          T(0.5) * q[i] * q[i] * exp(-log_scale) + T(0.5) * log_scale;
     return log_density;
   }
 };
@@ -36,8 +36,8 @@ int main() {
   options.adapt_dense_mass = true;
   options.seed = 20260810;
 
-  std::vector<std::vector<double>> initial_states(
-      4, std::vector<double>(6, 0.0));
+  std::vector<std::vector<double>> initial_states(4,
+                                                  std::vector<double>(6, 0.0));
   initial_states[0][0] = -8.0;
   initial_states[1][0] = -3.0;
   initial_states[2][0] = 3.0;
@@ -49,8 +49,7 @@ int main() {
   const auto noncentered = quadra::sampling::sample_nuts_chains(
       [](std::size_t) { return NoncenteredFunnel{}; }, initial_states, options,
       true);
-  const auto centered_health =
-      quadra::sampling::assess_nuts_health(centered);
+  const auto centered_health = quadra::sampling::assess_nuts_health(centered);
   const auto noncentered_health =
       quadra::sampling::assess_nuts_health(noncentered);
 

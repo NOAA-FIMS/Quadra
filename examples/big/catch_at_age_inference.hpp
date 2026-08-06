@@ -254,22 +254,19 @@ inline void run_big_catch_at_age_inference(
     quantities.push_back(
         {"terminal_depletion", [&model](const std::vector<quadra::AD> &theta,
                                         const std::vector<quadra::AD> &u) {
-           return evaluate_terminal_depletion_ad(model, theta,
-                                                 u);
+           return evaluate_terminal_depletion_ad(model, theta, u);
          }});
 
     quantities.push_back(
         {"terminal_ssb_proxy", [&model](const std::vector<quadra::AD> &theta,
                                         const std::vector<quadra::AD> &u) {
-           return evaluate_terminal_ssb_proxy_ad(model, theta,
-                                                 u);
+           return evaluate_terminal_ssb_proxy_ad(model, theta, u);
          }});
 
     quantities.push_back({"mean_fishing_mortality",
                           [&model](const std::vector<quadra::AD> &theta,
                                    const std::vector<quadra::AD> &u) {
-                            return evaluate_mean_f_ad(model, theta,
-                                                      u);
+                            return evaluate_mean_f_ad(model, theta, u);
                           }});
 
     const auto profiled_report =

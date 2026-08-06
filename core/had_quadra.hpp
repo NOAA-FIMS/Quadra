@@ -551,7 +551,8 @@ struct ADGraph {
   }
 
   inline void ZeroFirstOrderAdjoints() {
-    for (ADVertex &v : vertices) v.w = Real(0.0);
+    for (ADVertex &v : vertices)
+      v.w = Real(0.0);
   }
 
   inline void ReserveRecordedVertices(const std::size_t count) {
@@ -2658,12 +2659,15 @@ inline void PropagateFirstOrderAdjoint() {
     ADVertex &vertex = g_ADGraph->vertices[vid];
     ADEdge &e1 = vertex.e1;
     ADEdge &e2 = vertex.e2;
-    if (e1.to == vid) continue;
+    if (e1.to == vid)
+      continue;
     const Real adjoint = vertex.w;
     vertex.w = Real(0.0);
-    if (adjoint == Real(0.0)) continue;
+    if (adjoint == Real(0.0))
+      continue;
     g_ADGraph->vertices[e1.to].w += adjoint * e1.w;
-    if (e2.to != vid) g_ADGraph->vertices[e2.to].w += adjoint * e2.w;
+    if (e2.to != vid)
+      g_ADGraph->vertices[e2.to].w += adjoint * e2.w;
   }
 }
 

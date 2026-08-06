@@ -51,10 +51,10 @@ inline void validate_quantity_names(const std::vector<std::string> &names) {
 } // namespace detail
 
 template <class Simulator>
-PosteriorSimulationResult simulate_posterior(
-    const NutsWorkflowResult &posterior,
-    std::vector<std::string> quantity_names, Simulator simulator,
-    const PosteriorSimulationOptions &options = {}) {
+PosteriorSimulationResult
+simulate_posterior(const NutsWorkflowResult &posterior,
+                   std::vector<std::string> quantity_names, Simulator simulator,
+                   const PosteriorSimulationOptions &options = {}) {
   if (options.thin == 0)
     throw std::invalid_argument("simulate_posterior: thin must be positive");
   if (options.require_healthy_fit && !posterior.health.passed)
@@ -67,7 +67,8 @@ PosteriorSimulationResult simulate_posterior(
   for (std::size_t chain = 0; chain < posterior.fit.chains.size(); ++chain) {
     const auto &draws = posterior.fit.chains[chain].draws;
     for (std::size_t iteration = 0; iteration < draws.size(); ++iteration) {
-      if (iteration % options.thin != 0) continue;
+      if (iteration % options.thin != 0)
+        continue;
       if (options.max_draws > 0 && out.draws.size() >= options.max_draws)
         return out;
       const std::uint64_t chain_key =

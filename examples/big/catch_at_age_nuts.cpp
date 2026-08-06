@@ -14,7 +14,8 @@ struct NoncenteredCatchAtAgePosterior {
   template <class T> T operator()(const std::vector<T> &q) const {
     const int years = model->data.n_years;
     std::vector<T> parameters(static_cast<std::size_t>(10 + years));
-    for (int j = 0; j < 10; ++j) parameters[static_cast<std::size_t>(j)] = q[j];
+    for (int j = 0; j < 10; ++j)
+      parameters[static_cast<std::size_t>(j)] = q[j];
 
     const T sigma_rec = example::positive_floor(q[8], 0.05);
     for (int y = 0; y < years; ++y) {
@@ -69,8 +70,8 @@ struct CatchAtAgePosteriorPredictive {
     std::vector<double> catch_at_age(static_cast<std::size_t>(ages));
     for (int age = 0; age < ages; ++age) {
       selectivity[static_cast<std::size_t>(age)] =
-          example::normalized_logistic_selectivity(
-              static_cast<double>(age + 1), sel50, sel_slope, ages);
+          example::normalized_logistic_selectivity(static_cast<double>(age + 1),
+                                                   sel50, sel_slope, ages);
       abundance[static_cast<std::size_t>(age)] = R0 * std::exp(-M * age);
     }
 
@@ -85,10 +86,9 @@ struct CatchAtAgePosteriorPredictive {
         const double fishing_mortality =
             Fbar * selectivity[static_cast<std::size_t>(age)];
         const double total_mortality = M + fishing_mortality;
-        const double catch_number =
-            abundance[static_cast<std::size_t>(age)] *
-            fishing_mortality / total_mortality *
-            (1.0 - std::exp(-total_mortality));
+        const double catch_number = abundance[static_cast<std::size_t>(age)] *
+                                    fishing_mortality / total_mortality *
+                                    (1.0 - std::exp(-total_mortality));
         catch_at_age[static_cast<std::size_t>(age)] = catch_number;
         total_catch += catch_number * weight;
         vulnerable_biomass += abundance[static_cast<std::size_t>(age)] *
@@ -112,14 +112,15 @@ struct CatchAtAgePosteriorPredictive {
             catch_at_age[static_cast<std::size_t>(age)] / catch_sum;
         out.push_back(composition[static_cast<std::size_t>(age)]);
         std::gamma_distribution<double> gamma(
-            std::max(1.0e-12,
-                     concentration * composition[static_cast<std::size_t>(age)]),
+            std::max(1.0e-12, concentration *
+                                  composition[static_cast<std::size_t>(age)]),
             1.0);
         dirichlet_weights[static_cast<std::size_t>(age)] = gamma(rng);
         dirichlet_sum += dirichlet_weights[static_cast<std::size_t>(age)];
       }
       if (dirichlet_sum > 0.0 && std::isfinite(dirichlet_sum)) {
-        for (double &weight : dirichlet_weights) weight /= dirichlet_sum;
+        for (double &weight : dirichlet_weights)
+          weight /= dirichlet_sum;
       } else {
         dirichlet_weights = composition;
       }
@@ -131,7 +132,8 @@ struct CatchAtAgePosteriorPredictive {
           model->data.age_comp_counts[static_cast<std::size_t>(year)].end(), 0);
       for (int fish = 0; fish < sample_size; ++fish)
         ++replicated_counts[static_cast<std::size_t>(age_draw(rng))];
-      for (int count : replicated_counts) out.push_back(count);
+      for (int count : replicated_counts)
+        out.push_back(count);
 
       std::fill(next_abundance.begin(), next_abundance.end(), 0.0);
       const double recruitment_deviation =
@@ -142,8 +144,7 @@ struct CatchAtAgePosteriorPredictive {
         const double mortality =
             M + Fbar * selectivity[static_cast<std::size_t>(age - 1)];
         next_abundance[static_cast<std::size_t>(age)] =
-            abundance[static_cast<std::size_t>(age - 1)] *
-            std::exp(-mortality);
+            abundance[static_cast<std::size_t>(age - 1)] * std::exp(-mortality);
       }
       const double plus_mortality =
           M + Fbar * selectivity[static_cast<std::size_t>(ages - 1)];
@@ -162,10 +163,16 @@ int main() {
   // process and robust Dirichlet-multinomial likelihood as the large fit.
   model.data.n_years = 6;
 
-  std::vector<double> initial{
-      std::log(900.0), std::log(0.25), std::log(0.15), std::log(0.18), 0.0,
-      std::log(1.25),  std::log(0.20), std::log(0.18), std::log(0.35),
-      std::log(40.0)};
+  std::vector<double> initial{std::log(900.0),
+                              std::log(0.25),
+                              std::log(0.15),
+                              std::log(0.18),
+                              0.0,
+                              std::log(1.25),
+                              std::log(0.20),
+                              std::log(0.18),
+                              std::log(0.35),
+                              std::log(40.0)};
   initial.resize(static_cast<std::size_t>(10 + model.data.n_years), 0.0);
 
   NoncenteredCatchAtAgePosterior posterior{&model};
@@ -194,9 +201,11 @@ int main() {
   options.adapt_dense_mass = true;
   options.seed = 20260806;
   std::vector<std::string> parameter_names{
-      "log_R0",          "log_M",        "log_q",       "log_F",
-      "logit_sel50",     "log_sel_slope", "log_sigma_I", "log_sigma_C",
-      "log_sigma_rec",   "log_comp_concentration"};
+      "log_R0",        "log_M",
+      "log_q",         "log_F",
+      "logit_sel50",   "log_sel_slope",
+      "log_sigma_I",   "log_sigma_C",
+      "log_sigma_rec", "log_comp_concentration"};
   for (int year = 0; year < model.data.n_years; ++year)
     parameter_names.push_back("z_rec[" + std::to_string(year) + "]");
   quadra::sampling::NutsWorkflowOptions workflow_options;
@@ -206,9 +215,7 @@ int main() {
   workflow_options.initialization_seed = 20260806;
   workflow_options.health.max_rhat = 1.05;
   const auto workflow = quadra::sampling::run_nuts_workflow(
-      [&model](std::size_t) {
-        return NoncenteredCatchAtAgePosterior{&model};
-      },
+      [&model](std::size_t) { return NoncenteredCatchAtAgePosterior{&model}; },
       initial, parameter_names, workflow_options);
   const auto &fit = workflow.fit;
   CatchAtAgePosteriorPredictive predictive_simulator{&model};
@@ -230,8 +237,8 @@ int main() {
           static_cast<std::size_t>(model.data.n_ages);
       const double replicated_total = std::accumulate(
           draw.values.begin() + static_cast<std::ptrdiff_t>(offset),
-          draw.values.begin() + static_cast<std::ptrdiff_t>(
-                                    offset + model.data.n_ages),
+          draw.values.begin() +
+              static_cast<std::ptrdiff_t>(offset + model.data.n_ages),
           0.0);
       const int observed_total = std::accumulate(
           model.data.age_comp_counts[static_cast<std::size_t>(year)].begin(),
@@ -248,14 +255,13 @@ int main() {
       values.push_back(draw.values[quantity]);
     std::sort(values.begin(), values.end());
     const std::size_t lower = static_cast<std::size_t>(0.05 * values.size());
-    const std::size_t upper =
-        std::min(values.size() - 1,
-                 static_cast<std::size_t>(0.95 * values.size()));
+    const std::size_t upper = std::min(
+        values.size() - 1, static_cast<std::size_t>(0.95 * values.size()));
     return observed >= values[lower] && observed <= values[upper];
   };
   for (int year = 0; year < model.data.n_years; ++year) {
-    const std::size_t offset = static_cast<std::size_t>(year) *
-                               quantities_per_year;
+    const std::size_t offset =
+        static_cast<std::size_t>(year) * quantities_per_year;
     predictive_coverage +=
         interval_contains(offset + 1, model.data.index_obs[year]) ? 1 : 0;
     predictive_coverage +=
@@ -267,7 +273,8 @@ int main() {
   int divergences = 0;
   int depth_hits = 0;
   for (const auto &chain : fit.chains) {
-    for (const auto &draw : chain.draws) mean_log_m += draw[1];
+    for (const auto &draw : chain.draws)
+      mean_log_m += draw[1];
     total_draws += static_cast<int>(chain.draws.size());
     divergences += chain.diagnostics.divergences;
     depth_hits += chain.diagnostics.max_depth_hits;
@@ -300,8 +307,7 @@ int main() {
             << "minimum BFMI: " << health.min_bfmi << "\n"
             << "divergences: " << divergences << "\n"
             << "max-depth hits: " << depth_hits << "\n"
-            << "sampler health: " << (health.passed ? "PASS" : "FAIL")
-            << "\n";
+            << "sampler health: " << (health.passed ? "PASS" : "FAIL") << "\n";
   for (std::size_t chain = 0; chain < fit.chains.size(); ++chain) {
     const auto &diagnostics = fit.chains[chain].diagnostics;
     std::cout << "chain " << chain + 1

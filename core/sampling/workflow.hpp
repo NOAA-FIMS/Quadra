@@ -34,7 +34,8 @@ struct NutsWorkflowResult {
 
   std::size_t total_draws() const {
     std::size_t count = 0;
-    for (const auto &chain : fit.chains) count += chain.draws.size();
+    for (const auto &chain : fit.chains)
+      count += chain.draws.size();
     return count;
   }
 
@@ -73,9 +74,10 @@ inline void validate_parameter_names(const std::vector<std::string> &names,
   }
 }
 
-inline std::vector<std::vector<double>> initialize_nuts_chains(
-    const std::vector<double> &fitted_mode, std::size_t chains,
-    double jitter = 0.01, std::uint64_t seed = 8675309u) {
+inline std::vector<std::vector<double>>
+initialize_nuts_chains(const std::vector<double> &fitted_mode,
+                       std::size_t chains, double jitter = 0.01,
+                       std::uint64_t seed = 8675309u) {
   if (fitted_mode.empty() || chains < 2 || !(jitter >= 0.0) ||
       !std::isfinite(jitter))
     throw std::invalid_argument("initialize_nuts_chains: invalid arguments");
@@ -88,24 +90,25 @@ inline std::vector<std::vector<double>> initialize_nuts_chains(
   std::normal_distribution<double> normal(0.0, jitter);
   std::vector<std::vector<double>> states(chains, fitted_mode);
   for (auto &state : states)
-    for (double &value : state) value += normal(rng);
+    for (double &value : state)
+      value += normal(rng);
   return states;
 }
 
 template <class TargetFactory>
-NutsWorkflowResult run_nuts_workflow(
-    TargetFactory target_factory, const std::vector<double> &fitted_mode,
-    std::vector<std::string> parameter_names,
-    const NutsWorkflowOptions &options = {}) {
+NutsWorkflowResult run_nuts_workflow(TargetFactory target_factory,
+                                     const std::vector<double> &fitted_mode,
+                                     std::vector<std::string> parameter_names,
+                                     const NutsWorkflowOptions &options = {}) {
   validate_parameter_names(parameter_names, fitted_mode.size());
   NutsWorkflowResult out;
   out.parameter_names = std::move(parameter_names);
   out.options = options;
-  out.initial_states = initialize_nuts_chains(
-      fitted_mode, options.chains, options.initial_jitter,
-      options.initialization_seed);
+  out.initial_states = initialize_nuts_chains(fitted_mode, options.chains,
+                                              options.initial_jitter,
+                                              options.initialization_seed);
   out.fit = sample_nuts_chains(target_factory, out.initial_states,
-                              options.sampler, options.parallel);
+                               options.sampler, options.parallel);
   out.health = assess_nuts_health(out.fit, options.health);
   return out;
 }

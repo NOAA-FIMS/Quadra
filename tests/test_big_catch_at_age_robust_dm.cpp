@@ -33,7 +33,8 @@ int main() {
     throw std::runtime_error("robust composition objective is not finite");
   }
   if (std::abs(baseline - changed_concentration) < 1.0e-6) {
-    throw std::runtime_error("composition concentration does not affect objective");
+    throw std::runtime_error(
+        "composition concentration does not affect objective");
   }
 
   std::cout << "PASS: big catch-at-age robust Dirichlet-multinomial\n";

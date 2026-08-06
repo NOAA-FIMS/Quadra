@@ -87,8 +87,7 @@ private:
 class DenseRandomModel : public quadra::QuadraModel<DenseRandomModel> {
 public:
   DenseRandomModel() {
-    parameters_m.add("theta", 0.2, quadra::ParameterTransform::Identity,
-                     false);
+    parameters_m.add("theta", 0.2, quadra::ParameterTransform::Identity, false);
     for (int i = 0; i < 3; ++i)
       parameters_m.add("u" + std::to_string(i), 0.0,
                        quadra::ParameterTransform::Identity, true);

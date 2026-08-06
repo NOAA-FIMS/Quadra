@@ -1444,8 +1444,8 @@ Eigen::VectorXd laplace_logdet_gradient_exact(
               .sparseView();
     }
   } else {
-    Hdots = random_hessian_directional_exact_all(
-        model, params, theta, u_hat, dU, get_pattern_for_logdet);
+    Hdots = random_hessian_directional_exact_all(model, params, theta, u_hat,
+                                                 dU, get_pattern_for_logdet);
   }
   for (Eigen::Index i = 0; i < theta.size(); ++i) {
     grad[i] = 0.5 * logdet_directional_derivative_from_hdot(

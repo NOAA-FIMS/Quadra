@@ -1,5 +1,5 @@
-#include "../examples/big/catch_at_age_derived.hpp"
 #include "../core/laplace/laplace_profiled_ad_gradient.hpp"
+#include "../examples/big/catch_at_age_derived.hpp"
 
 #include <cmath>
 #include <iostream>
@@ -39,21 +39,18 @@ int main() {
     return 1;
   }
 
-  const auto depletion_profiled =
-      quadra::evaluate_profiled_ad_gradient_blocks(
-          [&model](const auto &fixed, const auto &random) {
-            return example::evaluate_terminal_depletion_ad(model, fixed,
-                                                            random);
-          },
-          theta, u);
+  const auto depletion_profiled = quadra::evaluate_profiled_ad_gradient_blocks(
+      [&model](const auto &fixed, const auto &random) {
+        return example::evaluate_terminal_depletion_ad(model, fixed, random);
+      },
+      theta, u);
   const auto ssb_profiled = quadra::evaluate_profiled_ad_gradient_blocks(
       [&model](const auto &fixed, const auto &random) {
         return example::evaluate_terminal_ssb_proxy_ad(model, fixed, random);
       },
       theta, u);
   if (!depletion_profiled.success_m || !ssb_profiled.success_m ||
-      std::abs(depletion_profiled.estimate_m -
-               derived.terminal_depletion_m) >
+      std::abs(depletion_profiled.estimate_m - derived.terminal_depletion_m) >
           1.0e-10 ||
       std::abs(ssb_profiled.estimate_m - derived.terminal_ssb_proxy_m) >
           1.0e-8) {

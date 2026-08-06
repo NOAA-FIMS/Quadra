@@ -42,8 +42,7 @@ evaluate_catch_at_age_derived_quantities(const CatchAtAgeLaplaceModel &model,
   for (int a = 0; a < n_ages; ++a) {
     const double age = static_cast<double>(a + 1);
     selectivity[static_cast<std::size_t>(a)] =
-        example::normalized_logistic_selectivity(age, sel50, sel_slope,
-                                                 n_ages);
+        example::normalized_logistic_selectivity(age, sel50, sel_slope, n_ages);
   }
 
   std::vector<double> numbers(static_cast<std::size_t>(n_ages),
@@ -127,8 +126,7 @@ inline T evaluate_terminal_ssb_proxy_ad(const CatchAtAgeLaplaceModel &model,
   for (int a = 0; a < n_ages; ++a) {
     const T age = T(a + 1);
     selectivity[static_cast<std::size_t>(a)] =
-        example::normalized_logistic_selectivity(age, sel50, sel_slope,
-                                                 n_ages);
+        example::normalized_logistic_selectivity(age, sel50, sel_slope, n_ages);
   }
 
   std::vector<T> numbers(static_cast<std::size_t>(n_ages), R0 / T(n_ages));
@@ -189,8 +187,7 @@ inline T evaluate_terminal_depletion_ad(const CatchAtAgeLaplaceModel &model,
   for (int a = 0; a < n_ages; ++a) {
     const T age = T(a + 1);
     selectivity[static_cast<std::size_t>(a)] =
-        example::normalized_logistic_selectivity(age, sel50, sel_slope,
-                                                 n_ages);
+        example::normalized_logistic_selectivity(age, sel50, sel_slope, n_ages);
   }
 
   std::vector<T> numbers(static_cast<std::size_t>(n_ages), R0 / T(n_ages));
@@ -253,8 +250,8 @@ inline T evaluate_mean_f_ad(const CatchAtAgeLaplaceModel &model,
 
   for (int a = 0; a < n_ages; ++a) {
     const T age = T(a + 1);
-    const T selectivity = example::normalized_logistic_selectivity(
-        age, sel50, sel_slope, n_ages);
+    const T selectivity =
+        example::normalized_logistic_selectivity(age, sel50, sel_slope, n_ages);
 
     for (int y = 0; y < n_years; ++y) {
       f_sum += Fbar * selectivity;

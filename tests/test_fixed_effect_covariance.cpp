@@ -77,8 +77,8 @@ int main() {
 
   QuadraticGradient gradient{objective.H};
   const auto gradient_result =
-      quadra::estimate_fixed_effect_covariance_from_gradient(
-          gradient, theta_hat, 1.0e-4);
+      quadra::estimate_fixed_effect_covariance_from_gradient(gradient,
+                                                             theta_hat, 1.0e-4);
   if (!gradient_result.success_m || gradient.calls != 4) {
     std::cerr << "FAIL: gradient covariance path did not use exactly 2p "
                  "evaluations\n";
@@ -88,8 +88,7 @@ int main() {
           1.0e-10 ||
       (gradient_result.covariance_m - expected_covariance)
               .cwiseAbs()
-              .maxCoeff() >
-          1.0e-10) {
+              .maxCoeff() > 1.0e-10) {
     std::cerr << "FAIL: gradient covariance path is inaccurate\n";
     return 1;
   }

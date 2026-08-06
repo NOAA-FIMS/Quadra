@@ -11,9 +11,9 @@ struct CorrelatedGaussian {
   template <class T> T operator()(const std::vector<T> &q) const {
     const T x = q[0] - T(1.0);
     const T y = q[1] + T(0.5);
-    return -T(0.5) * (T(1.3333333333333333) * x * x -
-                      T(1.3333333333333333) * x * y +
-                      T(1.3333333333333333) * y * y);
+    return -T(0.5) *
+           (T(1.3333333333333333) * x * x - T(1.3333333333333333) * x * y +
+            T(1.3333333333333333) * y * y);
   }
 };
 
@@ -35,7 +35,8 @@ struct HighlyCorrelatedGaussian {
 struct StandardGaussian {
   template <class T> T operator()(const std::vector<T> &q) const {
     T log_density = T(0.0);
-    for (const T &value : q) log_density -= T(0.5) * value * value;
+    for (const T &value : q)
+      log_density -= T(0.5) * value * value;
     return log_density;
   }
 };
@@ -62,15 +63,13 @@ int main() {
   options.samples = 1000;
   options.max_tree_depth = 8;
   options.seed = 20260806;
-  const auto result =
-      quadra::sampling::sample_nuts(target, std::vector<double>{0.0, 0.0},
-                                   options);
+  const auto result = quadra::sampling::sample_nuts(
+      target, std::vector<double>{0.0, 0.0}, options);
   AnisotropicGaussian anisotropic_target;
   quadra::sampling::NutsOptions anisotropic_options = options;
   anisotropic_options.seed = 20260807;
   const auto anisotropic = quadra::sampling::sample_nuts(
-      anisotropic_target, std::vector<double>{0.5, 0.5},
-      anisotropic_options);
+      anisotropic_target, std::vector<double>{0.5, 0.5}, anisotropic_options);
   HighlyCorrelatedGaussian highly_correlated_target;
   quadra::sampling::NutsOptions correlated_diagonal_options = options;
   correlated_diagonal_options.seed = 20260808;
@@ -98,8 +97,8 @@ int main() {
   const auto minimal_warmup = quadra::sampling::sample_nuts(
       standard_target, std::vector<double>(2, 0.1), minimal_warmup_options);
   quadra::sampling::detail::EuclideanMetric rejected_metric(2);
-  const bool accepted_indefinite = rejected_metric.set_inverse_mass(
-      {1.0, 2.0, 2.0, 1.0}, true);
+  const bool accepted_indefinite =
+      rejected_metric.set_inverse_mass({1.0, 2.0, 2.0, 1.0}, true);
   quadra::sampling::NutsOptions multi_options = options;
   multi_options.warmup = 300;
   multi_options.samples = 500;
@@ -125,8 +124,8 @@ int main() {
   workflow_options.health.max_depth_hits = 10;
   workflow_options.initialization_seed = 20260811;
   const auto workflow = quadra::sampling::run_nuts_workflow(
-      [](std::size_t) { return CorrelatedGaussian{}; }, {1.0, -0.5},
-      {"x", "y"}, workflow_options);
+      [](std::size_t) { return CorrelatedGaussian{}; }, {1.0, -0.5}, {"x", "y"},
+      workflow_options);
   quadra::sampling::PosteriorSimulationOptions simulation_options;
   simulation_options.thin = 3;
   simulation_options.max_draws = 7;
@@ -188,8 +187,7 @@ int main() {
   mean[0] /= result.draws.size();
   mean[1] /= result.draws.size();
   if (result.draws.size() != 1000 || std::abs(mean[0] - 1.0) > 0.12 ||
-      std::abs(mean[1] + 0.5) > 0.12 ||
-      result.diagnostics.divergences > 5 ||
+      std::abs(mean[1] + 0.5) > 0.12 || result.diagnostics.divergences > 5 ||
       !(result.diagnostics.mean_acceptance > 0.6) ||
       result.diagnostics.mass_matrix_updates < 2 ||
       anisotropic.diagnostics.inverse_mass.size() != 2 ||
@@ -209,20 +207,17 @@ int main() {
       accepted_indefinite || rejected_metric.dense ||
       rejected_metric.inverse_mass[0] != 1.0 ||
       rejected_metric.inverse_mass[3] != 1.0 ||
-      !(result.diagnostics.energy_bfmi > 0.0) ||
-      !health.passed ||
+      !(result.diagnostics.energy_bfmi > 0.0) || !health.passed ||
       !workflow.health.passed || workflow.parameter_count() != 2 ||
-      workflow.total_draws() != 600 ||
-      workflow.initial_states.size() != 4 || !rejected_duplicate_names ||
-      simulation.draws.size() != 7 ||
+      workflow.total_draws() != 600 || workflow.initial_states.size() != 4 ||
+      !rejected_duplicate_names || simulation.draws.size() != 7 ||
       simulation.quantity_names.size() != 2 ||
       simulation.draws[1].iteration != 3 ||
       simulation.draws[0].values != repeated_simulation.draws[0].values ||
       posterior_csv.str().find("chain,iteration,parameter") != 0 ||
       parameter_csv.str().find("parameter,rhat,bulk_ess,tail_ess") != 0 ||
       chain_csv.str().find("mass_update_failures") == std::string::npos ||
-      predictive_csv.str().find("\"replicated_x,raw\"") ==
-          std::string::npos ||
+      predictive_csv.str().find("\"replicated_x,raw\"") == std::string::npos ||
       summary_csv.str().find("health,PASS") == std::string::npos ||
       multi.chains.size() != 4 || multi.diagnostics.split_rhat[0] > 1.05 ||
       multi.diagnostics.split_rhat[1] > 1.05 ||

@@ -20,7 +20,8 @@ inline void write_csv_field(std::ostream &out, const std::string &value) {
   }
   out << '"';
   for (char character : value) {
-    if (character == '"') out << '"';
+    if (character == '"')
+      out << '"';
     out << character;
   }
   out << '"';
@@ -28,7 +29,8 @@ inline void write_csv_field(std::ostream &out, const std::string &value) {
 
 inline void validate_output_stream(const std::ostream &out,
                                    const char *function) {
-  if (!out) throw std::runtime_error(std::string(function) + ": write failed");
+  if (!out)
+    throw std::runtime_error(std::string(function) + ": write failed");
 }
 
 template <class Writer>
@@ -69,10 +71,9 @@ inline void write_posterior_draws_csv(std::ostream &out,
   detail::validate_output_stream(out, "write_posterior_draws_csv");
 }
 
-inline void write_parameter_diagnostics_csv(
-    std::ostream &out, const NutsWorkflowResult &result) {
-  if (result.parameter_names.size() !=
-      result.fit.diagnostics.split_rhat.size())
+inline void write_parameter_diagnostics_csv(std::ostream &out,
+                                            const NutsWorkflowResult &result) {
+  if (result.parameter_names.size() != result.fit.diagnostics.split_rhat.size())
     throw std::runtime_error(
         "write_parameter_diagnostics_csv: parameter dimension mismatch");
   out << std::setprecision(17) << "parameter,rhat,bulk_ess,tail_ess\n";
@@ -102,8 +103,9 @@ inline void write_chain_diagnostics_csv(std::ostream &out,
   detail::validate_output_stream(out, "write_chain_diagnostics_csv");
 }
 
-inline void write_posterior_predictive_csv(
-    std::ostream &out, const PosteriorSimulationResult &result) {
+inline void
+write_posterior_predictive_csv(std::ostream &out,
+                               const PosteriorSimulationResult &result) {
   out << std::setprecision(17) << "chain,iteration,quantity,value\n";
   for (const auto &draw : result.draws) {
     if (draw.values.size() != result.quantity_names.size())
@@ -130,8 +132,8 @@ inline void write_nuts_summary_csv(std::ostream &out,
       << "max_tree_depth," << result.options.sampler.max_tree_depth << '\n'
       << "target_acceptance," << result.options.sampler.target_acceptance
       << '\n'
-      << "divergence_threshold,"
-      << result.options.sampler.divergence_threshold << '\n'
+      << "divergence_threshold," << result.options.sampler.divergence_threshold
+      << '\n'
       << "diagonal_metric,"
       << (result.options.sampler.adapt_diagonal_mass ? 1 : 0) << '\n'
       << "dense_metric," << (result.options.sampler.adapt_dense_mass ? 1 : 0)
@@ -158,15 +160,14 @@ inline void write_nuts_summary_csv(std::ostream &out,
 }
 
 #define QUADRA_SAMPLING_CSV_FILE_OVERLOAD(function_name, result_type)          \
-  inline void function_name(const std::string &path,                          \
+  inline void function_name(const std::string &path,                           \
                             const result_type &result) {                       \
-    detail::write_csv_file(                                                   \
+    detail::write_csv_file(                                                    \
         path, [&](std::ostream &out) { function_name(out, result); },          \
-        #function_name);                                                      \
+        #function_name);                                                       \
   }
 
-QUADRA_SAMPLING_CSV_FILE_OVERLOAD(write_posterior_draws_csv,
-                                  NutsWorkflowResult)
+QUADRA_SAMPLING_CSV_FILE_OVERLOAD(write_posterior_draws_csv, NutsWorkflowResult)
 QUADRA_SAMPLING_CSV_FILE_OVERLOAD(write_parameter_diagnostics_csv,
                                   NutsWorkflowResult)
 QUADRA_SAMPLING_CSV_FILE_OVERLOAD(write_chain_diagnostics_csv,

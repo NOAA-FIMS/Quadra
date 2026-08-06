@@ -48,7 +48,8 @@ struct NutsHealthAssessment {
 namespace detail {
 
 inline double quantile(std::vector<double> values, double probability) {
-  if (values.empty()) return std::numeric_limits<double>::quiet_NaN();
+  if (values.empty())
+    return std::numeric_limits<double>::quiet_NaN();
   std::sort(values.begin(), values.end());
   const double position = probability * static_cast<double>(values.size() - 1);
   const std::size_t lower = static_cast<std::size_t>(std::floor(position));
@@ -67,7 +68,7 @@ inline double inverse_normal_cdf(double probability) {
                       -1.328068155288572e+01};
   const double c[] = {-7.784894002430293e-03, -3.223964580411365e-01,
                       -2.400758277161838e+00, -2.549732539343734e+00,
-                      4.374664141464968e+00, 2.938163982698783e+00};
+                      4.374664141464968e+00,  2.938163982698783e+00};
   const double d[] = {7.784695709041462e-03, 3.224671290700398e-01,
                       2.445134137142996e+00, 3.754408661907416e+00};
   if (!(probability > 0.0) || !(probability < 1.0))
@@ -80,22 +81,19 @@ inline double inverse_normal_cdf(double probability) {
   }
   if (probability > 0.97575) {
     const double q = std::sqrt(-2.0 * std::log(1.0 - probability));
-    return -(((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) *
-                 q +
+    return -(((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q +
              c[5]) /
            ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1.0);
   }
   const double q = probability - 0.5;
   const double r = q * q;
-  return (((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r +
-          a[5]) *
+  return (((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) *
          q /
-         (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r +
-          1.0);
+         (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1.0);
 }
 
-inline std::vector<std::vector<double>> rank_normalize(
-    const std::vector<std::vector<double>> &chains) {
+inline std::vector<std::vector<double>>
+rank_normalize(const std::vector<std::vector<double>> &chains) {
   const std::size_t chain_count = chains.size();
   const std::size_t draws = chains.front().size();
   std::vector<std::pair<double, std::size_t>> ordered;
@@ -117,8 +115,8 @@ inline std::vector<std::vector<double>> rank_normalize(
       ranks[ordered[i].second] = average_rank;
     begin = end;
   }
-  std::vector<std::vector<double>> normalized(
-      chain_count, std::vector<double>(draws));
+  std::vector<std::vector<double>> normalized(chain_count,
+                                              std::vector<double>(draws));
   const double total = static_cast<double>(ordered.size());
   for (std::size_t chain = 0; chain < chain_count; ++chain)
     for (std::size_t draw = 0; draw < draws; ++draw) {
@@ -133,8 +131,10 @@ inline std::vector<std::vector<double>>
 split_parameter_chains(const std::vector<NutsResult> &chains,
                        std::size_t parameter) {
   std::size_t half = std::numeric_limits<std::size_t>::max();
-  for (const auto &chain : chains) half = std::min(half, chain.draws.size() / 2);
-  if (half < 2) return {};
+  for (const auto &chain : chains)
+    half = std::min(half, chain.draws.size() / 2);
+  if (half < 2)
+    return {};
   std::vector<std::vector<double>> split;
   split.reserve(2 * chains.size());
   for (const auto &chain : chains) {
@@ -159,12 +159,14 @@ inline double sample_variance(const std::vector<double> &x, double mean) {
 }
 
 inline double split_rhat(const std::vector<std::vector<double>> &split) {
-  if (split.empty()) return std::numeric_limits<double>::quiet_NaN();
+  if (split.empty())
+    return std::numeric_limits<double>::quiet_NaN();
   const std::size_t m = split.size();
   const std::size_t n = split.front().size();
   std::vector<double> means(m), variances(m);
   for (std::size_t chain = 0; chain < m; ++chain) {
-    for (double value : split[chain]) means[chain] += value;
+    for (double value : split[chain])
+      means[chain] += value;
     means[chain] /= n;
     variances[chain] = sample_variance(split[chain], means[chain]);
   }
@@ -183,21 +185,23 @@ inline double split_rhat(const std::vector<std::vector<double>> &split) {
   }
   const double between =
       static_cast<double>(n) * between_sum / static_cast<double>(m - 1);
-  if (!(within > 0.0)) return between == 0.0 ? 1.0 :
-      std::numeric_limits<double>::infinity();
+  if (!(within > 0.0))
+    return between == 0.0 ? 1.0 : std::numeric_limits<double>::infinity();
   const double variance =
       (static_cast<double>(n - 1) / n) * within + between / n;
   return std::sqrt(variance / within);
 }
 
-inline double effective_sample_size(
-    const std::vector<std::vector<double>> &split) {
-  if (split.empty()) return std::numeric_limits<double>::quiet_NaN();
+inline double
+effective_sample_size(const std::vector<std::vector<double>> &split) {
+  if (split.empty())
+    return std::numeric_limits<double>::quiet_NaN();
   const std::size_t m = split.size();
   const std::size_t n = split.front().size();
   std::vector<double> means(m), variances(m);
   for (std::size_t chain = 0; chain < m; ++chain) {
-    for (double value : split[chain]) means[chain] += value;
+    for (double value : split[chain])
+      means[chain] += value;
     means[chain] /= n;
     variances[chain] = sample_variance(split[chain], means[chain]);
   }
@@ -218,7 +222,8 @@ inline double effective_sample_size(
       static_cast<double>(n) * between_sum / static_cast<double>(m - 1);
   const double variance =
       (static_cast<double>(n - 1) / n) * within + between / n;
-  if (!(variance > 0.0)) return static_cast<double>(m * n);
+  if (!(variance > 0.0))
+    return static_cast<double>(m * n);
 
   std::vector<double> rho(n, 0.0);
   rho[0] = 1.0;
@@ -227,9 +232,8 @@ inline double effective_sample_size(
     for (std::size_t chain = 0; chain < m; ++chain) {
       double chain_covariance = 0.0;
       for (std::size_t i = 0; i + lag < n; ++i)
-        chain_covariance +=
-            (split[chain][i] - means[chain]) *
-            (split[chain][i + lag] - means[chain]);
+        chain_covariance += (split[chain][i] - means[chain]) *
+                            (split[chain][i + lag] - means[chain]);
       autocovariance += chain_covariance / static_cast<double>(n - lag);
     }
     autocovariance /= m;
@@ -239,19 +243,20 @@ inline double effective_sample_size(
   double previous_pair = std::numeric_limits<double>::infinity();
   for (std::size_t lag = 1; lag + 1 < n; lag += 2) {
     double pair = rho[lag] + rho[lag + 1];
-    if (pair < 0.0) break;
+    if (pair < 0.0)
+      break;
     pair = std::min(pair, previous_pair);
     correlation_sum += pair;
     previous_pair = pair;
   }
-  const double ess = static_cast<double>(m * n) /
-                     std::max(1.0, 1.0 + 2.0 * correlation_sum);
+  const double ess =
+      static_cast<double>(m * n) / std::max(1.0, 1.0 + 2.0 * correlation_sum);
   return std::min(static_cast<double>(m * n), ess);
 }
 
-inline std::vector<std::vector<double>> indicator_chains(
-    const std::vector<std::vector<double>> &split, double threshold,
-    bool lower) {
+inline std::vector<std::vector<double>>
+indicator_chains(const std::vector<std::vector<double>> &split,
+                 double threshold, bool lower) {
   auto indicators = split;
   for (auto &chain : indicators)
     for (double &value : chain)
@@ -286,25 +291,25 @@ compute_multi_chain_diagnostics(const std::vector<NutsResult> &chains) {
     const auto rank_normalized = detail::rank_normalize(split);
     auto folded = split;
     for (auto &chain : folded)
-      for (double &value : chain) value = std::abs(value - median);
+      for (double &value : chain)
+        value = std::abs(value - median);
     const auto folded_rank_normalized = detail::rank_normalize(folded);
     out.split_rhat[parameter] =
         std::max(detail::split_rhat(rank_normalized),
                  detail::split_rhat(folded_rank_normalized));
-    out.bulk_ess[parameter] =
-        detail::effective_sample_size(rank_normalized);
-    out.tail_ess[parameter] = std::min(
-        detail::effective_sample_size(
-            detail::indicator_chains(split, lower, true)),
-        detail::effective_sample_size(
-            detail::indicator_chains(split, upper, false)));
+    out.bulk_ess[parameter] = detail::effective_sample_size(rank_normalized);
+    out.tail_ess[parameter] =
+        std::min(detail::effective_sample_size(
+                     detail::indicator_chains(split, lower, true)),
+                 detail::effective_sample_size(
+                     detail::indicator_chains(split, upper, false)));
   }
   return out;
 }
 
-inline NutsHealthAssessment assess_nuts_health(
-    const MultiChainResult &result,
-    const NutsHealthThresholds &thresholds = {}) {
+inline NutsHealthAssessment
+assess_nuts_health(const MultiChainResult &result,
+                   const NutsHealthThresholds &thresholds = {}) {
   if (result.chains.empty() || result.diagnostics.split_rhat.empty() ||
       result.diagnostics.bulk_ess.empty() ||
       result.diagnostics.tail_ess.empty() ||
@@ -314,15 +319,13 @@ inline NutsHealthAssessment assess_nuts_health(
           result.diagnostics.split_rhat.size())
     throw std::invalid_argument(
         "assess_nuts_health requires populated chains and diagnostics");
-  if (!(thresholds.max_rhat >= 1.0) ||
-      !(thresholds.min_bulk_ess >= 0.0) ||
-      !(thresholds.min_tail_ess >= 0.0) ||
-      !(thresholds.min_bfmi >= 0.0) ||
+  if (!(thresholds.max_rhat >= 1.0) || !(thresholds.min_bulk_ess >= 0.0) ||
+      !(thresholds.min_tail_ess >= 0.0) || !(thresholds.min_bfmi >= 0.0) ||
       !std::isfinite(thresholds.max_rhat) ||
       !std::isfinite(thresholds.min_bulk_ess) ||
       !std::isfinite(thresholds.min_tail_ess) ||
-      !std::isfinite(thresholds.min_bfmi) ||
-      thresholds.max_divergences < 0 || thresholds.max_depth_hits < 0 ||
+      !std::isfinite(thresholds.min_bfmi) || thresholds.max_divergences < 0 ||
+      thresholds.max_depth_hits < 0 ||
       thresholds.max_mass_matrix_update_failures < 0)
     throw std::invalid_argument("assess_nuts_health: invalid thresholds");
   NutsHealthAssessment out;
@@ -337,14 +340,11 @@ inline NutsHealthAssessment assess_nuts_health(
     const auto &diagnostics = chain.diagnostics;
     out.divergences += diagnostics.divergences;
     out.depth_hits += diagnostics.max_depth_hits;
-    out.mass_matrix_update_failures +=
-        diagnostics.mass_matrix_update_failures;
+    out.mass_matrix_update_failures += diagnostics.mass_matrix_update_failures;
     out.min_bfmi = std::min(out.min_bfmi, diagnostics.energy_bfmi);
   }
-  out.passed = std::isfinite(out.max_rhat) &&
-               std::isfinite(out.min_bulk_ess) &&
-               std::isfinite(out.min_tail_ess) &&
-               std::isfinite(out.min_bfmi) &&
+  out.passed = std::isfinite(out.max_rhat) && std::isfinite(out.min_bulk_ess) &&
+               std::isfinite(out.min_tail_ess) && std::isfinite(out.min_bfmi) &&
                out.max_rhat <= thresholds.max_rhat &&
                out.min_bulk_ess >= thresholds.min_bulk_ess &&
                out.min_tail_ess >= thresholds.min_tail_ess &&
@@ -357,12 +357,13 @@ inline NutsHealthAssessment assess_nuts_health(
 }
 
 template <class TargetFactory>
-MultiChainResult sample_nuts_chains(
-    TargetFactory target_factory,
-    const std::vector<std::vector<double>> &initial_states,
-    const NutsOptions &options = {}, bool parallel = true) {
+MultiChainResult
+sample_nuts_chains(TargetFactory target_factory,
+                   const std::vector<std::vector<double>> &initial_states,
+                   const NutsOptions &options = {}, bool parallel = true) {
   if (initial_states.size() < 2)
-    throw std::invalid_argument("sample_nuts_chains requires at least two chains");
+    throw std::invalid_argument(
+        "sample_nuts_chains requires at least two chains");
   MultiChainResult out;
   out.chains.resize(initial_states.size());
   std::vector<std::exception_ptr> errors(initial_states.size());
@@ -383,13 +384,15 @@ MultiChainResult sample_nuts_chains(
     workers.reserve(initial_states.size());
     for (std::size_t chain = 0; chain < initial_states.size(); ++chain)
       workers.emplace_back(run, chain);
-    for (auto &worker : workers) worker.join();
+    for (auto &worker : workers)
+      worker.join();
   } else {
     for (std::size_t chain = 0; chain < initial_states.size(); ++chain)
       run(chain);
   }
   for (const auto &error : errors)
-    if (error) std::rethrow_exception(error);
+    if (error)
+      std::rethrow_exception(error);
   out.diagnostics = compute_multi_chain_diagnostics(out.chains);
   return out;
 }

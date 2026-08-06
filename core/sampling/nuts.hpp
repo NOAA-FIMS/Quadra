@@ -28,7 +28,8 @@ LogDensityEvaluation evaluate_ad_log_density(LogDensity &log_density,
   had::g_ADGraph = &graph;
   std::vector<AD> q_ad;
   q_ad.reserve(q.size());
-  for (double value : q) q_ad.emplace_back(value);
+  for (double value : q)
+    q_ad.emplace_back(value);
 
   LogDensityEvaluation out;
   out.gradient.resize(q.size());
@@ -57,7 +58,8 @@ public:
                        const std::vector<double> &initial)
       : log_density_(&log_density) {
     q_ad_.reserve(initial.size());
-    for (double value : initial) q_ad_.emplace_back(value);
+    for (double value : initial)
+      q_ad_.emplace_back(value);
     target_ad_ = (*log_density_)(q_ad_);
   }
 
@@ -74,7 +76,8 @@ public:
     LogDensityEvaluation out;
     out.log_density = target_ad_.val;
     out.gradient.resize(q.size());
-    if (!std::isfinite(out.log_density)) return out;
+    if (!std::isfinite(out.log_density))
+      return out;
     graph_.ZeroFirstOrderAdjoints();
     had::SetAdjoint(target_ad_, 1.0);
     had::PropagateFirstOrderAdjoint();
@@ -91,7 +94,8 @@ public:
     std::size_t count = 0;
     for (std::size_t i = 0; i < graph_.vertices.size(); ++i) {
       const auto &vertex = graph_.vertices[i];
-      if (vertex.op == had::OpCode::Independent && vertex.e1.to != i) ++count;
+      if (vertex.op == had::OpCode::Independent && vertex.e1.to != i)
+        ++count;
     }
     return count;
   }
@@ -190,7 +194,8 @@ struct EuclideanMetric {
   template <class Rng, class Normal>
   std::vector<double> sample_momentum(Rng &rng, Normal &normal) const {
     std::vector<double> momentum(dimension), z(dimension);
-    for (double &value : z) value = normal(rng);
+    for (double &value : z)
+      value = normal(rng);
     if (!dense) {
       for (std::size_t i = 0; i < dimension; ++i)
         momentum[i] = z[i] / cholesky[i * dimension + i];
@@ -216,11 +221,11 @@ struct EuclideanMetric {
         for (std::size_t k = 0; k < j; ++k)
           value -= factor[i * dimension + k] * factor[j * dimension + k];
         if (i == j) {
-          if (!(value > 0.0) || !std::isfinite(value)) return false;
+          if (!(value > 0.0) || !std::isfinite(value))
+            return false;
           factor[i * dimension + j] = std::sqrt(value);
         } else {
-          factor[i * dimension + j] =
-              value / factor[j * dimension + j];
+          factor[i * dimension + j] = value / factor[j * dimension + j];
         }
       }
     }
@@ -236,10 +241,10 @@ struct EuclideanMetric {
   bool dense = false;
 };
 
-inline double dot(const std::vector<double> &a,
-                  const std::vector<double> &b) {
+inline double dot(const std::vector<double> &a, const std::vector<double> &b) {
   double value = 0.0;
-  for (std::size_t i = 0; i < a.size(); ++i) value += a[i] * b[i];
+  for (std::size_t i = 0; i < a.size(); ++i)
+    value += a[i] * b[i];
   return value;
 }
 
@@ -255,9 +260,11 @@ bool leapfrog(LogDensity &target, std::vector<double> &q,
   for (std::size_t i = 0; i < q.size(); ++i)
     momentum[i] += 0.5 * step * state.gradient[i];
   const auto velocity = metric.velocity(momentum);
-  for (std::size_t i = 0; i < q.size(); ++i) q[i] += step * velocity[i];
+  for (std::size_t i = 0; i < q.size(); ++i)
+    q[i] += step * velocity[i];
   state = target(q);
-  if (!state.finite) return false;
+  if (!state.finite)
+    return false;
   for (std::size_t i = 0; i < q.size(); ++i)
     momentum[i] += 0.5 * step * state.gradient[i];
   return true;
@@ -274,8 +281,7 @@ inline bool no_u_turn(const std::vector<double> &q_minus,
   for (std::size_t i = 0; i < delta.size(); ++i) {
     delta[i] = q_plus[i] - q_minus[i];
   }
-  return dot(delta, velocity_minus) >= 0.0 &&
-         dot(delta, velocity_plus) >= 0.0;
+  return dot(delta, velocity_minus) >= 0.0 && dot(delta, velocity_plus) >= 0.0;
 }
 
 struct Tree {
@@ -294,50 +300,49 @@ Tree build_tree(LogDensity &target, const std::vector<double> &q,
                 const std::vector<double> &momentum,
                 const LogDensityEvaluation &state, double log_slice,
                 int direction, int depth, double step_size,
-                const EuclideanMetric &metric,
-                double initial_joint, double divergence_threshold, Rng &rng) {
+                const EuclideanMetric &metric, double initial_joint,
+                double divergence_threshold, Rng &rng) {
   if (depth == 0) {
     Tree tree;
     tree.q_minus = tree.q_plus = tree.proposal = q;
     tree.p_minus = tree.p_plus = momentum;
     tree.state_minus = tree.state_plus = tree.proposal_state = state;
-    const bool finite = leapfrog(target, tree.q_minus, tree.p_minus,
-                                 tree.state_minus, metric,
-                                 direction * step_size);
+    const bool finite =
+        leapfrog(target, tree.q_minus, tree.p_minus, tree.state_minus, metric,
+                 direction * step_size);
     tree.q_plus = tree.proposal = tree.q_minus;
     tree.p_plus = tree.p_minus;
     tree.state_plus = tree.proposal_state = tree.state_minus;
     tree.leapfrog_steps = 1;
-    const double joint = finite
-                             ? tree.state_minus.log_density -
-                                   kinetic(tree.p_minus, metric)
-                             : -std::numeric_limits<double>::infinity();
+    const double joint =
+        finite ? tree.state_minus.log_density - kinetic(tree.p_minus, metric)
+               : -std::numeric_limits<double>::infinity();
     const double energy_error = initial_joint - joint;
     tree.valid = finite && log_slice <= joint ? 1 : 0;
     tree.divergent = !finite || !std::isfinite(energy_error) ||
                      energy_error > divergence_threshold;
-    tree.keep_going = !tree.divergent &&
-                      log_slice < joint + divergence_threshold;
+    tree.keep_going =
+        !tree.divergent && log_slice < joint + divergence_threshold;
     tree.acceptance_sum =
         finite ? std::min(1.0, std::exp(joint - initial_joint)) : 0.0;
     tree.acceptance_count = 1;
     return tree;
   }
 
-  Tree left = build_tree(target, q, momentum, state, log_slice, direction,
-                         depth - 1, step_size, metric, initial_joint,
-                         divergence_threshold, rng);
-  if (!left.keep_going) return left;
+  Tree left =
+      build_tree(target, q, momentum, state, log_slice, direction, depth - 1,
+                 step_size, metric, initial_joint, divergence_threshold, rng);
+  if (!left.keep_going)
+    return left;
 
-  Tree right = direction < 0
-                   ? build_tree(target, left.q_minus, left.p_minus,
-                                left.state_minus, log_slice, direction,
-                                depth - 1, step_size, metric,
-                                initial_joint, divergence_threshold, rng)
-                   : build_tree(target, left.q_plus, left.p_plus,
-                                left.state_plus, log_slice, direction,
-                                depth - 1, step_size, metric,
-                                initial_joint, divergence_threshold, rng);
+  Tree right =
+      direction < 0
+          ? build_tree(target, left.q_minus, left.p_minus, left.state_minus,
+                       log_slice, direction, depth - 1, step_size, metric,
+                       initial_joint, divergence_threshold, rng)
+          : build_tree(target, left.q_plus, left.p_plus, left.state_plus,
+                       log_slice, direction, depth - 1, step_size, metric,
+                       initial_joint, divergence_threshold, rng);
   Tree combined = left;
   if (direction < 0) {
     combined.q_minus = right.q_minus;
@@ -362,8 +367,7 @@ Tree build_tree(LogDensity &target, const std::vector<double> &q,
   combined.acceptance_count += right.acceptance_count;
   combined.keep_going = left.keep_going && right.keep_going &&
                         no_u_turn(combined.q_minus, combined.q_plus,
-                                  combined.p_minus, combined.p_plus,
-                                  metric);
+                                  combined.p_minus, combined.p_plus, metric);
   return combined;
 }
 
@@ -388,16 +392,16 @@ double reasonable_step_size(LogDensity &target, const std::vector<double> &q,
     LogDensityEvaluation trial = state;
     if (!leapfrog(target, q_trial, p_trial, trial, metric, candidate))
       return 0.0;
-    return std::exp(std::min(0.0, trial.log_density -
-                                     kinetic(p_trial, metric) -
-                                     initial_joint));
+    return std::exp(std::min(0.0, trial.log_density - kinetic(p_trial, metric) -
+                                      initial_joint));
   };
   const bool increase = acceptance(step) > 0.5;
   for (int i = 0; i < 20; ++i) {
     const double next = increase ? step * 2.0 : step * 0.5;
     const double a = acceptance(next);
     step = next;
-    if ((increase && a < 0.5) || (!increase && a > 0.5)) break;
+    if ((increase && a < 0.5) || (!increase && a > 0.5))
+      break;
   }
   return std::max(1.0e-6, std::min(10.0, step));
 }
@@ -421,15 +425,15 @@ NutsResult sample_nuts(LogDensity &target, std::vector<double> initial,
   std::normal_distribution<double> normal(0.0, 1.0);
   detail::EuclideanMetric metric(initial.size());
   AdLogDensityEvaluator<LogDensity> evaluator(target, initial,
-                                               options.reuse_ad_graph);
+                                              options.reuse_ad_graph);
   LogDensityEvaluation current = evaluator(initial);
   if (!current.finite)
     throw std::runtime_error("sample_nuts: initial state is non-finite");
 
-  double step_size = options.initial_step_size > 0.0
-                         ? options.initial_step_size
-                         : detail::reasonable_step_size(
-                               evaluator, initial, current, metric);
+  double step_size =
+      options.initial_step_size > 0.0
+          ? options.initial_step_size
+          : detail::reasonable_step_size(evaluator, initial, current, metric);
   double mu = std::log(10.0 * step_size);
   double log_step_bar = std::log(step_size);
   double h_bar = 0.0;
@@ -472,13 +476,11 @@ NutsResult sample_nuts(LogDensity &target, std::vector<double> initial,
           direction < 0
               ? detail::build_tree(evaluator, tree.q_minus, tree.p_minus,
                                    tree.state_minus, log_slice, direction,
-                                   depth, step_size, metric,
-                                   initial_joint,
+                                   depth, step_size, metric, initial_joint,
                                    options.divergence_threshold, rng)
               : detail::build_tree(evaluator, tree.q_plus, tree.p_plus,
-                                   tree.state_plus, log_slice, direction,
-                                   depth, step_size, metric,
-                                   initial_joint,
+                                   tree.state_plus, log_slice, direction, depth,
+                                   step_size, metric, initial_joint,
                                    options.divergence_threshold, rng);
       if (direction < 0) {
         tree.q_minus = extension.q_minus;
@@ -502,16 +504,14 @@ NutsResult sample_nuts(LogDensity &target, std::vector<double> initial,
       tree.acceptance_count += extension.acceptance_count;
       tree.keep_going = extension.keep_going &&
                         detail::no_u_turn(tree.q_minus, tree.q_plus,
-                                          tree.p_minus, tree.p_plus,
-                                          metric);
+                                          tree.p_minus, tree.p_plus, metric);
       ++depth;
     }
     initial = tree.proposal;
     current = tree.proposal_state;
-    const double acceptance =
-        tree.acceptance_count > 0
-            ? tree.acceptance_sum / tree.acceptance_count
-            : 0.0;
+    const double acceptance = tree.acceptance_count > 0
+                                  ? tree.acceptance_sum / tree.acceptance_count
+                                  : 0.0;
 
     if (iteration <= options.warmup) {
       result.diagnostics.warmup_leapfrog_steps += tree.leapfrog_steps;
@@ -522,11 +522,11 @@ NutsResult sample_nuts(LogDensity &target, std::vector<double> initial,
       ++warmup_acceptance_iterations;
       ++dual_averaging_iteration;
       const double eta = 1.0 / (dual_averaging_iteration + 10.0);
-      h_bar = (1.0 - eta) * h_bar +
-              eta * (options.target_acceptance - acceptance);
+      h_bar =
+          (1.0 - eta) * h_bar + eta * (options.target_acceptance - acceptance);
       const double log_step =
-          mu - std::sqrt(static_cast<double>(dual_averaging_iteration)) /
-                   0.05 * h_bar;
+          mu - std::sqrt(static_cast<double>(dual_averaging_iteration)) / 0.05 *
+                   h_bar;
       const double weight =
           std::pow(static_cast<double>(dual_averaging_iteration), -0.75);
       log_step_bar = weight * log_step + (1.0 - weight) * log_step_bar;
@@ -534,9 +534,8 @@ NutsResult sample_nuts(LogDensity &target, std::vector<double> initial,
 
       const bool adapt_mass =
           options.adapt_dense_mass || options.adapt_diagonal_mass;
-      const bool in_mass_window = adapt_mass &&
-                                  iteration > initial_buffer &&
-                                  iteration <= slow_end;
+      const bool in_mass_window =
+          adapt_mass && iteration > initial_buffer && iteration <= slow_end;
       if (in_mass_window) {
         ++mass_count;
         std::vector<double> delta(initial.size());
@@ -546,8 +545,7 @@ NutsResult sample_nuts(LogDensity &target, std::vector<double> initial,
         }
         for (std::size_t i = 0; i < initial.size(); ++i)
           for (std::size_t j = 0; j < initial.size(); ++j)
-            m2[i * initial.size() + j] +=
-                delta[i] * (initial[j] - mean[j]);
+            m2[i * initial.size() + j] += delta[i] * (initial[j] - mean[j]);
         if (iteration == mass_window_end && mass_count > 1) {
           std::vector<double> candidate(initial.size() * initial.size(), 0.0);
           const double sample_weight =
@@ -557,9 +555,8 @@ NutsResult sample_nuts(LogDensity &target, std::vector<double> initial,
             for (std::size_t j = 0; j < initial.size(); ++j) {
               if (options.adapt_dense_mass || i == j)
                 candidate[i * initial.size() + j] =
-                    sample_weight *
-                    0.5 * (m2[i * initial.size() + j] +
-                           m2[j * initial.size() + i]) /
+                    sample_weight * 0.5 *
+                    (m2[i * initial.size() + j] + m2[j * initial.size() + i]) /
                     (mass_count - 1);
               if (i == j)
                 candidate[i * initial.size() + j] += ridge;
@@ -567,8 +564,8 @@ NutsResult sample_nuts(LogDensity &target, std::vector<double> initial,
           if (metric.set_inverse_mass(std::move(candidate),
                                       options.adapt_dense_mass)) {
             ++result.diagnostics.mass_matrix_updates;
-            step_size = detail::reasonable_step_size(
-                evaluator, initial, current, metric);
+            step_size = detail::reasonable_step_size(evaluator, initial,
+                                                     current, metric);
             mu = std::log(10.0 * step_size);
             log_step_bar = std::log(step_size);
             h_bar = 0.0;
@@ -590,8 +587,7 @@ NutsResult sample_nuts(LogDensity &target, std::vector<double> initial,
         }
       }
       if (iteration == options.warmup)
-        step_size =
-            std::exp(std::max(-20.0, std::min(5.0, log_step_bar)));
+        step_size = std::exp(std::max(-20.0, std::min(5.0, log_step_bar)));
     } else {
       result.diagnostics.leapfrog_steps += tree.leapfrog_steps;
       result.diagnostics.divergences += tree.divergent ? 1 : 0;
@@ -610,7 +606,8 @@ NutsResult sample_nuts(LogDensity &target, std::vector<double> initial,
       warmup_acceptance_total / std::max(1, warmup_acceptance_iterations);
   if (result.energy.size() > 1) {
     double mean_energy = 0.0;
-    for (double value : result.energy) mean_energy += value;
+    for (double value : result.energy)
+      mean_energy += value;
     mean_energy /= result.energy.size();
     double variance_sum = 0.0;
     double difference_sum = 0.0;
