@@ -22,6 +22,15 @@ struct AnisotropicGaussian {
   }
 };
 
+struct HighlyCorrelatedGaussian {
+  template <class T> T operator()(const std::vector<T> &q) const {
+    constexpr double rho = 0.99;
+    constexpr double scale = 1.0 / (1.0 - rho * rho);
+    return -T(0.5 * scale) *
+           (q[0] * q[0] - T(2.0 * rho) * q[0] * q[1] + q[1] * q[1]);
+  }
+};
+
 struct BoundedTarget {
   template <class T> T operator()(const std::vector<T> &q) const {
     if (quadra::value_of(q[0]) > 2.0)
@@ -53,6 +62,18 @@ int main() {
   const auto anisotropic = quadra::sampling::sample_nuts(
       anisotropic_target, std::vector<double>{0.5, 0.5},
       anisotropic_options);
+  HighlyCorrelatedGaussian highly_correlated_target;
+  quadra::sampling::NutsOptions correlated_diagonal_options = options;
+  correlated_diagonal_options.seed = 20260808;
+  const auto correlated_diagonal = quadra::sampling::sample_nuts(
+      highly_correlated_target, std::vector<double>{0.0, 0.0},
+      correlated_diagonal_options);
+  quadra::sampling::NutsOptions correlated_dense_options =
+      correlated_diagonal_options;
+  correlated_dense_options.adapt_dense_mass = true;
+  const auto correlated_dense = quadra::sampling::sample_nuts(
+      highly_correlated_target, std::vector<double>{0.0, 0.0},
+      correlated_dense_options);
   quadra::sampling::NutsOptions multi_options = options;
   multi_options.warmup = 300;
   multi_options.samples = 500;
@@ -100,6 +121,11 @@ int main() {
       anisotropic.diagnostics.inverse_mass[0] <
           20.0 * anisotropic.diagnostics.inverse_mass[1] ||
       anisotropic.diagnostics.max_depth_hits > 5 ||
+      correlated_dense.diagnostics.dense_inverse_mass.size() != 2 ||
+      correlated_dense.diagnostics.dense_inverse_mass[0][1] < 0.5 ||
+      correlated_dense.diagnostics.divergences > 5 ||
+      correlated_dense.diagnostics.leapfrog_steps >=
+          correlated_diagonal.diagnostics.leapfrog_steps ||
       !(result.diagnostics.energy_bfmi > 0.0) ||
       multi.chains.size() != 4 || multi.diagnostics.split_rhat[0] > 1.05 ||
       multi.diagnostics.split_rhat[1] > 1.05 ||

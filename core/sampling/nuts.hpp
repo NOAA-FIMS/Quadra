@@ -132,6 +132,9 @@ struct NutsOptions {
   double initial_step_size = 0.0;
   double divergence_threshold = 1000.0;
   bool adapt_diagonal_mass = true;
+  // Dense adaptation takes precedence over diagonal adaptation. It is useful
+  // for strongly correlated targets but costs O(d^2) per leapfrog step.
+  bool adapt_dense_mass = false;
   // Disable for targets whose C++ control flow changes with parameter values.
   bool reuse_ad_graph = true;
   std::uint64_t seed = 5489u;
@@ -150,6 +153,7 @@ struct NutsDiagnostics {
   double energy_bfmi = std::numeric_limits<double>::quiet_NaN();
   double step_size = 0.0;
   std::vector<double> inverse_mass;
+  std::vector<std::vector<double>> dense_inverse_mass;
 };
 
 struct NutsResult {
@@ -161,6 +165,76 @@ struct NutsResult {
 
 namespace detail {
 
+struct EuclideanMetric {
+  explicit EuclideanMetric(std::size_t dimension)
+      : dimension(dimension), inverse_mass(dimension * dimension, 0.0),
+        cholesky(dimension * dimension, 0.0) {
+    for (std::size_t i = 0; i < dimension; ++i)
+      inverse_mass[i * dimension + i] = cholesky[i * dimension + i] = 1.0;
+  }
+
+  std::vector<double> velocity(const std::vector<double> &momentum) const {
+    std::vector<double> out(dimension, 0.0);
+    if (!dense) {
+      for (std::size_t i = 0; i < dimension; ++i)
+        out[i] = inverse_mass[i * dimension + i] * momentum[i];
+      return out;
+    }
+    for (std::size_t i = 0; i < dimension; ++i)
+      for (std::size_t j = 0; j < dimension; ++j)
+        out[i] += inverse_mass[i * dimension + j] * momentum[j];
+    return out;
+  }
+
+  template <class Rng, class Normal>
+  std::vector<double> sample_momentum(Rng &rng, Normal &normal) const {
+    std::vector<double> momentum(dimension), z(dimension);
+    for (double &value : z) value = normal(rng);
+    if (!dense) {
+      for (std::size_t i = 0; i < dimension; ++i)
+        momentum[i] = z[i] / cholesky[i * dimension + i];
+      return momentum;
+    }
+    // If inverse_mass = L L', then L' p = z gives
+    // Cov(p) = inverse(inverse_mass).
+    for (std::size_t offset = 0; offset < dimension; ++offset) {
+      const std::size_t i = dimension - 1 - offset;
+      double value = z[i];
+      for (std::size_t j = i + 1; j < dimension; ++j)
+        value -= cholesky[j * dimension + i] * momentum[j];
+      momentum[i] = value / cholesky[i * dimension + i];
+    }
+    return momentum;
+  }
+
+  bool set_inverse_mass(std::vector<double> candidate, bool use_dense) {
+    std::vector<double> factor(candidate.size(), 0.0);
+    for (std::size_t i = 0; i < dimension; ++i) {
+      for (std::size_t j = 0; j <= i; ++j) {
+        double value = candidate[i * dimension + j];
+        for (std::size_t k = 0; k < j; ++k)
+          value -= factor[i * dimension + k] * factor[j * dimension + k];
+        if (i == j) {
+          if (!(value > 0.0) || !std::isfinite(value)) return false;
+          factor[i * dimension + j] = std::sqrt(value);
+        } else {
+          factor[i * dimension + j] =
+              value / factor[j * dimension + j];
+        }
+      }
+    }
+    inverse_mass = std::move(candidate);
+    cholesky = std::move(factor);
+    dense = use_dense;
+    return true;
+  }
+
+  std::size_t dimension;
+  std::vector<double> inverse_mass;
+  std::vector<double> cholesky;
+  bool dense = false;
+};
+
 inline double dot(const std::vector<double> &a,
                   const std::vector<double> &b) {
   double value = 0.0;
@@ -169,21 +243,18 @@ inline double dot(const std::vector<double> &a,
 }
 
 inline double kinetic(const std::vector<double> &momentum,
-                      const std::vector<double> &inverse_mass) {
-  double value = 0.0;
-  for (std::size_t i = 0; i < momentum.size(); ++i)
-    value += momentum[i] * momentum[i] * inverse_mass[i];
-  return 0.5 * value;
+                      const EuclideanMetric &metric) {
+  return 0.5 * dot(momentum, metric.velocity(momentum));
 }
 
 template <class LogDensity>
 bool leapfrog(LogDensity &target, std::vector<double> &q,
               std::vector<double> &momentum, LogDensityEvaluation &state,
-              const std::vector<double> &inverse_mass, double step) {
+              const EuclideanMetric &metric, double step) {
   for (std::size_t i = 0; i < q.size(); ++i)
     momentum[i] += 0.5 * step * state.gradient[i];
-  for (std::size_t i = 0; i < q.size(); ++i)
-    q[i] += step * inverse_mass[i] * momentum[i];
+  const auto velocity = metric.velocity(momentum);
+  for (std::size_t i = 0; i < q.size(); ++i) q[i] += step * velocity[i];
   state = target(q);
   if (!state.finite) return false;
   for (std::size_t i = 0; i < q.size(); ++i)
@@ -195,14 +266,12 @@ inline bool no_u_turn(const std::vector<double> &q_minus,
                       const std::vector<double> &q_plus,
                       const std::vector<double> &p_minus,
                       const std::vector<double> &p_plus,
-                      const std::vector<double> &inverse_mass) {
+                      const EuclideanMetric &metric) {
   std::vector<double> delta(q_minus.size());
-  std::vector<double> velocity_minus(q_minus.size());
-  std::vector<double> velocity_plus(q_minus.size());
+  const auto velocity_minus = metric.velocity(p_minus);
+  const auto velocity_plus = metric.velocity(p_plus);
   for (std::size_t i = 0; i < delta.size(); ++i) {
     delta[i] = q_plus[i] - q_minus[i];
-    velocity_minus[i] = inverse_mass[i] * p_minus[i];
-    velocity_plus[i] = inverse_mass[i] * p_plus[i];
   }
   return dot(delta, velocity_minus) >= 0.0 &&
          dot(delta, velocity_plus) >= 0.0;
@@ -224,7 +293,7 @@ Tree build_tree(LogDensity &target, const std::vector<double> &q,
                 const std::vector<double> &momentum,
                 const LogDensityEvaluation &state, double log_slice,
                 int direction, int depth, double step_size,
-                const std::vector<double> &inverse_mass,
+                const EuclideanMetric &metric,
                 double initial_joint, double divergence_threshold, Rng &rng) {
   if (depth == 0) {
     Tree tree;
@@ -232,7 +301,7 @@ Tree build_tree(LogDensity &target, const std::vector<double> &q,
     tree.p_minus = tree.p_plus = momentum;
     tree.state_minus = tree.state_plus = tree.proposal_state = state;
     const bool finite = leapfrog(target, tree.q_minus, tree.p_minus,
-                                 tree.state_minus, inverse_mass,
+                                 tree.state_minus, metric,
                                  direction * step_size);
     tree.q_plus = tree.proposal = tree.q_minus;
     tree.p_plus = tree.p_minus;
@@ -240,7 +309,7 @@ Tree build_tree(LogDensity &target, const std::vector<double> &q,
     tree.leapfrog_steps = 1;
     const double joint = finite
                              ? tree.state_minus.log_density -
-                                   kinetic(tree.p_minus, inverse_mass)
+                                   kinetic(tree.p_minus, metric)
                              : -std::numeric_limits<double>::infinity();
     const double energy_error = initial_joint - joint;
     tree.valid = finite && log_slice <= joint ? 1 : 0;
@@ -255,18 +324,18 @@ Tree build_tree(LogDensity &target, const std::vector<double> &q,
   }
 
   Tree left = build_tree(target, q, momentum, state, log_slice, direction,
-                         depth - 1, step_size, inverse_mass, initial_joint,
+                         depth - 1, step_size, metric, initial_joint,
                          divergence_threshold, rng);
   if (!left.keep_going) return left;
 
   Tree right = direction < 0
                    ? build_tree(target, left.q_minus, left.p_minus,
                                 left.state_minus, log_slice, direction,
-                                depth - 1, step_size, inverse_mass,
+                                depth - 1, step_size, metric,
                                 initial_joint, divergence_threshold, rng)
                    : build_tree(target, left.q_plus, left.p_plus,
                                 left.state_plus, log_slice, direction,
-                                depth - 1, step_size, inverse_mass,
+                                depth - 1, step_size, metric,
                                 initial_joint, divergence_threshold, rng);
   Tree combined = left;
   if (direction < 0) {
@@ -293,27 +362,33 @@ Tree build_tree(LogDensity &target, const std::vector<double> &q,
   combined.keep_going = left.keep_going && right.keep_going &&
                         no_u_turn(combined.q_minus, combined.q_plus,
                                   combined.p_minus, combined.p_plus,
-                                  inverse_mass);
+                                  metric);
   return combined;
 }
 
 template <class LogDensity>
 double reasonable_step_size(LogDensity &target, const std::vector<double> &q,
                             const LogDensityEvaluation &state,
-                            const std::vector<double> &inverse_mass) {
+                            const EuclideanMetric &metric) {
   std::vector<double> momentum(q.size(), 0.0);
-  for (std::size_t i = 0; i < momentum.size(); ++i)
-    momentum[i] = 1.0 / std::sqrt(inverse_mass[i]);
-  const double initial_joint = state.log_density - kinetic(momentum, inverse_mass);
+  // A deterministic unit vector in whitened momentum coordinates.
+  for (std::size_t offset = 0; offset < q.size(); ++offset) {
+    const std::size_t i = q.size() - 1 - offset;
+    double value = 1.0;
+    for (std::size_t j = i + 1; j < q.size(); ++j)
+      value -= metric.cholesky[j * q.size() + i] * momentum[j];
+    momentum[i] = value / metric.cholesky[i * q.size() + i];
+  }
+  const double initial_joint = state.log_density - kinetic(momentum, metric);
   double step = 1.0;
   auto acceptance = [&](double candidate) {
     std::vector<double> q_trial = q;
     std::vector<double> p_trial = momentum;
     LogDensityEvaluation trial = state;
-    if (!leapfrog(target, q_trial, p_trial, trial, inverse_mass, candidate))
+    if (!leapfrog(target, q_trial, p_trial, trial, metric, candidate))
       return 0.0;
     return std::exp(std::min(0.0, trial.log_density -
-                                     kinetic(p_trial, inverse_mass) -
+                                     kinetic(p_trial, metric) -
                                      initial_joint));
   };
   const bool increase = acceptance(step) > 0.5;
@@ -343,7 +418,7 @@ NutsResult sample_nuts(LogDensity &target, std::vector<double> initial,
   std::mt19937_64 rng(options.seed);
   std::uniform_real_distribution<double> uniform(0.0, 1.0);
   std::normal_distribution<double> normal(0.0, 1.0);
-  std::vector<double> inverse_mass(initial.size(), 1.0);
+  detail::EuclideanMetric metric(initial.size());
   AdLogDensityEvaluator<LogDensity> evaluator(target, initial,
                                                options.reuse_ad_graph);
   LogDensityEvaluation current = evaluator(initial);
@@ -353,11 +428,12 @@ NutsResult sample_nuts(LogDensity &target, std::vector<double> initial,
   double step_size = options.initial_step_size > 0.0
                          ? options.initial_step_size
                          : detail::reasonable_step_size(
-                               evaluator, initial, current, inverse_mass);
+                               evaluator, initial, current, metric);
   double mu = std::log(10.0 * step_size);
   double log_step_bar = std::log(step_size);
   double h_bar = 0.0;
-  std::vector<double> mean(initial.size(), 0.0), m2(initial.size(), 0.0);
+  std::vector<double> mean(initial.size(), 0.0);
+  std::vector<double> m2(initial.size() * initial.size(), 0.0);
   int mass_count = 0;
 
   NutsResult result;
@@ -378,11 +454,9 @@ NutsResult sample_nuts(LogDensity &target, std::vector<double> initial,
   int mass_window_end = initial_buffer + mass_window_size;
 
   for (int iteration = 1; iteration <= total_iterations; ++iteration) {
-    std::vector<double> momentum(initial.size());
-    for (std::size_t i = 0; i < momentum.size(); ++i)
-      momentum[i] = normal(rng) / std::sqrt(inverse_mass[i]);
+    std::vector<double> momentum = metric.sample_momentum(rng, normal);
     const double initial_joint =
-        current.log_density - detail::kinetic(momentum, inverse_mass);
+        current.log_density - detail::kinetic(momentum, metric);
     const double log_slice = initial_joint + std::log(uniform(rng));
 
     detail::Tree tree;
@@ -397,12 +471,12 @@ NutsResult sample_nuts(LogDensity &target, std::vector<double> initial,
           direction < 0
               ? detail::build_tree(evaluator, tree.q_minus, tree.p_minus,
                                    tree.state_minus, log_slice, direction,
-                                   depth, step_size, inverse_mass,
+                                   depth, step_size, metric,
                                    initial_joint,
                                    options.divergence_threshold, rng)
               : detail::build_tree(evaluator, tree.q_plus, tree.p_plus,
                                    tree.state_plus, log_slice, direction,
-                                   depth, step_size, inverse_mass,
+                                   depth, step_size, metric,
                                    initial_joint,
                                    options.divergence_threshold, rng);
       if (direction < 0) {
@@ -428,7 +502,7 @@ NutsResult sample_nuts(LogDensity &target, std::vector<double> initial,
       tree.keep_going = extension.keep_going &&
                         detail::no_u_turn(tree.q_minus, tree.q_plus,
                                           tree.p_minus, tree.p_plus,
-                                          inverse_mass);
+                                          metric);
       ++depth;
     }
     initial = tree.proposal;
@@ -457,27 +531,45 @@ NutsResult sample_nuts(LogDensity &target, std::vector<double> initial,
       log_step_bar = weight * log_step + (1.0 - weight) * log_step_bar;
       step_size = std::exp(std::max(-20.0, std::min(5.0, log_step)));
 
-      const bool in_mass_window = options.adapt_diagonal_mass &&
+      const bool adapt_mass =
+          options.adapt_dense_mass || options.adapt_diagonal_mass;
+      const bool in_mass_window = adapt_mass &&
                                   iteration > initial_buffer &&
                                   iteration <= slow_end;
       if (in_mass_window) {
         ++mass_count;
+        std::vector<double> delta(initial.size());
         for (std::size_t i = 0; i < initial.size(); ++i) {
-          const double delta = initial[i] - mean[i];
-          mean[i] += delta / mass_count;
-          m2[i] += delta * (initial[i] - mean[i]);
+          delta[i] = initial[i] - mean[i];
+          mean[i] += delta[i] / mass_count;
         }
+        for (std::size_t i = 0; i < initial.size(); ++i)
+          for (std::size_t j = 0; j < initial.size(); ++j)
+            m2[i * initial.size() + j] +=
+                delta[i] * (initial[j] - mean[j]);
         if (iteration == mass_window_end && mass_count > 1) {
-          for (std::size_t i = 0; i < inverse_mass.size(); ++i) {
-            const double variance = m2[i] / (mass_count - 1);
-            // The kinetic energy is p' M^{-1} p / 2, so this stores M^{-1}.
-            // Matching a Gaussian target requires M^{-1} to track its
-            // covariance, not its precision.
-            inverse_mass[i] = std::max(1.0e-3, variance);
-          }
+          std::vector<double> candidate(initial.size() * initial.size(), 0.0);
+          const double sample_weight =
+              static_cast<double>(mass_count) / (mass_count + 5.0);
+          const double ridge = 1.0e-3 * 5.0 / (mass_count + 5.0);
+          for (std::size_t i = 0; i < initial.size(); ++i)
+            for (std::size_t j = 0; j < initial.size(); ++j) {
+              if (options.adapt_dense_mass || i == j)
+                candidate[i * initial.size() + j] =
+                    sample_weight *
+                    0.5 * (m2[i * initial.size() + j] +
+                           m2[j * initial.size() + i]) /
+                    (mass_count - 1);
+              if (i == j)
+                candidate[i * initial.size() + j] += ridge;
+            }
+          if (!metric.set_inverse_mass(std::move(candidate),
+                                       options.adapt_dense_mass))
+            throw std::runtime_error(
+                "sample_nuts: adapted mass matrix is not positive definite");
           ++result.diagnostics.mass_matrix_updates;
           step_size = detail::reasonable_step_size(
-              evaluator, initial, current, inverse_mass);
+              evaluator, initial, current, metric);
           mu = std::log(10.0 * step_size);
           log_step_bar = std::log(step_size);
           h_bar = 0.0;
@@ -531,7 +623,18 @@ NutsResult sample_nuts(LogDensity &target, std::vector<double> initial,
           (variance_sum / static_cast<double>(result.energy.size()));
   }
   result.diagnostics.step_size = step_size;
-  result.diagnostics.inverse_mass = inverse_mass;
+  result.diagnostics.inverse_mass.resize(initial.size());
+  for (std::size_t i = 0; i < initial.size(); ++i)
+    result.diagnostics.inverse_mass[i] =
+        metric.inverse_mass[i * initial.size() + i];
+  if (options.adapt_dense_mass) {
+    result.diagnostics.dense_inverse_mass.assign(
+        initial.size(), std::vector<double>(initial.size()));
+    for (std::size_t i = 0; i < initial.size(); ++i)
+      for (std::size_t j = 0; j < initial.size(); ++j)
+        result.diagnostics.dense_inverse_mass[i][j] =
+            metric.inverse_mass[i * initial.size() + j];
+  }
   return result;
 }
 
