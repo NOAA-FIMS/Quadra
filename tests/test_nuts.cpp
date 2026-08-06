@@ -126,6 +126,20 @@ int main() {
   const auto workflow = quadra::sampling::run_nuts_workflow(
       [](std::size_t) { return CorrelatedGaussian{}; }, {1.0, -0.5},
       {"x", "y"}, workflow_options);
+  quadra::sampling::PosteriorSimulationOptions simulation_options;
+  simulation_options.thin = 3;
+  simulation_options.max_draws = 7;
+  simulation_options.seed = 20260812;
+  auto simulator = [](const std::vector<double> &draw, std::mt19937_64 &rng) {
+    std::normal_distribution<double> normal;
+    return std::vector<double>{draw[0] + normal(rng), draw[1]};
+  };
+  const auto simulation = quadra::sampling::simulate_posterior(
+      workflow, {"replicated_x", "latent_y"}, simulator,
+      simulation_options);
+  const auto repeated_simulation = quadra::sampling::simulate_posterior(
+      workflow, {"replicated_x", "latent_y"}, simulator,
+      simulation_options);
   bool rejected_duplicate_names = false;
   try {
     quadra::sampling::validate_parameter_names({"x", "x"}, 2);
@@ -189,6 +203,10 @@ int main() {
       !workflow.health.passed || workflow.parameter_count() != 2 ||
       workflow.total_draws() != 600 ||
       workflow.initial_states.size() != 4 || !rejected_duplicate_names ||
+      simulation.draws.size() != 7 ||
+      simulation.quantity_names.size() != 2 ||
+      simulation.draws[1].iteration != 3 ||
+      simulation.draws[0].values != repeated_simulation.draws[0].values ||
       multi.chains.size() != 4 || multi.diagnostics.split_rhat[0] > 1.05 ||
       multi.diagnostics.split_rhat[1] > 1.05 ||
       multi.diagnostics.bulk_ess[0] < 100.0 ||
