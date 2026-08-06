@@ -248,10 +248,10 @@ struct CatchAtAgeLaplaceModel {
 
       nll += T(0.5) * square((safe_log(obs_index) - safe_log(pred_index)) /
                              sigma_index) +
-             log_sigma_index;
+             log(sigma_index);
       nll += T(0.5) * square((safe_log(obs_catch) - safe_log(pred_catch)) /
                              sigma_catch) +
-             log_sigma_catch;
+             log(sigma_catch);
 
       const T catch_sum =
           std::accumulate(catch_at_age.begin(), catch_at_age.end(), T(0.0)) +
