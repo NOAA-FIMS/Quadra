@@ -36,6 +36,78 @@ inline double quantile(std::vector<double> values, double probability) {
   return (1.0 - weight) * values[lower] + weight * values[upper];
 }
 
+// Acklam's rational approximation to the inverse standard-normal CDF.
+inline double inverse_normal_cdf(double probability) {
+  const double a[] = {-3.969683028665376e+01, 2.209460984245205e+02,
+                      -2.759285104469687e+02, 1.383577518672690e+02,
+                      -3.066479806614716e+01, 2.506628277459239e+00};
+  const double b[] = {-5.447609879822406e+01, 1.615858368580409e+02,
+                      -1.556989798598866e+02, 6.680131188771972e+01,
+                      -1.328068155288572e+01};
+  const double c[] = {-7.784894002430293e-03, -3.223964580411365e-01,
+                      -2.400758277161838e+00, -2.549732539343734e+00,
+                      4.374664141464968e+00, 2.938163982698783e+00};
+  const double d[] = {7.784695709041462e-03, 3.224671290700398e-01,
+                      2.445134137142996e+00, 3.754408661907416e+00};
+  if (!(probability > 0.0) || !(probability < 1.0))
+    throw std::invalid_argument("inverse_normal_cdf probability out of range");
+  if (probability < 0.02425) {
+    const double q = std::sqrt(-2.0 * std::log(probability));
+    return (((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q +
+            c[5]) /
+           ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1.0);
+  }
+  if (probability > 0.97575) {
+    const double q = std::sqrt(-2.0 * std::log(1.0 - probability));
+    return -(((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) *
+                 q +
+             c[5]) /
+           ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1.0);
+  }
+  const double q = probability - 0.5;
+  const double r = q * q;
+  return (((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r +
+          a[5]) *
+         q /
+         (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r +
+          1.0);
+}
+
+inline std::vector<std::vector<double>> rank_normalize(
+    const std::vector<std::vector<double>> &chains) {
+  const std::size_t chain_count = chains.size();
+  const std::size_t draws = chains.front().size();
+  std::vector<std::pair<double, std::size_t>> ordered;
+  ordered.reserve(chain_count * draws);
+  for (std::size_t chain = 0; chain < chain_count; ++chain)
+    for (std::size_t draw = 0; draw < draws; ++draw)
+      ordered.emplace_back(chains[chain][draw], chain * draws + draw);
+  std::sort(ordered.begin(), ordered.end(),
+            [](const auto &left, const auto &right) {
+              return left.first < right.first;
+            });
+  std::vector<double> ranks(ordered.size());
+  for (std::size_t begin = 0; begin < ordered.size();) {
+    std::size_t end = begin + 1;
+    while (end < ordered.size() && ordered[end].first == ordered[begin].first)
+      ++end;
+    const double average_rank = 0.5 * (begin + 1 + end);
+    for (std::size_t i = begin; i < end; ++i)
+      ranks[ordered[i].second] = average_rank;
+    begin = end;
+  }
+  std::vector<std::vector<double>> normalized(
+      chain_count, std::vector<double>(draws));
+  const double total = static_cast<double>(ordered.size());
+  for (std::size_t chain = 0; chain < chain_count; ++chain)
+    for (std::size_t draw = 0; draw < draws; ++draw) {
+      const double probability =
+          (ranks[chain * draws + draw] - 0.375) / (total + 0.25);
+      normalized[chain][draw] = inverse_normal_cdf(probability);
+    }
+  return normalized;
+}
+
 inline std::vector<std::vector<double>>
 split_parameter_chains(const std::vector<NutsResult> &chains,
                        std::size_t parameter) {
@@ -189,8 +261,17 @@ compute_multi_chain_diagnostics(const std::vector<NutsResult> &chains) {
       pooled.insert(pooled.end(), chain.begin(), chain.end());
     const double lower = detail::quantile(pooled, 0.05);
     const double upper = detail::quantile(pooled, 0.95);
-    out.split_rhat[parameter] = detail::split_rhat(split);
-    out.bulk_ess[parameter] = detail::effective_sample_size(split);
+    const double median = detail::quantile(pooled, 0.5);
+    const auto rank_normalized = detail::rank_normalize(split);
+    auto folded = split;
+    for (auto &chain : folded)
+      for (double &value : chain) value = std::abs(value - median);
+    const auto folded_rank_normalized = detail::rank_normalize(folded);
+    out.split_rhat[parameter] =
+        std::max(detail::split_rhat(rank_normalized),
+                 detail::split_rhat(folded_rank_normalized));
+    out.bulk_ess[parameter] =
+        detail::effective_sample_size(rank_normalized);
     out.tail_ess[parameter] = std::min(
         detail::effective_sample_size(
             detail::indicator_chains(split, lower, true)),

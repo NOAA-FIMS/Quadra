@@ -1,9 +1,11 @@
 #include "../../include/quadra/sampling.hpp"
 #include "catch_at_age_shared.hpp"
 
+#include <algorithm>
 #include <cmath>
 #include <iostream>
 #include <numeric>
+#include <string>
 #include <vector>
 
 struct NoncenteredCatchAtAgePosterior {
@@ -59,7 +61,7 @@ int main() {
   options.warmup = 500;
   options.samples = 500;
   options.max_tree_depth = 10;
-  options.target_acceptance = 0.85;
+  options.target_acceptance = 0.80;
   options.seed = 20260806;
   std::vector<std::vector<double>> initial_states(4, initial);
   for (std::size_t chain = 0; chain < initial_states.size(); ++chain) {
@@ -84,6 +86,20 @@ int main() {
     depth_hits += chain.diagnostics.max_depth_hits;
   }
   mean_log_m /= total_draws;
+  const auto worst_rhat = std::max_element(fit.diagnostics.split_rhat.begin(),
+                                           fit.diagnostics.split_rhat.end());
+  const auto worst_bulk = std::min_element(fit.diagnostics.bulk_ess.begin(),
+                                           fit.diagnostics.bulk_ess.end());
+  const auto worst_tail = std::min_element(fit.diagnostics.tail_ess.begin(),
+                                           fit.diagnostics.tail_ess.end());
+  const std::size_t worst_rhat_parameter =
+      static_cast<std::size_t>(worst_rhat - fit.diagnostics.split_rhat.begin());
+  std::vector<std::string> parameter_names{
+      "log_R0",          "log_M",        "log_F",       "log_q",
+      "logit_sel50",     "log_sel_slope", "log_sigma_I", "log_sigma_C",
+      "log_sigma_rec",   "log_comp_concentration"};
+  for (int year = 0; year < model.data.n_years; ++year)
+    parameter_names.push_back("z_rec[" + std::to_string(year) + "]");
   std::cout << "Quadra non-centered joint AD-NUTS catch-at-age example\n"
             << "chains: " << fit.chains.size() << "\n"
             << "draws: " << total_draws << "\n"
@@ -91,6 +107,10 @@ int main() {
             << "log_M split R-hat: " << fit.diagnostics.split_rhat[1] << "\n"
             << "log_M bulk ESS: " << fit.diagnostics.bulk_ess[1] << "\n"
             << "log_M tail ESS: " << fit.diagnostics.tail_ess[1] << "\n"
+            << "maximum split R-hat: " << *worst_rhat << " ("
+            << parameter_names[worst_rhat_parameter] << ")\n"
+            << "minimum bulk ESS: " << *worst_bulk << "\n"
+            << "minimum tail ESS: " << *worst_tail << "\n"
             << "divergences: " << divergences << "\n"
             << "max-depth hits: " << depth_hits << "\n";
   for (std::size_t chain = 0; chain < fit.chains.size(); ++chain) {
@@ -102,7 +122,7 @@ int main() {
               << " depth_hits=" << diagnostics.max_depth_hits
               << " BFMI=" << diagnostics.energy_bfmi << "\n";
   }
-  return divergences > 20 || fit.diagnostics.split_rhat[1] > 1.2
+  return divergences > 20 || *worst_rhat > 1.2
              ? 1
              : 0;
 }
