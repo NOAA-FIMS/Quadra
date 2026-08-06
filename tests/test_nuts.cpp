@@ -16,6 +16,12 @@ struct CorrelatedGaussian {
   }
 };
 
+struct AnisotropicGaussian {
+  template <class T> T operator()(const std::vector<T> &q) const {
+    return -T(0.5) * (q[0] * q[0] / T(9.0) + q[1] * q[1] / T(0.04));
+  }
+};
+
 struct BoundedTarget {
   template <class T> T operator()(const std::vector<T> &q) const {
     if (quadra::value_of(q[0]) > 2.0)
@@ -41,6 +47,12 @@ int main() {
   const auto result =
       quadra::sampling::sample_nuts(target, std::vector<double>{0.0, 0.0},
                                    options);
+  AnisotropicGaussian anisotropic_target;
+  quadra::sampling::NutsOptions anisotropic_options = options;
+  anisotropic_options.seed = 20260807;
+  const auto anisotropic = quadra::sampling::sample_nuts(
+      anisotropic_target, std::vector<double>{0.5, 0.5},
+      anisotropic_options);
   quadra::sampling::NutsOptions multi_options = options;
   multi_options.warmup = 300;
   multi_options.samples = 500;
@@ -84,6 +96,10 @@ int main() {
       result.diagnostics.divergences > 5 ||
       !(result.diagnostics.mean_acceptance > 0.6) ||
       result.diagnostics.mass_matrix_updates < 2 ||
+      anisotropic.diagnostics.inverse_mass.size() != 2 ||
+      anisotropic.diagnostics.inverse_mass[0] <
+          20.0 * anisotropic.diagnostics.inverse_mass[1] ||
+      anisotropic.diagnostics.max_depth_hits > 5 ||
       !(result.diagnostics.energy_bfmi > 0.0) ||
       multi.chains.size() != 4 || multi.diagnostics.split_rhat[0] > 1.05 ||
       multi.diagnostics.split_rhat[1] > 1.05 ||

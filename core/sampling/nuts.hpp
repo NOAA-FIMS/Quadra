@@ -470,7 +470,10 @@ NutsResult sample_nuts(LogDensity &target, std::vector<double> initial,
         if (iteration == mass_window_end && mass_count > 1) {
           for (std::size_t i = 0; i < inverse_mass.size(); ++i) {
             const double variance = m2[i] / (mass_count - 1);
-            inverse_mass[i] = 1.0 / std::max(1.0e-3, variance);
+            // The kinetic energy is p' M^{-1} p / 2, so this stores M^{-1}.
+            // Matching a Gaussian target requires M^{-1} to track its
+            // covariance, not its precision.
+            inverse_mass[i] = std::max(1.0e-3, variance);
           }
           ++result.diagnostics.mass_matrix_updates;
           step_size = detail::reasonable_step_size(

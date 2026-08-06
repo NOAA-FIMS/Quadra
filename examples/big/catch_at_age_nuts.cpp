@@ -61,7 +61,7 @@ int main() {
   options.warmup = 500;
   options.samples = 500;
   options.max_tree_depth = 10;
-  options.target_acceptance = 0.80;
+  options.target_acceptance = 0.85;
   options.seed = 20260806;
   std::vector<std::vector<double>> initial_states(4, initial);
   for (std::size_t chain = 0; chain < initial_states.size(); ++chain) {
