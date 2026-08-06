@@ -41,6 +41,14 @@ int main() {
   const auto result =
       quadra::sampling::sample_nuts(target, std::vector<double>{0.0, 0.0},
                                    options);
+  quadra::sampling::NutsOptions multi_options = options;
+  multi_options.warmup = 300;
+  multi_options.samples = 500;
+  const std::vector<std::vector<double>> initial_states{
+      {-1.0, -1.0}, {0.0, 0.0}, {2.0, -1.0}, {1.0, 1.0}};
+  const auto multi = quadra::sampling::sample_nuts_chains(
+      [](std::size_t) { return CorrelatedGaussian{}; }, initial_states,
+      multi_options, true);
   BoundedTarget bounded;
   quadra::sampling::NutsOptions bounded_options;
   bounded_options.warmup = 25;
@@ -68,6 +76,12 @@ int main() {
       !(result.diagnostics.mean_acceptance > 0.6) ||
       result.diagnostics.mass_matrix_updates < 2 ||
       !(result.diagnostics.energy_bfmi > 0.0) ||
+      multi.chains.size() != 4 || multi.diagnostics.split_rhat[0] > 1.05 ||
+      multi.diagnostics.split_rhat[1] > 1.05 ||
+      multi.diagnostics.bulk_ess[0] < 100.0 ||
+      multi.diagnostics.bulk_ess[1] < 100.0 ||
+      multi.diagnostics.tail_ess[0] < 50.0 ||
+      multi.diagnostics.tail_ess[1] < 50.0 ||
       bounded_result.draws.size() != 25 ||
       std::abs(square_replayed.log_density - square_fresh.log_density) >
           1.0e-14 ||
@@ -84,5 +98,9 @@ int main() {
             << "  mean: " << mean[0] << ", " << mean[1] << "\n"
             << "  acceptance: " << result.diagnostics.mean_acceptance << "\n"
             << "  step size: " << result.diagnostics.step_size << "\n";
+  std::cout << "  split R-hat: " << multi.diagnostics.split_rhat[0] << ", "
+            << multi.diagnostics.split_rhat[1] << "\n"
+            << "  bulk ESS: " << multi.diagnostics.bulk_ess[0] << ", "
+            << multi.diagnostics.bulk_ess[1] << "\n";
   return 0;
 }

@@ -56,35 +56,53 @@ int main() {
       replay_check.unsupported_replay_vertex_count() != 0)
     throw std::runtime_error("catch-at-age AD replay validation failed");
   quadra::sampling::NutsOptions options;
-  options.warmup = 300;
-  options.samples = 200;
+  options.warmup = 500;
+  options.samples = 500;
   options.max_tree_depth = 10;
   options.target_acceptance = 0.85;
   options.seed = 20260806;
-  const auto fit = quadra::sampling::sample_nuts(posterior, initial, options);
+  std::vector<std::vector<double>> initial_states(4, initial);
+  for (std::size_t chain = 0; chain < initial_states.size(); ++chain) {
+    const double offset = 0.01 * (static_cast<double>(chain) - 1.5);
+    for (std::size_t i = 0; i < initial_states[chain].size(); ++i)
+      initial_states[chain][i] += offset / static_cast<double>(i + 1);
+  }
+  const auto fit = quadra::sampling::sample_nuts_chains(
+      [&model](std::size_t) {
+        return NoncenteredCatchAtAgePosterior{&model};
+      },
+      initial_states, options, true);
 
   double mean_log_m = 0.0;
-  for (const auto &draw : fit.draws) mean_log_m += draw[1];
-  mean_log_m /= fit.draws.size();
+  int total_draws = 0;
+  int divergences = 0;
+  int depth_hits = 0;
+  for (const auto &chain : fit.chains) {
+    for (const auto &draw : chain.draws) mean_log_m += draw[1];
+    total_draws += static_cast<int>(chain.draws.size());
+    divergences += chain.diagnostics.divergences;
+    depth_hits += chain.diagnostics.max_depth_hits;
+  }
+  mean_log_m /= total_draws;
   std::cout << "Quadra non-centered joint AD-NUTS catch-at-age example\n"
-            << "draws: " << fit.draws.size() << "\n"
+            << "chains: " << fit.chains.size() << "\n"
+            << "draws: " << total_draws << "\n"
             << "mean log_M: " << mean_log_m << "\n"
-            << "mean acceptance: " << fit.diagnostics.mean_acceptance << "\n"
-            << "warmup acceptance: "
-            << fit.diagnostics.warmup_mean_acceptance << "\n"
-            << "step size: " << fit.diagnostics.step_size << "\n"
-            << "leapfrog steps: " << fit.diagnostics.leapfrog_steps << "\n"
-            << "divergences: " << fit.diagnostics.divergences << "\n"
-            << "warmup divergences: "
-            << fit.diagnostics.warmup_divergences << "\n"
-            << "max-depth hits: " << fit.diagnostics.max_depth_hits << "\n"
-            << "warmup max-depth hits: "
-            << fit.diagnostics.warmup_max_depth_hits << "\n"
-            << "energy BFMI: " << fit.diagnostics.energy_bfmi << "\n";
-  std::cout << "mass-matrix updates: "
-            << fit.diagnostics.mass_matrix_updates << "\n";
-  return fit.diagnostics.divergences > 10 ||
-                 fit.diagnostics.max_depth_hits > options.samples / 2
+            << "log_M split R-hat: " << fit.diagnostics.split_rhat[1] << "\n"
+            << "log_M bulk ESS: " << fit.diagnostics.bulk_ess[1] << "\n"
+            << "log_M tail ESS: " << fit.diagnostics.tail_ess[1] << "\n"
+            << "divergences: " << divergences << "\n"
+            << "max-depth hits: " << depth_hits << "\n";
+  for (std::size_t chain = 0; chain < fit.chains.size(); ++chain) {
+    const auto &diagnostics = fit.chains[chain].diagnostics;
+    std::cout << "chain " << chain + 1
+              << ": acceptance=" << diagnostics.mean_acceptance
+              << " step_size=" << diagnostics.step_size
+              << " divergences=" << diagnostics.divergences
+              << " depth_hits=" << diagnostics.max_depth_hits
+              << " BFMI=" << diagnostics.energy_bfmi << "\n";
+  }
+  return divergences > 20 || fit.diagnostics.split_rhat[1] > 1.2
              ? 1
              : 0;
 }
