@@ -26,6 +26,7 @@ struct NutsWorkflowOptions {
 struct NutsWorkflowResult {
   std::vector<std::string> parameter_names;
   std::vector<std::vector<double>> initial_states;
+  NutsWorkflowOptions options;
   MultiChainResult fit;
   NutsHealthAssessment health;
 
@@ -99,6 +100,7 @@ NutsWorkflowResult run_nuts_workflow(
   validate_parameter_names(parameter_names, fitted_mode.size());
   NutsWorkflowResult out;
   out.parameter_names = std::move(parameter_names);
+  out.options = options;
   out.initial_states = initialize_nuts_chains(
       fitted_mode, options.chains, options.initial_jitter,
       options.initialization_seed);

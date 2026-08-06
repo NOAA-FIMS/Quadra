@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <iostream>
+#include <sstream>
 #include <vector>
 
 DECLARE_ADGRAPH();
@@ -135,11 +136,21 @@ int main() {
     return std::vector<double>{draw[0] + normal(rng), draw[1]};
   };
   const auto simulation = quadra::sampling::simulate_posterior(
-      workflow, {"replicated_x", "latent_y"}, simulator,
+      workflow, {"replicated_x,raw", "latent_y"}, simulator,
       simulation_options);
   const auto repeated_simulation = quadra::sampling::simulate_posterior(
-      workflow, {"replicated_x", "latent_y"}, simulator,
+      workflow, {"replicated_x,raw", "latent_y"}, simulator,
       simulation_options);
+  std::ostringstream posterior_csv;
+  std::ostringstream parameter_csv;
+  std::ostringstream chain_csv;
+  std::ostringstream predictive_csv;
+  std::ostringstream summary_csv;
+  quadra::sampling::write_posterior_draws_csv(posterior_csv, workflow);
+  quadra::sampling::write_parameter_diagnostics_csv(parameter_csv, workflow);
+  quadra::sampling::write_chain_diagnostics_csv(chain_csv, workflow);
+  quadra::sampling::write_posterior_predictive_csv(predictive_csv, simulation);
+  quadra::sampling::write_nuts_summary_csv(summary_csv, workflow);
   bool rejected_duplicate_names = false;
   try {
     quadra::sampling::validate_parameter_names({"x", "x"}, 2);
@@ -207,6 +218,12 @@ int main() {
       simulation.quantity_names.size() != 2 ||
       simulation.draws[1].iteration != 3 ||
       simulation.draws[0].values != repeated_simulation.draws[0].values ||
+      posterior_csv.str().find("chain,iteration,parameter") != 0 ||
+      parameter_csv.str().find("parameter,rhat,bulk_ess,tail_ess") != 0 ||
+      chain_csv.str().find("mass_update_failures") == std::string::npos ||
+      predictive_csv.str().find("\"replicated_x,raw\"") ==
+          std::string::npos ||
+      summary_csv.str().find("health,PASS") == std::string::npos ||
       multi.chains.size() != 4 || multi.diagnostics.split_rhat[0] > 1.05 ||
       multi.diagnostics.split_rhat[1] > 1.05 ||
       multi.diagnostics.bulk_ess[0] < 100.0 ||
