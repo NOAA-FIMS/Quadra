@@ -148,6 +148,7 @@ struct NutsDiagnostics {
   int warmup_divergences = 0;
   int warmup_max_depth_hits = 0;
   int mass_matrix_updates = 0;
+  int mass_matrix_update_failures = 0;
   double mean_acceptance = 0.0;
   double warmup_mean_acceptance = 0.0;
   double energy_bfmi = std::numeric_limits<double>::quiet_NaN();
@@ -563,17 +564,21 @@ NutsResult sample_nuts(LogDensity &target, std::vector<double> initial,
               if (i == j)
                 candidate[i * initial.size() + j] += ridge;
             }
-          if (!metric.set_inverse_mass(std::move(candidate),
-                                       options.adapt_dense_mass))
-            throw std::runtime_error(
-                "sample_nuts: adapted mass matrix is not positive definite");
-          ++result.diagnostics.mass_matrix_updates;
-          step_size = detail::reasonable_step_size(
-              evaluator, initial, current, metric);
-          mu = std::log(10.0 * step_size);
-          log_step_bar = std::log(step_size);
-          h_bar = 0.0;
-          dual_averaging_iteration = 0;
+          if (metric.set_inverse_mass(std::move(candidate),
+                                      options.adapt_dense_mass)) {
+            ++result.diagnostics.mass_matrix_updates;
+            step_size = detail::reasonable_step_size(
+                evaluator, initial, current, metric);
+            mu = std::log(10.0 * step_size);
+            log_step_bar = std::log(step_size);
+            h_bar = 0.0;
+            dual_averaging_iteration = 0;
+          } else {
+            // A noisy or non-finite covariance estimate must not invalidate an
+            // otherwise usable chain. Retain the last valid metric and report
+            // the rejected update through diagnostics.
+            ++result.diagnostics.mass_matrix_update_failures;
+          }
           std::fill(mean.begin(), mean.end(), 0.0);
           std::fill(m2.begin(), m2.end(), 0.0);
           mass_count = 0;

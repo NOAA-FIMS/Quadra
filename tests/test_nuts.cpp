@@ -31,6 +31,14 @@ struct HighlyCorrelatedGaussian {
   }
 };
 
+struct StandardGaussian {
+  template <class T> T operator()(const std::vector<T> &q) const {
+    T log_density = T(0.0);
+    for (const T &value : q) log_density -= T(0.5) * value * value;
+    return log_density;
+  }
+};
+
 struct BoundedTarget {
   template <class T> T operator()(const std::vector<T> &q) const {
     if (quadra::value_of(q[0]) > 2.0)
@@ -74,6 +82,23 @@ int main() {
   const auto correlated_dense = quadra::sampling::sample_nuts(
       highly_correlated_target, std::vector<double>{0.0, 0.0},
       correlated_dense_options);
+  StandardGaussian standard_target;
+  quadra::sampling::NutsOptions short_dense_options;
+  short_dense_options.warmup = 20;
+  short_dense_options.samples = 25;
+  short_dense_options.adapt_dense_mass = true;
+  short_dense_options.seed = 20260809;
+  const auto short_dense = quadra::sampling::sample_nuts(
+      standard_target, std::vector<double>(12, 0.1), short_dense_options);
+  quadra::sampling::NutsOptions minimal_warmup_options;
+  minimal_warmup_options.warmup = 1;
+  minimal_warmup_options.samples = 5;
+  minimal_warmup_options.adapt_dense_mass = true;
+  const auto minimal_warmup = quadra::sampling::sample_nuts(
+      standard_target, std::vector<double>(2, 0.1), minimal_warmup_options);
+  quadra::sampling::detail::EuclideanMetric rejected_metric(2);
+  const bool accepted_indefinite = rejected_metric.set_inverse_mass(
+      {1.0, 2.0, 2.0, 1.0}, true);
   quadra::sampling::NutsOptions multi_options = options;
   multi_options.warmup = 300;
   multi_options.samples = 500;
@@ -126,6 +151,14 @@ int main() {
       correlated_dense.diagnostics.divergences > 5 ||
       correlated_dense.diagnostics.leapfrog_steps >=
           correlated_diagonal.diagnostics.leapfrog_steps ||
+      short_dense.draws.size() != 25 ||
+      short_dense.diagnostics.mass_matrix_updates < 1 ||
+      short_dense.diagnostics.dense_inverse_mass.size() != 12 ||
+      minimal_warmup.draws.size() != 5 ||
+      minimal_warmup.diagnostics.mass_matrix_updates != 0 ||
+      accepted_indefinite || rejected_metric.dense ||
+      rejected_metric.inverse_mass[0] != 1.0 ||
+      rejected_metric.inverse_mass[3] != 1.0 ||
       !(result.diagnostics.energy_bfmi > 0.0) ||
       multi.chains.size() != 4 || multi.diagnostics.split_rhat[0] > 1.05 ||
       multi.diagnostics.split_rhat[1] > 1.05 ||
