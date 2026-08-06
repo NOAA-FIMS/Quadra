@@ -18,6 +18,7 @@ TESTS = \
 	tests/test_stats_exact_laplace \
 	tests/test_stats_laplace_optimizer \
 	tests/test_nuts \
+	tests/test_nuts_funnel \
 	tests/test_tridiagonal_selected_inverse \
 	tests/test_hessian_structure_discovery \
 	tests/test_flat_second_order_sweep \
@@ -108,6 +109,7 @@ run-tests: $(TESTS)
 	./tests/test_stats_exact_laplace
 	./tests/test_stats_laplace_optimizer
 	./tests/test_nuts
+	./tests/test_nuts_funnel
 	./tests/test_tridiagonal_selected_inverse
 	./tests/test_hessian_structure_discovery
 	./tests/test_flat_second_order_sweep
