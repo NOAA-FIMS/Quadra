@@ -3,6 +3,7 @@
 
 #include "special_functions.hpp"
 #include <cmath>
+#include <stdexcept>
 #include <vector>
 
 namespace quadra {
@@ -135,6 +136,81 @@ T ddirichlet_multinomial(const std::vector<int> &x, const std::vector<T> &p,
 
     logp += lgamma(alpha_i + x[i]);
     logp -= lgamma(alpha_i);
+  }
+
+  return give_log ? logp : exp(logp);
+}
+
+// --------------------------------------------------
+// Dirichlet-multinomial, numerically robust form
+//
+// alpha_i = concentration * weight_i
+// --------------------------------------------------
+template <typename T>
+T ddirichlet_multinomial_robust(const std::vector<int> &x,
+                                const std::vector<T> &weight,
+                                const T &concentration,
+                                bool give_log = true) {
+  if (x.empty()) {
+    throw std::invalid_argument(
+        "ddirichlet_multinomial_robust: x and weight must not be empty");
+  }
+  if (x.size() != weight.size()) {
+    throw std::invalid_argument(
+        "ddirichlet_multinomial_robust: x and weight must have equal length");
+  }
+  const double concentration_value = quadra::value_of(concentration);
+  if (!(concentration_value > 0.0) ||
+      !std::isfinite(concentration_value)) {
+    throw std::domain_error(
+        "ddirichlet_multinomial_robust: concentration must be finite and "
+        "positive");
+  }
+
+  long long total_count = 0;
+  T weight_sum = T(0.0);
+  for (size_t i = 0; i < x.size(); ++i) {
+    if (x[i] < 0) {
+      throw std::domain_error(
+          "ddirichlet_multinomial_robust: counts must be nonnegative");
+    }
+    const double weight_value = quadra::value_of(weight[i]);
+    if (weight_value < 0.0 || !std::isfinite(weight_value)) {
+      throw std::domain_error(
+          "ddirichlet_multinomial_robust: weights must be finite and "
+          "nonnegative");
+    }
+    if (x[i] > 0 && weight_value == 0.0) {
+      throw std::domain_error(
+          "ddirichlet_multinomial_robust: a positive count cannot have zero "
+          "weight");
+    }
+    total_count += static_cast<long long>(x[i]);
+    weight_sum += weight[i];
+  }
+  const double weight_sum_value = quadra::value_of(weight_sum);
+  if (!(weight_sum_value > 0.0) || !std::isfinite(weight_sum_value)) {
+    throw std::domain_error(
+        "ddirichlet_multinomial_robust: weights must have a positive sum");
+  }
+
+  double log_multinomial_coefficient =
+      std::lgamma(static_cast<double>(total_count) + 1.0);
+  for (const int count : x) {
+    log_multinomial_coefficient -=
+        std::lgamma(static_cast<double>(count) + 1.0);
+  }
+
+  T logp = T(log_multinomial_coefficient);
+  const T alpha0 = concentration * weight_sum;
+  long long denominator_index = 0;
+  for (size_t i = 0; i < x.size(); ++i) {
+    const T alpha_i = concentration * weight[i];
+    for (int j = 0; j < x[i]; ++j) {
+      logp += log((alpha_i + static_cast<double>(j)) /
+                  (alpha0 + static_cast<double>(denominator_index)));
+      ++denominator_index;
+    }
   }
 
   return give_log ? logp : exp(logp);
