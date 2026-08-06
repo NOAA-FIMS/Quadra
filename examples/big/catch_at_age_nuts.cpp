@@ -64,17 +64,24 @@ int main() {
   options.target_acceptance = 0.85;
   options.adapt_dense_mass = true;
   options.seed = 20260806;
-  std::vector<std::vector<double>> initial_states(4, initial);
-  for (std::size_t chain = 0; chain < initial_states.size(); ++chain) {
-    const double offset = 0.01 * (static_cast<double>(chain) - 1.5);
-    for (std::size_t i = 0; i < initial_states[chain].size(); ++i)
-      initial_states[chain][i] += offset / static_cast<double>(i + 1);
-  }
-  const auto fit = quadra::sampling::sample_nuts_chains(
+  std::vector<std::string> parameter_names{
+      "log_R0",          "log_M",        "log_F",       "log_q",
+      "logit_sel50",     "log_sel_slope", "log_sigma_I", "log_sigma_C",
+      "log_sigma_rec",   "log_comp_concentration"};
+  for (int year = 0; year < model.data.n_years; ++year)
+    parameter_names.push_back("z_rec[" + std::to_string(year) + "]");
+  quadra::sampling::NutsWorkflowOptions workflow_options;
+  workflow_options.sampler = options;
+  workflow_options.chains = 4;
+  workflow_options.initial_jitter = 0.01;
+  workflow_options.initialization_seed = 20260806;
+  workflow_options.health.max_rhat = 1.05;
+  const auto workflow = quadra::sampling::run_nuts_workflow(
       [&model](std::size_t) {
         return NoncenteredCatchAtAgePosterior{&model};
       },
-      initial_states, options, true);
+      initial, parameter_names, workflow_options);
+  const auto &fit = workflow.fit;
 
   double mean_log_m = 0.0;
   int total_draws = 0;
@@ -93,15 +100,9 @@ int main() {
                                            fit.diagnostics.bulk_ess.end());
   const auto worst_tail = std::min_element(fit.diagnostics.tail_ess.begin(),
                                            fit.diagnostics.tail_ess.end());
-  const auto health = quadra::sampling::assess_nuts_health(fit);
+  const auto &health = workflow.health;
   const std::size_t worst_rhat_parameter =
       static_cast<std::size_t>(worst_rhat - fit.diagnostics.split_rhat.begin());
-  std::vector<std::string> parameter_names{
-      "log_R0",          "log_M",        "log_F",       "log_q",
-      "logit_sel50",     "log_sel_slope", "log_sigma_I", "log_sigma_C",
-      "log_sigma_rec",   "log_comp_concentration"};
-  for (int year = 0; year < model.data.n_years; ++year)
-    parameter_names.push_back("z_rec[" + std::to_string(year) + "]");
   std::cout << "Quadra non-centered joint AD-NUTS catch-at-age example\n"
             << "chains: " << fit.chains.size() << "\n"
             << "draws: " << total_draws << "\n"
@@ -110,7 +111,7 @@ int main() {
             << "log_M bulk ESS: " << fit.diagnostics.bulk_ess[1] << "\n"
             << "log_M tail ESS: " << fit.diagnostics.tail_ess[1] << "\n"
             << "maximum split R-hat: " << *worst_rhat << " ("
-            << parameter_names[worst_rhat_parameter] << ")\n"
+            << workflow.parameter_names[worst_rhat_parameter] << ")\n"
             << "minimum bulk ESS: " << *worst_bulk << "\n"
             << "minimum tail ESS: " << *worst_tail << "\n"
             << "minimum BFMI: " << health.min_bfmi << "\n"

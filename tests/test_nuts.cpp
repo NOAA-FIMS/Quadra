@@ -113,6 +113,25 @@ int main() {
   health_thresholds.max_depth_hits = 5;
   const auto health =
       quadra::sampling::assess_nuts_health(multi, health_thresholds);
+  quadra::sampling::NutsWorkflowOptions workflow_options;
+  workflow_options.sampler = multi_options;
+  workflow_options.sampler.warmup = 150;
+  workflow_options.sampler.samples = 150;
+  workflow_options.health.max_rhat = 1.1;
+  workflow_options.health.min_bulk_ess = 20.0;
+  workflow_options.health.min_tail_ess = 20.0;
+  workflow_options.health.max_divergences = 10;
+  workflow_options.health.max_depth_hits = 10;
+  workflow_options.initialization_seed = 20260811;
+  const auto workflow = quadra::sampling::run_nuts_workflow(
+      [](std::size_t) { return CorrelatedGaussian{}; }, {1.0, -0.5},
+      {"x", "y"}, workflow_options);
+  bool rejected_duplicate_names = false;
+  try {
+    quadra::sampling::validate_parameter_names({"x", "x"}, 2);
+  } catch (const std::invalid_argument &) {
+    rejected_duplicate_names = true;
+  }
   std::vector<quadra::sampling::NutsResult> scale_mismatch(4);
   for (std::size_t chain = 0; chain < scale_mismatch.size(); ++chain) {
     const double scale = chain < 2 ? 1.0 : 3.0;
@@ -167,6 +186,9 @@ int main() {
       rejected_metric.inverse_mass[3] != 1.0 ||
       !(result.diagnostics.energy_bfmi > 0.0) ||
       !health.passed ||
+      !workflow.health.passed || workflow.parameter_count() != 2 ||
+      workflow.total_draws() != 600 ||
+      workflow.initial_states.size() != 4 || !rejected_duplicate_names ||
       multi.chains.size() != 4 || multi.diagnostics.split_rhat[0] > 1.05 ||
       multi.diagnostics.split_rhat[1] > 1.05 ||
       multi.diagnostics.bulk_ess[0] < 100.0 ||
