@@ -1,5 +1,5 @@
-#include "../../include/quadra/stats.hpp"
 #include "../../core/laplace/laplace_implicit_workspace.hpp"
+#include "../../include/quadra/stats.hpp"
 #include "catch_at_age_inference.hpp"
 #include "catch_at_age_shared.hpp"
 
@@ -47,8 +47,7 @@ int main() {
       quadra::optimize_lbfgs(model, optimizer_parameters, optimizer_options);
 
   if (!std::isfinite(fit.value) || fit.u_hat.size() != random_initial.size()) {
-    std::cerr << "Big catch-at-age Laplace fit failed: " << fit.message
-              << "\n";
+    std::cerr << "Big catch-at-age Laplace fit failed: " << fit.message << "\n";
     return 1;
   }
 
@@ -105,8 +104,8 @@ int main() {
             << quadra::laplace::ToString(result.backend_m.backend) << "\n";
 
   example::print_fixed_parameter_report(fit.par);
-  example::print_objective_decomposition_report(
-      model, fit.par, result, final_random_effects);
+  example::print_objective_decomposition_report(model, fit.par, result,
+                                                final_random_effects);
   print_actual_objective_path_decomposition(model, fit.par, result,
                                             final_random_effects);
   example::print_index_catch_diagnostics(model, fit.par, result,
