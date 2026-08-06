@@ -9,6 +9,8 @@
 # Local binaries
 tests/test_curvature_depends_on_theta
 tests/test_ar1_random_walk
+tests/test_big_catch_at_age_derived
+tests/test_big_catch_at_age_inference_header
 tests/test_flat_second_order_sweep
 tests/test_hessian_structure_discovery
 tests/test_laplace_backend_factory

@@ -119,8 +119,12 @@ make test-random-intercept
 ## Catch-at-age Laplace example
 
 ```bash
-./examples/big/catch_at_age_laplace
+make run-big-examples
 ```
+
+This builds the example from current sources before running its fit and
+inference diagnostics. The example reports optimizer convergence explicitly;
+it is not itself a convergence contract.
 
 ---
 
