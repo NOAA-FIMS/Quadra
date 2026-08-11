@@ -93,7 +93,10 @@ struct CatchAtAgeData {
   std::vector<std::vector<double>> age_comp_obs;
   std::vector<std::vector<int>> age_comp_counts;
 
-  CatchAtAgeData() {
+  explicit CatchAtAgeData(int years = 30, int ages = 8)
+      : n_years(years), n_ages(ages) {
+    if (n_years <= 0 || n_ages <= 0)
+      throw std::invalid_argument("catch-at-age dimensions must be positive");
     index_obs.resize(static_cast<std::size_t>(n_years));
     catch_obs.resize(static_cast<std::size_t>(n_years));
     age_comp_obs.assign(
@@ -157,6 +160,9 @@ struct CatchAtAgeData {
 
 struct CatchAtAgeLaplaceModel {
   CatchAtAgeData data;
+
+  explicit CatchAtAgeLaplaceModel(int years = 30, int ages = 8)
+      : data(years, ages) {}
 
   template <typename Context> void initialize(Context &) {
     // This example does not emit reports, but Quadra's model interface

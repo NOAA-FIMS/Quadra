@@ -7,6 +7,8 @@
 #include <sys/resource.h>
 #include <vector>
 
+#include "../core/inference/fixed_effect_covariance.hpp"
+#include "../core/laplace/random_effect_hessian.hpp"
 #include "../examples/big/catch_at_age_shared.hpp"
 #include "../include/quadra/stats.hpp"
 
@@ -26,13 +28,14 @@ int main(int argc, char **argv) {
   using Clock = std::chrono::steady_clock;
   const std::string mode = argc > 1 ? argv[1] : "hybrid";
   const double switch_threshold = argc > 2 ? std::strtod(argv[2], nullptr) : 0.1;
+  const int years = argc > 3 ? std::atoi(argv[3]) : 30;
   if (mode != "hybrid" && mode != "exact") {
     std::cerr << "usage: benchmark_big_catch_at_age_hybrid_optimizer "
-                 "[hybrid|exact] [switch_threshold]\n";
+                 "[hybrid|exact] [switch_threshold] [years]\n";
     return 2;
   }
 
-  example::CatchAtAgeLaplaceModel model;
+  example::CatchAtAgeLaplaceModel model(years);
   quadra::ParameterSet parameters;
   const std::vector<double> initial = {
       std::log(900.0), std::log(0.25), std::log(0.15), std::log(0.18), 0.0,
@@ -78,14 +81,66 @@ int main(int argc, char **argv) {
   const double wall_ms =
       std::chrono::duration<double, std::milli>(Clock::now() - start).count();
 
-  std::cout << "mode,switch_threshold,converged,iterations,approximate_evaluations,"
+  std::cout << "mode,switch_threshold,years,converged,iterations,approximate_evaluations,"
                "exact_evaluations,switch_iteration,objective,gradient_norm,"
                "wall_ms,peak_rss_mb,message\n";
-  std::cout << mode << ',' << switch_threshold << ','
+  std::cout << mode << ',' << switch_threshold << ',' << years << ','
             << (result.converged ? 1 : 0) << ','
             << result.iterations << ',' << result.approximate_evaluations << ','
             << result.exact_evaluations << ',' << result.exact_switch_iteration
             << ',' << std::setprecision(15) << result.objective << ','
             << result.gradient_norm << ',' << std::fixed << std::setprecision(3)
             << wall_ms << ',' << peak_rss_mb() << ',' << result.message << '\n';
+
+  if (!result.converged)
+    return 1;
+
+  auto exact_gradient = [&](const std::vector<double> &fixed) {
+    return exact.evaluate(fixed, result.random_mode).gradient;
+  };
+  const auto fd_start = Clock::now();
+  const auto fd = quadra::estimate_fixed_effect_covariance_from_gradient(
+      exact_gradient, result.fixed, 1.0e-4);
+  const double fd_ms =
+      std::chrono::duration<double, std::milli>(Clock::now() - fd_start)
+          .count();
+
+  const auto schur_start = Clock::now();
+  quadra::RandomEffectHessianWorkspace<example::CatchAtAgeLaplaceModel>
+      workspace(model, result.fixed, result.random_mode,
+                quadra::partition_parameters(parameters), false);
+  const auto blocks =
+      workspace.EvaluateJointHessianBlocks(result.fixed, result.random_mode);
+  Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> factorization;
+  factorization.compute(blocks.random_hessian_m);
+  const Eigen::MatrixXd profiled_joint_hessian =
+      blocks.fixed_hessian_m - blocks.mixed_hessian_m.transpose() *
+                                   factorization.solve(blocks.mixed_hessian_m);
+  const auto schur = quadra::estimate_fixed_effect_covariance_from_hessian(
+      profiled_joint_hessian);
+  const double schur_ms =
+      std::chrono::duration<double, std::milli>(Clock::now() - schur_start)
+          .count();
+
+  double hessian_relative_error = std::nan("");
+  double se_max_relative_error = std::nan("");
+  if (fd.success_m && schur.success_m) {
+    hessian_relative_error =
+        (fd.hessian_m - schur.hessian_m).norm() / fd.hessian_m.norm();
+    se_max_relative_error = 0.0;
+    for (Eigen::Index i = 0; i < fd.covariance_m.rows(); ++i) {
+      const double fd_se = std::sqrt(fd.covariance_m(i, i));
+      const double schur_se = std::sqrt(schur.covariance_m(i, i));
+      se_max_relative_error =
+          std::max(se_max_relative_error, std::abs(schur_se / fd_se - 1.0));
+    }
+  }
+  std::cout << "covariance_method,years,success,wall_ms,gradient_evaluations,"
+               "hessian_relative_difference,max_se_relative_difference\n";
+  std::cout << std::setprecision(10);
+  std::cout << "fd_exact_laplace," << years << ',' << (fd.success_m ? 1 : 0)
+            << ',' << fd_ms << ',' << 2 * result.fixed.size() << ",0,0\n";
+  std::cout << "ad_profiled_joint_schur," << years << ','
+            << (schur.success_m ? 1 : 0) << ',' << schur_ms << ",0,"
+            << hessian_relative_error << ',' << se_max_relative_error << '\n';
 }

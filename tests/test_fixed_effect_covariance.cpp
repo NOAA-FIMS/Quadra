@@ -52,6 +52,16 @@ int main() {
 
   const Eigen::MatrixXd expected_covariance = objective.H.inverse();
 
+  const auto direct_result =
+      quadra::estimate_fixed_effect_covariance_from_hessian(objective.H);
+  if (!direct_result.success_m ||
+      (direct_result.covariance_m - expected_covariance)
+              .cwiseAbs()
+              .maxCoeff() > 1.0e-12) {
+    std::cerr << "FAIL: direct-Hessian covariance path is inaccurate\n";
+    return 1;
+  }
+
   const double hessian_error =
       (result.hessian_m - objective.H).cwiseAbs().maxCoeff();
 

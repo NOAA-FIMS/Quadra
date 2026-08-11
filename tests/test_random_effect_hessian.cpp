@@ -99,6 +99,26 @@ int main() {
     return 1;
   }
 
+  quadra::RandomEffectHessianWorkspace<RandomInterceptModel> workspace(
+      model, fixed, random, partition, false);
+  const auto blocks = workspace.EvaluateJointHessianBlocks(fixed, random);
+  // H_mm = 5, H_um = 5, H_uu = 6 for this Gaussian model.
+  if (std::abs(blocks.fixed_hessian_m(0, 0) - 5.0) > 1e-12 ||
+      std::abs(blocks.mixed_hessian_m(0, 0) - 5.0) > 1e-12 ||
+      std::abs(blocks.random_hessian_m.coeff(0, 0) - 6.0) > 1e-12) {
+    std::cerr << "FAIL: joint Hessian block extraction mismatch\n";
+    return 1;
+  }
+  const Eigen::MatrixXd schur =
+      blocks.fixed_hessian_m -
+      blocks.mixed_hessian_m.transpose() *
+          Eigen::MatrixXd(blocks.random_hessian_m).inverse() *
+          blocks.mixed_hessian_m;
+  if (std::abs(schur(0, 0) - 5.0 / 6.0) > 1e-12) {
+    std::cerr << "FAIL: profiled joint Schur complement mismatch\n";
+    return 1;
+  }
+
   if (result.full_m != std::vector<double>{5.0, 0.0}) {
     std::cerr << "FAIL: merged full vector mismatch\n";
     return 1;

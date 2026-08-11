@@ -58,6 +58,55 @@ covariance_to_correlation(const Eigen::MatrixXd &covariance) {
   return correlation;
 }
 
+inline FixedEffectCovarianceResult estimate_fixed_effect_covariance_from_hessian(
+    const Eigen::MatrixXd &hessian,
+    double eigen_tolerance =
+        std::sqrt(std::numeric_limits<double>::epsilon())) {
+  FixedEffectCovarianceResult result;
+  result.hessian_m = 0.5 * (hessian + hessian.transpose());
+  const Eigen::Index n = result.hessian_m.rows();
+  result.covariance_m = Eigen::MatrixXd::Zero(n, n);
+  result.correlation_m = Eigen::MatrixXd::Zero(n, n);
+  result.steps_m = Eigen::VectorXd::Zero(n);
+  if (n == 0 || hessian.cols() != n || !matrix_all_finite(hessian)) {
+    result.message_m = "Fixed-effect Hessian is empty, non-square, or non-finite.";
+    return result;
+  }
+  Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> eigen(result.hessian_m);
+  if (eigen.info() != Eigen::Success) {
+    result.message_m = "Eigendecomposition of fixed Hessian failed.";
+    return result;
+  }
+  result.eigenvalues_m = eigen.eigenvalues();
+  const double scale =
+      std::max(1.0, result.eigenvalues_m.cwiseAbs().maxCoeff());
+  result.eigenvalue_threshold_m = eigen_tolerance * scale;
+  result.positive_definite_m =
+      result.eigenvalues_m.minCoeff() > result.eigenvalue_threshold_m;
+  if (!result.positive_definite_m) {
+    result.message_m = "Fixed-effect Hessian is not positive definite.";
+    return result;
+  }
+  result.condition_number_m =
+      result.eigenvalues_m.maxCoeff() / result.eigenvalues_m.minCoeff();
+  Eigen::LLT<Eigen::MatrixXd> llt(result.hessian_m);
+  if (llt.info() != Eigen::Success) {
+    result.message_m = "Cholesky factorization of fixed Hessian failed.";
+    return result;
+  }
+  result.covariance_m = llt.solve(Eigen::MatrixXd::Identity(n, n));
+  result.covariance_m =
+      0.5 * (result.covariance_m + result.covariance_m.transpose());
+  if (!matrix_all_finite(result.covariance_m)) {
+    result.message_m = "Estimated covariance contains non-finite values.";
+    return result;
+  }
+  result.correlation_m = covariance_to_correlation(result.covariance_m);
+  result.success_m = true;
+  result.message_m = "Fixed-effect covariance estimated from supplied Hessian.";
+  return result;
+}
+
 template <typename Gradient>
 FixedEffectCovarianceResult estimate_fixed_effect_covariance_from_gradient(
     Gradient &gradient, const std::vector<double> &theta_hat,
@@ -103,39 +152,10 @@ FixedEffectCovarianceResult estimate_fixed_effect_covariance_from_gradient(
     result.steps_m[j] = step;
   }
 
-  result.hessian_m = 0.5 * (result.hessian_m + result.hessian_m.transpose());
-  Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> eigen(result.hessian_m);
-  if (eigen.info() != Eigen::Success) {
-    result.message_m = "Eigendecomposition of fixed Hessian failed.";
-    return result;
-  }
-  result.eigenvalues_m = eigen.eigenvalues();
-  const double scale =
-      std::max(1.0, result.eigenvalues_m.cwiseAbs().maxCoeff());
-  result.eigenvalue_threshold_m = eigen_tolerance * scale;
-  result.positive_definite_m =
-      result.eigenvalues_m.minCoeff() > result.eigenvalue_threshold_m;
-  if (!result.positive_definite_m) {
-    result.message_m = "Fixed-effect Hessian is not positive definite.";
-    return result;
-  }
-  result.condition_number_m =
-      result.eigenvalues_m.maxCoeff() / result.eigenvalues_m.minCoeff();
-
-  Eigen::LLT<Eigen::MatrixXd> llt(result.hessian_m);
-  if (llt.info() != Eigen::Success) {
-    result.message_m = "Cholesky factorization of fixed Hessian failed.";
-    return result;
-  }
-  result.covariance_m = llt.solve(Eigen::MatrixXd::Identity(n, n));
-  result.covariance_m =
-      0.5 * (result.covariance_m + result.covariance_m.transpose());
-  if (!matrix_all_finite(result.covariance_m)) {
-    result.message_m = "Estimated covariance contains non-finite values.";
-    return result;
-  }
-  result.correlation_m = covariance_to_correlation(result.covariance_m);
-  result.success_m = true;
+  auto finalized = estimate_fixed_effect_covariance_from_hessian(
+      result.hessian_m, eigen_tolerance);
+  finalized.steps_m = result.steps_m;
+  result = std::move(finalized);
   result.message_m = "Fixed-effect covariance estimated from exact gradients.";
   return result;
 }

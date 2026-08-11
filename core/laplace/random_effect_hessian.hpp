@@ -37,6 +37,15 @@ struct FixedGradientMixedHessianResult {
   double extract_ms = 0.0;
 };
 
+struct JointHessianBlocksResult {
+  Eigen::MatrixXd fixed_hessian_m;
+  Eigen::MatrixXd mixed_hessian_m;
+  Eigen::SparseMatrix<double> random_hessian_m;
+  double replay_ms = 0.0;
+  double propagate_ms = 0.0;
+  double extract_ms = 0.0;
+};
+
 inline std::vector<int>
 random_indices_as_ints(const ParameterPartition &partition) {
   std::vector<int> out;
@@ -274,6 +283,69 @@ public:
     result.extract_ms =
         std::chrono::duration<double, std::milli>(extract_end - propagate_end)
             .count();
+    return result;
+  }
+
+  // Extract the three blocks of the joint objective Hessian in one exact AD
+  // sweep.  This is useful for the profiled-joint Schur complement
+  // H_tt - H_tu H_uu^-1 H_ut; it does not include the second derivative of
+  // the Laplace log-determinant correction.
+  JointHessianBlocksResult
+  EvaluateJointHessianBlocks(const std::vector<double> &fixed,
+                             const std::vector<double> &random) {
+    if (fixed.size() != fixed_ad_.size() || random.size() != random_ad_.size())
+      throw std::invalid_argument(
+          "RandomEffectHessianWorkspace parameter length mismatch");
+    had::g_ADGraph = &tape_.graph;
+    for (size_t i = 0; i < fixed.size(); ++i)
+      set_value(fixed_ad_[i], fixed[i]);
+    for (size_t i = 0; i < random.size(); ++i)
+      set_value(random_ad_[i], random[i]);
+    const auto replay_start = std::chrono::steady_clock::now();
+    tape_.forward();
+    const auto replay_end = std::chrono::steady_clock::now();
+    PropagateLaplaceHessianRestricted(tape_.graph, graph_plan_);
+    const auto propagate_end = std::chrono::steady_clock::now();
+
+    JointHessianBlocksResult result;
+    const Eigen::Index n_fixed = static_cast<Eigen::Index>(fixed_ad_.size());
+    const Eigen::Index n_random = static_cast<Eigen::Index>(random_ad_.size());
+    result.fixed_hessian_m = Eigen::MatrixXd::Zero(n_fixed, n_fixed);
+    result.mixed_hessian_m = Eigen::MatrixXd::Zero(n_random, n_fixed);
+    result.random_hessian_m.resize(n_random, n_random);
+    std::vector<Eigen::Triplet<double>> random_entries;
+    random_entries.reserve(random.size() * 3);
+    for (Eigen::Index i = 0; i < n_fixed; ++i) {
+      for (Eigen::Index j = 0; j < n_fixed; ++j)
+        result.fixed_hessian_m(i, j) =
+            hessian_value(fixed_ad_[static_cast<size_t>(i)],
+                          fixed_ad_[static_cast<size_t>(j)]);
+      for (Eigen::Index j = 0; j < n_random; ++j)
+        result.mixed_hessian_m(j, i) =
+            hessian_value(random_ad_[static_cast<size_t>(j)],
+                          fixed_ad_[static_cast<size_t>(i)]);
+    }
+    for (Eigen::Index i = 0; i < n_random; ++i) {
+      for (Eigen::Index j = 0; j < n_random; ++j) {
+        const double value =
+            hessian_value(random_ad_[static_cast<size_t>(i)],
+                          random_ad_[static_cast<size_t>(j)]);
+        if (value != 0.0)
+          random_entries.emplace_back(i, j, value);
+      }
+    }
+    result.random_hessian_m.setFromTriplets(random_entries.begin(),
+                                             random_entries.end());
+    const auto extract_end = std::chrono::steady_clock::now();
+    result.replay_ms = std::chrono::duration<double, std::milli>(
+                           replay_end - replay_start)
+                           .count();
+    result.propagate_ms = std::chrono::duration<double, std::milli>(
+                              propagate_end - replay_end)
+                              .count();
+    result.extract_ms = std::chrono::duration<double, std::milli>(
+                            extract_end - propagate_end)
+                            .count();
     return result;
   }
 
