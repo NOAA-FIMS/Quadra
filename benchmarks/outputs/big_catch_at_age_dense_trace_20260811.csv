@@ -1,0 +1,3 @@
+stream_dense_trace,requested_workers,actual_workers,construct_ms,mean_objective_ms,mean_factorization_ms,mean_sensitivity_ms,mean_hdot_ms,mean_trace_ms,mean_total_ms,peak_rss_mb,gradient_checksum,repetitions
+0,1,0,25.331,3.523,0.013,0.010,396.770,0.284,400.601,14.734,-0.007508083856,10
+1,1,0,21.148,3.369,0.012,0.010,399.149,399.147,402.542,14.547,-0.007508083856,10
