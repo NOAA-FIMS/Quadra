@@ -147,7 +147,7 @@ int main(int argc, char **argv) {
 
   const auto exact_hessian = quadra::laplace::exact_laplace_hessian_fourth_order(
       model, result.fixed, result.random_mode,
-      quadra::partition_parameters(parameters));
+      quadra::partition_parameters(parameters), 4);
   const auto exact_covariance =
       quadra::estimate_fixed_effect_covariance_from_hessian(
           exact_hessian.hessian_m);

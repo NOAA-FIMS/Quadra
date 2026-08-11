@@ -7,7 +7,11 @@
 #include <Eigen/SparseCholesky>
 
 #include <chrono>
+#include <atomic>
+#include <exception>
+#include <mutex>
 #include <stdexcept>
+#include <thread>
 #include <vector>
 
 namespace quadra {
@@ -97,20 +101,24 @@ ExactLaplaceDirectionalCurvatureResult exact_laplace_directional_curvature(
   Eigen::MatrixXd fourth_velocity = Eigen::MatrixXd::Zero(nr, nr);
   for (int a = 0; a < nr; ++a) {
     for (int b = 0; b <= a; ++b) {
-      double polarized = 0.0;
-      for (int mask = 0; mask < 16; ++mask) {
-        const int signs[4] = {(mask & 1) ? 1 : -1, (mask & 2) ? 1 : -1,
-                              (mask & 4) ? 1 : -1, (mask & 8) ? 1 : -1};
-        std::vector<double> direction(full.size(), 0.0);
+      // Q(e_a,e_b,v,v) is a repeated-argument polarization. Pairing each
+      // direction with its negative collapses the general 16-term identity
+      // to six quartic evaluations.
+      auto quartic = [&](int sign_b, double velocity_scale) {
+        std::vector<double> direction(full.size());
         for (size_t k = 0; k < full.size(); ++k)
-          direction[k] = (signs[2] + signs[3]) * velocity[k];
-        direction[partition.random_indices_m[static_cast<size_t>(a)]] += signs[0];
-        direction[partition.random_indices_m[static_cast<size_t>(b)]] += signs[1];
-        const double fourth =
-            had::fourth_directional_derivative(objective, full, direction);
-        polarized += signs[0] * signs[1] * signs[2] * signs[3] * fourth;
-      }
-      fourth_velocity(a, b) = fourth_velocity(b, a) = polarized / 384.0;
+          direction[k] = velocity_scale * velocity[k];
+        direction[partition.random_indices_m[static_cast<size_t>(a)]] += 1.0;
+        direction[partition.random_indices_m[static_cast<size_t>(b)]] +=
+            sign_b;
+        return had::fourth_directional_derivative(objective, full, direction);
+      };
+      const double same =
+          quartic(1, 2.0) + quartic(1, -2.0) - 2.0 * quartic(1, 0.0);
+      const double opposite =
+          quartic(-1, 2.0) + quartic(-1, -2.0) - 2.0 * quartic(-1, 0.0);
+      fourth_velocity(a, b) = fourth_velocity(b, a) =
+          (same - opposite) / 192.0;
     }
   }
   const Eigen::MatrixXd H2 = fourth_velocity + third_acceleration;
@@ -132,23 +140,59 @@ ExactLaplaceDirectionalCurvatureResult exact_laplace_directional_curvature(
 template <class Model>
 ExactLaplaceHessianResult exact_laplace_hessian_fourth_order(
     Model &model, const std::vector<double> &fixed,
-    const std::vector<double> &u_hat, const ParameterPartition &partition) {
+    const std::vector<double> &u_hat, const ParameterPartition &partition,
+    int worker_count = 1) {
   using Clock = std::chrono::steady_clock;
   const auto start = Clock::now();
   const int n = static_cast<int>(fixed.size());
   ExactLaplaceHessianResult result;
   result.hessian_m = Eigen::MatrixXd::Zero(n, n);
-  for (int i = 0; i < n; ++i) {
+  if (worker_count <= 0)
+    throw std::invalid_argument("fourth-order Hessian worker count must be positive");
+  const auto parallel_for = [&](int task_count, const auto &task) {
+    std::atomic<int> next{0};
+    std::exception_ptr error;
+    std::mutex error_mutex;
+    const int active_workers = std::min(worker_count, task_count);
+    std::vector<std::thread> workers;
+    workers.reserve(static_cast<size_t>(active_workers));
+    for (int worker = 0; worker < active_workers; ++worker) {
+      workers.emplace_back([&]() {
+        try {
+          for (;;) {
+            const int index = next.fetch_add(1);
+            if (index >= task_count)
+              break;
+            task(index);
+          }
+        } catch (...) {
+          std::lock_guard<std::mutex> lock(error_mutex);
+          if (!error)
+            error = std::current_exception();
+          next.store(task_count);
+        }
+      });
+    }
+    for (auto &worker : workers)
+      worker.join();
+    if (error)
+      std::rethrow_exception(error);
+  };
+  parallel_for(n, [&](int i) {
     Eigen::VectorXd direction = Eigen::VectorXd::Zero(n);
     direction[i] = 1.0;
-    result.hessian_m(i, i) =
-        exact_laplace_directional_curvature(model, fixed, u_hat, partition,
-                                             direction)
-            .curvature_m;
-    ++result.directional_evaluations_m;
-  }
-  for (int i = 0; i < n; ++i) {
-    for (int j = 0; j < i; ++j) {
+    result.hessian_m(i, i) = exact_laplace_directional_curvature(
+                                 model, fixed, u_hat, partition, direction)
+                                 .curvature_m;
+  });
+  std::vector<std::pair<int, int>> pairs;
+  pairs.reserve(static_cast<size_t>(n * (n - 1) / 2));
+  for (int i = 0; i < n; ++i)
+    for (int j = 0; j < i; ++j)
+      pairs.emplace_back(i, j);
+  parallel_for(static_cast<int>(pairs.size()), [&](int index) {
+      const int i = pairs[static_cast<size_t>(index)].first;
+      const int j = pairs[static_cast<size_t>(index)].second;
       Eigen::VectorXd direction = Eigen::VectorXd::Zero(n);
       direction[i] = direction[j] = 1.0;
       const double pair =
@@ -157,9 +201,8 @@ ExactLaplaceHessianResult exact_laplace_hessian_fourth_order(
               .curvature_m;
       result.hessian_m(i, j) = result.hessian_m(j, i) =
           0.5 * (pair - result.hessian_m(i, i) - result.hessian_m(j, j));
-      ++result.directional_evaluations_m;
-    }
-  }
+  });
+  result.directional_evaluations_m = n + static_cast<int>(pairs.size());
   result.total_ms_m =
       std::chrono::duration<double, std::milli>(Clock::now() - start).count();
   return result;
