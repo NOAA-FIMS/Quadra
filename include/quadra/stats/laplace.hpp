@@ -81,6 +81,9 @@ struct LaplaceOptimizerResult {
   std::string message;
   ExactLaplaceResult evaluation;
   std::vector<LaplaceOptimizerIteration> history;
+  int approximate_evaluations = 0;
+  int exact_evaluations = 0;
+  int exact_switch_iteration = -1;
 };
 
 // Stateful public Laplace surface. It automatically warm-starts the latent
@@ -226,7 +229,9 @@ public:
       const LaplaceObjectiveOptions &objective_options = {},
       const laplace::ExactLaplaceGradientEngineOptions &engine_options = {})
       : model_(&model), partition_(partition),
-        objective_options_(objective_options), last_random_(discovery_random) {
+        objective_options_(objective_options), last_random_(discovery_random),
+        stream_dense_hdot_trace_(engine_options.stream_dense_hdot_trace),
+        dense_hdot_bandwidth_(engine_options.dense_hdot_bandwidth) {
     // Exact marginal gradients require the joint fixed gradient and H_u,theta
     // even when a caller disables them for ordinary value-only evaluations.
     objective_options_.compute_mixed_derivatives_m = true;
@@ -282,6 +287,10 @@ public:
     if (engine_options.hdot_workers < 0) {
       throw std::invalid_argument(
           "ExactLaplaceEvaluator: hdot_workers cannot be negative");
+    }
+    if (dense_hdot_bandwidth_ < -1) {
+      throw std::invalid_argument(
+          "ExactLaplaceEvaluator: dense_hdot_bandwidth cannot be below -1");
     }
     if (dense_third_order_) {
       // The dense backend uses forward third-order polarization and never
@@ -452,6 +461,8 @@ public:
       }
     }
     std::vector<Eigen::SparseMatrix<double>> hdots(fixed.size());
+    std::vector<double> dense_trace_terms(fixed.size(), 0.0);
+    double dense_trace_ms = 0.0;
     for (std::size_t worker = 0;
          !dense_third_order && worker < hdot_tapes_.size(); ++worker) {
       if (worker_errors[worker]) {
@@ -482,10 +493,30 @@ public:
           total_direction[fixed.size() + static_cast<std::size_t>(i)] =
               direction[i];
         }
-        hdots[static_cast<std::size_t>(j)] =
-            laplace::dense_hdot_third_order_polarized(
-                objective, combined, total_direction, random_indices)
-                .sparseView();
+        if (stream_dense_hdot_trace_) {
+          // Stream inverse columns and polarized Hdot entries directly into
+          // the trace. Neither matrix is materialized densely.
+          const auto dense_trace_start = Clock::now();
+          dense_trace_terms[static_cast<std::size_t>(j)] =
+              laplace::dense_hdot_trace_third_order_polarized(
+                  objective, combined, total_direction, random_indices,
+                  [&factor, &random_indices](int column) {
+                    Eigen::VectorXd rhs = Eigen::VectorXd::Zero(
+                        static_cast<Eigen::Index>(random_indices.size()));
+                    rhs[column] = 1.0;
+                    return factor.solve(rhs);
+                  },
+                  dense_hdot_bandwidth_);
+          dense_trace_ms +=
+              std::chrono::duration<double, std::milli>(Clock::now() -
+                                                         dense_trace_start)
+                  .count();
+        } else {
+          hdots[static_cast<std::size_t>(j)] =
+              laplace::dense_hdot_third_order_polarized(
+                  objective, combined, total_direction, random_indices)
+                  .sparseView();
+        }
       }
     }
     result.timings.hdot_ms =
@@ -511,6 +542,8 @@ public:
                 worker_trace_terms[worker][static_cast<std::size_t>(j)];
           }
         }
+      } else if (dense_third_order && stream_dense_hdot_trace_) {
+        trace_term = dense_trace_terms[static_cast<std::size_t>(j)];
       } else {
         trace_term =
             factor.trace_inverse_times(hdots[static_cast<std::size_t>(j)]);
@@ -519,7 +552,8 @@ public:
     }
     result.timings.trace_ms =
         std::chrono::duration<double, std::milli>(Clock::now() - trace_start)
-            .count();
+            .count() +
+        dense_trace_ms;
     result.gradient = from_eigen(exact_gradient);
     result.active_directions = active_directions_;
     result.success = true;
@@ -561,6 +595,12 @@ public:
     return objective_evaluator_ ? objective_evaluator_->tape_rebuild_count()
                                 : 0;
   }
+  void set_dense_hdot_bandwidth(int bandwidth) {
+    if (bandwidth < -1)
+      throw std::invalid_argument("dense Hdot bandwidth cannot be below -1");
+    dense_hdot_bandwidth_ = bandwidth;
+  }
+  int dense_hdot_bandwidth() const { return dense_hdot_bandwidth_; }
 
 private:
   Model *model_;
@@ -575,6 +615,8 @@ private:
   std::vector<std::vector<int>> hdot_worker_directions_;
   std::vector<double> last_random_;
   bool dense_third_order_ = false;
+  bool stream_dense_hdot_trace_ = true;
+  int dense_hdot_bandwidth_ = -1;
 
   static Eigen::VectorXd to_eigen(const std::vector<double> &values) {
     return Eigen::Map<const Eigen::VectorXd>(
@@ -814,6 +856,152 @@ optimize_laplace(ExactLaplaceEvaluator<Model> &evaluator,
   if (!result.converged && result.message.empty()) {
     result.message = "Maximum exact Laplace L-BFGS iterations reached.";
   }
+  result.fixed = fixed;
+  result.random_mode = current.objective.u_hat_m;
+  result.full = current.objective.full_m;
+  result.gradient = current.gradient;
+  result.objective = current.objective.laplace_objective_m;
+  result.gradient_norm = detail::norm(current.gradient);
+  result.evaluation = std::move(current);
+  return result;
+}
+
+// Hybrid exact-objective optimizer. A single persistent evaluator uses a
+// band-limited gradient while its norm exceeds switch_gradient_norm. The
+// transition is permanent and recomputes the current point exactly before
+// convergence can be declared.
+template <class Model>
+LaplaceOptimizerResult optimize_laplace_hybrid(
+    ExactLaplaceEvaluator<Model> &evaluator,
+    const std::vector<double> &fixed_initial, int approximate_bandwidth,
+    double switch_gradient_norm,
+    const LaplaceOptimizerOptions &options = {}) {
+  if (fixed_initial.empty() || approximate_bandwidth < 0 ||
+      !(switch_gradient_norm > 0.0))
+    throw std::invalid_argument("optimize_laplace_hybrid: invalid options");
+
+  LaplaceOptimizerResult result;
+  std::vector<double> fixed = fixed_initial;
+  bool exact_phase = false;
+  evaluator.set_dense_hdot_bandwidth(approximate_bandwidth);
+  ExactLaplaceResult current = evaluator.evaluate(fixed);
+  ++result.approximate_evaluations;
+  if (!detail::finite(current)) {
+    result.message = "Initial approximate Laplace evaluation failed.";
+    result.evaluation = std::move(current);
+    return result;
+  }
+
+  std::deque<std::vector<double>> steps;
+  std::deque<std::vector<double>> gradient_changes;
+  for (int iteration = 0; iteration < options.max_iterations; ++iteration) {
+    double gradient_norm = detail::norm(current.gradient);
+    if (!exact_phase && gradient_norm <= switch_gradient_norm) {
+      evaluator.set_dense_hdot_bandwidth(-1);
+      current = evaluator.evaluate(fixed, current.objective.u_hat_m);
+      ++result.exact_evaluations;
+      if (!detail::finite(current)) {
+        result.message = "Exact evaluation failed at hybrid switch.";
+        break;
+      }
+      exact_phase = true;
+      result.exact_switch_iteration = iteration;
+      gradient_norm = detail::norm(current.gradient);
+    }
+
+    result.history.push_back({iteration, current.objective.laplace_objective_m,
+                              gradient_norm, 0.0, 0.0});
+    result.iterations = iteration;
+    if (exact_phase && gradient_norm <= options.gradient_tolerance) {
+      result.converged = true;
+      result.message = "Hybrid optimizer exact gradient is below tolerance.";
+      break;
+    }
+
+    std::vector<double> direction =
+        detail::lbfgs_direction(current.gradient, steps, gradient_changes);
+    double slope = detail::dot(current.gradient, direction);
+    if (!(slope < 0.0) || !std::isfinite(slope)) {
+      steps.clear();
+      gradient_changes.clear();
+      direction = current.gradient;
+      for (double &value : direction)
+        value = -value;
+    }
+    const double direction_norm = detail::norm(direction);
+    if (direction_norm > options.maximum_direction_norm) {
+      const double scale = options.maximum_direction_norm / direction_norm;
+      for (double &value : direction)
+        value *= scale;
+    }
+    slope = detail::dot(current.gradient, direction);
+
+    bool accepted = false;
+    double step_scale = options.initial_step_scale;
+    std::vector<double> candidate_fixed;
+    ExactLaplaceResult candidate;
+    while (step_scale >= options.minimum_step_scale) {
+      candidate_fixed = detail::add_scaled(fixed, direction, step_scale);
+      try {
+        candidate = evaluator.evaluate(candidate_fixed,
+                                       current.objective.u_hat_m);
+        if (exact_phase)
+          ++result.exact_evaluations;
+        else
+          ++result.approximate_evaluations;
+      } catch (const std::exception &) {
+        step_scale *= 0.5;
+        continue;
+      }
+      const double armijo = current.objective.laplace_objective_m +
+                            options.sufficient_decrease * step_scale * slope;
+      if (detail::finite(candidate) &&
+          candidate.objective.laplace_objective_m <= armijo) {
+        accepted = true;
+        break;
+      }
+      step_scale *= 0.5;
+    }
+    if (!accepted) {
+      result.message = "Hybrid Laplace L-BFGS line search failed.";
+      break;
+    }
+
+    std::vector<double> step = detail::subtract(candidate_fixed, fixed);
+    std::vector<double> gradient_change =
+        detail::subtract(candidate.gradient, current.gradient);
+    const double curvature = detail::dot(step, gradient_change);
+    if (options.memory > 0 && curvature > 1.0e-14 && std::isfinite(curvature)) {
+      steps.push_back(step);
+      gradient_changes.push_back(std::move(gradient_change));
+      while (static_cast<int>(steps.size()) > options.memory) {
+        steps.pop_front();
+        gradient_changes.pop_front();
+      }
+    }
+    result.step_norm = detail::norm(step);
+    result.history.back().step_scale = step_scale;
+    result.history.back().step_norm = result.step_norm;
+    fixed = std::move(candidate_fixed);
+    current = std::move(candidate);
+    result.iterations = iteration + 1;
+    if (exact_phase && result.step_norm <= options.step_tolerance) {
+      // Recheck the final point exactly even if the accepted candidate was
+      // already exact; this keeps the convergence contract explicit.
+      current = evaluator.evaluate(fixed, current.objective.u_hat_m);
+      ++result.exact_evaluations;
+      result.converged = detail::finite(current) &&
+                         detail::norm(current.gradient) <=
+                             options.gradient_tolerance;
+      result.message = result.converged
+                           ? "Hybrid optimizer passed exact final check."
+                           : "Hybrid step stalled before exact convergence.";
+      break;
+    }
+  }
+
+  if (!result.converged && result.message.empty())
+    result.message = "Maximum hybrid Laplace L-BFGS iterations reached.";
   result.fixed = fixed;
   result.random_mode = current.objective.u_hat_m;
   result.full = current.objective.full_m;

@@ -80,6 +80,18 @@ int main() {
     return 1;
   }
 
-  std::cout << "PASS: public exact Laplace optimizer\n";
+  quadra::stats::ExactLaplaceEvaluator<CurvatureModel> hybrid_evaluator(
+      model, {0.4}, {0.0}, model.parameters(), objective_options);
+  const auto hybrid = quadra::stats::optimize_laplace_hybrid(
+      hybrid_evaluator, {0.4}, 0, 0.3, optimizer_options);
+  if (!hybrid.converged || hybrid.approximate_evaluations == 0 ||
+      hybrid.exact_evaluations == 0 || hybrid.exact_switch_iteration < 0 ||
+      std::abs(hybrid.gradient[0]) > 1.0e-9) {
+    std::cerr << "hybrid exact-switch convergence contract failed: "
+              << hybrid.message << '\n';
+    return 1;
+  }
+
+  std::cout << "PASS: public exact and hybrid Laplace optimizers\n";
   return 0;
 }

@@ -25,6 +25,14 @@ struct ExactLaplaceGradientEngineOptions {
   // Persistent Hdot tapes used by the public exact evaluator. Zero selects
   // automatically from the active-direction count and hardware concurrency.
   int hdot_workers = 0;
+
+  // Contract dense polarized Hdot entries directly with streamed inverse
+  // columns. Disable only for benchmarking the legacy materialized path.
+  bool stream_dense_hdot_trace = true;
+
+  // Negative retains the full dense Hdot. Nonnegative values keep only the
+  // corresponding diagonal band and define an approximate gradient backend.
+  int dense_hdot_bandwidth = -1;
 };
 
 // Production-facing exact Laplace gradient engine.
