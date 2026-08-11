@@ -27,7 +27,13 @@ using AD = had::AReal;
 using AD3 = had::ThirdOrderScalar;
 #endif
 
-enum class DerivativeLevel { Value, Gradient, Hessian, ThirdDirectional };
+enum class DerivativeLevel {
+  Value,
+  Gradient,
+  Hessian,
+  ThirdDirectional,
+  FourthDirectional
+};
 
 template <typename T> struct DerivativeTraits {
   static constexpr DerivativeLevel level = DerivativeLevel::Value;
@@ -40,6 +46,9 @@ template <> struct DerivativeTraits<had::AReal> {
 #ifndef QUADRA_USE_ORIGINAL_HAD
 template <> struct DerivativeTraits<had::ThirdOrderScalar> {
   static constexpr DerivativeLevel level = DerivativeLevel::ThirdDirectional;
+};
+template <> struct DerivativeTraits<had::FourthOrderScalar> {
+  static constexpr DerivativeLevel level = DerivativeLevel::FourthDirectional;
 };
 #endif
 
@@ -75,6 +84,7 @@ inline double value_of(const had::AReal &x) {
 
 #ifndef QUADRA_USE_ORIGINAL_HAD
 inline double value_of(const had::ThirdOrderScalar &x) { return x.val; }
+inline double value_of(const had::FourthOrderScalar &x) { return x.val; }
 #endif
 
 template <typename T> inline double value_of_arithmetic_or_ad(const T &x) {

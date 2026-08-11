@@ -9,6 +9,7 @@
 
 #include "../core/inference/fixed_effect_covariance.hpp"
 #include "../core/laplace/random_effect_hessian.hpp"
+#include "../core/laplace/laplace_exact_directional_curvature.hpp"
 #include "../examples/big/catch_at_age_shared.hpp"
 #include "../include/quadra/stats.hpp"
 
@@ -143,4 +144,25 @@ int main(int argc, char **argv) {
   std::cout << "ad_profiled_joint_schur," << years << ','
             << (schur.success_m ? 1 : 0) << ',' << schur_ms << ",0,"
             << hessian_relative_error << ',' << se_max_relative_error << '\n';
+
+  const auto exact_hessian = quadra::laplace::exact_laplace_hessian_fourth_order(
+      model, result.fixed, result.random_mode,
+      quadra::partition_parameters(parameters));
+  const auto exact_covariance =
+      quadra::estimate_fixed_effect_covariance_from_hessian(
+          exact_hessian.hessian_m);
+  const double exact_hessian_relative_error =
+      (exact_hessian.hessian_m - fd.hessian_m).norm() / fd.hessian_m.norm();
+  double exact_se_relative_error = 0.0;
+  for (Eigen::Index i = 0; i < fd.covariance_m.rows(); ++i) {
+    const double fd_se = std::sqrt(fd.covariance_m(i, i));
+    const double exact_se = std::sqrt(exact_covariance.covariance_m(i, i));
+    exact_se_relative_error = std::max(
+        exact_se_relative_error, std::abs(exact_se / fd_se - 1.0));
+  }
+  std::cout << "exact_fourth_ad," << years << ','
+            << (exact_covariance.success_m ? 1 : 0) << ','
+            << exact_hessian.total_ms_m << ",0,"
+            << exact_hessian_relative_error << ',' << exact_se_relative_error
+            << '\n';
 }

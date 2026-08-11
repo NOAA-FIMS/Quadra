@@ -502,6 +502,13 @@ test-contracts:
 test-fixed-effect-covariance: tests/test_fixed_effect_covariance
 	./tests/test_fixed_effect_covariance
 
+.PHONY: test-fourth-directional
+test-fourth-directional: tests/test_fourth_directional
+	./tests/test_fourth_directional
+
+tests/test_fourth_directional: tests/test_fourth_directional.cpp core/had_quadra.hpp core/laplace/laplace_exact_directional_curvature.hpp
+	$(CXX) $(CXXFLAGS) -o $@ tests/test_fourth_directional.cpp
+
 tests/test_fixed_effect_covariance: tests/test_fixed_effect_covariance.cpp core/inference/fixed_effect_covariance.hpp
 	$(CXX) $(CXXFLAGS) -I. -I./external/eigen -I./external/had -I./external/LBFGSpp/include -o $@ tests/test_fixed_effect_covariance.cpp
 
