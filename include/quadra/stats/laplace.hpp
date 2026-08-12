@@ -507,10 +507,9 @@ public:
                     return factor.solve(rhs);
                   },
                   dense_hdot_bandwidth_);
-          dense_trace_ms +=
-              std::chrono::duration<double, std::milli>(Clock::now() -
-                                                         dense_trace_start)
-                  .count();
+          dense_trace_ms += std::chrono::duration<double, std::milli>(
+                                Clock::now() - dense_trace_start)
+                                .count();
         } else {
           hdots[static_cast<std::size_t>(j)] =
               laplace::dense_hdot_third_order_polarized(
@@ -871,11 +870,11 @@ optimize_laplace(ExactLaplaceEvaluator<Model> &evaluator,
 // transition is permanent and recomputes the current point exactly before
 // convergence can be declared.
 template <class Model>
-LaplaceOptimizerResult optimize_laplace_hybrid(
-    ExactLaplaceEvaluator<Model> &evaluator,
-    const std::vector<double> &fixed_initial, int approximate_bandwidth,
-    double switch_gradient_norm,
-    const LaplaceOptimizerOptions &options = {}) {
+LaplaceOptimizerResult
+optimize_laplace_hybrid(ExactLaplaceEvaluator<Model> &evaluator,
+                        const std::vector<double> &fixed_initial,
+                        int approximate_bandwidth, double switch_gradient_norm,
+                        const LaplaceOptimizerOptions &options = {}) {
   if (fixed_initial.empty() || approximate_bandwidth < 0 ||
       !(switch_gradient_norm > 0.0))
     throw std::invalid_argument("optimize_laplace_hybrid: invalid options");
@@ -943,8 +942,8 @@ LaplaceOptimizerResult optimize_laplace_hybrid(
     while (step_scale >= options.minimum_step_scale) {
       candidate_fixed = detail::add_scaled(fixed, direction, step_scale);
       try {
-        candidate = evaluator.evaluate(candidate_fixed,
-                                       current.objective.u_hat_m);
+        candidate =
+            evaluator.evaluate(candidate_fixed, current.objective.u_hat_m);
         if (exact_phase)
           ++result.exact_evaluations;
         else
@@ -990,9 +989,9 @@ LaplaceOptimizerResult optimize_laplace_hybrid(
       // already exact; this keeps the convergence contract explicit.
       current = evaluator.evaluate(fixed, current.objective.u_hat_m);
       ++result.exact_evaluations;
-      result.converged = detail::finite(current) &&
-                         detail::norm(current.gradient) <=
-                             options.gradient_tolerance;
+      result.converged =
+          detail::finite(current) &&
+          detail::norm(current.gradient) <= options.gradient_tolerance;
       result.message = result.converged
                            ? "Hybrid optimizer passed exact final check."
                            : "Hybrid step stalled before exact convergence.";

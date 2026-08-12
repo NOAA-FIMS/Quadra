@@ -13,8 +13,7 @@ int main() {
   auto objective = [](const auto &x) {
     const auto scale = exp(x[0]);
     const auto sum = x[1] + 2.0 * x[2] - 0.5 * x[3];
-    return 0.5 * (x[1] * x[1] + 2.0 * x[2] * x[2] +
-                  3.0 * x[3] * x[3]) +
+    return 0.5 * (x[1] * x[1] + 2.0 * x[2] * x[2] + 3.0 * x[3] * x[3]) +
            0.5 * scale * sum * sum;
   };
   const std::vector<double> x = {0.2, 0.1, -0.2, 0.3};
@@ -30,8 +29,8 @@ int main() {
   quadra::laplace::SparseHuuFactorization factor(H.sparseView());
 
   const Eigen::MatrixXd hdot =
-      quadra::laplace::dense_hdot_third_order_polarized(
-          objective, x, direction, random_indices);
+      quadra::laplace::dense_hdot_third_order_polarized(objective, x, direction,
+                                                        random_indices);
   const double expected = (H.inverse() * hdot).trace();
   const double streamed =
       quadra::laplace::dense_hdot_trace_third_order_polarized(

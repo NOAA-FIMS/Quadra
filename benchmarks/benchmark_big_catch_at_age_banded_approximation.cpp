@@ -47,9 +47,9 @@ int main(int argc, char **argv) {
   const int band_filter = argc > 2 ? std::atoi(argv[2]) : -1;
   example::CatchAtAgeLaplaceModel model;
   quadra::ParameterSet parameters;
-  std::vector<double> fixed = {
-      8.199973, -0.369740, 0.005970, -1.194726, 0.293207,
-      0.350404, -1.709454, -2.741071, -3.407494, 7.595303};
+  std::vector<double> fixed = {8.199973,  -0.369740, 0.005970,  -1.194726,
+                               0.293207,  0.350404,  -1.709454, -2.741071,
+                               -3.407494, 7.595303};
   if (argc == 13) {
     for (std::size_t i = 0; i < fixed.size(); ++i)
       fixed[i] = std::strtod(argv[3 + i], nullptr);
@@ -59,10 +59,11 @@ int main(int argc, char **argv) {
     return 2;
   }
   const std::vector<const char *> names = {
-      "log_R0",          "log_M",           "log_q",
-      "log_Fbar",        "sel50_raw",       "log_sel_slope",
-      "log_sigma_index", "log_sigma_catch", "log_sigma_rec",
-      "log_comp_concentration"};
+      "log_R0",          "log_M",
+      "log_q",           "log_Fbar",
+      "sel50_raw",       "log_sel_slope",
+      "log_sigma_index", "log_sigma_catch",
+      "log_sigma_rec",   "log_comp_concentration"};
   for (std::size_t i = 0; i < fixed.size(); ++i)
     parameters.add(names[i], fixed[i], quadra::ParameterTransform::Identity,
                    false);
@@ -97,8 +98,8 @@ int main(int argc, char **argv) {
     return model.evaluate(x, context);
   };
 
-  const Eigen::VectorXd joint_gradient = Eigen::Map<const Eigen::VectorXd>(
-      base.gradient_fixed_joint_m.data(), nf);
+  const Eigen::VectorXd joint_gradient =
+      Eigen::Map<const Eigen::VectorXd>(base.gradient_fixed_joint_m.data(), nf);
   auto evaluate_gradient = [&](quadra::laplace::SparseHuuFactorization &factor,
                                Eigen::MatrixXd &directions,
                                int hdot_bandwidth) {
@@ -142,11 +143,10 @@ int main(int argc, char **argv) {
                "approximate_is_exact_descent,"
                "gradient_max_abs_error,factorization_ms,gradient_ms,"
                "peak_rss_mb\n";
-  std::cout << "full," << H.size() << ",0,0,0,"
-            << reference_gradient.norm() << ',' << reference_gradient.norm()
-            << ",0,1,1,0,0,"
-            << std::fixed << std::setprecision(6) << reference_gradient_ms
-            << ',' << peak_rss_mb() << '\n';
+  std::cout << "full," << H.size() << ",0,0,0," << reference_gradient.norm()
+            << ',' << reference_gradient.norm() << ",0,1,1,0,0," << std::fixed
+            << std::setprecision(6) << reference_gradient_ms << ','
+            << peak_rss_mb() << '\n';
 
   for (int band : std::vector<int>{0, 1, 2, 3, 5, 10}) {
     if (band_filter >= 0 && band != band_filter)
@@ -163,11 +163,10 @@ int main(int argc, char **argv) {
       Eigen::VectorXd gradient;
       for (int repetition = 0; repetition < repetitions; ++repetition)
         gradient = evaluate_gradient(factor, directions, band);
-      const double gradient_ms =
-          std::chrono::duration<double, std::milli>(Clock::now() -
-                                                     gradient_start)
-              .count() /
-          repetitions;
+      const double gradient_ms = std::chrono::duration<double, std::milli>(
+                                     Clock::now() - gradient_start)
+                                     .count() /
+                                 repetitions;
       const double logdet_error = std::abs(factor.logdet() - reference_logdet);
       const Eigen::VectorXd gradient_error = gradient - reference_gradient;
       const double cosine =
@@ -178,9 +177,8 @@ int main(int argc, char **argv) {
                 << ','
                 << (directions - full_directions).norm() /
                        std::max(1.0, full_directions.norm())
-                << ',' << reference_gradient.norm() << ','
-                << gradient.norm() << ',' << gradient_error.norm() << ','
-                << cosine << ','
+                << ',' << reference_gradient.norm() << ',' << gradient.norm()
+                << ',' << gradient_error.norm() << ',' << cosine << ','
                 << (gradient.dot(reference_gradient) > 0.0 ? 1 : 0) << ','
                 << gradient_error.cwiseAbs().maxCoeff() << ',' << factor_ms
                 << ',' << gradient_ms << ',' << peak_rss_mb() << '\n';

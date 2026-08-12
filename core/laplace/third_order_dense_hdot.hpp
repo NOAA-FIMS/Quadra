@@ -78,8 +78,7 @@ double dense_hdot_trace_third_order_polarized(
         return had::third_directional_derivative(objective, x, direction);
       };
       const double mixed =
-          cubic(1, 1, 1) - cubic(1, 1, -1) - cubic(1, -1, 1) -
-          cubic(-1, 1, 1);
+          cubic(1, 1, 1) - cubic(1, 1, -1) - cubic(1, -1, 1) - cubic(-1, 1, 1);
       const double hdot = mixed / 24.0;
       trace += (a == b ? 1.0 : 2.0) * column[a] * hdot;
     }

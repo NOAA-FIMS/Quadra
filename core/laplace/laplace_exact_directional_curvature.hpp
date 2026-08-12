@@ -6,8 +6,8 @@
 #include <Eigen/Dense>
 #include <Eigen/SparseCholesky>
 
-#include <chrono>
 #include <atomic>
+#include <chrono>
 #include <exception>
 #include <mutex>
 #include <stdexcept>
@@ -50,8 +50,8 @@ ExactLaplaceDirectionalCurvatureResult exact_laplace_directional_curvature(
   if (fixed_direction.size() != nf)
     throw std::invalid_argument("fixed curvature direction has wrong length");
 
-  RandomEffectHessianWorkspace<Model> workspace(model, fixed, u_hat,
-                                                 partition, false);
+  RandomEffectHessianWorkspace<Model> workspace(model, fixed, u_hat, partition,
+                                                false);
   const auto blocks = workspace.EvaluateJointHessianBlocks(fixed, u_hat);
   Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> factor;
   factor.compute(blocks.random_hessian_m);
@@ -72,15 +72,15 @@ ExactLaplaceDirectionalCurvatureResult exact_laplace_directional_curvature(
   const Eigen::MatrixXd Huu = Eigen::MatrixXd(blocks.random_hessian_m);
   const double joint_curvature =
       fixed_direction.dot(blocks.fixed_hessian_m * fixed_direction) +
-      2.0 * du.dot(blocks.mixed_hessian_m * fixed_direction) +
-      du.dot(Huu * du);
+      2.0 * du.dot(blocks.mixed_hessian_m * fixed_direction) + du.dot(Huu * du);
 
   const auto cubic = [&](const std::vector<double> &direction) {
     return had::third_directional_derivative(objective, full, direction);
   };
   Eigen::VectorXd third_u_vv(nr);
   for (int i = 0; i < nr; ++i) {
-    std::vector<double> plus = velocity, minus = velocity, unit(full.size(), 0.0);
+    std::vector<double> plus = velocity, minus = velocity,
+                        unit(full.size(), 0.0);
     const size_t index = partition.random_indices_m[static_cast<size_t>(i)];
     plus[index] += 1.0;
     minus[index] -= 1.0;
@@ -95,9 +95,8 @@ ExactLaplaceDirectionalCurvatureResult exact_laplace_directional_curvature(
   const std::vector<int> random_indices = random_indices_as_ints(partition);
   const Eigen::MatrixXd H1 = dense_hdot_third_order_polarized(
       objective, full, velocity, random_indices);
-  const Eigen::MatrixXd third_acceleration =
-      dense_hdot_third_order_polarized(objective, full, acceleration,
-                                        random_indices);
+  const Eigen::MatrixXd third_acceleration = dense_hdot_third_order_polarized(
+      objective, full, acceleration, random_indices);
   Eigen::MatrixXd fourth_velocity = Eigen::MatrixXd::Zero(nr, nr);
   for (int a = 0; a < nr; ++a) {
     for (int b = 0; b <= a; ++b) {
@@ -109,16 +108,14 @@ ExactLaplaceDirectionalCurvatureResult exact_laplace_directional_curvature(
         for (size_t k = 0; k < full.size(); ++k)
           direction[k] = velocity_scale * velocity[k];
         direction[partition.random_indices_m[static_cast<size_t>(a)]] += 1.0;
-        direction[partition.random_indices_m[static_cast<size_t>(b)]] +=
-            sign_b;
+        direction[partition.random_indices_m[static_cast<size_t>(b)]] += sign_b;
         return had::fourth_directional_derivative(objective, full, direction);
       };
       const double same =
           quartic(1, 2.0) + quartic(1, -2.0) - 2.0 * quartic(1, 0.0);
       const double opposite =
           quartic(-1, 2.0) + quartic(-1, -2.0) - 2.0 * quartic(-1, 0.0);
-      fourth_velocity(a, b) = fourth_velocity(b, a) =
-          (same - opposite) / 192.0;
+      fourth_velocity(a, b) = fourth_velocity(b, a) = (same - opposite) / 192.0;
     }
   }
   const Eigen::MatrixXd H2 = fourth_velocity + third_acceleration;
@@ -148,7 +145,8 @@ ExactLaplaceHessianResult exact_laplace_hessian_fourth_order(
   ExactLaplaceHessianResult result;
   result.hessian_m = Eigen::MatrixXd::Zero(n, n);
   if (worker_count <= 0)
-    throw std::invalid_argument("fourth-order Hessian worker count must be positive");
+    throw std::invalid_argument(
+        "fourth-order Hessian worker count must be positive");
   const auto parallel_for = [&](int task_count, const auto &task) {
     std::atomic<int> next{0};
     std::exception_ptr error;
@@ -191,16 +189,15 @@ ExactLaplaceHessianResult exact_laplace_hessian_fourth_order(
     for (int j = 0; j < i; ++j)
       pairs.emplace_back(i, j);
   parallel_for(static_cast<int>(pairs.size()), [&](int index) {
-      const int i = pairs[static_cast<size_t>(index)].first;
-      const int j = pairs[static_cast<size_t>(index)].second;
-      Eigen::VectorXd direction = Eigen::VectorXd::Zero(n);
-      direction[i] = direction[j] = 1.0;
-      const double pair =
-          exact_laplace_directional_curvature(model, fixed, u_hat, partition,
-                                               direction)
-              .curvature_m;
-      result.hessian_m(i, j) = result.hessian_m(j, i) =
-          0.5 * (pair - result.hessian_m(i, i) - result.hessian_m(j, j));
+    const int i = pairs[static_cast<size_t>(index)].first;
+    const int j = pairs[static_cast<size_t>(index)].second;
+    Eigen::VectorXd direction = Eigen::VectorXd::Zero(n);
+    direction[i] = direction[j] = 1.0;
+    const double pair = exact_laplace_directional_curvature(
+                            model, fixed, u_hat, partition, direction)
+                            .curvature_m;
+    result.hessian_m(i, j) = result.hessian_m(j, i) =
+        0.5 * (pair - result.hessian_m(i, i) - result.hessian_m(j, j));
   });
   result.directional_evaluations_m = n + static_cast<int>(pairs.size());
   result.total_ms_m =

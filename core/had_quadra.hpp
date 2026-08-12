@@ -3026,8 +3026,7 @@ inline Real third_directional_derivative(Func &&f, const std::vector<Real> &x,
 // derivatives (rather than Taylor coefficients), matching ThirdOrderScalar.
 struct FourthOrderScalar {
   Real val, d1, d2, d3, d4;
-  FourthOrderScalar()
-      : val(0.0), d1(0.0), d2(0.0), d3(0.0), d4(0.0) {}
+  FourthOrderScalar() : val(0.0), d1(0.0), d2(0.0), d3(0.0), d4(0.0) {}
   FourthOrderScalar(Real value)
       : val(value), d1(0.0), d2(0.0), d3(0.0), d4(0.0) {}
   FourthOrderScalar(Real value, Real direction)
@@ -3039,32 +3038,38 @@ struct DirectionalDerivatives4 {
 };
 
 inline FourthOrderScalar unary_chain(const FourthOrderScalar &x, Real value,
-                                     Real fp, Real fpp, Real fppp,
-                                     Real fpppp) {
+                                     Real fp, Real fpp, Real fppp, Real fpppp) {
   FourthOrderScalar y;
   y.val = value;
   y.d1 = fp * x.d1;
   y.d2 = fpp * x.d1 * x.d1 + fp * x.d2;
   y.d3 = fppp * x.d1 * x.d1 * x.d1 + 3.0 * fpp * x.d1 * x.d2 + fp * x.d3;
-  y.d4 = fpppp * x.d1 * x.d1 * x.d1 * x.d1 +
-         6.0 * fppp * x.d1 * x.d1 * x.d2 +
+  y.d4 = fpppp * x.d1 * x.d1 * x.d1 * x.d1 + 6.0 * fppp * x.d1 * x.d1 * x.d2 +
          3.0 * fpp * x.d2 * x.d2 + 4.0 * fpp * x.d1 * x.d3 + fp * x.d4;
   return y;
 }
 
 #define HAD_QUADRA_FOURTH_BINARY(OP)                                           \
-  inline FourthOrderScalar operator OP(const FourthOrderScalar &a,            \
-                                        const FourthOrderScalar &b)
+  inline FourthOrderScalar operator OP(const FourthOrderScalar &a,             \
+                                       const FourthOrderScalar &b)
 
 HAD_QUADRA_FOURTH_BINARY(+) {
   FourthOrderScalar y;
-  y.val = a.val + b.val; y.d1 = a.d1 + b.d1; y.d2 = a.d2 + b.d2;
-  y.d3 = a.d3 + b.d3; y.d4 = a.d4 + b.d4; return y;
+  y.val = a.val + b.val;
+  y.d1 = a.d1 + b.d1;
+  y.d2 = a.d2 + b.d2;
+  y.d3 = a.d3 + b.d3;
+  y.d4 = a.d4 + b.d4;
+  return y;
 }
 HAD_QUADRA_FOURTH_BINARY(-) {
   FourthOrderScalar y;
-  y.val = a.val - b.val; y.d1 = a.d1 - b.d1; y.d2 = a.d2 - b.d2;
-  y.d3 = a.d3 - b.d3; y.d4 = a.d4 - b.d4; return y;
+  y.val = a.val - b.val;
+  y.d1 = a.d1 - b.d1;
+  y.d2 = a.d2 - b.d2;
+  y.d3 = a.d3 - b.d3;
+  y.d4 = a.d4 - b.d4;
+  return y;
 }
 HAD_QUADRA_FOURTH_BINARY(*) {
   FourthOrderScalar y;
@@ -3081,49 +3086,81 @@ HAD_QUADRA_FOURTH_BINARY(*) {
 inline FourthOrderScalar operator-(const FourthOrderScalar &x) {
   return FourthOrderScalar(0.0) - x;
 }
-#define HAD_QUADRA_FOURTH_SCALAR_OP(OP)                                       \
-  inline FourthOrderScalar operator OP(const FourthOrderScalar &a, Real b) {  \
-    return a OP FourthOrderScalar(b);                                         \
-  }                                                                           \
-  inline FourthOrderScalar operator OP(Real a, const FourthOrderScalar &b) {  \
-    return FourthOrderScalar(a) OP b;                                         \
+#define HAD_QUADRA_FOURTH_SCALAR_OP(OP)                                        \
+  inline FourthOrderScalar operator OP(const FourthOrderScalar &a, Real b) {   \
+    return a OP FourthOrderScalar(b);                                          \
+  }                                                                            \
+  inline FourthOrderScalar operator OP(Real a, const FourthOrderScalar &b) {   \
+    return FourthOrderScalar(a) OP b;                                          \
   }
 HAD_QUADRA_FOURTH_SCALAR_OP(+)
 HAD_QUADRA_FOURTH_SCALAR_OP(-)
 HAD_QUADRA_FOURTH_SCALAR_OP(*)
 #undef HAD_QUADRA_FOURTH_SCALAR_OP
-inline FourthOrderScalar &operator+=(FourthOrderScalar &a, const FourthOrderScalar &b) { return a = a + b; }
-inline FourthOrderScalar &operator-=(FourthOrderScalar &a, const FourthOrderScalar &b) { return a = a - b; }
-inline FourthOrderScalar &operator*=(FourthOrderScalar &a, const FourthOrderScalar &b) { return a = a * b; }
-inline FourthOrderScalar &operator+=(FourthOrderScalar &a, Real b) { return a = a + b; }
-inline FourthOrderScalar &operator-=(FourthOrderScalar &a, Real b) { return a = a - b; }
-inline FourthOrderScalar &operator*=(FourthOrderScalar &a, Real b) { return a = a * b; }
+inline FourthOrderScalar &operator+=(FourthOrderScalar &a,
+                                     const FourthOrderScalar &b) {
+  return a = a + b;
+}
+inline FourthOrderScalar &operator-=(FourthOrderScalar &a,
+                                     const FourthOrderScalar &b) {
+  return a = a - b;
+}
+inline FourthOrderScalar &operator*=(FourthOrderScalar &a,
+                                     const FourthOrderScalar &b) {
+  return a = a * b;
+}
+inline FourthOrderScalar &operator+=(FourthOrderScalar &a, Real b) {
+  return a = a + b;
+}
+inline FourthOrderScalar &operator-=(FourthOrderScalar &a, Real b) {
+  return a = a - b;
+}
+inline FourthOrderScalar &operator*=(FourthOrderScalar &a, Real b) {
+  return a = a * b;
+}
 
 inline FourthOrderScalar Inv(const FourthOrderScalar &x) {
   const Real z = 1.0 / x.val;
-  return unary_chain(x, z, -z*z, 2.0*z*z*z, -6.0*z*z*z*z,
-                     24.0*z*z*z*z*z);
+  return unary_chain(x, z, -z * z, 2.0 * z * z * z, -6.0 * z * z * z * z,
+                     24.0 * z * z * z * z * z);
 }
-inline FourthOrderScalar operator/(const FourthOrderScalar &a, const FourthOrderScalar &b) { return a * Inv(b); }
-inline FourthOrderScalar operator/(const FourthOrderScalar &a, Real b) { return a * (1.0 / b); }
-inline FourthOrderScalar operator/(Real a, const FourthOrderScalar &b) { return a * Inv(b); }
-inline FourthOrderScalar &operator/=(FourthOrderScalar &a, const FourthOrderScalar &b) { return a = a / b; }
-inline FourthOrderScalar &operator/=(FourthOrderScalar &a, Real b) { return a = a / b; }
+inline FourthOrderScalar operator/(const FourthOrderScalar &a,
+                                   const FourthOrderScalar &b) {
+  return a * Inv(b);
+}
+inline FourthOrderScalar operator/(const FourthOrderScalar &a, Real b) {
+  return a * (1.0 / b);
+}
+inline FourthOrderScalar operator/(Real a, const FourthOrderScalar &b) {
+  return a * Inv(b);
+}
+inline FourthOrderScalar &operator/=(FourthOrderScalar &a,
+                                     const FourthOrderScalar &b) {
+  return a = a / b;
+}
+inline FourthOrderScalar &operator/=(FourthOrderScalar &a, Real b) {
+  return a = a / b;
+}
 inline FourthOrderScalar square(const FourthOrderScalar &x) { return x * x; }
 inline FourthOrderScalar exp(const FourthOrderScalar &x) {
-  const Real y = std::exp(x.val); return unary_chain(x, y, y, y, y, y);
+  const Real y = std::exp(x.val);
+  return unary_chain(x, y, y, y, y, y);
 }
 inline FourthOrderScalar log(const FourthOrderScalar &x) {
   const Real z = 1.0 / x.val;
-  return unary_chain(x, std::log(x.val), z, -z*z, 2.0*z*z*z, -6.0*z*z*z*z);
+  return unary_chain(x, std::log(x.val), z, -z * z, 2.0 * z * z * z,
+                     -6.0 * z * z * z * z);
 }
 inline FourthOrderScalar pow(const FourthOrderScalar &x, Real a) {
-  return unary_chain(x, std::pow(x.val,a), a*std::pow(x.val,a-1.0),
-      a*(a-1.0)*std::pow(x.val,a-2.0),
-      a*(a-1.0)*(a-2.0)*std::pow(x.val,a-3.0),
-      a*(a-1.0)*(a-2.0)*(a-3.0)*std::pow(x.val,a-4.0));
+  return unary_chain(x, std::pow(x.val, a), a * std::pow(x.val, a - 1.0),
+                     a * (a - 1.0) * std::pow(x.val, a - 2.0),
+                     a * (a - 1.0) * (a - 2.0) * std::pow(x.val, a - 3.0),
+                     a * (a - 1.0) * (a - 2.0) * (a - 3.0) *
+                         std::pow(x.val, a - 4.0));
 }
-inline FourthOrderScalar sqrt(const FourthOrderScalar &x) { return pow(x, 0.5); }
+inline FourthOrderScalar sqrt(const FourthOrderScalar &x) {
+  return pow(x, 0.5);
+}
 inline FourthOrderScalar sin(const FourthOrderScalar &x) {
   return unary_chain(x, std::sin(x.val), std::cos(x.val), -std::sin(x.val),
                      -std::cos(x.val), std::sin(x.val));
@@ -3140,11 +3177,10 @@ inline FourthOrderScalar asin(const FourthOrderScalar &x) {
   const Real root = std::sqrt(one_minus_x2);
   const Real fp = 1.0 / root;
   const Real fpp = x.val / (one_minus_x2 * root);
-  const Real fppp = (1.0 + 2.0 * x.val * x.val) /
-                    (one_minus_x2 * one_minus_x2 * root);
-  const Real fpppp =
-      x.val * (9.0 + 6.0 * x.val * x.val) /
-      (one_minus_x2 * one_minus_x2 * one_minus_x2 * root);
+  const Real fppp =
+      (1.0 + 2.0 * x.val * x.val) / (one_minus_x2 * one_minus_x2 * root);
+  const Real fpppp = x.val * (9.0 + 6.0 * x.val * x.val) /
+                     (one_minus_x2 * one_minus_x2 * one_minus_x2 * root);
   return unary_chain(x, std::asin(x.val), fp, fpp, fppp, fpppp);
 }
 inline FourthOrderScalar acos(const FourthOrderScalar &x) {
@@ -3159,10 +3195,12 @@ inline FourthOrderScalar acos(const FourthOrderScalar &x) {
 }
 
 template <typename Func>
-inline DirectionalDerivatives4 evaluate_directional_derivatives4(
-    Func &&f, const std::vector<Real> &x, const std::vector<Real> &direction) {
+inline DirectionalDerivatives4
+evaluate_directional_derivatives4(Func &&f, const std::vector<Real> &x,
+                                  const std::vector<Real> &direction) {
   if (x.size() != direction.size())
-    throw std::invalid_argument("evaluate_directional_derivatives4: size mismatch");
+    throw std::invalid_argument(
+        "evaluate_directional_derivatives4: size mismatch");
   std::vector<FourthOrderScalar> ax;
   ax.reserve(x.size());
   for (std::size_t i = 0; i < x.size(); ++i)
@@ -3172,8 +3210,7 @@ inline DirectionalDerivatives4 evaluate_directional_derivatives4(
 }
 
 template <typename Func>
-inline Real fourth_directional_derivative(Func &&f,
-                                          const std::vector<Real> &x,
+inline Real fourth_directional_derivative(Func &&f, const std::vector<Real> &x,
                                           const std::vector<Real> &direction) {
   return evaluate_directional_derivatives4(std::forward<Func>(f), x, direction)
       .fourth;

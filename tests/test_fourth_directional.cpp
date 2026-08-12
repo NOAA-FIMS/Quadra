@@ -18,7 +18,9 @@ struct CurvatureModel {
     return T(2.5) * residual * residual + T(0.5) * p[1] * p[1];
   }
   template <class T, class Context>
-  T evaluate(const std::vector<T> &p, Context &) const { return evaluate(p); }
+  T evaluate(const std::vector<T> &p, Context &) const {
+    return evaluate(p);
+  }
 };
 
 struct ThetaCurvatureModel : CurvatureModel {
@@ -27,7 +29,9 @@ struct ThetaCurvatureModel : CurvatureModel {
     return T(0.5) * p[0] * p[0] + T(0.5) * exp(p[0] * p[0]) * p[1] * p[1];
   }
   template <class T, class Context>
-  T evaluate(const std::vector<T> &p, Context &) const { return evaluate(p); }
+  T evaluate(const std::vector<T> &p, Context &) const {
+    return evaluate(p);
+  }
 };
 
 int main() {
@@ -38,8 +42,8 @@ int main() {
     using had::exp;
     using had::log;
     using had::tan;
-    return exp(z[0] * z[1]) + log(z[0] + 2.0) +
-           z[0] * z[0] * z[0] * z[0] + tan(z[1]) + asin(z[0]);
+    return exp(z[0] * z[1]) + log(z[0] + 2.0) + z[0] * z[0] * z[0] * z[0] +
+           tan(z[1]) + asin(z[0]);
   };
   const auto got = had::evaluate_directional_derivatives4(function, x, d);
   auto univariate = [&](double t) {
@@ -51,20 +55,29 @@ int main() {
   // Five-point central fourth derivative is only a loose independent check;
   // exact polynomial and exponential identities below provide tight checks.
   const double h = 2.0e-3;
-  const double fd4 = (univariate(-2*h) - 4*univariate(-h) +
-                      6*univariate(0.0) - 4*univariate(h) +
-                      univariate(2*h)) / std::pow(h, 4.0);
+  const double fd4 =
+      (univariate(-2 * h) - 4 * univariate(-h) + 6 * univariate(0.0) -
+       4 * univariate(h) + univariate(2 * h)) /
+      std::pow(h, 4.0);
   if (std::abs(got.fourth - fd4) > 2.0e-2) {
-    std::cerr << "FAIL: fourth directional derivative mismatch: "
-              << got.fourth << " vs " << fd4 << '\n';
+    std::cerr << "FAIL: fourth directional derivative mismatch: " << got.fourth
+              << " vs " << fd4 << '\n';
     return 1;
   }
 
   example::CatchAtAgeLaplaceModel model(2, 3);
-  std::vector<double> parameters{
-      std::log(900.0), std::log(0.25), std::log(0.15), std::log(0.18), 0.0,
-      std::log(1.25), std::log(0.20), std::log(0.15), std::log(0.35),
-      std::log(40.0), 0.0, 0.0};
+  std::vector<double> parameters{std::log(900.0),
+                                 std::log(0.25),
+                                 std::log(0.15),
+                                 std::log(0.18),
+                                 0.0,
+                                 std::log(1.25),
+                                 std::log(0.20),
+                                 std::log(0.15),
+                                 std::log(0.35),
+                                 std::log(40.0),
+                                 0.0,
+                                 0.0};
   std::vector<double> direction(parameters.size(), 0.0);
   direction[0] = 1.0;
   direction[10] = -0.25;
@@ -77,11 +90,11 @@ int main() {
   }
 
   CurvatureModel curvature_model;
-  const auto partition = quadra::partition_parameters(curvature_model.parameters);
+  const auto partition =
+      quadra::partition_parameters(curvature_model.parameters);
   const auto curvature = quadra::laplace::exact_laplace_directional_curvature(
-      curvature_model, std::vector<double>{0.0},
-      std::vector<double>{5.0 / 3.0}, partition,
-      Eigen::VectorXd::Ones(1));
+      curvature_model, std::vector<double>{0.0}, std::vector<double>{5.0 / 3.0},
+      partition, Eigen::VectorXd::Ones(1));
   if (std::abs(curvature.curvature_m - 5.0 / 6.0) > 1.0e-11 ||
       std::abs(curvature.logdet_curvature_m) > 1.0e-11) {
     std::cerr << "FAIL: exact Laplace directional curvature mismatch\n";

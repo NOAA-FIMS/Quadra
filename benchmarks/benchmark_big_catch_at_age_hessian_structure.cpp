@@ -14,14 +14,15 @@ int main() {
   using Clock = std::chrono::steady_clock;
   example::CatchAtAgeLaplaceModel model;
   quadra::ParameterSet parameters;
-  const std::vector<double> fixed = {
-      8.199973, -0.369740, 0.005970, -1.194726, 0.293207,
-      0.350404, -1.709454, -2.741071, -3.407494, 7.595303};
+  const std::vector<double> fixed = {8.199973,  -0.369740, 0.005970,  -1.194726,
+                                     0.293207,  0.350404,  -1.709454, -2.741071,
+                                     -3.407494, 7.595303};
   const std::vector<const char *> names = {
-      "log_R0",          "log_M",           "log_q",
-      "log_Fbar",        "sel50_raw",       "log_sel_slope",
-      "log_sigma_index", "log_sigma_catch", "log_sigma_rec",
-      "log_comp_concentration"};
+      "log_R0",          "log_M",
+      "log_q",           "log_Fbar",
+      "sel50_raw",       "log_sel_slope",
+      "log_sigma_index", "log_sigma_catch",
+      "log_sigma_rec",   "log_comp_concentration"};
   for (std::size_t i = 0; i < fixed.size(); ++i)
     parameters.add(names[i], fixed[i], quadra::ParameterTransform::Identity,
                    false);
@@ -71,7 +72,7 @@ int main() {
       rank_1e6 += singular[i] > 1.0e-6 * std::max(1.0, leading);
       rank_1e8 += singular[i] > 1.0e-8 * std::max(1.0, leading);
     }
-    std::cout << bandwidth << ',' << residual.norm() / hnorm << ','
-              << rank_1e6 << ',' << rank_1e8 << ',' << leading << '\n';
+    std::cout << bandwidth << ',' << residual.norm() / hnorm << ',' << rank_1e6
+              << ',' << rank_1e8 << ',' << leading << '\n';
   }
 }

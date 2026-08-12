@@ -8,8 +8,8 @@
 #include <vector>
 
 #include "../core/inference/fixed_effect_covariance.hpp"
-#include "../core/laplace/random_effect_hessian.hpp"
 #include "../core/laplace/laplace_exact_directional_curvature.hpp"
+#include "../core/laplace/random_effect_hessian.hpp"
 #include "../examples/big/catch_at_age_shared.hpp"
 #include "../include/quadra/stats.hpp"
 
@@ -28,7 +28,8 @@ double peak_rss_mb() {
 int main(int argc, char **argv) {
   using Clock = std::chrono::steady_clock;
   const std::string mode = argc > 1 ? argv[1] : "hybrid";
-  const double switch_threshold = argc > 2 ? std::strtod(argv[2], nullptr) : 0.1;
+  const double switch_threshold =
+      argc > 2 ? std::strtod(argv[2], nullptr) : 0.1;
   const int years = argc > 3 ? std::atoi(argv[3]) : 30;
   if (mode != "hybrid" && mode != "exact") {
     std::cerr << "usage: benchmark_big_catch_at_age_hybrid_optimizer "
@@ -38,15 +39,22 @@ int main(int argc, char **argv) {
 
   example::CatchAtAgeLaplaceModel model(years);
   quadra::ParameterSet parameters;
-  const std::vector<double> initial = {
-      std::log(900.0), std::log(0.25), std::log(0.15), std::log(0.18), 0.0,
-      std::log(1.25), std::log(0.20), std::log(0.15), std::log(0.35),
-      std::log(40.0)};
+  const std::vector<double> initial = {std::log(900.0),
+                                       std::log(0.25),
+                                       std::log(0.15),
+                                       std::log(0.18),
+                                       0.0,
+                                       std::log(1.25),
+                                       std::log(0.20),
+                                       std::log(0.15),
+                                       std::log(0.35),
+                                       std::log(40.0)};
   const std::vector<const char *> names = {
-      "log_R0",          "log_M",           "log_q",
-      "log_Fbar",        "sel50_raw",       "log_sel_slope",
-      "log_sigma_index", "log_sigma_catch", "log_sigma_rec",
-      "log_comp_concentration"};
+      "log_R0",          "log_M",
+      "log_q",           "log_Fbar",
+      "sel50_raw",       "log_sel_slope",
+      "log_sigma_index", "log_sigma_catch",
+      "log_sigma_rec",   "log_comp_concentration"};
   for (std::size_t i = 0; i < initial.size(); ++i)
     parameters.add(names[i], initial[i], quadra::ParameterTransform::Identity,
                    false);
@@ -82,14 +90,15 @@ int main(int argc, char **argv) {
   const double wall_ms =
       std::chrono::duration<double, std::milli>(Clock::now() - start).count();
 
-  std::cout << "mode,switch_threshold,years,converged,iterations,approximate_evaluations,"
+  std::cout << "mode,switch_threshold,years,converged,iterations,approximate_"
+               "evaluations,"
                "exact_evaluations,switch_iteration,objective,gradient_norm,"
                "wall_ms,peak_rss_mb,message\n";
   std::cout << mode << ',' << switch_threshold << ',' << years << ','
-            << (result.converged ? 1 : 0) << ','
-            << result.iterations << ',' << result.approximate_evaluations << ','
-            << result.exact_evaluations << ',' << result.exact_switch_iteration
-            << ',' << std::setprecision(15) << result.objective << ','
+            << (result.converged ? 1 : 0) << ',' << result.iterations << ','
+            << result.approximate_evaluations << ',' << result.exact_evaluations
+            << ',' << result.exact_switch_iteration << ','
+            << std::setprecision(15) << result.objective << ','
             << result.gradient_norm << ',' << std::fixed << std::setprecision(3)
             << wall_ms << ',' << peak_rss_mb() << ',' << result.message << '\n';
 
@@ -145,9 +154,10 @@ int main(int argc, char **argv) {
             << (schur.success_m ? 1 : 0) << ',' << schur_ms << ",0,"
             << hessian_relative_error << ',' << se_max_relative_error << '\n';
 
-  const auto exact_hessian = quadra::laplace::exact_laplace_hessian_fourth_order(
-      model, result.fixed, result.random_mode,
-      quadra::partition_parameters(parameters), 4);
+  const auto exact_hessian =
+      quadra::laplace::exact_laplace_hessian_fourth_order(
+          model, result.fixed, result.random_mode,
+          quadra::partition_parameters(parameters), 4);
   const auto exact_covariance =
       quadra::estimate_fixed_effect_covariance_from_hessian(
           exact_hessian.hessian_m);
@@ -157,12 +167,11 @@ int main(int argc, char **argv) {
   for (Eigen::Index i = 0; i < fd.covariance_m.rows(); ++i) {
     const double fd_se = std::sqrt(fd.covariance_m(i, i));
     const double exact_se = std::sqrt(exact_covariance.covariance_m(i, i));
-    exact_se_relative_error = std::max(
-        exact_se_relative_error, std::abs(exact_se / fd_se - 1.0));
+    exact_se_relative_error =
+        std::max(exact_se_relative_error, std::abs(exact_se / fd_se - 1.0));
   }
   std::cout << "exact_fourth_ad," << years << ','
             << (exact_covariance.success_m ? 1 : 0) << ','
-            << exact_hessian.total_ms_m << ",0,"
-            << exact_hessian_relative_error << ',' << exact_se_relative_error
-            << '\n';
+            << exact_hessian.total_ms_m << ",0," << exact_hessian_relative_error
+            << ',' << exact_se_relative_error << '\n';
 }

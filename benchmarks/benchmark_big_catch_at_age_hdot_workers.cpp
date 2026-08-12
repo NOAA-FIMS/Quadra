@@ -37,14 +37,15 @@ int main(int argc, char **argv) {
 
   example::CatchAtAgeLaplaceModel model;
   quadra::ParameterSet parameters;
-  const std::vector<double> fixed = {
-      8.199973, -0.369740, 0.005970, -1.194726, 0.293207,
-      0.350404, -1.709454, -2.741071, -3.407494, 7.595303};
+  const std::vector<double> fixed = {8.199973,  -0.369740, 0.005970,  -1.194726,
+                                     0.293207,  0.350404,  -1.709454, -2.741071,
+                                     -3.407494, 7.595303};
   const std::vector<const char *> names = {
-      "log_R0",          "log_M",           "log_q",
-      "log_Fbar",        "sel50_raw",       "log_sel_slope",
-      "log_sigma_index", "log_sigma_catch", "log_sigma_rec",
-      "log_comp_concentration"};
+      "log_R0",          "log_M",
+      "log_q",           "log_Fbar",
+      "sel50_raw",       "log_sel_slope",
+      "log_sigma_index", "log_sigma_catch",
+      "log_sigma_rec",   "log_comp_concentration"};
   for (std::size_t i = 0; i < fixed.size(); ++i) {
     parameters.add(names[i], fixed[i], quadra::ParameterTransform::Identity,
                    false);
@@ -96,13 +97,14 @@ int main(int argc, char **argv) {
       gradient_checksum += value;
   }
 
-  std::cout << "stream_dense_trace,requested_workers,actual_workers,construct_ms,"
-               "mean_objective_ms,mean_factorization_ms,mean_sensitivity_ms,"
-               "mean_hdot_ms,mean_trace_ms,mean_total_ms,peak_rss_mb,"
-               "gradient_checksum\n";
+  std::cout
+      << "stream_dense_trace,requested_workers,actual_workers,construct_ms,"
+         "mean_objective_ms,mean_factorization_ms,mean_sensitivity_ms,"
+         "mean_hdot_ms,mean_trace_ms,mean_total_ms,peak_rss_mb,"
+         "gradient_checksum\n";
   std::cout << (stream_dense_trace ? 1 : 0) << ',' << workers << ','
-            << evaluator.hdot_worker_count() << ','
-            << std::fixed << std::setprecision(3) << construct_ms << ','
+            << evaluator.hdot_worker_count() << ',' << std::fixed
+            << std::setprecision(3) << construct_ms << ','
             << objective_ms / repetitions << ','
             << factorization_ms / repetitions << ','
             << sensitivity_ms / repetitions << ',' << hdot_ms / repetitions

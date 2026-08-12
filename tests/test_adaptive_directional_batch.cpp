@@ -21,8 +21,7 @@ int main() {
   quadra::laplace::AdaptiveDirectionalBatchOptions options;
   options.memory_budget_bytes = base + 4 * lane;
   options.maximum_batch_size = 64;
-  auto plan =
-      quadra::laplace::PlanAdaptiveDirectionalBatch(graph, 20, options);
+  auto plan = quadra::laplace::PlanAdaptiveDirectionalBatch(graph, 20, options);
   assert(plan.batch_size == 4);
   assert(plan.constrained_by_memory);
 
