@@ -34,15 +34,19 @@ int main() {
   const std::vector<double> x{0.3, -0.2};
   const std::vector<double> d{1.5, -0.7};
   auto function = [](const auto &z) {
+    using had::asin;
     using had::exp;
     using had::log;
-    return exp(z[0] * z[1]) + log(z[0] + 2.0) + z[0] * z[0] * z[0] * z[0];
+    using had::tan;
+    return exp(z[0] * z[1]) + log(z[0] + 2.0) +
+           z[0] * z[0] * z[0] * z[0] + tan(z[1]) + asin(z[0]);
   };
   const auto got = had::evaluate_directional_derivatives4(function, x, d);
   auto univariate = [&](double t) {
     const double a = x[0] + t * d[0];
     const double b = x[1] + t * d[1];
-    return std::exp(a * b) + std::log(a + 2.0) + std::pow(a, 4.0);
+    return std::exp(a * b) + std::log(a + 2.0) + std::pow(a, 4.0) +
+           std::tan(b) + std::asin(a);
   };
   // Five-point central fourth derivative is only a loose independent check;
   // exact polynomial and exponential identities below provide tight checks.

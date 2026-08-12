@@ -3132,6 +3132,31 @@ inline FourthOrderScalar cos(const FourthOrderScalar &x) {
   return unary_chain(x, std::cos(x.val), -std::sin(x.val), -std::cos(x.val),
                      std::sin(x.val), std::cos(x.val));
 }
+inline FourthOrderScalar tan(const FourthOrderScalar &x) {
+  return sin(x) / cos(x);
+}
+inline FourthOrderScalar asin(const FourthOrderScalar &x) {
+  const Real one_minus_x2 = 1.0 - x.val * x.val;
+  const Real root = std::sqrt(one_minus_x2);
+  const Real fp = 1.0 / root;
+  const Real fpp = x.val / (one_minus_x2 * root);
+  const Real fppp = (1.0 + 2.0 * x.val * x.val) /
+                    (one_minus_x2 * one_minus_x2 * root);
+  const Real fpppp =
+      x.val * (9.0 + 6.0 * x.val * x.val) /
+      (one_minus_x2 * one_minus_x2 * one_minus_x2 * root);
+  return unary_chain(x, std::asin(x.val), fp, fpp, fppp, fpppp);
+}
+inline FourthOrderScalar acos(const FourthOrderScalar &x) {
+  const FourthOrderScalar result = asin(x);
+  FourthOrderScalar out;
+  out.val = std::acos(x.val);
+  out.d1 = -result.d1;
+  out.d2 = -result.d2;
+  out.d3 = -result.d3;
+  out.d4 = -result.d4;
+  return out;
+}
 
 template <typename Func>
 inline DirectionalDerivatives4 evaluate_directional_derivatives4(
