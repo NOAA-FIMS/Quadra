@@ -3,14 +3,16 @@
 #include "catch_at_age_inference.hpp"
 #include "catch_at_age_shared.hpp"
 
-int main() {
+int main()
+{
   example::CatchAtAgeLaplaceModel model;
   quadra::ParameterSet parameters;
   quadra::ParameterVector optimizer_parameters;
   std::vector<double> fixed;
   fixed.reserve(10);
 
-  auto add_fixed = [&](const std::string &name, const double value) {
+  auto add_fixed = [&](const std::string &name, const double value)
+  {
     parameters.add(name, value, quadra::ParameterTransform::Identity, false);
     optimizer_parameters.add(
         {name, value, quadra::ParameterTransform::Identity, false});
@@ -30,7 +32,8 @@ int main() {
 
   std::vector<double> random_initial(
       static_cast<std::size_t>(model.data.n_years), 0.0);
-  for (int year = 0; year < model.data.n_years; ++year) {
+  for (int year = 0; year < model.data.n_years; ++year)
+  {
     parameters.add("rec_dev_" + std::to_string(year + 1), 0.0,
                    quadra::ParameterTransform::Identity, true);
     optimizer_parameters.add({"rec_dev_" + std::to_string(year + 1), 0.0,
@@ -47,7 +50,8 @@ int main() {
   const auto fit =
       quadra::optimize_lbfgs(model, optimizer_parameters, optimizer_options);
 
-  if (!std::isfinite(fit.value) || fit.u_hat.size() != random_initial.size()) {
+  if (!std::isfinite(fit.value) || fit.u_hat.size() != random_initial.size())
+  {
     std::cerr << "Big catch-at-age Laplace fit failed: " << fit.message << "\n";
     return 1;
   }
@@ -60,38 +64,17 @@ int main() {
   fixed_parameter_names.reserve(fixed.size());
   const auto partition = quadra::partition_parameters(parameters);
   const auto parameter_names = parameters.names();
-  for (const int index : partition.fixed_indices_m) {
+  for (const int index : partition.fixed_indices_m)
+  {
     fixed_parameter_names.push_back(
         parameter_names[static_cast<std::size_t>(index)]);
   }
 
-  quadra::laplace::ExactLaplaceGradientEngineOptions inference_engine_options;
-  inference_engine_options.discover_active_directions = false;
-  auto inference_objective_options = objective_options;
-  // Covariance perturbations start extremely close to the fitted mode. Asking
-  // Newton to improve beyond this scale can make its line search reject every
-  // step because of floating-point noise.
-  inference_objective_options.newton_m.gradient_tolerance_m = 1.0e-6;
-  quadra::stats::ExactLaplaceEvaluator<example::CatchAtAgeLaplaceModel>
-      covariance_evaluator(model, fit.par, final_random_effects, parameters,
-                           inference_objective_options,
-                           inference_engine_options);
-  auto laplace_gradient_for_covariance =
-      [&](const std::vector<double> &theta) -> std::vector<double> {
-    const auto evaluation = covariance_evaluator.evaluate(theta);
-    if (!evaluation.success) {
-      throw std::runtime_error(
-          "exact Laplace gradient evaluation failed during inference: " +
-          evaluation.objective.message_m);
-    }
-    return evaluation.gradient;
-  };
-
   const auto implicit_workspace = quadra::build_laplace_implicit_workspace(
       model, fit.par, final_random_effects, parameters);
   example::run_big_catch_at_age_inference(
-      laplace_gradient_for_covariance, model, final_random_effects,
-      fixed_parameter_names, fit.par, implicit_workspace);
+      model, final_random_effects, fixed_parameter_names, fit.par, partition,
+      implicit_workspace);
 
   std::vector<double> full_parameters = fit.par;
   full_parameters.insert(full_parameters.end(), final_random_effects.begin(),
@@ -105,16 +88,19 @@ int main() {
   std::cout << "random effects: " << final_random_effects.size() << "\n";
   std::cout << "converged: " << (fit.converged ? "yes" : "no") << "\n";
   std::cout << "message: " << fit.message << "\n";
-  if (!fit.converged) {
+  if (!fit.converged)
+  {
     std::cout << "warning: this diagnostic example reached a finite optimizer "
                  "plateau; do not treat its estimates as a converged "
                  "assessment\n";
   }
   std::cout << "Laplace objective: " << fit.value << "\n";
   std::cout << "fixed gradient norm: " << fit.grad_norm << "\n";
-  if (fit.fixed_gradient.size() == fit.fixed_gradient_names.size()) {
+  if (fit.fixed_gradient.size() == fit.fixed_gradient_names.size())
+  {
     std::cout << "fixed gradient components:\n";
-    for (std::size_t i = 0; i < fit.fixed_gradient.size(); ++i) {
+    for (std::size_t i = 0; i < fit.fixed_gradient.size(); ++i)
+    {
       std::cout << "  " << std::setw(24) << std::left
                 << fit.fixed_gradient_names[i] << std::right << " "
                 << fit.fixed_gradient[i] << "\n";

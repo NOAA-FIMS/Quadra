@@ -489,6 +489,13 @@ benchmarks/hessian_slot_tape_workspace_benchmark: benchmarks/hessian_slot_tape_w
 
 # ---- Quadra examples -------------------------------------------------------
 
+.PHONY: run-big-catch-at-age-laplace
+run-big-catch-at-age-laplace: examples/big/catch_at_age_laplace
+	./examples/big/catch_at_age_laplace
+
+examples/big/catch_at_age_laplace: examples/big/catch_at_age_laplace.cpp examples/big/catch_at_age_inference.hpp examples/big/catch_at_age_shared.hpp core/laplace/laplace_exact_directional_curvature.hpp
+	$(CXX) $(CXXFLAGS) -o $@ examples/big/catch_at_age_laplace.cpp
+
 CXX ?= clang++
 CXXFLAGS ?= -std=c++17 -O3 \
 	-I. \
