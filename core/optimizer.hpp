@@ -37,6 +37,13 @@ struct OptPatternInfo {
   std::size_t random_effect_count = 0;
 };
 
+struct OptTrajectoryPoint {
+  int evaluation = 0;
+  double objective = std::numeric_limits<double>::quiet_NaN();
+  double gradient_norm = std::numeric_limits<double>::quiet_NaN();
+  std::vector<double> fixed;
+};
+
 struct OptResult {
   Eigen::VectorXd x; // fitted fixed-effect vector
   // Final fixed-effect gradient diagnostics for optimizer troubleshooting.
@@ -71,6 +78,7 @@ struct OptResult {
   // The next patch should wire this to the structure detector / backend
   // factory.
   OptPatternInfo pattern;
+  std::vector<OptTrajectoryPoint> trajectory;
 };
 
 inline Eigen::VectorXd to_eigen(const std::vector<double> &x) {
@@ -383,6 +391,7 @@ public:
   Eigen::VectorXd last_grad;
   Eigen::VectorXd last_x;
   std::vector<double> last_u_star;
+  std::vector<OptTrajectoryPoint> trajectory;
 
   Eigen::VectorXd best_converged_x;
   Eigen::VectorXd best_converged_grad;
@@ -512,6 +521,13 @@ public:
     last_x = x;
 
     const double gnorm = safe_eigen_norm(grad);
+
+    OptTrajectoryPoint point;
+    point.evaluation = iter;
+    point.objective = res.value;
+    point.gradient_norm = gnorm;
+    point.fixed.assign(x.data(), x.data() + x.size());
+    trajectory.push_back(std::move(point));
 
     if (std::isfinite(res.value) && std::isfinite(gnorm) &&
         (!best_available || res.value < best_fx)) {
@@ -918,6 +934,7 @@ optimize_lbfgs(Model &model, ParameterVector &params,
   }
 
   result.x = x;
+  result.trajectory = std::move(fun.trajectory);
   return result;
 }
 

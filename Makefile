@@ -25,6 +25,10 @@ TESTS = \
 	tests/test_hessian_structure_discovery \
 	tests/test_flat_second_order_sweep \
 	tests/test_hdot_validation \
+	tests/test_adaptive_directional_batch \
+	tests/test_dense_third_order_trace_contraction \
+	tests/test_exact_gradient_workspace \
+	tests/test_fourth_directional \
 	tests/test_scalar_generic_model \
 	tests/test_parameter_transforms
 
@@ -118,6 +122,10 @@ run-tests: $(TESTS)
 	./tests/test_hessian_structure_discovery
 	./tests/test_flat_second_order_sweep
 	./tests/test_hdot_validation
+	./tests/test_adaptive_directional_batch
+	./tests/test_dense_third_order_trace_contraction
+	./tests/test_exact_gradient_workspace
+	./tests/test_fourth_directional
 
 clean:
 	rm -f $(TESTS) $(EXAMPLES)
@@ -489,6 +497,13 @@ benchmarks/hessian_slot_tape_workspace_benchmark: benchmarks/hessian_slot_tape_w
 
 # ---- Quadra examples -------------------------------------------------------
 
+.PHONY: run-big-catch-at-age-laplace
+run-big-catch-at-age-laplace: examples/big/catch_at_age_laplace
+	./examples/big/catch_at_age_laplace
+
+examples/big/catch_at_age_laplace: examples/big/catch_at_age_laplace.cpp examples/big/catch_at_age_inference.hpp examples/big/catch_at_age_shared.hpp core/laplace/laplace_exact_directional_curvature.hpp
+	$(CXX) $(CXXFLAGS) -o $@ examples/big/catch_at_age_laplace.cpp
+
 CXX ?= clang++
 CXXFLAGS ?= -std=c++17 -O3 \
 	-I. \
@@ -501,6 +516,13 @@ test-contracts:
 
 test-fixed-effect-covariance: tests/test_fixed_effect_covariance
 	./tests/test_fixed_effect_covariance
+
+.PHONY: test-fourth-directional
+test-fourth-directional: tests/test_fourth_directional
+	./tests/test_fourth_directional
+
+tests/test_fourth_directional: tests/test_fourth_directional.cpp core/had_quadra.hpp core/laplace/laplace_exact_directional_curvature.hpp
+	$(CXX) $(CXXFLAGS) -o $@ tests/test_fourth_directional.cpp
 
 tests/test_fixed_effect_covariance: tests/test_fixed_effect_covariance.cpp core/inference/fixed_effect_covariance.hpp
 	$(CXX) $(CXXFLAGS) -I. -I./external/eigen -I./external/had -I./external/LBFGSpp/include -o $@ tests/test_fixed_effect_covariance.cpp

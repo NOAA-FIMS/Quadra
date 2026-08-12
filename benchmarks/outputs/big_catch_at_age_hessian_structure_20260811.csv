@@ -1,0 +1,7 @@
+bandwidth,residual_relative_frobenius,residual_rank_1e-6,residual_rank_1e-8,leading_residual_singular_value
+0,0.101280,30,30,85.939771
+1,0.071636,30,30,54.494600
+2,0.044667,30,30,30.215851
+3,0.024211,30,30,14.210792
+5,0.004185,30,30,2.273787
+10,0.001366,24,24,1.472067

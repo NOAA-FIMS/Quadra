@@ -83,6 +83,50 @@ int main() {
       workspace.TraceTermsSelectedInverse(
           [&](int row, int col) { return Hinv(row, col); }, pattern);
 
+  quadra::laplace::AdaptiveDirectionalBatchOptions adaptive_options;
+  const std::size_t base_bytes = had::MeasureADGraphMemory(
+                                     workspace.HadWorkspace().Graph())
+                                     .total_tracked_reserved_bytes;
+  adaptive_options.memory_budget_bytes =
+      base_bytes + quadra::laplace::EstimateDirectionalLaneBytes(
+                       workspace.HadWorkspace().VertexCount());
+  adaptive_options.maximum_batch_size = 2;
+  const auto streamed = workspace.TraceTermsSelectedInverseAdaptive(
+      2,
+      [](std::size_t k, Eigen::VectorXd &theta_direction,
+         Eigen::VectorXd &random_direction) {
+        theta_direction = Eigen::VectorXd::Zero(2);
+        random_direction = Eigen::VectorXd::Zero(4);
+        theta_direction[static_cast<int>(k)] = 1.0;
+        for (int i = 0; i < random_direction.size(); ++i) {
+          random_direction[i] =
+              0.01 * static_cast<double>((i + 1) * (k + 1));
+        }
+      },
+      [&](int row, int col) { return Hinv(row, col); }, pattern,
+      adaptive_options);
+
+  if (streamed.plan.batch_size != 1 || streamed.batches_executed != 2) {
+    throw std::runtime_error("adaptive trace did not stream one direction");
+  }
+  if ((traces - streamed.trace_terms).cwiseAbs().maxCoeff() > 1.0e-12) {
+    throw std::runtime_error("adaptive trace differs from full batch");
+  }
+
+  // Restore the legacy full-batch state for the API checks below.
+  workspace.SeedTotalDirections(
+      2, [](std::size_t k, Eigen::VectorXd &theta_direction,
+            Eigen::VectorXd &random_direction) {
+        theta_direction = Eigen::VectorXd::Zero(2);
+        random_direction = Eigen::VectorXd::Zero(4);
+        theta_direction[static_cast<int>(k)] = 1.0;
+        for (int i = 0; i < random_direction.size(); ++i) {
+          random_direction[i] =
+              0.01 * static_cast<double>((i + 1) * (k + 1));
+        }
+      });
+  workspace.PropagateDirectionalBatch();
+
   if (traces.size() != 2) {
     throw std::runtime_error("TraceTerms returned wrong number of directions");
   }

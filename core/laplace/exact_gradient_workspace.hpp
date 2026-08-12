@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "../had_graph_workspace.hpp"
+#include "adaptive_directional_batch.hpp"
 
 namespace quadra {
 namespace laplace {
@@ -77,6 +78,16 @@ public:
     RequireBuilt();
     n_directions_ = n_directions;
     had_workspace_.ResizeDirectionalBatch(n_directions);
+  }
+
+  AdaptiveDirectionalBatchPlan ResizeDirectionalBatchAdaptive(
+      std::size_t total_directions,
+      const AdaptiveDirectionalBatchOptions &options = {}) {
+    RequireBuilt();
+    const auto plan = PlanAdaptiveDirectionalBatch(
+        had_workspace_.Graph(), total_directions, options);
+    ResizeDirectionalBatch(plan.batch_size);
+    return plan;
   }
 
   template <class DirectionProvider>
@@ -257,6 +268,53 @@ public:
     }
 
     return traces;
+  }
+
+  // Execute total derivative directions in memory-budgeted chunks. The
+  // direction provider receives the global direction index, while HAD lanes
+  // are numbered locally within each chunk.
+  template <class DirectionProvider, class SelectedInverseAccessor>
+  AdaptiveDirectionalTraceResult TraceTermsSelectedInverseAdaptive(
+      std::size_t total_directions, DirectionProvider &&direction_provider,
+      SelectedInverseAccessor &&selected_inverse,
+      const std::vector<SparseHdotPatternEntry> &pattern,
+      const AdaptiveDirectionalBatchOptions &options = {}) {
+    RequireBuilt();
+
+    AdaptiveDirectionalTraceResult out;
+    out.plan = PlanAdaptiveDirectionalBatch(had_workspace_.Graph(),
+                                            total_directions, options);
+    out.trace_terms =
+        Eigen::VectorXd::Zero(static_cast<Eigen::Index>(total_directions));
+    out.peak_tracked_graph_bytes = out.plan.graph_reserved_bytes;
+
+    for (std::size_t begin = 0; begin < total_directions;
+         begin += out.plan.batch_size) {
+      const std::size_t chunk_size =
+          std::min(out.plan.batch_size, total_directions - begin);
+
+      SeedTotalDirections(
+          chunk_size,
+          [&](std::size_t local_index, Eigen::VectorXd &theta_direction,
+              Eigen::VectorXd &random_direction) {
+            direction_provider(begin + local_index, theta_direction,
+                               random_direction);
+          });
+      PropagateDirectionalBatch();
+
+      const Eigen::VectorXd chunk_traces = TraceTermsSelectedInverse(
+          selected_inverse, pattern);
+      out.trace_terms.segment(static_cast<Eigen::Index>(begin),
+                              static_cast<Eigen::Index>(chunk_size)) =
+          chunk_traces;
+      ++out.batches_executed;
+      out.peak_tracked_graph_bytes = std::max(
+          out.peak_tracked_graph_bytes,
+          had::MeasureADGraphMemory(had_workspace_.Graph())
+              .total_tracked_reserved_bytes);
+    }
+
+    return out;
   }
 
   template <class SelectedInverseAccessor>

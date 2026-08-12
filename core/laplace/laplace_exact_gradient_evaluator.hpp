@@ -65,6 +65,38 @@ public:
     return out;
   }
 
+  template <class Builder, class DirectionProvider,
+            class SelectedInverseAccessor>
+  LaplaceExactGradientEvaluation EvaluateAdaptive(
+      Builder &&builder, std::vector<had::AReal> *fixed_effects,
+      std::vector<had::AReal> *random_effects, std::size_t n_directions,
+      DirectionProvider &&direction_provider,
+      SelectedInverseAccessor &&selected_inverse,
+      const std::vector<SparseHdotPatternEntry> &hdot_pattern,
+      double joint_objective, double logdet_huu,
+      const Eigen::VectorXd &joint_envelope_gradient,
+      const AdaptiveDirectionalBatchOptions &options = {}) {
+    if (joint_envelope_gradient.size() !=
+        static_cast<Eigen::Index>(n_directions)) {
+      throw std::invalid_argument(
+          "EvaluateAdaptive gradient dimension mismatch.");
+    }
+
+    workspace_.Build(std::forward<Builder>(builder), fixed_effects,
+                     random_effects);
+    workspace_.PropagateBaseAdjoint();
+    const auto streamed = workspace_.TraceTermsSelectedInverseAdaptive(
+        n_directions, std::forward<DirectionProvider>(direction_provider),
+        std::forward<SelectedInverseAccessor>(selected_inverse), hdot_pattern,
+        options);
+
+    LaplaceExactGradientEvaluation out;
+    out.objective = joint_objective + 0.5 * logdet_huu;
+    out.trace_terms = streamed.trace_terms;
+    out.gradient = joint_envelope_gradient + 0.5 * streamed.trace_terms;
+    return out;
+  }
+
   ExactGradientWorkspace &Workspace() { return workspace_; }
   const ExactGradientWorkspace &Workspace() const { return workspace_; }
 

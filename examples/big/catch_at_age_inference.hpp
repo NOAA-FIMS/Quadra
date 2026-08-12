@@ -7,6 +7,7 @@
 #include "../../core/inference/fixed_effect_covariance.hpp"
 #include "../../core/inference/fixed_effect_report.hpp"
 #include "../../core/laplace/laplace_implicit_workspace.hpp"
+#include "../../core/laplace/laplace_exact_directional_curvature.hpp"
 #include "../../core/laplace/laplace_profiled_ad_gradient.hpp"
 #include "../../core/laplace/laplace_profiled_delta_method.hpp"
 #include "../../core/laplace/laplace_profiled_delta_method_vector.hpp"
@@ -25,12 +26,12 @@
 
 namespace example {
 
-template <typename Gradient>
 inline void run_big_catch_at_age_inference(
-    Gradient &gradient, const CatchAtAgeLaplaceModel &model,
+    CatchAtAgeLaplaceModel &model,
     const std::vector<double> &final_random_effects,
     const std::vector<std::string> &parameter_names,
     const std::vector<double> &theta_hat,
+    const quadra::ParameterPartition &partition,
     const quadra::LaplaceImplicitWorkspace &implicit_workspace) {
   using namespace quadra;
 
@@ -43,8 +44,11 @@ inline void run_big_catch_at_age_inference(
   const Eigen::MatrixXd &du_dtheta = implicit_workspace.du_dtheta_m;
 
   const auto covariance_start = std::chrono::steady_clock::now();
-  auto covariance = estimate_fixed_effect_covariance_from_gradient(
-      gradient, theta_hat, 1.0e-4);
+  constexpr int covariance_workers = 4;
+  const auto exact_hessian = laplace::exact_laplace_hessian_fourth_order(
+      model, theta_hat, final_random_effects, partition, covariance_workers);
+  auto covariance =
+      estimate_fixed_effect_covariance_from_hessian(exact_hessian.hessian_m);
   const double covariance_ms =
       std::chrono::duration<double, std::milli>(
           std::chrono::steady_clock::now() - covariance_start)
@@ -57,8 +61,10 @@ inline void run_big_catch_at_age_inference(
   }
 
   std::cout << "\nCovariance estimation succeeded in " << covariance_ms
-            << " ms using " << 2 * theta_hat.size()
-            << " exact-gradient evaluations\n";
+            << " ms using exact fourth-order AD ("
+            << exact_hessian.directional_evaluations_m
+            << " directional evaluations, " << covariance_workers
+            << " workers, no finite differences)\n";
 
   auto report =
       build_fixed_effect_report(parameter_names, theta_hat, covariance);
