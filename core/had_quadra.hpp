@@ -52,7 +52,7 @@ THE SOFTWARE.
 #include <cstdint>
 #include <iostream>
 #include <vector>
-#ifdef WIN32
+#if defined(_WIN32) || defined(WIN32)
 #define threadDefine thread_local
 #endif
 #ifdef __APPLE__

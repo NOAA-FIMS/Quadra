@@ -1,13 +1,21 @@
 UNAME_S := $(shell uname -s)
-ifeq ($(UNAME_S),Darwin)
-QUADRA_TIME_CMD := $(QUADRA_TIME_CMD)
+ifeq ($(OS),Windows_NT)
+QUADRA_TIME_CMD :=
+else ifeq ($(UNAME_S),Darwin)
+QUADRA_TIME_CMD :=
 else
 QUADRA_TIME_CMD := /usr/bin/time -v
 endif
 
 include config/quadra_includes.mk
 
-CXX ?= $(QUADRA_CXX)
+# GNU Make predefines CXX=g++. Replace only that built-in default. Command-line,
+# environment, and Makefile selections remain authoritative.
+ifeq ($(origin CXX),default)
+CXX := $(QUADRA_CXX)
+else ifeq ($(origin CXX),undefined)
+CXX := $(QUADRA_CXX)
+endif
 CXXFLAGS ?= $(QUADRA_CXXFLAGS) $(QUADRA_INCLUDE_FLAGS)
 
 TESTS = \
