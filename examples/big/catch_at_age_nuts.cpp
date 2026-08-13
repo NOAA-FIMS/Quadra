@@ -3,6 +3,8 @@
 
 #include <algorithm>
 #include <cmath>
+#include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <numeric>
 #include <string>
@@ -289,33 +291,54 @@ int main() {
   const auto &health = workflow.health;
   const std::size_t worst_rhat_parameter =
       static_cast<std::size_t>(worst_rhat - fit.diagnostics.split_rhat.begin());
-  std::cout << "Quadra non-centered joint AD-NUTS catch-at-age example\n"
-            << "chains: " << fit.chains.size() << "\n"
-            << "draws: " << total_draws << "\n"
-            << "posterior predictive draws: " << simulations.draws.size()
-            << "\n"
-            << "90% predictive coverage: " << predictive_coverage << "/"
-            << 2 * model.data.n_years << "\n"
-            << "mean log_M: " << mean_log_m << "\n"
-            << "log_M split R-hat: " << fit.diagnostics.split_rhat[1] << "\n"
-            << "log_M bulk ESS: " << fit.diagnostics.bulk_ess[1] << "\n"
-            << "log_M tail ESS: " << fit.diagnostics.tail_ess[1] << "\n"
-            << "maximum split R-hat: " << *worst_rhat << " ("
-            << workflow.parameter_names[worst_rhat_parameter] << ")\n"
-            << "minimum bulk ESS: " << *worst_bulk << "\n"
-            << "minimum tail ESS: " << *worst_tail << "\n"
-            << "minimum BFMI: " << health.min_bfmi << "\n"
-            << "divergences: " << divergences << "\n"
-            << "max-depth hits: " << depth_hits << "\n"
-            << "sampler health: " << (health.passed ? "PASS" : "FAIL") << "\n";
-  for (std::size_t chain = 0; chain < fit.chains.size(); ++chain) {
-    const auto &diagnostics = fit.chains[chain].diagnostics;
-    std::cout << "chain " << chain + 1
-              << ": acceptance=" << diagnostics.mean_acceptance
-              << " step_size=" << diagnostics.step_size
-              << " divergences=" << diagnostics.divergences
-              << " depth_hits=" << diagnostics.max_depth_hits
-              << " BFMI=" << diagnostics.energy_bfmi << "\n";
-  }
+  const std::filesystem::path output_directory =
+      "examples/big/outputs/catch_at_age_nuts";
+  std::filesystem::create_directories(output_directory);
+  quadra::sampling::write_posterior_draws_csv(
+      (output_directory / "posterior_draws.csv").string(), workflow);
+  quadra::sampling::write_parameter_diagnostics_csv(
+      (output_directory / "parameter_diagnostics.csv").string(), workflow);
+  quadra::sampling::write_chain_diagnostics_csv(
+      (output_directory / "chain_diagnostics.csv").string(), workflow);
+  quadra::sampling::write_posterior_predictive_csv(
+      (output_directory / "posterior_predictive.csv").string(), simulations);
+  quadra::sampling::write_nuts_summary_csv(
+      (output_directory / "nuts_summary.csv").string(), workflow);
+
+  auto write_summary = [&](std::ostream &out) {
+    out << "Quadra non-centered joint AD-NUTS catch-at-age example\n"
+        << "chains: " << fit.chains.size() << "\n"
+        << "draws: " << total_draws << "\n"
+        << "posterior predictive draws: " << simulations.draws.size() << "\n"
+        << "90% predictive coverage: " << predictive_coverage << "/"
+        << 2 * model.data.n_years << "\n"
+        << "mean log_M: " << mean_log_m << "\n"
+        << "log_M split R-hat: " << fit.diagnostics.split_rhat[1] << "\n"
+        << "log_M bulk ESS: " << fit.diagnostics.bulk_ess[1] << "\n"
+        << "log_M tail ESS: " << fit.diagnostics.tail_ess[1] << "\n"
+        << "maximum split R-hat: " << *worst_rhat << " ("
+        << workflow.parameter_names[worst_rhat_parameter] << ")\n"
+        << "minimum bulk ESS: " << *worst_bulk << "\n"
+        << "minimum tail ESS: " << *worst_tail << "\n"
+        << "minimum BFMI: " << health.min_bfmi << "\n"
+        << "divergences: " << divergences << "\n"
+        << "max-depth hits: " << depth_hits << "\n"
+        << "sampler health: " << (health.passed ? "PASS" : "FAIL") << "\n";
+    for (std::size_t chain = 0; chain < fit.chains.size(); ++chain) {
+      const auto &diagnostics = fit.chains[chain].diagnostics;
+      out << "chain " << chain + 1
+          << ": acceptance=" << diagnostics.mean_acceptance
+          << " step_size=" << diagnostics.step_size
+          << " divergences=" << diagnostics.divergences
+          << " depth_hits=" << diagnostics.max_depth_hits
+          << " BFMI=" << diagnostics.energy_bfmi << "\n";
+    }
+  };
+  write_summary(std::cout);
+  std::ofstream summary_file(output_directory / "run_summary.txt");
+  if (!summary_file)
+    throw std::runtime_error("failed to open catch-at-age NUTS summary file");
+  write_summary(summary_file);
+  std::cout << "outputs: " << output_directory.string() << "\n";
   return health.passed ? 0 : 1;
 }
