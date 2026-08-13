@@ -79,8 +79,8 @@ inline AdaptiveDirectionalBatchPlan PlanAdaptiveDirectionalBatch(
                  plan.estimated_bytes_per_direction;
   }
 
-  plan.batch_size = std::min(requested,
-                             std::max(options.minimum_batch_size, affordable));
+  plan.batch_size =
+      std::min(requested, std::max(options.minimum_batch_size, affordable));
   plan.batch_size = std::min(plan.batch_size, total_directions);
   plan.constrained_by_memory = plan.batch_size < requested;
 

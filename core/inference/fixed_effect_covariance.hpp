@@ -58,7 +58,8 @@ covariance_to_correlation(const Eigen::MatrixXd &covariance) {
   return correlation;
 }
 
-inline FixedEffectCovarianceResult estimate_fixed_effect_covariance_from_hessian(
+inline FixedEffectCovarianceResult
+estimate_fixed_effect_covariance_from_hessian(
     const Eigen::MatrixXd &hessian,
     double eigen_tolerance =
         std::sqrt(std::numeric_limits<double>::epsilon())) {
@@ -69,7 +70,8 @@ inline FixedEffectCovarianceResult estimate_fixed_effect_covariance_from_hessian
   result.correlation_m = Eigen::MatrixXd::Zero(n, n);
   result.steps_m = Eigen::VectorXd::Zero(n);
   if (n == 0 || hessian.cols() != n || !matrix_all_finite(hessian)) {
-    result.message_m = "Fixed-effect Hessian is empty, non-square, or non-finite.";
+    result.message_m =
+        "Fixed-effect Hessian is empty, non-square, or non-finite.";
     return result;
   }
   Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> eigen(result.hessian_m);

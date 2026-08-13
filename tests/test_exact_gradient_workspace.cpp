@@ -84,9 +84,9 @@ int main() {
           [&](int row, int col) { return Hinv(row, col); }, pattern);
 
   quadra::laplace::AdaptiveDirectionalBatchOptions adaptive_options;
-  const std::size_t base_bytes = had::MeasureADGraphMemory(
-                                     workspace.HadWorkspace().Graph())
-                                     .total_tracked_reserved_bytes;
+  const std::size_t base_bytes =
+      had::MeasureADGraphMemory(workspace.HadWorkspace().Graph())
+          .total_tracked_reserved_bytes;
   adaptive_options.memory_budget_bytes =
       base_bytes + quadra::laplace::EstimateDirectionalLaneBytes(
                        workspace.HadWorkspace().VertexCount());
@@ -99,8 +99,7 @@ int main() {
         random_direction = Eigen::VectorXd::Zero(4);
         theta_direction[static_cast<int>(k)] = 1.0;
         for (int i = 0; i < random_direction.size(); ++i) {
-          random_direction[i] =
-              0.01 * static_cast<double>((i + 1) * (k + 1));
+          random_direction[i] = 0.01 * static_cast<double>((i + 1) * (k + 1));
         }
       },
       [&](int row, int col) { return Hinv(row, col); }, pattern,
@@ -114,17 +113,16 @@ int main() {
   }
 
   // Restore the legacy full-batch state for the API checks below.
-  workspace.SeedTotalDirections(
-      2, [](std::size_t k, Eigen::VectorXd &theta_direction,
-            Eigen::VectorXd &random_direction) {
-        theta_direction = Eigen::VectorXd::Zero(2);
-        random_direction = Eigen::VectorXd::Zero(4);
-        theta_direction[static_cast<int>(k)] = 1.0;
-        for (int i = 0; i < random_direction.size(); ++i) {
-          random_direction[i] =
-              0.01 * static_cast<double>((i + 1) * (k + 1));
-        }
-      });
+  workspace.SeedTotalDirections(2, [](std::size_t k,
+                                      Eigen::VectorXd &theta_direction,
+                                      Eigen::VectorXd &random_direction) {
+    theta_direction = Eigen::VectorXd::Zero(2);
+    random_direction = Eigen::VectorXd::Zero(4);
+    theta_direction[static_cast<int>(k)] = 1.0;
+    for (int i = 0; i < random_direction.size(); ++i) {
+      random_direction[i] = 0.01 * static_cast<double>((i + 1) * (k + 1));
+    }
+  });
   workspace.PropagateDirectionalBatch();
 
   if (traces.size() != 2) {

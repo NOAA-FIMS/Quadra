@@ -67,15 +67,16 @@ public:
 
   template <class Builder, class DirectionProvider,
             class SelectedInverseAccessor>
-  LaplaceExactGradientEvaluation EvaluateAdaptive(
-      Builder &&builder, std::vector<had::AReal> *fixed_effects,
-      std::vector<had::AReal> *random_effects, std::size_t n_directions,
-      DirectionProvider &&direction_provider,
-      SelectedInverseAccessor &&selected_inverse,
-      const std::vector<SparseHdotPatternEntry> &hdot_pattern,
-      double joint_objective, double logdet_huu,
-      const Eigen::VectorXd &joint_envelope_gradient,
-      const AdaptiveDirectionalBatchOptions &options = {}) {
+  LaplaceExactGradientEvaluation
+  EvaluateAdaptive(Builder &&builder, std::vector<had::AReal> *fixed_effects,
+                   std::vector<had::AReal> *random_effects,
+                   std::size_t n_directions,
+                   DirectionProvider &&direction_provider,
+                   SelectedInverseAccessor &&selected_inverse,
+                   const std::vector<SparseHdotPatternEntry> &hdot_pattern,
+                   double joint_objective, double logdet_huu,
+                   const Eigen::VectorXd &joint_envelope_gradient,
+                   const AdaptiveDirectionalBatchOptions &options = {}) {
     if (joint_envelope_gradient.size() !=
         static_cast<Eigen::Index>(n_directions)) {
       throw std::invalid_argument(

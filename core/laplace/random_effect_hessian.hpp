@@ -327,25 +327,24 @@ public:
     }
     for (Eigen::Index i = 0; i < n_random; ++i) {
       for (Eigen::Index j = 0; j < n_random; ++j) {
-        const double value =
-            hessian_value(random_ad_[static_cast<size_t>(i)],
-                          random_ad_[static_cast<size_t>(j)]);
+        const double value = hessian_value(random_ad_[static_cast<size_t>(i)],
+                                           random_ad_[static_cast<size_t>(j)]);
         if (value != 0.0)
           random_entries.emplace_back(i, j, value);
       }
     }
     result.random_hessian_m.setFromTriplets(random_entries.begin(),
-                                             random_entries.end());
+                                            random_entries.end());
     const auto extract_end = std::chrono::steady_clock::now();
-    result.replay_ms = std::chrono::duration<double, std::milli>(
-                           replay_end - replay_start)
-                           .count();
-    result.propagate_ms = std::chrono::duration<double, std::milli>(
-                              propagate_end - replay_end)
-                              .count();
-    result.extract_ms = std::chrono::duration<double, std::milli>(
-                            extract_end - propagate_end)
-                            .count();
+    result.replay_ms =
+        std::chrono::duration<double, std::milli>(replay_end - replay_start)
+            .count();
+    result.propagate_ms =
+        std::chrono::duration<double, std::milli>(propagate_end - replay_end)
+            .count();
+    result.extract_ms =
+        std::chrono::duration<double, std::milli>(extract_end - propagate_end)
+            .count();
     return result;
   }
 

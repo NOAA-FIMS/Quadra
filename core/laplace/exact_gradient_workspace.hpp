@@ -84,8 +84,8 @@ public:
       std::size_t total_directions,
       const AdaptiveDirectionalBatchOptions &options = {}) {
     RequireBuilt();
-    const auto plan = PlanAdaptiveDirectionalBatch(
-        had_workspace_.Graph(), total_directions, options);
+    const auto plan = PlanAdaptiveDirectionalBatch(had_workspace_.Graph(),
+                                                   total_directions, options);
     ResizeDirectionalBatch(plan.batch_size);
     return plan;
   }
@@ -293,25 +293,24 @@ public:
       const std::size_t chunk_size =
           std::min(out.plan.batch_size, total_directions - begin);
 
-      SeedTotalDirections(
-          chunk_size,
-          [&](std::size_t local_index, Eigen::VectorXd &theta_direction,
-              Eigen::VectorXd &random_direction) {
-            direction_provider(begin + local_index, theta_direction,
-                               random_direction);
-          });
+      SeedTotalDirections(chunk_size, [&](std::size_t local_index,
+                                          Eigen::VectorXd &theta_direction,
+                                          Eigen::VectorXd &random_direction) {
+        direction_provider(begin + local_index, theta_direction,
+                           random_direction);
+      });
       PropagateDirectionalBatch();
 
-      const Eigen::VectorXd chunk_traces = TraceTermsSelectedInverse(
-          selected_inverse, pattern);
+      const Eigen::VectorXd chunk_traces =
+          TraceTermsSelectedInverse(selected_inverse, pattern);
       out.trace_terms.segment(static_cast<Eigen::Index>(begin),
                               static_cast<Eigen::Index>(chunk_size)) =
           chunk_traces;
       ++out.batches_executed;
-      out.peak_tracked_graph_bytes = std::max(
-          out.peak_tracked_graph_bytes,
-          had::MeasureADGraphMemory(had_workspace_.Graph())
-              .total_tracked_reserved_bytes);
+      out.peak_tracked_graph_bytes =
+          std::max(out.peak_tracked_graph_bytes,
+                   had::MeasureADGraphMemory(had_workspace_.Graph())
+                       .total_tracked_reserved_bytes);
     }
 
     return out;
