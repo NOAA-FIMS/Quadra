@@ -113,7 +113,7 @@ are:
 
 $$
 R_0=\exp(\ell_{R_0}),\qquad
-h=0.2+0.8\operatorname{logit}^{-1}(\eta_h),\qquad
+h=0.2+0.8\mathrm{logit}^{-1}(\eta_h),\qquad
 \sigma_R=\exp(\ell_{\sigma_R}).
 $$
 
@@ -130,7 +130,7 @@ $$
 The raw age-50 transform is
 
 $$
-a_{50}(x)=1+(A-1)\operatorname{logit}^{-1}(x),
+a_{50}(x)=1+(A-1)\mathrm{logit}^{-1}(x),
 $$
 
 so selectivity and retention age-50 values stay between ages 1 and $A$.
