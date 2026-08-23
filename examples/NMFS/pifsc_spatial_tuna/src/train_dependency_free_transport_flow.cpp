@@ -338,10 +338,10 @@ double check_gradients(Flow &flow, const Matrix &batch) {
     value = original;
     const double numerical = (plus - minus) / (2.0 * step);
     const double expected = (*probe.gradient)(probe.row, probe.column);
-    maximum_scaled_error = std::max(
-        maximum_scaled_error,
-        std::abs(numerical - expected) /
-            std::max(1.0, std::abs(numerical) + std::abs(expected)));
+    maximum_scaled_error =
+        std::max(maximum_scaled_error,
+                 std::abs(numerical - expected) /
+                     std::max(1.0, std::abs(numerical) + std::abs(expected)));
   }
   if (!std::isfinite(maximum_scaled_error) || maximum_scaled_error > 2e-2)
     throw std::runtime_error("RealNVP finite-difference gradient check failed");
@@ -413,7 +413,8 @@ int main(int argc, char **argv) {
           b.row(i) = c.x.row(tr[s + i]);
         f.train_batch(b, ++step, 1e-3f);
         if (step == 1)
-          gradient_check_error = check_gradients(f, b.topRows(std::min<int>(8, b.rows())));
+          gradient_check_error =
+              check_gradients(f, b.topRows(std::min<int>(8, b.rows())));
       }
       float tn = f.forward(train), vn = f.forward(valid);
       done = e;
