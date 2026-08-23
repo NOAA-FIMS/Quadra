@@ -47,3 +47,20 @@ This example includes:
 - derived quantities
 - projection uncertainty outputs
 - comparison against a TMB implementation
+
+### Spatial Tuna Assessment
+
+Path:
+
+```text
+examples/NMFS/pifsc_spatial_tuna
+```
+
+This synthetic, end-to-end assessment example includes:
+
+- seasonal age-structured, multi-region, multi-fleet population dynamics
+- recruitment deviations marginalized with Quadra's structure-aware Laplace machinery
+- phased fitting, simulation recovery, diagnostics, and runtime configuration
+- exact posterior sampling with pCN, AD-NUTS, and native nonlinear transport proposals
+- conditional random-effect reconstruction, reference points, and projections
+- a detailed mathematical and computational specification in `MODEL_AND_QUADRA.md`
