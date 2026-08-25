@@ -53,6 +53,7 @@ int main() {
   if (!result.converged || result.gradient.size() != 1 ||
       std::abs(result.gradient[0]) > 1.0e-9 ||
       !(result.objective < initial_objective) || result.history.empty() ||
+      result.objective_evaluations == 0 || result.exact_evaluations == 0 ||
       evaluator.objective_tape_rebuild_count() != 0 ||
       evaluator.hdot_tape_rebuild_count() != 0) {
     std::cerr << "stateful exact Laplace optimizer failed: " << result.message
@@ -77,6 +78,18 @@ int main() {
   if (!convenience.converged ||
       std::abs(convenience.fixed[0] - result.fixed[0]) > 1.0e-9) {
     std::cerr << "automatic optimizer construction failed\n";
+    return 1;
+  }
+
+  quadra::stats::ExactLaplaceEvaluator<CurvatureModel> budget_evaluator(
+      model, {0.4}, {0.0}, model.parameters(), objective_options);
+  auto budget_options = optimizer_options;
+  budget_options.max_evaluations = 1;
+  const auto budget_result =
+      quadra::stats::optimize_laplace(budget_evaluator, {0.4}, budget_options);
+  if (budget_result.converged ||
+      budget_result.message.find("budget exhausted") == std::string::npos) {
+    std::cerr << "evaluation budget was not enforced\n";
     return 1;
   }
 

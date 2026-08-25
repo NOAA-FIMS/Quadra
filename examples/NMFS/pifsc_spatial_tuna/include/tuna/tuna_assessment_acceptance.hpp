@@ -131,6 +131,7 @@ struct TunaFitOptions {
   int lbfgs_memory_m = 7;
   int hdot_workers_m = 0;
   int lbfgs_print_every_m = 0;
+  int max_evaluations_per_phase_m = 0;
   double gradient_tolerance_m = 1e-4;
   double line_search_acceptance_gradient_tolerance_m = 5e-3;
   double initial_step_m = 1.0;
@@ -933,6 +934,7 @@ make_exact_lbfgs_options(const TunaFitOptions &options) {
   LaplaceExactLBFGSOptions out;
   out.max_iterations_m = options.max_iterations_per_phase_m;
   out.memory_m = options.lbfgs_memory_m;
+  out.max_evaluations_m = options.max_evaluations_per_phase_m;
   out.gradient_tolerance_m = options.gradient_tolerance_m;
   out.initial_step_scale_m = options.initial_step_m;
   out.min_step_scale_m = options.min_step_m;
@@ -954,7 +956,7 @@ inline LaplaceExactLBFGSResult optimize_full_phase_public_exact_laplace(
       std::max(300, options.max_iterations_per_phase_m + 50);
   objective_options.newton_m.gradient_tolerance_m = 1e-5;
   objective_options.newton_m.step_tolerance_m = 1e-10;
-  objective_options.newton_m.initial_step_scale_m = 0.20;
+  objective_options.newton_m.initial_step_scale_m = 1.0;
   objective_options.newton_m.min_step_scale_m = 1e-10;
   objective_options.newton_m.sufficient_decrease_m = 1e-6;
   objective_options.newton_m.hessian_drop_tol_m = 0.0;
@@ -971,6 +973,7 @@ inline LaplaceExactLBFGSResult optimize_full_phase_public_exact_laplace(
   stats::LaplaceOptimizerOptions public_options;
   public_options.max_iterations = options.max_iterations_per_phase_m;
   public_options.memory = std::max(20, options.lbfgs_memory_m);
+  public_options.max_evaluations = options.max_evaluations_per_phase_m;
   public_options.gradient_tolerance = options.gradient_tolerance_m;
   public_options.step_tolerance = 1e-10;
   public_options.initial_step_scale = 1.0;
@@ -1024,6 +1027,7 @@ make_joint_only_lbfgs_options(const TunaFitOptions &options) {
   JointOnlyExactLBFGSOptions out;
   out.max_iterations_m = options.max_iterations_per_phase_m;
   out.memory_m = options.lbfgs_memory_m;
+  out.max_evaluations_m = options.max_evaluations_per_phase_m;
   out.print_every_m = options.lbfgs_print_every_m;
   out.gradient_tolerance_m = options.gradient_tolerance_m;
   out.initial_step_scale_m = options.initial_step_m;
@@ -1111,6 +1115,11 @@ fit_spatial_assessment(const TunaSpatialAssessmentData &data,
   std::normal_distribution<double> jitter(0.0, options.jitter_sd_m);
 
   for (int start_idx = 0; start_idx < options.multistart_m; ++start_idx) {
+    if (options.lbfgs_print_every_m > 0) {
+      std::cout << "tuna_fit start=" << (start_idx + 1) << '/'
+                << options.multistart_m << " begin\n"
+                << std::flush;
+    }
     std::vector<double> theta = split0.fixed_m;
     std::vector<double> random = split0.random_m;
     if (start_idx > 0) {
@@ -1140,6 +1149,12 @@ fit_spatial_assessment(const TunaSpatialAssessmentData &data,
     std::vector<TunaFitResult::PhaseDiagnostic> start_phase_diags;
 
     for (TunaAssessmentPhase phase : options.phase_sequence_m) {
+      if (options.lbfgs_print_every_m > 0) {
+        std::cout << "tuna_fit start=" << (start_idx + 1) << '/'
+                  << options.multistart_m << " phase=" << phase_name(phase)
+                  << " begin\n"
+                  << std::flush;
+      }
       controls = tuned_controls_for_phase(base_controls, phase);
 
       std::vector<bool> free_mask = build_phase_free_mask(fixed_names, phase);
@@ -1327,6 +1342,14 @@ fit_spatial_assessment(const TunaSpatialAssessmentData &data,
       absorb_fit(phase_fit,
                  phase == TunaAssessmentPhase::Full && !movement_init_failure);
       record_diag(phase, free_mask, phase_fit);
+      if (options.lbfgs_print_every_m > 0) {
+        std::cout << "tuna_fit start=" << (start_idx + 1) << '/'
+                  << options.multistart_m << " phase=" << phase_name(phase)
+                  << " end iterations=" << phase_fit.iterations_m
+                  << " converged=" << (phase_fit.converged_m ? "true" : "false")
+                  << '\n'
+                  << std::flush;
+      }
 
       if (movement_init_failure) {
         const std::vector<bool> bridge_mask = build_phase_free_mask(

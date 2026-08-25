@@ -25,6 +25,25 @@ make fit-advanced-tuna
 make sample-advanced-tuna
 ```
 
+Run the complete fit, simulation-estimation, and report workflow with one
+driver binary:
+
+```bash
+make full-tuna-workflow
+build/run_tuna_full_workflow --config config/tuna_assessment.conf
+```
+
+The driver stops at the first failed stage and returns its exit code. Output
+locations and the simulation count can be overridden explicitly:
+
+```bash
+build/run_tuna_full_workflow \
+  --config config/tuna_assessment.conf \
+  --output-dir build/assessment_outputs/data \
+  --report-dir build/assessment_outputs/report \
+  --simulations 50
+```
+
 Use a different configuration without recompiling:
 
 ```bash

@@ -143,6 +143,9 @@ void write_effective_configuration(const std::string &out_dir) {
       {"fit.max_phase_iterations",
        std::to_string(configured_int("QUADRA_TUNA_MAX_PHASE_ITERATIONS",
                                      "fit.max_phase_iterations", 35))},
+      {"fit.max_phase_evaluations",
+       std::to_string(configured_int("QUADRA_TUNA_MAX_PHASE_EVALUATIONS",
+                                     "fit.max_phase_evaluations", 0))},
       {"fit.hdot_workers",
        std::to_string(
            configured_int("QUADRA_TUNA_HDOT_WORKERS", "fit.hdot_workers", 0))},
@@ -3190,6 +3193,9 @@ int main(int argc, char **argv) {
     fit_options.lbfgs_print_every_m =
         std::max(0, configured_int("QUADRA_TUNA_LBFGS_PRINT_EVERY",
                                    "fit.print_every", 1));
+    fit_options.max_evaluations_per_phase_m =
+        std::max(0, configured_int("QUADRA_TUNA_MAX_PHASE_EVALUATIONS",
+                                   "fit.max_phase_evaluations", 0));
     if (configured_bool("QUADRA_TUNA_DIRECT_FULL", "fit.direct_full", false))
       fit_options.phase_sequence_m = {quadra::TunaAssessmentPhase::Full};
 

@@ -66,28 +66,22 @@ extract_fixed_gradient_from_full(const std::vector<double> &gradient_full,
 // by a later implementation.
 template <class Model>
 inline LaplaceExactGradientResult
-evaluate_laplace_exact_gradient(Model &model, const std::vector<double> &fixed,
-                                const std::vector<double> &random_initial,
-                                const ParameterPartition &partition,
-                                const LaplaceExactGradientOptions &options =
-                                    LaplaceExactGradientOptions()) {
+evaluate_laplace_exact_gradient_from_objective(
+    Model &model, const LaplaceObjectiveResult &objective,
+    const ParameterPartition &partition,
+    const LaplaceExactGradientOptions &options =
+        LaplaceExactGradientOptions()) {
+  const std::vector<double> &fixed = objective.fixed_m;
   if (fixed.size() != partition.fixed_indices_m.size()) {
     throw std::invalid_argument(
-        "evaluate_laplace_exact_gradient: fixed vector has incorrect length");
-  }
-
-  if (random_initial.size() != partition.random_indices_m.size()) {
-    throw std::invalid_argument(
-        "evaluate_laplace_exact_gradient: random_initial has incorrect length");
+        "evaluate_laplace_exact_gradient_from_objective: fixed vector has "
+        "incorrect length");
   }
 
   if (options.include_logdet_derivative_m) {
     throw std::invalid_argument("evaluate_laplace_exact_gradient: logdet "
                                 "derivative is not implemented yet");
   }
-
-  LaplaceObjectiveResult objective = evaluate_laplace_objective(
-      model, fixed, random_initial, partition, options.objective_m);
 
   LaplaceExactGradientResult result;
   result.fixed_m = fixed;
@@ -132,6 +126,23 @@ evaluate_laplace_exact_gradient(Model &model, const std::vector<double> &fixed,
   result.gradient_norm_m = norm2(result.gradient_fixed_m);
 
   return result;
+}
+
+template <class Model>
+inline LaplaceExactGradientResult
+evaluate_laplace_exact_gradient(Model &model, const std::vector<double> &fixed,
+                                const std::vector<double> &random_initial,
+                                const ParameterPartition &partition,
+                                const LaplaceExactGradientOptions &options =
+                                    LaplaceExactGradientOptions()) {
+  if (random_initial.size() != partition.random_indices_m.size()) {
+    throw std::invalid_argument(
+        "evaluate_laplace_exact_gradient: random_initial has incorrect length");
+  }
+  LaplaceObjectiveResult objective = evaluate_laplace_objective(
+      model, fixed, random_initial, partition, options.objective_m);
+  return evaluate_laplace_exact_gradient_from_objective(model, objective,
+                                                        partition, options);
 }
 
 template <class Model>

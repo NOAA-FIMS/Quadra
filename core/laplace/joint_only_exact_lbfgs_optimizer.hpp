@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <deque>
+#include <iostream>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -16,6 +17,8 @@ struct JointOnlyExactLBFGSOptions {
 
   int max_iterations_m = 100;
   int memory_m = 7;
+  int print_every_m = 0;
+  int max_evaluations_m = 0;
 
   double gradient_tolerance_m = 1e-6;
   double step_tolerance_m = 1e-10;
@@ -62,6 +65,7 @@ inline JointOnlyExactLBFGSResult optimize_joint_only_exact_lbfgs(
 
   JointOnlyExactGradientResult current = evaluate_joint_only_exact_gradient(
       model, theta, random_start, partition, options.gradient_m);
+  int evaluations = 1;
 
   if (!current.converged_m || !lbfgs_all_finite(current.gradient_fixed_m) ||
       !std::isfinite(current.joint_objective_m)) {
@@ -84,6 +88,19 @@ inline JointOnlyExactLBFGSResult optimize_joint_only_exact_lbfgs(
     hist.objective_m = current.joint_objective_m;
     hist.gradient_norm_m = current.gradient_norm_m;
     result.history_m.push_back(hist);
+
+    if (options.print_every_m > 0 && iter % options.print_every_m == 0) {
+      std::cout << "[joint_only_exact_lbfgs]\n"
+                << "  event: iteration\n"
+                << "  iteration: " << iter << '\n'
+                << "  objective: " << current.joint_objective_m << '\n'
+                << "  gradient_norm: "
+                << (current.gradient_norm_m <= options.gradient_tolerance_m
+                        ? "\033[32m"
+                        : "\033[31m")
+                << current.gradient_norm_m << "\033[0m\n"
+                << std::flush;
+    }
 
     result.iterations_m = iter;
 
@@ -110,23 +127,31 @@ inline JointOnlyExactLBFGSResult optimize_joint_only_exact_lbfgs(
 
     double alpha = options.initial_step_scale_m;
     bool accepted = false;
+    int line_search_evaluations = 0;
 
     std::vector<double> candidate_theta;
     JointOnlyExactGradientResult candidate;
+    RandomEffectNewtonResult candidate_newton;
 
     while (alpha >= options.min_step_scale_m) {
+      if (options.max_evaluations_m > 0 &&
+          evaluations >= options.max_evaluations_m) {
+        result.message_m = "Stopped: joint-only evaluation budget exhausted.";
+        break;
+      }
       candidate_theta = lbfgs_add_scaled(theta, direction, alpha);
 
       const std::vector<double> candidate_random_start =
           options.warm_start_random_m ? current.u_hat_m : random_initial;
 
-      candidate = evaluate_joint_only_exact_gradient(
+      candidate_newton = optimize_random_effects_newton(
           model, candidate_theta, candidate_random_start, partition,
-          options.gradient_m);
+          options.gradient_m.newton_m);
+      ++evaluations;
+      ++line_search_evaluations;
 
-      if (!candidate.converged_m ||
-          !std::isfinite(candidate.joint_objective_m) ||
-          !lbfgs_all_finite(candidate.gradient_fixed_m)) {
+      if (!candidate_newton.converged_m ||
+          !std::isfinite(candidate_newton.objective_value_m)) {
         alpha *= 0.5;
         continue;
       }
@@ -137,7 +162,7 @@ inline JointOnlyExactLBFGSResult optimize_joint_only_exact_lbfgs(
               lbfgs_dot(current.gradient_fixed_m, direction);
 
       if (!options.use_backtracking_m ||
-          candidate.joint_objective_m <= armijo_rhs) {
+          candidate_newton.objective_value_m <= armijo_rhs) {
         accepted = true;
         break;
       }
@@ -147,8 +172,37 @@ inline JointOnlyExactLBFGSResult optimize_joint_only_exact_lbfgs(
 
     if (!accepted) {
       result.converged_m = false;
-      result.message_m = "Failed: joint-only exact LBFGS backtracking failed.";
+      if (result.message_m.empty()) {
+        result.message_m =
+            "Failed: joint-only exact LBFGS backtracking failed.";
+      }
       break;
+    }
+
+    if (options.max_evaluations_m > 0 &&
+        evaluations >= options.max_evaluations_m) {
+      result.converged_m = false;
+      result.message_m = "Stopped: joint-only evaluation budget exhausted.";
+      break;
+    }
+
+    candidate = evaluate_joint_only_exact_gradient(
+        model, candidate_newton, partition, options.gradient_m);
+    ++evaluations;
+    if (!lbfgs_all_finite(candidate.gradient_fixed_m)) {
+      result.converged_m = false;
+      result.message_m =
+          "Failed: joint-only gradient failed at accepted line-search point.";
+      break;
+    }
+    if (options.print_every_m > 0 && iter % options.print_every_m == 0) {
+      std::cout << "[joint_only_exact_lbfgs]\n"
+                << "  event: step_accepted\n"
+                << "  iteration: " << iter << '\n'
+                << "  line_search_evaluations: " << line_search_evaluations
+                << '\n'
+                << "  accepted_step_scale: " << alpha << '\n'
+                << std::flush;
     }
 
     std::vector<double> s_vec = lbfgs_subtract(candidate_theta, theta);

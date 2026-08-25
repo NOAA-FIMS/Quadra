@@ -45,6 +45,16 @@ int main() {
               << expected << '\n';
     return 1;
   }
+  Eigen::LLT<Eigen::MatrixXd> inverse_llt(H.inverse());
+  const Eigen::MatrixXd inverse_factor = inverse_llt.matrixL();
+  const double factorized =
+      quadra::laplace::dense_hdot_trace_third_order_factorized(
+          objective, x, direction, random_indices, inverse_factor);
+  if (std::abs(factorized - expected) > 1.0e-10) {
+    std::cerr << "factorized dense trace mismatch: " << factorized << " vs "
+              << expected << '\n';
+    return 1;
+  }
   const double diagonal_only =
       quadra::laplace::dense_hdot_trace_third_order_polarized(
           objective, x, direction, random_indices,

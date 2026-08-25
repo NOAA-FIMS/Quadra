@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <deque>
+#include <iostream>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -16,6 +17,8 @@ struct LaplaceExactLBFGSOptions {
 
   int max_iterations_m = 100;
   int memory_m = 7;
+  int print_every_m = 0;
+  int max_evaluations_m = 0;
 
   double gradient_tolerance_m = 1e-6;
   double step_tolerance_m = 1e-10;
@@ -68,6 +71,7 @@ inline LaplaceExactLBFGSResult optimize_laplace_fixed_effects_exact_lbfgs(
 
   LaplaceExactGradientResult current = evaluate_laplace_exact_gradient(
       model, theta, random_start, partition, options.gradient_m);
+  int evaluations = 1;
 
   if (!current.converged_m || !current.logdet_ok_m ||
       !lbfgs_all_finite(current.gradient_fixed_m) ||
@@ -91,6 +95,19 @@ inline LaplaceExactLBFGSResult optimize_laplace_fixed_effects_exact_lbfgs(
     hist.objective_m = current.laplace_objective_m;
     hist.gradient_norm_m = current.gradient_norm_m;
     result.history_m.push_back(hist);
+
+    if (options.print_every_m > 0 && iter % options.print_every_m == 0) {
+      std::cout << "[exact_laplace_lbfgs]\n"
+                << "  event: iteration\n"
+                << "  iteration: " << iter << '\n'
+                << "  objective: " << current.laplace_objective_m << '\n'
+                << "  gradient_norm: "
+                << (current.gradient_norm_m <= options.gradient_tolerance_m
+                        ? "\033[32m"
+                        : "\033[31m")
+                << current.gradient_norm_m << "\033[0m\n"
+                << std::flush;
+    }
 
     result.iterations_m = iter;
 
@@ -116,23 +133,33 @@ inline LaplaceExactLBFGSResult optimize_laplace_fixed_effects_exact_lbfgs(
 
     double alpha = options.initial_step_scale_m;
     bool accepted = false;
+    int line_search_evaluations = 0;
 
     std::vector<double> candidate_theta;
     LaplaceExactGradientResult candidate;
+    LaplaceObjectiveResult candidate_objective;
 
     while (alpha >= options.min_step_scale_m) {
+      if (options.max_evaluations_m > 0 &&
+          evaluations >= options.max_evaluations_m) {
+        result.message_m =
+            "Stopped: exact Laplace evaluation budget exhausted.";
+        break;
+      }
       candidate_theta = lbfgs_add_scaled(theta, direction, alpha);
 
       const std::vector<double> candidate_random_start =
           options.warm_start_random_m ? current.u_hat_m : random_initial;
 
-      candidate = evaluate_laplace_exact_gradient(
+      candidate_objective = evaluate_laplace_objective(
           model, candidate_theta, candidate_random_start, partition,
-          options.gradient_m);
+          options.gradient_m.objective_m);
+      ++evaluations;
+      ++line_search_evaluations;
 
-      if (!candidate.converged_m || !candidate.logdet_ok_m ||
-          !std::isfinite(candidate.laplace_objective_m) ||
-          !lbfgs_all_finite(candidate.gradient_fixed_m)) {
+      if (!candidate_objective.converged_m ||
+          !candidate_objective.logdet_ok_m ||
+          !std::isfinite(candidate_objective.laplace_objective_m)) {
         alpha *= 0.5;
         continue;
       }
@@ -143,7 +170,7 @@ inline LaplaceExactLBFGSResult optimize_laplace_fixed_effects_exact_lbfgs(
               lbfgs_dot(current.gradient_fixed_m, direction);
 
       if (!options.use_backtracking_m ||
-          candidate.laplace_objective_m <= armijo_rhs) {
+          candidate_objective.laplace_objective_m <= armijo_rhs) {
         accepted = true;
         break;
       }
@@ -153,8 +180,37 @@ inline LaplaceExactLBFGSResult optimize_laplace_fixed_effects_exact_lbfgs(
 
     if (!accepted) {
       result.converged_m = false;
-      result.message_m = "Failed: exact LBFGS backtracking line search failed.";
+      if (result.message_m.empty()) {
+        result.message_m =
+            "Failed: exact LBFGS backtracking line search failed.";
+      }
       break;
+    }
+
+    if (options.max_evaluations_m > 0 &&
+        evaluations >= options.max_evaluations_m) {
+      result.converged_m = false;
+      result.message_m = "Stopped: exact Laplace evaluation budget exhausted.";
+      break;
+    }
+
+    candidate = evaluate_laplace_exact_gradient_from_objective(
+        model, candidate_objective, partition, options.gradient_m);
+    ++evaluations;
+    if (!lbfgs_all_finite(candidate.gradient_fixed_m)) {
+      result.converged_m = false;
+      result.message_m =
+          "Failed: exact gradient failed at accepted line-search point.";
+      break;
+    }
+    if (options.print_every_m > 0 && iter % options.print_every_m == 0) {
+      std::cout << "[exact_laplace_lbfgs]\n"
+                << "  event: step_accepted\n"
+                << "  iteration: " << iter << '\n'
+                << "  line_search_evaluations: " << line_search_evaluations
+                << '\n'
+                << "  accepted_step_scale: " << alpha << '\n'
+                << std::flush;
     }
 
     std::vector<double> s_vec = lbfgs_subtract(candidate_theta, theta);

@@ -19,6 +19,7 @@
 #include <cmath>
 #include <deque>
 #include <exception>
+#include <iostream>
 #include <memory>
 #include <stdexcept>
 #include <thread>
@@ -52,6 +53,8 @@ struct ExactLaplaceResult {
 struct LaplaceOptimizerOptions {
   int max_iterations = 100;
   int memory = 7;
+  int print_every = 0;
+  int max_evaluations = 0;
   double gradient_tolerance = 1.0e-6;
   double step_tolerance = 1.0e-10;
   double initial_step_scale = 1.0;
@@ -81,6 +84,7 @@ struct LaplaceOptimizerResult {
   std::string message;
   ExactLaplaceResult evaluation;
   std::vector<LaplaceOptimizerIteration> history;
+  int objective_evaluations = 0;
   int approximate_evaluations = 0;
   int exact_evaluations = 0;
   int exact_switch_iteration = -1;
@@ -368,14 +372,19 @@ public:
                               partition_parameters(parameters),
                               objective_options, engine_options) {}
 
-  ExactLaplaceResult evaluate(const std::vector<double> &fixed,
-                              const std::vector<double> &random_initial) {
+private:
+  ExactLaplaceResult
+  evaluate_impl(const std::vector<double> &fixed,
+                const std::vector<double> &random_initial,
+                const LaplaceObjectiveResult *precomputed_objective) {
     using Clock = std::chrono::steady_clock;
     const auto total_start = Clock::now();
     ExactLaplaceResult result;
     objective_evaluator_->reset_random(random_initial);
     const auto objective_start = Clock::now();
-    result.objective = objective_evaluator_->evaluate(fixed);
+    result.objective = precomputed_objective != nullptr
+                           ? *precomputed_objective
+                           : objective_evaluator_->evaluate(fixed);
     const auto objective_end = Clock::now();
     result.timings.objective_ms = std::chrono::duration<double, std::milli>(
                                       objective_end - objective_start)
@@ -484,6 +493,17 @@ public:
       for (std::size_t i = 0; i < random_indices.size(); ++i)
         random_indices[i] = static_cast<int>(fixed.size() + i);
       CombinedObjective objective{model_, partition_};
+      const Eigen::MatrixXd identity = Eigen::MatrixXd::Identity(
+          static_cast<Eigen::Index>(random_indices.size()),
+          static_cast<Eigen::Index>(random_indices.size()));
+      const Eigen::MatrixXd inverse = factor.solve(identity);
+      Eigen::LLT<Eigen::MatrixXd> inverse_llt(inverse);
+      if (inverse_llt.info() != Eigen::Success) {
+        throw std::runtime_error(
+            "ExactLaplaceEvaluator: inverse Cholesky factorization failed");
+      }
+      const Eigen::MatrixXd inverse_factor = inverse_llt.matrixL();
+      const auto dense_trace_start = Clock::now();
       for (int j : active_directions_) {
         std::vector<double> total_direction(combined.size(), 0.0);
         total_direction[static_cast<std::size_t>(j)] = 1.0;
@@ -496,20 +516,20 @@ public:
         if (stream_dense_hdot_trace_) {
           // Stream inverse columns and polarized Hdot entries directly into
           // the trace. Neither matrix is materialized densely.
-          const auto dense_trace_start = Clock::now();
-          dense_trace_terms[static_cast<std::size_t>(j)] =
-              laplace::dense_hdot_trace_third_order_polarized(
-                  objective, combined, total_direction, random_indices,
-                  [&factor, &random_indices](int column) {
-                    Eigen::VectorXd rhs = Eigen::VectorXd::Zero(
-                        static_cast<Eigen::Index>(random_indices.size()));
-                    rhs[column] = 1.0;
-                    return factor.solve(rhs);
-                  },
-                  dense_hdot_bandwidth_);
-          dense_trace_ms += std::chrono::duration<double, std::milli>(
-                                Clock::now() - dense_trace_start)
-                                .count();
+          if (dense_hdot_bandwidth_ < 0) {
+            dense_trace_terms[static_cast<std::size_t>(j)] =
+                laplace::dense_hdot_trace_third_order_factorized(
+                    objective, combined, total_direction, random_indices,
+                    inverse_factor);
+          } else {
+            dense_trace_terms[static_cast<std::size_t>(j)] =
+                laplace::dense_hdot_trace_third_order_polarized(
+                    objective, combined, total_direction, random_indices,
+                    [&inverse](int column) {
+                      return Eigen::VectorXd(inverse.col(column));
+                    },
+                    dense_hdot_bandwidth_);
+          }
         } else {
           hdots[static_cast<std::size_t>(j)] =
               laplace::dense_hdot_third_order_polarized(
@@ -517,6 +537,9 @@ public:
                   .sparseView();
         }
       }
+      dense_trace_ms = std::chrono::duration<double, std::milli>(
+                           Clock::now() - dense_trace_start)
+                           .count();
     }
     result.timings.hdot_ms =
         std::chrono::duration<double, std::milli>(Clock::now() - hdot_start)
@@ -563,8 +586,36 @@ public:
     return result;
   }
 
+public:
+  ExactLaplaceResult evaluate(const std::vector<double> &fixed,
+                              const std::vector<double> &random_initial) {
+    return evaluate_impl(fixed, random_initial, nullptr);
+  }
+
   ExactLaplaceResult evaluate(const std::vector<double> &fixed) {
     return evaluate(fixed, last_random_);
+  }
+
+  ExactLaplaceResult
+  evaluate_from_objective(const LaplaceObjectiveResult &objective) {
+    if (objective.fixed_m.size() != partition_.fixed_indices_m.size() ||
+        objective.u_hat_m.size() != partition_.random_indices_m.size()) {
+      throw std::invalid_argument(
+          "ExactLaplaceEvaluator::evaluate_from_objective: dimensions "
+          "changed");
+    }
+    return evaluate_impl(objective.fixed_m, objective.u_hat_m, &objective);
+  }
+
+  LaplaceObjectiveResult
+  evaluate_objective(const std::vector<double> &fixed,
+                     const std::vector<double> &random_initial) {
+    objective_evaluator_->reset_random(random_initial);
+    LaplaceObjectiveResult result = objective_evaluator_->evaluate(fixed);
+    if (result.converged_m) {
+      last_random_ = result.u_hat_m;
+    }
+    return result;
   }
 
   const std::vector<double> &random_mode() const { return last_random_; }
@@ -656,6 +707,11 @@ inline bool finite(const ExactLaplaceResult &evaluation) {
     }
   }
   return true;
+}
+
+inline bool finite(const LaplaceObjectiveResult &evaluation) {
+  return evaluation.converged_m && evaluation.logdet_ok_m &&
+         std::isfinite(evaluation.laplace_objective_m);
 }
 
 inline std::vector<double> subtract(const std::vector<double> &left,
@@ -752,6 +808,7 @@ optimize_laplace(ExactLaplaceEvaluator<Model> &evaluator,
         "optimize_laplace: fixed_initial cannot be empty");
   }
   if (options.max_iterations < 0 || options.memory < 0 ||
+      options.print_every < 0 || options.max_evaluations < 0 ||
       !(options.gradient_tolerance >= 0.0) ||
       !(options.step_tolerance >= 0.0) || !(options.initial_step_scale > 0.0) ||
       !(options.maximum_direction_norm > 0.0) ||
@@ -765,6 +822,7 @@ optimize_laplace(ExactLaplaceEvaluator<Model> &evaluator,
   LaplaceOptimizerResult result;
   std::vector<double> fixed = fixed_initial;
   ExactLaplaceResult current = evaluator.evaluate(fixed);
+  ++result.exact_evaluations;
   if (!detail::finite(current)) {
     result.message = "Initial exact Laplace evaluation failed.";
     result.evaluation = std::move(current);
@@ -777,6 +835,21 @@ optimize_laplace(ExactLaplaceEvaluator<Model> &evaluator,
     const double gradient_norm = detail::norm(current.gradient);
     result.history.push_back({iteration, current.objective.laplace_objective_m,
                               gradient_norm, 0.0, 0.0});
+    if (options.print_every > 0 && iteration % options.print_every == 0) {
+      std::cout << "[exact_laplace_lbfgs]\n"
+                << "  event: iteration\n"
+                << "  iteration: " << iteration << '\n'
+                << "  objective: " << current.objective.laplace_objective_m
+                << '\n'
+                << "  gradient_norm: "
+                << (gradient_norm <= options.gradient_tolerance ? "\033[32m"
+                                                                : "\033[31m")
+                << gradient_norm << "\033[0m\n"
+                << "  objective_ms: " << current.timings.objective_ms << '\n'
+                << "  hdot_ms: " << current.timings.hdot_ms << '\n'
+                << "  total_ms: " << current.timings.total_ms << '\n'
+                << std::flush;
+    }
     result.iterations = iteration;
     if (gradient_norm <= options.gradient_tolerance) {
       result.converged = true;
@@ -807,23 +880,82 @@ optimize_laplace(ExactLaplaceEvaluator<Model> &evaluator,
 
     bool accepted = false;
     double step_scale = options.initial_step_scale;
+    int line_search_evaluations = 0;
+    double line_search_ms = 0.0;
     std::vector<double> candidate_fixed;
     ExactLaplaceResult candidate;
+    LaplaceObjectiveResult candidate_objective;
     while (step_scale >= options.minimum_step_scale) {
+      if (options.max_evaluations > 0 &&
+          result.objective_evaluations + result.exact_evaluations >=
+              options.max_evaluations) {
+        result.message = "Exact Laplace evaluation budget exhausted.";
+        break;
+      }
       candidate_fixed = detail::add_scaled(fixed, direction, step_scale);
-      candidate = evaluator.evaluate(candidate_fixed);
+      candidate_objective = evaluator.evaluate_objective(
+          candidate_fixed, current.objective.u_hat_m);
+      ++result.objective_evaluations;
+      ++line_search_evaluations;
+      line_search_ms += candidate_objective.total_ms_m;
+      if (options.print_every > 0 && iteration % options.print_every == 0) {
+        std::cout << "[exact_laplace_lbfgs]\n"
+                  << "  event: line_search\n"
+                  << "  iteration: " << iteration << '\n'
+                  << "  attempt: " << line_search_evaluations << '\n'
+                  << "  step_scale: " << step_scale << '\n'
+                  << "  objective: " << candidate_objective.laplace_objective_m
+                  << '\n'
+                  << "  newton_iterations: "
+                  << candidate_objective.newton_iterations_m << '\n'
+                  << "  mode_ms: " << candidate_objective.mode_solve_ms_m
+                  << '\n'
+                  << "  logdet_ms: " << candidate_objective.logdet_ms_m << '\n'
+                  << "  tape_rebuilt: "
+                  << (candidate_objective.tape_rebuilt_m ? "true" : "false")
+                  << '\n'
+                  << "  total_ms: " << candidate_objective.total_ms_m << '\n'
+                  << std::flush;
+      }
       const double armijo = current.objective.laplace_objective_m +
                             options.sufficient_decrease * step_scale * slope;
-      if (detail::finite(candidate) &&
-          candidate.objective.laplace_objective_m <= armijo) {
+      if (detail::finite(candidate_objective) &&
+          candidate_objective.laplace_objective_m <= armijo) {
         accepted = true;
         break;
       }
       step_scale *= 0.5;
     }
     if (!accepted) {
-      result.message = "Exact Laplace L-BFGS line search failed.";
+      if (result.message.empty()) {
+        result.message = "Exact Laplace L-BFGS line search failed.";
+      }
       break;
+    }
+
+    if (options.max_evaluations > 0 &&
+        result.objective_evaluations + result.exact_evaluations >=
+            options.max_evaluations) {
+      result.message = "Exact Laplace evaluation budget exhausted.";
+      break;
+    }
+
+    candidate = evaluator.evaluate_from_objective(candidate_objective);
+    ++result.exact_evaluations;
+    if (!detail::finite(candidate)) {
+      result.message =
+          "Exact Laplace gradient failed at accepted line-search point.";
+      break;
+    }
+    if (options.print_every > 0 && iteration % options.print_every == 0) {
+      std::cout << "[exact_laplace_lbfgs]\n"
+                << "  event: step_accepted\n"
+                << "  iteration: " << iteration << '\n'
+                << "  line_search_evaluations: " << line_search_evaluations
+                << '\n'
+                << "  line_search_ms: " << line_search_ms << '\n'
+                << "  accepted_step_scale: " << step_scale << '\n'
+                << std::flush;
     }
 
     std::vector<double> step = detail::subtract(candidate_fixed, fixed);
@@ -910,6 +1042,20 @@ optimize_laplace_hybrid(ExactLaplaceEvaluator<Model> &evaluator,
 
     result.history.push_back({iteration, current.objective.laplace_objective_m,
                               gradient_norm, 0.0, 0.0});
+    if (options.print_every > 0 && iteration % options.print_every == 0) {
+      std::cout << "[hybrid_laplace_lbfgs]\n"
+                << "  event: iteration\n"
+                << "  iteration: " << iteration << '\n'
+                << "  phase: " << (exact_phase ? "exact" : "approximate")
+                << '\n'
+                << "  objective: " << current.objective.laplace_objective_m
+                << '\n'
+                << "  gradient_norm: "
+                << (gradient_norm <= options.gradient_tolerance ? "\033[32m"
+                                                                : "\033[31m")
+                << gradient_norm << "\033[0m\n"
+                << std::flush;
+    }
     result.iterations = iteration;
     if (exact_phase && gradient_norm <= options.gradient_tolerance) {
       result.converged = true;

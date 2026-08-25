@@ -17,12 +17,16 @@ EXAMPLE_DEP := $(EXAMPLE_BIN).d
 NATIVE_FLOW_SRC := src/train_dependency_free_transport_flow.cpp
 NATIVE_FLOW_BIN := $(BUILD_DIR)/train_native_transport_flow
 NATIVE_FLOW_DEP := $(NATIVE_FLOW_BIN).d
+WORKFLOW_SRC := src/run_full_workflow.cpp
+WORKFLOW_BIN := $(BUILD_DIR)/run_tuna_full_workflow
+WORKFLOW_DEP := $(WORKFLOW_BIN).d
 SMOKE_SRC := tests/catch_conditioning_smoke.cpp
 SMOKE_BIN := $(BUILD_DIR)/catch_conditioning_smoke
 SMOKE_DEP := $(SMOKE_BIN).d
 RECOVERY_STAMP := $(BUILD_DIR)/.simulation_recovery_passed
 
-.PHONY: all advanced-tuna-example run-advanced-tuna-example \
+.PHONY: all advanced-tuna-example full-tuna-workflow run-full-tuna-workflow \
+	run-advanced-tuna-example \
 	fit-advanced-tuna sample-advanced-tuna run-advanced-tuna-nuts \
 	run-comprehensive-analysis test test-fast \
 	test-simulation-recovery force-simulation-recovery \
@@ -32,9 +36,19 @@ RECOVERY_STAMP := $(BUILD_DIR)/.simulation_recovery_passed
 	check-transport-gradient check-transport-reproducibility \
 	test-catch-conditioning clean
 
-all: advanced-tuna-example
+all: advanced-tuna-example full-tuna-workflow
 
 advanced-tuna-example: $(EXAMPLE_BIN)
+
+full-tuna-workflow: $(WORKFLOW_BIN)
+
+$(WORKFLOW_BIN): $(WORKFLOW_SRC) | $(BUILD_DIR)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -MMD -MP $< -o $@ \
+		$(LDFLAGS) $(LDLIBS)
+
+run-full-tuna-workflow: $(EXAMPLE_BIN) $(WORKFLOW_BIN)
+	$(WORKFLOW_BIN) --config $(CONFIG) --output-dir $(RUN_OUTPUT_DIR) \
+		--report-dir $(REPORT_OUTPUT_DIR)
 
 $(BUILD_DIR):
 	mkdir -p $@
@@ -158,6 +172,7 @@ $(SMOKE_BIN): $(SMOKE_SRC) | $(BUILD_DIR)
 
 clean:
 	rm -f $(EXAMPLE_BIN) $(EXAMPLE_DEP) $(SMOKE_BIN) $(SMOKE_DEP) \
-		$(NATIVE_FLOW_BIN) $(NATIVE_FLOW_DEP) $(RECOVERY_STAMP)
+		$(NATIVE_FLOW_BIN) $(NATIVE_FLOW_DEP) $(WORKFLOW_BIN) \
+		$(WORKFLOW_DEP) $(RECOVERY_STAMP)
 
--include $(EXAMPLE_DEP) $(SMOKE_DEP) $(NATIVE_FLOW_DEP)
+-include $(EXAMPLE_DEP) $(SMOKE_DEP) $(NATIVE_FLOW_DEP) $(WORKFLOW_DEP)

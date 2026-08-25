@@ -86,5 +86,46 @@ double dense_hdot_trace_third_order_polarized(
   return trace;
 }
 
+// Exact trace contraction using H^{-1} = L L'. For the symmetric trilinear
+// form T = D^3 f and cubic P(v) = T[v,v,v],
+//
+//   T[d,l,l] = (P(d+l) + P(d-l) - 2 P(d)) / 6.
+//
+// Therefore trace(H^{-1} Hdot[d]) is the sum of T[d,l_k,l_k] over the
+// columns of L. This needs 2*n_random + 1 directional evaluations instead of
+// four evaluations for every lower-triangular Hdot entry.
+template <class Objective>
+double dense_hdot_trace_third_order_factorized(
+    Objective &&objective, const std::vector<double> &x,
+    const std::vector<double> &total_direction,
+    const std::vector<int> &random_indices,
+    const Eigen::MatrixXd &inverse_factor) {
+  if (x.size() != total_direction.size())
+    throw std::invalid_argument("dense Hdot direction has wrong length");
+  const int nr = static_cast<int>(random_indices.size());
+  if (inverse_factor.rows() != nr || inverse_factor.cols() != nr)
+    throw std::invalid_argument("inverse factor has wrong dimensions");
+
+  const double baseline =
+      had::third_directional_derivative(objective, x, total_direction);
+  double trace = 0.0;
+  for (int column = 0; column < nr; ++column) {
+    std::vector<double> plus = total_direction;
+    std::vector<double> minus = total_direction;
+    for (int row = 0; row < nr; ++row) {
+      const double value = inverse_factor(row, column);
+      const std::size_t index = static_cast<std::size_t>(random_indices[row]);
+      plus[index] += value;
+      minus[index] -= value;
+    }
+    const double plus_cubic =
+        had::third_directional_derivative(objective, x, plus);
+    const double minus_cubic =
+        had::third_directional_derivative(objective, x, minus);
+    trace += (plus_cubic + minus_cubic - 2.0 * baseline) / 6.0;
+  }
+  return trace;
+}
+
 } // namespace laplace
 } // namespace quadra

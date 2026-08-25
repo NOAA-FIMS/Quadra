@@ -50,16 +50,13 @@ inline double joint_only_gradient_norm(const std::vector<double> &x) {
 // and can also be used as a fast profiling mode.
 template <class Model>
 inline JointOnlyExactGradientResult evaluate_joint_only_exact_gradient(
-    Model &model, const std::vector<double> &fixed,
-    const std::vector<double> &random_initial,
+    Model &model, const RandomEffectNewtonResult &newton,
     const ParameterPartition &partition,
     const JointOnlyExactGradientOptions &options =
         JointOnlyExactGradientOptions()) {
+  (void)options;
   JointOnlyExactGradientResult result;
-  result.fixed_m = fixed;
-
-  RandomEffectNewtonResult newton = optimize_random_effects_newton(
-      model, fixed, random_initial, partition, options.newton_m);
+  result.fixed_m = extract_by_indices(newton.full_m, partition.fixed_indices_m);
 
   result.newton_result_m = newton;
   result.u_hat_m = newton.u_hat_m;
@@ -69,7 +66,7 @@ inline JointOnlyExactGradientResult evaluate_joint_only_exact_gradient(
   result.message_m = newton.message_m;
 
   if (!newton.converged_m) {
-    result.gradient_fixed_m.assign(fixed.size(), std::nan(""));
+    result.gradient_fixed_m.assign(result.fixed_m.size(), std::nan(""));
     result.gradient_full_m.assign(newton.full_m.size(), std::nan(""));
     result.gradient_norm_m = std::nan("");
     return result;
@@ -99,6 +96,18 @@ inline JointOnlyExactGradientResult evaluate_joint_only_exact_gradient(
   result.gradient_norm_m = joint_only_gradient_norm(result.gradient_fixed_m);
 
   return result;
+}
+
+template <class Model>
+inline JointOnlyExactGradientResult evaluate_joint_only_exact_gradient(
+    Model &model, const std::vector<double> &fixed,
+    const std::vector<double> &random_initial,
+    const ParameterPartition &partition,
+    const JointOnlyExactGradientOptions &options =
+        JointOnlyExactGradientOptions()) {
+  RandomEffectNewtonResult newton = optimize_random_effects_newton(
+      model, fixed, random_initial, partition, options.newton_m);
+  return evaluate_joint_only_exact_gradient(model, newton, partition, options);
 }
 
 template <class Model>
