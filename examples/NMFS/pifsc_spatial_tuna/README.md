@@ -32,8 +32,8 @@ command:
 make run-full-tuna-workflow
 ```
 
-The `full-tuna-workflow` target only builds the driver. To build it and then
-run it directly:
+The `full-tuna-workflow` target builds both the assessment executable and the
+workflow driver. To build them and then run the driver directly:
 
 ```bash
 make full-tuna-workflow

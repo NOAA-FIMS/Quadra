@@ -41,7 +41,7 @@ all: advanced-tuna-example full-tuna-workflow
 
 advanced-tuna-example: $(EXAMPLE_BIN)
 
-full-tuna-workflow: $(WORKFLOW_BIN)
+full-tuna-workflow: $(EXAMPLE_BIN) $(WORKFLOW_BIN)
 
 $(WORKFLOW_BIN): $(WORKFLOW_SRC) | $(BUILD_DIR)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -MMD -MP $< -o $@ \

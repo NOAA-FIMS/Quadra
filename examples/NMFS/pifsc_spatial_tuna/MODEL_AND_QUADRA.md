@@ -535,8 +535,9 @@ make check-posterior-assessment
 `make run-full-tuna-workflow` builds and runs the driver that performs the fit
 and configured simulation-estimation work, then generates the report. It stops
 at the first failed stage and propagates that stage's exit code. The
-`full-tuna-workflow` target only builds the driver. The fit and sampling
-commands also generate the report after the model run. The full simulation
+`full-tuna-workflow` target builds both the assessment executable and workflow
+driver without running them. The fit and sampling commands also generate the
+report after the model run. The full simulation
 recovery test is cached after success; `force-simulation-recovery` forces a
 rerun.
 
