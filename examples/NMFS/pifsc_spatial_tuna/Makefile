@@ -7,6 +7,7 @@ COMPREHENSIVE_MULTISTART ?= 4
 RUN_OUTPUT_DIR ?= $(BUILD_DIR)/assessment_outputs/data
 REPORT_OUTPUT_DIR ?= $(BUILD_DIR)/assessment_outputs/report
 RUN_NUTS ?= 0
+RSCRIPT ?= Rscript
 
 CPPFLAGS += -Iinclude -I$(QUADRA_ROOT) -I$(QUADRA_ROOT)/external/eigen
 CXXFLAGS ?= -O2 -Wall -Wextra
@@ -49,7 +50,7 @@ $(WORKFLOW_BIN): $(WORKFLOW_SRC) | $(BUILD_DIR)
 
 run-full-tuna-workflow: $(EXAMPLE_BIN) $(WORKFLOW_BIN)
 	$(WORKFLOW_BIN) --config $(CONFIG) --output-dir $(RUN_OUTPUT_DIR) \
-		--report-dir $(REPORT_OUTPUT_DIR)
+		--report-dir $(REPORT_OUTPUT_DIR) --rscript "$(RSCRIPT)"
 
 $(BUILD_DIR):
 	mkdir -p $@
@@ -63,7 +64,7 @@ run-advanced-tuna-example: $(EXAMPLE_BIN)
 		QUADRA_TUNA_OUTPUT_DIR=$(RUN_OUTPUT_DIR) \
 		QUADRA_TUNA_RUN_NUTS=$(RUN_NUTS) \
 		$< --config $(CONFIG)
-	Rscript scripts/build_assessment_report.R $(RUN_OUTPUT_DIR) $(REPORT_OUTPUT_DIR)
+	"$(RSCRIPT)" scripts/build_assessment_report.R $(RUN_OUTPUT_DIR) $(REPORT_OUTPUT_DIR)
 
 fit-advanced-tuna: RUN_NUTS=0
 fit-advanced-tuna: run-advanced-tuna-example
@@ -74,8 +75,8 @@ sample-advanced-tuna: $(EXAMPLE_BIN)
 		QUADRA_TUNA_OUTPUT_DIR=$(RUN_OUTPUT_DIR) \
 		QUADRA_TUNA_RUN_NUTS=1 \
 		$< --config $(CONFIG)
-	Rscript tests/check_posterior_assessment.R $(RUN_OUTPUT_DIR) $(REPORT_OUTPUT_DIR)
-	Rscript scripts/build_assessment_report.R $(RUN_OUTPUT_DIR) $(REPORT_OUTPUT_DIR)
+	"$(RSCRIPT)" tests/check_posterior_assessment.R $(RUN_OUTPUT_DIR) $(REPORT_OUTPUT_DIR)
+	"$(RSCRIPT)" scripts/build_assessment_report.R $(RUN_OUTPUT_DIR) $(REPORT_OUTPUT_DIR)
 
 run-advanced-tuna-nuts: sample-advanced-tuna
 
@@ -112,7 +113,7 @@ check-simulation-recovery:
 	bash tests/check_simulation_recovery.sh $(RUN_OUTPUT_DIR)
 
 check-posterior-assessment:
-	Rscript tests/check_posterior_assessment.R $(RUN_OUTPUT_DIR) $(REPORT_OUTPUT_DIR)
+	"$(RSCRIPT)" tests/check_posterior_assessment.R $(RUN_OUTPUT_DIR) $(REPORT_OUTPUT_DIR)
 
 check-transport-gradient: $(NATIVE_FLOW_BIN)
 	$(NATIVE_FLOW_BIN) \
@@ -143,13 +144,13 @@ sensitivity-grid: $(EXAMPLE_BIN)
 		bash tests/run_sensitivity_grid.sh $(EXAMPLE_BIN) $(BUILD_DIR)/sensitivity_grid
 
 audit-opal-data: | $(BUILD_DIR)
-	Rscript scripts/audit_opal_wcpo_bet.R data/opal_raw $(BUILD_DIR)/opal_data_audit.csv
+	"$(RSCRIPT)" scripts/audit_opal_wcpo_bet.R data/opal_raw $(BUILD_DIR)/opal_data_audit.csv
 
 assessment-report:
-	Rscript scripts/build_assessment_report.R $(RUN_OUTPUT_DIR) $(REPORT_OUTPUT_DIR)
+	"$(RSCRIPT)" scripts/build_assessment_report.R $(RUN_OUTPUT_DIR) $(REPORT_OUTPUT_DIR)
 
 spatial-pulse-map:
-	Rscript scripts/build_spatial_pulse_map.R $(RUN_OUTPUT_DIR) $(REPORT_OUTPUT_DIR)
+	"$(RSCRIPT)" scripts/build_spatial_pulse_map.R $(RUN_OUTPUT_DIR) $(REPORT_OUTPUT_DIR)
 
 train-transport-flow: train-native-transport-flow
 

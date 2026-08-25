@@ -40,6 +40,19 @@ make full-tuna-workflow
 build/run_tuna_full_workflow --config config/tuna_assessment.conf
 ```
 
+`Rscript` must be installed and available on `PATH`. On Windows, where R is
+often installed outside `PATH`, pass its executable explicitly (Git Bash path
+shown):
+
+```bash
+make run-full-tuna-workflow \
+  RSCRIPT="/c/Program Files/R/R-4.5.1/bin/Rscript.exe"
+```
+
+The same override works with `fit-advanced-tuna`, `sample-advanced-tuna`, and
+the report targets. When invoking the workflow driver directly, use
+`--rscript "/c/Program Files/R/R-4.5.1/bin/Rscript.exe"`.
+
 The driver stops at the first failed stage and returns its exit code. Output
 locations and the simulation count can be overridden explicitly:
 
