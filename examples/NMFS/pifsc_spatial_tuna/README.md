@@ -26,7 +26,14 @@ make sample-advanced-tuna
 ```
 
 Run the complete fit, simulation-estimation, and report workflow with one
-driver binary:
+command:
+
+```bash
+make run-full-tuna-workflow
+```
+
+The `full-tuna-workflow` target only builds the driver. To build it and then
+run it directly:
 
 ```bash
 make full-tuna-workflow

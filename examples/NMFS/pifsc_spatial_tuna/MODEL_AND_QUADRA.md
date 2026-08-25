@@ -359,6 +359,22 @@ This still retains the important reuse inside each mode solve. Mixed derivatives
 and third directional derivatives provide the exact Laplace gradient when a
 gradient-based consumer requests it. Density-only samplers omit that work.
 
+For a total fixed-effect direction $d$, let $T=D^3J$ and factor the inverse
+random-effect Hessian as $H_{uu}^{-1}=LL'$. Quadra evaluates the exact log
+determinant-gradient contraction without materializing a dense derivative of
+the Hessian:
+
+$$
+\operatorname{tr}(H_{uu}^{-1}\dot H_{uu}[d])
+=\sum_k T[d,l_k,l_k],
+$$
+
+where $l_k$ is column $k$ of $L$. Each term is obtained from cubic directional
+derivatives by polarization. This requires $2n_u+1$ third-directional
+evaluations per direction rather than four evaluations for every entry in the
+lower triangle of a dense $\dot H_{uu}$, while preserving the exact
+contraction.
+
 Fixed effects sampled in the posterior exclude the configured locked parameters
 (`logit_steepness` and one anchor fleet's index catchability by default). The
 partition, parameter names/order, data, controls, fitted point, and geometry are
@@ -372,6 +388,14 @@ forward. L-BFGS settings, iteration limits, starts, seeds, and whether to run
 directly in the full phase are runtime configuration. Multistart fitting is an
 explicit comprehensive-analysis option. Checkpoints record values and metadata;
 loading is rejected when fingerprints or parameter identity disagree.
+
+L-BFGS line searches request the marginal objective alone and compute the exact
+marginal gradient only at accepted iterates; the accepted objective is reused.
+`fit.max_phase_evaluations` provides an independent per-phase function-
+evaluation budget (`0` disables it) so a pathological line search cannot run
+without a configured bound. Terminal progress is printed as one stacked block
+per reported iteration; the gradient norm is red above the configured
+tolerance and green once it satisfies that tolerance.
 
 The initial point and fitted point are evaluated through the same model. Output
 contains objective/gradient information, likelihood decomposition, parameter
@@ -496,6 +520,7 @@ still constructed in C++.
 Primary commands are:
 
 ```bash
+make run-full-tuna-workflow
 make fit-advanced-tuna
 make sample-advanced-tuna
 make run-comprehensive-analysis
@@ -507,9 +532,13 @@ make check-transport-reproducibility
 make check-posterior-assessment
 ```
 
-The fit and sampling commands generate the report after the model run. The full
-simulation recovery test is cached after success; `force-simulation-recovery`
-forces a rerun.
+`make run-full-tuna-workflow` builds and runs the driver that performs the fit
+and configured simulation-estimation work, then generates the report. It stops
+at the first failed stage and propagates that stage's exit code. The
+`full-tuna-workflow` target only builds the driver. The fit and sampling
+commands also generate the report after the model run. The full simulation
+recovery test is cached after success; `force-simulation-recovery` forces a
+rerun.
 
 ## Output contract
 
