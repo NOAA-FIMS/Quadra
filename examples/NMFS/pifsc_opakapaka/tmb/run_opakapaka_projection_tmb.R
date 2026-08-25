@@ -25,8 +25,6 @@ cat("Loaded shared CSV fit rows:", n_years, "
 
 ")
 
-r <- 0.34
-K <- 950.0
 sigma_process <- 0.10
 sigma_index <- 0.08
 sigma_initial <- 0.15
@@ -35,7 +33,7 @@ sigma_initial <- 0.15
 cpp <- "examples/NMFS/pifsc_opakapaka/tmb/opakapaka_projection_tmb.cpp"
 dyn <- sub("\\.cpp$", "", basename(cpp))
 
-compile(cpp, flags = "-O2 -DNDEBUG")
+compile(cpp, flags = "-O2 -DNDEBUG -std=gnu++17")
 dyn.load(dynlib(file.path("examples/NMFS/pifsc_opakapaka/tmb", dyn)))
 
 data <- list(
@@ -48,6 +46,8 @@ log_B_init <- log(779.0 - 1.425 * (seq_len(n_years) - 1))
 
 parameters <- list(
   log_q = log_q_init,
+  log_r = log(0.34),
+  log_K = log(950.0),
   log_B = log_B_init
 
 
@@ -125,6 +125,11 @@ cat(sprintf("message               %s\n", fit$message))
 cat(sprintf("runtime_ms            %.6f\n", elapsed_ms))
 cat(sprintf("log_q_hat             %.9f\n", fit$par[["log_q"]]))
 cat(sprintf("q_hat                 %.9f\n", exp(fit$par[["log_q"]])))
+cat(sprintf("r_hat                 %.9f\n", exp(fit$par[["log_r"]])))
+cat(sprintf("K_hat                 %.9f\n", exp(fit$par[["log_K"]])))
+
+r <- exp(fit$par[["log_r"]])
+K <- exp(fit$par[["log_K"]])
 
 last_random <- obj$env$last.par.best[obj$env$random]
 last_B <- exp(tail(last_random, 1L))
@@ -171,7 +176,11 @@ write.csv(
     convergence = fit$convergence,
     runtime_ms = elapsed_ms,
     log_q_hat = fit$par[["log_q"]],
-    q_hat = exp(fit$par[["log_q"]])
+    q_hat = exp(fit$par[["log_q"]]),
+    log_r_hat = fit$par[["log_r"]],
+    r_hat = r,
+    log_K_hat = fit$par[["log_K"]],
+    K_hat = K
   ),
   file.path(outdir, "tmb_synthetic_fit_summary.csv"),
   row.names = FALSE

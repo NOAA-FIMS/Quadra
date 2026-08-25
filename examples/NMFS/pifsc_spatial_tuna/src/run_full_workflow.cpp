@@ -4,11 +4,16 @@
 #include <iostream>
 #include <stdexcept>
 #include <string>
+#include <utility>
+#include <vector>
+
+#ifdef _WIN32
+#include <process.h>
+#else
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
-#include <utility>
-#include <vector>
+#endif
 
 namespace {
 
@@ -36,6 +41,9 @@ WorkflowOptions parse_options(int argc, char **argv) {
   options.assessment_binary =
       (self.parent_path() / "advanced_tuna_spatial_assessment_example")
           .string();
+#ifdef _WIN32
+  options.assessment_binary += ".exe";
+#endif
 
   for (int i = 1; i < argc; ++i) {
     const std::string argument = argv[i];
@@ -78,6 +86,43 @@ int run_process(
     const std::vector<std::pair<std::string, std::string>> &environment = {}) {
   std::cout << "\n[workflow]\n  stage: " << stage << "\n  status: running\n"
             << std::flush;
+#ifdef _WIN32
+  struct SavedEnvironment {
+    std::string name;
+    std::string value;
+    bool existed = false;
+  };
+  std::vector<SavedEnvironment> saved_environment;
+  saved_environment.reserve(environment.size());
+  for (const auto &entry : environment) {
+    const char *old_value = std::getenv(entry.first.c_str());
+    saved_environment.push_back(
+        {entry.first, old_value == nullptr ? "" : old_value,
+         old_value != nullptr});
+    if (_putenv_s(entry.first.c_str(), entry.second.c_str()) != 0)
+      throw std::runtime_error("could not set environment variable " +
+                               entry.first + " for " + stage);
+  }
+
+  std::vector<const char *> child_argv;
+  child_argv.reserve(args.size() + 1);
+  for (const std::string &argument : args)
+    child_argv.push_back(argument.c_str());
+  child_argv.push_back(nullptr);
+
+  const intptr_t process_status =
+      _spawnvp(_P_WAIT, child_argv[0], child_argv.data());
+  const int spawn_errno = errno;
+
+  for (const auto &entry : saved_environment) {
+    _putenv_s(entry.name.c_str(), entry.existed ? entry.value.c_str() : "");
+  }
+
+  if (process_status == -1)
+    throw std::runtime_error("could not launch " + stage +
+                             ": errno=" + std::to_string(spawn_errno));
+  const int exit_code = static_cast<int>(process_status);
+#else
   const pid_t child = fork();
   if (child < 0)
     throw std::runtime_error("fork failed for " + stage +
@@ -104,6 +149,7 @@ int run_process(
   }
   const int exit_code =
       WIFEXITED(status) ? WEXITSTATUS(status) : 128 + WTERMSIG(status);
+#endif
   std::cout << "\n[workflow]\n  stage: " << stage
             << "\n  status: " << (exit_code == 0 ? "complete" : "failed")
             << "\n  exit_code: " << exit_code << "\n"

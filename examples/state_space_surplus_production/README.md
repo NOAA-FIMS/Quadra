@@ -33,7 +33,7 @@ log(I[t]) ~ Normal(log(q) + log_B[t], sigma_index)
 Run:
 
 ```bash
-./run_state_space_surplus_production_joint_example.sh
+bash examples/state_space_surplus_production/run_state_space_surplus_production_joint_example.sh
 ```
 
 Next steps:
@@ -48,7 +48,7 @@ Next steps:
 Hold fixed effects constant and optimize the latent process deviations:
 
 ```bash
-./run_fit_state_space_surplus_u_example.sh
+bash examples/state_space_surplus_production/run_fit_state_space_surplus_u_example.sh
 ```
 
 This computes:
@@ -64,7 +64,7 @@ This is the step immediately before adding the Laplace correction.
 Evaluate the Laplace approximation for the state-space surplus production model:
 
 ```bash
-./run_state_space_surplus_dense_laplace_example.sh
+bash examples/state_space_surplus_production/run_state_space_surplus_dense_laplace_example.sh
 ```
 
 This version uses:

@@ -20,11 +20,7 @@ inline void print_opakapaka_banner() {
 }
 
 inline void print_opakapaka_fit_diagnostics(
-    const quadra::OptResult &fit, double fit_runtime_ms,
-    const std::string &convergence_status,
-    const std::string &primary_optimizer_name, bool fallback_used,
-    bool primary_optimizer_converged, double primary_optimizer_grad_norm,
-    const std::string &primary_optimizer_status) {
+    const quadra::OptResult &fit, double fit_runtime_ms) {
   std::cout << "\nFit diagnostics\n";
   std::cout << "---------------\n";
   std::cout << std::fixed << std::setprecision(6);
@@ -32,16 +28,9 @@ inline void print_opakapaka_fit_diagnostics(
   std::cout << "final_grad_norm    " << fit.grad_norm << "\n";
   std::cout << "runtime_ms         " << fit_runtime_ms << "\n";
   std::cout << "iterations         " << fit.iterations << "\n";
-  std::cout << "converged          "
-            << ((fit.converged || fallback_used) ? "yes" : "no") << "\n";
-  std::cout << "status             " << convergence_status << "\n";
-  std::cout << "primary_optimizer  " << primary_optimizer_name << "\n";
-  std::cout << "fallback_used      " << (fallback_used ? "yes" : "no") << "\n";
-  std::cout << "primary_converged  "
-            << (primary_optimizer_converged ? "yes" : "no") << "\n";
-  std::cout << "primary_grad_norm  " << primary_optimizer_grad_norm << "\n";
+  std::cout << "converged          " << (fit.converged ? "yes" : "no") << "\n";
+  std::cout << "optimizer          L-BFGS\n";
   std::cout << "message            " << fit.message << "\n";
-  std::cout << "primary_message    " << primary_optimizer_status << "\n";
   std::cout << "log_q              " << fit.par.at(0) << "\n";
   std::cout << "q                  " << std::exp(fit.par.at(0)) << "\n";
   if (fit.par.size() > 1) {

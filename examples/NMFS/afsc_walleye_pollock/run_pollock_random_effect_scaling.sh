@@ -32,9 +32,9 @@ run_case() {
   rm -f examples/NMFS/afsc_walleye_pollock/outputs/walleye_pollock_huu_diagnostics.csv
 
   if [[ "$n" == "0" ]]; then
-    clang++ -std=c++17 -g -I"external/eigen/"       -DWALLEYE_POLLOCK_HUU_DIAGNOSTICS       -DQUADRA_LBFGS_GRAD_TOL=1.0e-2       "$CPP" "$GLOB" -o "$exe"
+    "${CXX:-c++}" -std=c++17 -g -I"external/eigen/"       -DWALLEYE_POLLOCK_HUU_DIAGNOSTICS       -DQUADRA_LBFGS_GRAD_TOL=1.0e-2       "$CPP" "$GLOB" -o "$exe"
   else
-    clang++ -std=c++17 -g -I"external/eigen/"       -DWALLEYE_POLLOCK_HUU_DIAGNOSTICS       -DQUADRA_LBFGS_GRAD_TOL=1.0e-2       -DWALLEYE_POLLOCK_RANDOM_RECRUITMENT_COUNT="$n"       "$CPP" "$GLOB" -o "$exe"
+    "${CXX:-c++}" -std=c++17 -g -I"external/eigen/"       -DWALLEYE_POLLOCK_HUU_DIAGNOSTICS       -DQUADRA_LBFGS_GRAD_TOL=1.0e-2       -DWALLEYE_POLLOCK_RANDOM_RECRUITMENT_COUNT="$n"       "$CPP" "$GLOB" -o "$exe"
   fi
 
   set +e

@@ -28,7 +28,7 @@ random-effect modes, convergence diagnostics, and structure/backend metadata.
 ## Run
 
 ```bash
-./run_opakapaka_projection.sh
+bash examples/NMFS/pifsc_opakapaka/run_opakapaka_projection.sh
 ```
 
 Outputs are written to:
@@ -46,12 +46,15 @@ A synthetic opakapaka-style state-space projection model was implemented in both
 
 | Metric | Quadra | TMB |
 |----------|----------|----------|
-| Objective | 40.774049 | 40.774049 |
-| log(q) | -6.505367 | -6.505366 |
-| q | 0.001495 | 0.001495 |
+| Objective | 38.888259 | 38.888010 |
+| log(q) | -6.968967 | -6.964753 |
+| q | 0.000941 | 0.000945 |
+| r | 0.388383 | 0.386970 |
+| K | 1337.136918 | 1334.502402 |
 | Random effects | 20 | 20 |
 
-The two implementations converge to effectively identical parameter estimates and objective values.
+The two implementations converge to closely matching parameter estimates and
+objective values while using their respective Laplace-gradient implementations.
 
 ### Quadra Structure Detection
 

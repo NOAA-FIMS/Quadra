@@ -32,6 +32,7 @@ RECOVERY_STAMP := $(BUILD_DIR)/.simulation_recovery_passed
 	test-simulation-recovery force-simulation-recovery \
 	check-simulation-recovery sensitivity-grid audit-opal-data \
 	check-posterior-assessment assessment-report train-transport-flow \
+	spatial-pulse-map \
 	train-native-transport-flow \
 	check-transport-gradient check-transport-reproducibility \
 	test-catch-conditioning clean
@@ -146,6 +147,9 @@ audit-opal-data: | $(BUILD_DIR)
 
 assessment-report:
 	Rscript scripts/build_assessment_report.R $(RUN_OUTPUT_DIR) $(REPORT_OUTPUT_DIR)
+
+spatial-pulse-map:
+	Rscript scripts/build_spatial_pulse_map.R $(RUN_OUTPUT_DIR) $(REPORT_OUTPUT_DIR)
 
 train-transport-flow: train-native-transport-flow
 

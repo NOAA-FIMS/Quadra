@@ -1,9 +1,10 @@
+#include <algorithm>
 #include <cmath>
 #include <iostream>
 #include <vector>
 
+#include "tuna/tuna_assessment_acceptance.hpp"
 #include "tuna/tuna_reference_points.hpp"
-#include "tuna/tuna_spatial_assessment_model.hpp"
 
 int main() {
   quadra::TunaSpatialAssessmentData data;
@@ -49,6 +50,19 @@ int main() {
     return 1;
   }
 
+  parameters[2] = 0.0;
+  const std::string animation =
+      quadra::spatial_animation_csv(data, controls, parameters);
+  const size_t animation_lines = static_cast<size_t>(
+      std::count(animation.begin(), animation.end(), '\n'));
+  if (animation_lines != 5 ||
+      animation.find("record_type,year,season") != 0 ||
+      animation.find("region,1,1,1,1") == std::string::npos ||
+      animation.find("movement,1,1,,,,,,1,1") == std::string::npos) {
+    std::cerr << "spatial-animation output test failed\n";
+    return 1;
+  }
+
   quadra::TunaAssessmentControls effort_controls = controls;
   effort_controls.use_catch_conditioning_m = false;
   data.observed_total_catch_m.clear();
@@ -83,6 +97,7 @@ int main() {
     return 1;
   }
   std::cout << "catch-conditioning smoke test: PASS\n";
+  std::cout << "spatial-animation output test: PASS\n";
   std::cout << "reference-point and projection smoke test: PASS\n";
   return 0;
 }

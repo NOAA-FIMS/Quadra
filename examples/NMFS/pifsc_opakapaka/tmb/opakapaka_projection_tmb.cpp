@@ -6,16 +6,23 @@ template <class Type> Type objective_function<Type>::operator()() {
   DATA_INTEGER(n_years);
 
   PARAMETER(log_q);
+  PARAMETER(log_r);
+  PARAMETER(log_K);
   PARAMETER_VECTOR(log_B);
 
-  const Type r = Type(0.34);
-  const Type K = Type(950.0);
+  const Type r = exp(log_r);
+  const Type K = exp(log_K);
   const Type sigma_process = Type(0.10);
   const Type sigma_index = Type(0.08);
   const Type sigma_initial = Type(0.15);
   const Type B0 = Type(0.82) * K;
 
   Type nll = Type(0.0);
+
+  nll += Type(0.5) * ((log_r - log(Type(0.34))) / Type(0.25)) *
+         ((log_r - log(Type(0.34))) / Type(0.25));
+  nll += Type(0.5) * ((log_K - log(Type(950.0))) / Type(0.50)) *
+         ((log_K - log(Type(950.0))) / Type(0.50));
 
   nll += Type(0.5) * ((log_B(0) - log(B0)) / sigma_initial) *
          ((log_B(0) - log(B0)) / sigma_initial);
@@ -41,6 +48,8 @@ template <class Type> Type objective_function<Type>::operator()() {
 
   REPORT(log_B);
   REPORT(log_q);
+  REPORT(log_r);
+  REPORT(log_K);
   ADREPORT(log_q);
 
   return nll;

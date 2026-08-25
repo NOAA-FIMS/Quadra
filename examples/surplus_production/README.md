@@ -19,7 +19,7 @@ terminal depletion = B_terminal / K
 Run from the repository root:
 
 ```bash
-./run_surplus_production_example.sh
+bash examples/surplus_production/run_surplus_production_example.sh
 ```
 
 Suggested next steps:
@@ -34,7 +34,7 @@ Suggested next steps:
 A simple finite-difference optimizer example is available:
 
 ```bash
-./run_fit_surplus_production_example.sh
+bash examples/surplus_production/run_fit_surplus_production_example.sh
 ```
 
 This estimates:

@@ -25,5 +25,6 @@ RW1/AR1 recruitment deviations, yielding a tridiagonal Hessian.
 Run:
 
 ```bash
-./run_quadra_vs_tmb_age_structured_recruitment_benchmark.sh 10 25,50,100,250,500,1000 10
+bash examples/age_structured_recruitment/run_quadra_vs_tmb_age_structured_recruitment_benchmark.sh \
+  10 25,50,100,250,500,1000 10
 ```

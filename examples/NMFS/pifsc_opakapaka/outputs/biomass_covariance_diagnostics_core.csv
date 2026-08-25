@@ -4,8 +4,8 @@ finite_all,yes,all entries finite
 positive_diagonal,yes,all diagonal variances positive
 valid_covariance,yes,finite positive-diagonal symmetric positive-semidefinite check
 ldlt_success,yes,dense LDLT check
-max_abs_asymmetry,2.22045e-16,maximum absolute covariance asymmetry
-min_variance,3569.54,minimum diagonal variance
-max_variance,5083.43,maximum diagonal variance
-min_eigenvalue,2129.61,self-adjoint eigenvalue diagnostic
-max_eigenvalue,7064.51,self-adjoint eigenvalue diagnostic
+max_abs_asymmetry,8.88178e-16,maximum absolute covariance asymmetry
+min_variance,3583.87,minimum diagonal variance
+max_variance,5105.21,maximum diagonal variance
+min_eigenvalue,2138.14,self-adjoint eigenvalue diagnostic
+max_eigenvalue,7093.43,self-adjoint eigenvalue diagnostic

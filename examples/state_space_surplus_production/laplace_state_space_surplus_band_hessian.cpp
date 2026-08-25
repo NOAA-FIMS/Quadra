@@ -111,7 +111,10 @@ Eigen::SparseMatrix<double> fd_band_hessian_uu(const ss::Data &data,
   triplets.reserve(static_cast<std::size_t>(n * (2 * bandwidth + 1)));
 
   for (int j = 0; j < n; ++j) {
-    const double h = 1e-5 * (1.0 + std::abs(u[j]));
+    // This differences an already finite-differenced gradient. A larger outer
+    // step avoids catastrophic cancellation that can make the symmetric band
+    // approximation spuriously indefinite.
+    const double h = 1e-3 * (1.0 + std::abs(u[j]));
 
     Eigen::VectorXd up = u;
     Eigen::VectorXd um = u;
@@ -196,7 +199,7 @@ EvalResult band_laplace_eval(const ss::Data &data, const ss::Parameters &par,
 
 int main(int argc, char **argv) {
   int reps = 20;
-  int bandwidth = 3;
+  int bandwidth = -1;
 
   if (argc > 1)
     reps = std::stoi(argv[1]);
@@ -205,6 +208,8 @@ int main(int argc, char **argv) {
 
   const ss::Data data = ss::make_demo_data();
   const ss::Parameters par = ss::make_demo_parameters();
+  if (bandwidth < 0)
+    bandwidth = static_cast<int>(ss::zero_random_effects(data).size()) - 1;
 
   EvalResult last = band_laplace_eval(data, par, bandwidth);
 

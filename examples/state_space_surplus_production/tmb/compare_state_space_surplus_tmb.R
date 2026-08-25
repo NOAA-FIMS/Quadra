@@ -40,7 +40,7 @@ data <- list(
 )
 
 cat("Compiling TMB template...\n")
-TMB::compile(template, flags = "-O2")
+TMB::compile(template, flags = "-O2 -std=gnu++17")
 dyn.load(TMB::dynlib(file.path("examples", "state_space_surplus_production", "tmb", dynlib_name)))
 
 cat("Building objective with u as random effects...\n")

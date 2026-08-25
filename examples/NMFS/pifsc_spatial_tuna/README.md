@@ -51,6 +51,17 @@ build/run_tuna_full_workflow \
   --simulations 50
 ```
 
+The generated report includes a self-contained interactive spatial fishery
+pulse map at `build/assessment_outputs/report/spatial_fishery_pulse.html`.
+It animates seasonal biomass by region, movement biomass between regions, and
+fleet-specific retained catch and discards. Its management-scenario mode races
+the configured deterministic projections through time. Rebuild only this
+visualization from existing assessment outputs with:
+
+```bash
+make spatial-pulse-map
+```
+
 Use a different configuration without recompiling:
 
 ```bash

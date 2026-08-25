@@ -19,7 +19,7 @@ library(TMB)
 template <- file.path("examples", "age_structured_recruitment", "tmb", "age_structured_recruitment_no_plus_tmb.cpp")
 dynlib_name <- "age_structured_recruitment_no_plus_tmb"
 
-TMB::compile(template, flags = "-O2")
+TMB::compile(template, flags = "-O2 -std=gnu++17")
 dyn.load(TMB::dynlib(file.path("examples", "age_structured_recruitment", "tmb", dynlib_name)))
 
 logistic <- function(x) 1 / (1 + exp(-x))

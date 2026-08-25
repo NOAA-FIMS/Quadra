@@ -44,6 +44,17 @@ reference_metadata <- if (file.exists(reference_metadata_path)) {
   read.csv(reference_metadata_path, check.names = FALSE)
 } else NULL
 projections <- if (file.exists(projection_path)) read.csv(projection_path) else NULL
+spatial_path <- file.path(data_dir, "spatial_animation.csv")
+spatial_section <- if (file.exists(spatial_path)) {
+  paste0(
+    "[Open the interactive spatial fishery pulse map]",
+    "(spatial_fishery_pulse.html). It animates seasonal regional biomass, ",
+    "movement, fleet-specific retained catch and discards, and the projected ",
+    "management-scenario race."
+  )
+} else {
+  "Spatial animation data are unavailable for this run."
+}
 nuts_path <- file.path(data_dir, "sampler_summary.csv")
 if (!file.exists(nuts_path)) {
   nuts_path <- file.path(data_dir, "nuts_summary.csv")
@@ -435,6 +446,7 @@ report <- paste0(
   projection_section, "\n\n",
   "## Model fit and diagnostics\n\n",
   "### Population trajectory\n\n", biomass_section, "\n\n",
+  "### Spatial fishery pulse\n\n", spatial_section, "\n\n",
   "### Residual diagnostics\n\n",
   "![Residual dispersion](figures/residual_sdnr.svg)\n\n",
   "The dashed lines show the current SDNR screening interval of 0.85–1.15.\n\n",
@@ -456,3 +468,7 @@ report <- paste0(
 
 writeLines(report, report_path, useBytes = TRUE)
 cat("Assessment report written to", report_path, "\n")
+
+if (file.exists(spatial_path)) {
+  source(file.path("scripts", "build_spatial_pulse_map.R"), local = new.env())
+}

@@ -558,10 +558,18 @@ simulation work was requested. Core products include:
 | `sampler_identity.csv` | kernel identity and exact evaluation accounting |
 | `marginal_sampler_profile.csv` | mode, gradient, and overhead timing |
 | `marginal_whitening_cache.csv` | validated frozen proposal geometry |
+| `spatial_animation.csv` | seasonal regional biomass, fleet catch/discards, and movement biomass used by the interactive pulse map |
 | `posterior_random_effect_draws.csv` | conditional modes and reconstructed effects |
 | `posterior_reconstruction_summary.csv` | reconstruction success/failure counts |
 | `posterior_reference_points.csv` | draw-wise equilibrium management quantities |
 | `posterior_projection_draws.csv` | scenario trajectories by draw |
+
+The report directory also contains `spatial_fishery_pulse.html`, a
+self-contained interactive view of the historical spatial dynamics and the
+deterministic management-scenario race. Region placement is deliberately
+schematic because the synthetic worked example defines regions but no
+geographic coordinates. The visualization is a view of the reported model
+states and projections; it does not interpolate or alter the assessment.
 
 `make check-posterior-assessment` requires convergence, finite and complete
 latent reconstruction, valid reference points, four complete biologically

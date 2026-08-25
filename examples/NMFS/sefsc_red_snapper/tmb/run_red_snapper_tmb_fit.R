@@ -30,7 +30,7 @@ age_comp_obs <- as.matrix(obs[, age_cols, drop = FALSE])
 age_comp_obs <- age_comp_obs / rowSums(age_comp_obs)
 
 cpp <- "examples/NMFS/sefsc_red_snapper/tmb/red_snapper_tmb.cpp"
-TMB::compile(cpp)
+TMB::compile(cpp, flags = "-O2 -std=gnu++17")
 dyn.load(TMB::dynlib(sub("\\.cpp$", "", cpp)))
 
 parameters <- list(

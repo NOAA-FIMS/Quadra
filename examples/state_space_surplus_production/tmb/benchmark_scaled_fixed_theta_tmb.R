@@ -19,7 +19,7 @@ template <- file.path("examples", "state_space_surplus_production", "tmb", "stat
 dynlib_name <- "state_space_surplus_tmb"
 
 if (!file.exists(TMB::dynlib(file.path("examples", "state_space_surplus_production", "tmb", dynlib_name)))) {
-  TMB::compile(template, flags = "-O2")
+  TMB::compile(template, flags = "-O2 -std=gnu++17")
 }
 
 dyn.load(TMB::dynlib(file.path("examples", "state_space_surplus_production", "tmb", dynlib_name)))

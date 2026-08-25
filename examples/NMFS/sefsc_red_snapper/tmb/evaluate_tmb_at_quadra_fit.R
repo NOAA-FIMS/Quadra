@@ -10,7 +10,7 @@ age_comp_obs <- age_comp_obs / rowSums(age_comp_obs)
 cpp <- "examples/NMFS/sefsc_red_snapper/tmb/red_snapper_tmb.cpp"
 dyn <- sub("\\.cpp$", "", basename(cpp))
 if (!file.exists(file.path("examples/NMFS/sefsc_red_snapper/tmb", paste0(dyn, .Platform$dynlib.ext)))) {
-  TMB::compile(cpp)
+  TMB::compile(cpp, flags = "-O2 -std=gnu++17")
 }
 dyn.load(dynlib(file.path("examples/NMFS/sefsc_red_snapper/tmb", dyn)))
 
