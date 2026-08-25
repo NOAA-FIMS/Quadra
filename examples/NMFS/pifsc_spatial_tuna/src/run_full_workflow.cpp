@@ -52,8 +52,7 @@ WorkflowOptions parse_options(int argc, char **argv) {
     else if (argument == "--rscript")
       options.rscript = require_value(i, argc, argv, argument);
     else if (argument == "--simulations") {
-      options.simulations =
-          std::stoi(require_value(i, argc, argv, argument));
+      options.simulations = std::stoi(require_value(i, argc, argv, argument));
       if (options.simulations <= 0)
         throw std::invalid_argument("--simulations must be positive");
     } else if (argument == "--help" || argument == "-h") {
@@ -74,15 +73,15 @@ WorkflowOptions parse_options(int argc, char **argv) {
   return options;
 }
 
-int run_process(const std::string &stage, const std::vector<std::string> &args,
-                const std::vector<std::pair<std::string, std::string>>
-                    &environment = {}) {
+int run_process(
+    const std::string &stage, const std::vector<std::string> &args,
+    const std::vector<std::pair<std::string, std::string>> &environment = {}) {
   std::cout << "\n[workflow]\n  stage: " << stage << "\n  status: running\n"
             << std::flush;
   const pid_t child = fork();
   if (child < 0)
-    throw std::runtime_error("fork failed for " + stage + ": errno=" +
-                             std::to_string(errno));
+    throw std::runtime_error("fork failed for " + stage +
+                             ": errno=" + std::to_string(errno));
   if (child == 0) {
     for (const auto &entry : environment) {
       if (setenv(entry.first.c_str(), entry.second.c_str(), 1) != 0)
@@ -100,11 +99,11 @@ int run_process(const std::string &stage, const std::vector<std::string> &args,
   int status = 0;
   while (waitpid(child, &status, 0) < 0) {
     if (errno != EINTR)
-      throw std::runtime_error("waitpid failed for " + stage + ": errno=" +
-                               std::to_string(errno));
+      throw std::runtime_error("waitpid failed for " + stage +
+                               ": errno=" + std::to_string(errno));
   }
-  const int exit_code = WIFEXITED(status) ? WEXITSTATUS(status)
-                                          : 128 + WTERMSIG(status);
+  const int exit_code =
+      WIFEXITED(status) ? WEXITSTATUS(status) : 128 + WTERMSIG(status);
   std::cout << "\n[workflow]\n  stage: " << stage
             << "\n  status: " << (exit_code == 0 ? "complete" : "failed")
             << "\n  exit_code: " << exit_code << "\n"
