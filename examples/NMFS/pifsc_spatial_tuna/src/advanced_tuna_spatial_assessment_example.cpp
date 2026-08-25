@@ -3240,8 +3240,7 @@ int main(int argc, char **argv) {
                               quadra::biomass_trajectory_csv(baseline));
       quadra::write_text_file(
           out_dir + "/spatial_animation.csv",
-          quadra::spatial_animation_csv(data, controls,
-                                        fit.best_parameters_m));
+          quadra::spatial_animation_csv(data, controls, fit.best_parameters_m));
       write_reference_points_and_projections(out_dir, data, controls, fit);
       run_optional_marginal_nuts(out_dir, data, controls, fit);
       if (resume_fit_checkpoint) {

@@ -96,9 +96,9 @@ int run_process(
   saved_environment.reserve(environment.size());
   for (const auto &entry : environment) {
     const char *old_value = std::getenv(entry.first.c_str());
-    saved_environment.push_back(
-        {entry.first, old_value == nullptr ? "" : old_value,
-         old_value != nullptr});
+    saved_environment.push_back({entry.first,
+                                 old_value == nullptr ? "" : old_value,
+                                 old_value != nullptr});
     if (_putenv_s(entry.first.c_str(), entry.second.c_str()) != 0)
       throw std::runtime_error("could not set environment variable " +
                                entry.first + " for " + stage);

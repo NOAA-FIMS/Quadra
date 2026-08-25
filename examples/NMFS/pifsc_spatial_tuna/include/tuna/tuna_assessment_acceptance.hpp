@@ -1942,16 +1942,17 @@ inline std::string biomass_trajectory_csv(const TunaAssessmentRunSummary &run) {
   return ss.str();
 }
 
-inline std::string spatial_animation_csv(
-    const TunaSpatialAssessmentData &data,
-    const TunaAssessmentControls &base_controls,
-    const std::vector<double> &parameters) {
+inline std::string
+spatial_animation_csv(const TunaSpatialAssessmentData &data,
+                      const TunaAssessmentControls &base_controls,
+                      const std::vector<double> &parameters) {
   TunaAssessmentControls controls = base_controls;
   controls.phase_m = TunaAssessmentPhase::Full;
   controls.report_spatial_animation_m = true;
   AdvancedSpatialTunaAssessmentModel model(data, controls);
   if (parameters.size() != model.parameter_set().size())
-    throw std::invalid_argument("spatial_animation_csv: parameter length mismatch");
+    throw std::invalid_argument(
+        "spatial_animation_csv: parameter length mismatch");
 
   ModelReportContext ctx;
   model.evaluate(parameters, ctx);
@@ -1961,31 +1962,29 @@ inline std::string spatial_animation_csv(
         "movement_probability\n";
   for (int y = 0; y < data.n_years_m; ++y) {
     for (int s = 0; s < data.n_seasons_m; ++s) {
-      const std::string frame = "y" + std::to_string(y + 1) + "_s" +
-                                std::to_string(s + 1);
+      const std::string frame =
+          "y" + std::to_string(y + 1) + "_s" + std::to_string(s + 1);
       for (int r = 0; r < data.n_regions_m; ++r) {
         const double biomass = report_value_or_nan(
             ctx, "anim_biomass_" + frame + "_r" + std::to_string(r + 1));
         for (int f = 0; f < data.n_fleets_m; ++f) {
-          const std::string fleet_region =
-              frame + "_f" + std::to_string(f + 1) + "_r" +
-              std::to_string(r + 1);
-          ss << "region," << (y + 1) << "," << (s + 1) << "," << (r + 1)
-             << "," << (f + 1) << "," << biomass << ","
-             << report_value_or_nan(ctx, "anim_retained_" + fleet_region)
-             << ","
+          const std::string fleet_region = frame + "_f" +
+                                           std::to_string(f + 1) + "_r" +
+                                           std::to_string(r + 1);
+          ss << "region," << (y + 1) << "," << (s + 1) << "," << (r + 1) << ","
+             << (f + 1) << "," << biomass << ","
+             << report_value_or_nan(ctx, "anim_retained_" + fleet_region) << ","
              << report_value_or_nan(ctx, "anim_discard_" + fleet_region)
              << ",,,,\n";
         }
         for (int to = 0; to < data.n_regions_m; ++to) {
-          const std::string route = frame + "_from_" +
-                                    std::to_string(r + 1) + "_to_" +
-                                    std::to_string(to + 1);
+          const std::string route = frame + "_from_" + std::to_string(r + 1) +
+                                    "_to_" + std::to_string(to + 1);
           const std::string probability =
               "move_prob_s" + std::to_string(s + 1) + "_from_" +
               std::to_string(r + 1) + "_to_" + std::to_string(to + 1);
-          ss << "movement," << (y + 1) << "," << (s + 1)
-             << ",,,,,," << (r + 1) << "," << (to + 1) << ","
+          ss << "movement," << (y + 1) << "," << (s + 1) << ",,,,,," << (r + 1)
+             << "," << (to + 1) << ","
              << report_value_or_nan(ctx, "anim_movement_" + route) << ","
              << report_value_or_nan(ctx, probability) << "\n";
         }

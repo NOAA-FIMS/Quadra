@@ -19,8 +19,8 @@ inline void print_opakapaka_banner() {
       << "Synthetic and public-data-safe. Not an official assessment.\n\n";
 }
 
-inline void print_opakapaka_fit_diagnostics(
-    const quadra::OptResult &fit, double fit_runtime_ms) {
+inline void print_opakapaka_fit_diagnostics(const quadra::OptResult &fit,
+                                            double fit_runtime_ms) {
   std::cout << "\nFit diagnostics\n";
   std::cout << "---------------\n";
   std::cout << std::fixed << std::setprecision(6);

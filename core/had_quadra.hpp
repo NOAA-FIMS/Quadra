@@ -2805,28 +2805,22 @@ struct DirectionalDerivatives3 {
   Real third = Real(0.0);  // D^3 f(x)[d,d,d]
 };
 
-inline bool operator<(const ThirdOrderScalar &a,
-                      const ThirdOrderScalar &b) {
+inline bool operator<(const ThirdOrderScalar &a, const ThirdOrderScalar &b) {
   return a.val < b.val;
 }
-inline bool operator>(const ThirdOrderScalar &a,
-                      const ThirdOrderScalar &b) {
+inline bool operator>(const ThirdOrderScalar &a, const ThirdOrderScalar &b) {
   return a.val > b.val;
 }
-inline bool operator<=(const ThirdOrderScalar &a,
-                       const ThirdOrderScalar &b) {
+inline bool operator<=(const ThirdOrderScalar &a, const ThirdOrderScalar &b) {
   return a.val <= b.val;
 }
-inline bool operator>=(const ThirdOrderScalar &a,
-                       const ThirdOrderScalar &b) {
+inline bool operator>=(const ThirdOrderScalar &a, const ThirdOrderScalar &b) {
   return a.val >= b.val;
 }
-inline bool operator==(const ThirdOrderScalar &a,
-                       const ThirdOrderScalar &b) {
+inline bool operator==(const ThirdOrderScalar &a, const ThirdOrderScalar &b) {
   return a.val == b.val;
 }
-inline bool operator!=(const ThirdOrderScalar &a,
-                       const ThirdOrderScalar &b) {
+inline bool operator!=(const ThirdOrderScalar &a, const ThirdOrderScalar &b) {
   return a.val != b.val;
 }
 

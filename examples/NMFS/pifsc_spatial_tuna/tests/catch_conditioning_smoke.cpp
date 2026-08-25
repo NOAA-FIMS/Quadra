@@ -53,10 +53,9 @@ int main() {
   parameters[2] = 0.0;
   const std::string animation =
       quadra::spatial_animation_csv(data, controls, parameters);
-  const size_t animation_lines = static_cast<size_t>(
-      std::count(animation.begin(), animation.end(), '\n'));
-  if (animation_lines != 5 ||
-      animation.find("record_type,year,season") != 0 ||
+  const size_t animation_lines =
+      static_cast<size_t>(std::count(animation.begin(), animation.end(), '\n'));
+  if (animation_lines != 5 || animation.find("record_type,year,season") != 0 ||
       animation.find("region,1,1,1,1") == std::string::npos ||
       animation.find("movement,1,1,,,,,,1,1") == std::string::npos) {
     std::cerr << "spatial-animation output test failed\n";

@@ -750,24 +750,23 @@ private:
         }
 
         if (controls_m.report_spatial_animation_m) {
-          const std::string frame = "y" + std::to_string(y + 1) + "_s" +
-                                    std::to_string(s + 1);
+          const std::string frame =
+              "y" + std::to_string(y + 1) + "_s" + std::to_string(s + 1);
           for (int r = 0; r < r_count; ++r) {
             Type region_biomass = Type(0.0);
             for (int a = 0; a < a_count; ++a) {
-              const Type weight = Type(
-                  data_m.weight_at_age_m[data_m.year_age_index(y, a)]);
+              const Type weight =
+                  Type(data_m.weight_at_age_m[data_m.year_age_index(y, a)]);
               region_biomass += state[data_m.region_age_index(r, a)] * weight;
             }
-            ctx.report("anim_biomass_" + frame + "_r" +
-                           std::to_string(r + 1),
+            ctx.report("anim_biomass_" + frame + "_r" + std::to_string(r + 1),
                        region_biomass);
 
             for (int f = 0; f < f_count; ++f) {
               const size_t fr_idx = fleet_region_index(f, r);
-              const std::string fleet_region =
-                  frame + "_f" + std::to_string(f + 1) + "_r" +
-                  std::to_string(r + 1);
+              const std::string fleet_region = frame + "_f" +
+                                               std::to_string(f + 1) + "_r" +
+                                               std::to_string(r + 1);
               ctx.report("anim_retained_" + fleet_region,
                          pred_retained_bio[fr_idx]);
               ctx.report("anim_discard_" + fleet_region,
@@ -777,8 +776,8 @@ private:
             for (int to = 0; to < r_count; ++to) {
               Type movement_biomass = Type(0.0);
               for (int a = 0; a < a_count; ++a) {
-                const Type weight = Type(
-                    data_m.weight_at_age_m[data_m.year_age_index(y, a)]);
+                const Type weight =
+                    Type(data_m.weight_at_age_m[data_m.year_age_index(y, a)]);
                 movement_biomass +=
                     survivors[data_m.region_age_index(r, a)] *
                     move_probs[movement_probability_index(s, r, to)] * weight;
