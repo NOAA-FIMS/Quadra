@@ -17,6 +17,39 @@
 
 namespace {
 
+#ifdef _WIN32
+// The UCRT spawn functions rebuild a Windows command line from argv. Quote
+// arguments explicitly so paths such as "2026 review/2026 quadra" survive
+// the Windows C runtime's command-line parsing unchanged. Backslashes before
+// a quote (and trailing backslashes before the closing quote) require doubling.
+std::string quote_windows_argument(const std::string &argument) {
+  if (argument.empty())
+    return "\"\"";
+  if (argument.find_first_of(" \t\n\v\"") == std::string::npos)
+    return argument;
+
+  std::string quoted = "\"";
+  std::size_t backslashes = 0;
+  for (char character : argument) {
+    if (character == '\\') {
+      ++backslashes;
+      continue;
+    }
+    if (character == '"') {
+      quoted.append(backslashes * 2 + 1, '\\');
+      quoted.push_back('"');
+    } else {
+      quoted.append(backslashes, '\\');
+      quoted.push_back(character);
+    }
+    backslashes = 0;
+  }
+  quoted.append(backslashes * 2, '\\');
+  quoted.push_back('"');
+  return quoted;
+}
+#endif
+
 struct WorkflowOptions {
   std::string config = "config/tuna_assessment.conf";
   std::string output_dir = "build/assessment_outputs/data";
@@ -104,9 +137,14 @@ int run_process(
                                entry.first + " for " + stage);
   }
 
+  std::vector<std::string> quoted_args;
+  quoted_args.reserve(args.size());
+  for (const std::string &argument : args)
+    quoted_args.push_back(quote_windows_argument(argument));
+
   std::vector<const char *> child_argv;
   child_argv.reserve(args.size() + 1);
-  for (const std::string &argument : args)
+  for (const std::string &argument : quoted_args)
     child_argv.push_back(argument.c_str());
   child_argv.push_back(nullptr);
 
