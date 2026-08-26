@@ -149,7 +149,7 @@ int run_process(
   child_argv.push_back(nullptr);
 
   const intptr_t process_status =
-      _spawnvp(_P_WAIT, child_argv[0], child_argv.data());
+      _spawnvp(_P_WAIT, args[0].c_str(), child_argv.data());
   const int spawn_errno = errno;
 
   for (const auto &entry : saved_environment) {

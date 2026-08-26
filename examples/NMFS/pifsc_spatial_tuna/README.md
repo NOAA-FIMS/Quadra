@@ -20,48 +20,126 @@ from the development workspace. Those data and the papers used to audit them
 are intentionally not vendored into Quadra; `scripts/audit_opal_wcpo_bet.R`
 remains as an optional importer for users who supply `data/opal_raw` locally.
 
+## Build and run targets
+
+Run all commands in this section from `examples/NMFS/pifsc_spatial_tuna`.
+Building never runs the model; targets whose names begin with `run-`, plus the
+fit, sample, report, and test targets, execute work.
+
+| Target | Builds | Runs |
+|---|---|---|
+| `make advanced-tuna-example` | Assessment executable | Nothing |
+| `make full-tuna-workflow` | Assessment executable and workflow driver | Nothing |
+| `make fit-advanced-tuna` | Assessment as needed | Baseline fit, checkpoint, and report |
+| `make sample-advanced-tuna` | Assessment as needed | Loads the fit checkpoint, samples, validates posterior outputs, and reports |
+| `make run-full-tuna-workflow` | Assessment and driver as needed | Fit, configured simulation-estimation workflow, and report |
+| `make run-comprehensive-analysis` | Assessment as needed | Expensive composition, retrospective, sensitivity, and simulation grid |
+| `make assessment-report` | Nothing | Rebuilds the report from existing outputs |
+| `make spatial-pulse-map` | Nothing | Rebuilds only the interactive spatial visualization |
+| `make test-fast` | Smoke test as needed | Fast catch-conditioning test |
+| `make test` | Tests and assessment as needed | Fast tests plus cached simulation-recovery test |
+
+`Rscript` is required by targets that generate or validate reports. The C++
+fit can run without R, but a report-producing Make target will stop if R is not
+available.
+
+## macOS
+
+Install a C++17 compiler, GNU Make, and R. With command-line developer tools
+and R available on `PATH`, build and run the complete workflow with:
+
+```bash
+make full-tuna-workflow
+make run-full-tuna-workflow
+```
+
+For a separate fit followed by posterior sampling:
+
 ```bash
 make fit-advanced-tuna
 make sample-advanced-tuna
 ```
 
-Run the complete fit, simulation-estimation, and report workflow with one
-command:
+If R is not on `PATH`, set `RSCRIPT` to the executable returned by the R
+installation, for example `RSCRIPT="/Library/Frameworks/R.framework/Resources/bin/Rscript"`.
+
+## Linux
+
+Install `g++`, GNU Make, and R through the system package manager, then run:
 
 ```bash
-make run-full-tuna-workflow
+make full-tuna-workflow CXX=g++
+make run-full-tuna-workflow CXX=g++
 ```
 
-The `full-tuna-workflow` target builds both the assessment executable and the
-workflow driver. To build them and then run the driver directly:
+The fit/sample split is the same as on macOS:
 
 ```bash
-make full-tuna-workflow
-build/run_tuna_full_workflow --config config/tuna_assessment.conf
+make fit-advanced-tuna CXX=g++
+make sample-advanced-tuna CXX=g++
 ```
 
-`Rscript` must be installed and available on `PATH`. On Windows, where R is
-often installed outside `PATH`, pass its executable explicitly (Git Bash path
-shown):
+Override a nonstandard R installation with `RSCRIPT=/path/to/Rscript`.
+
+## Windows (MSYS2 UCRT64 or Git Bash)
+
+These commands use a Unix-like shell and GNU Make; they are not PowerShell or
+Visual Studio/MSBuild commands. Install a C++17-capable MinGW-w64 `g++`, Make,
+and R. Quote the `cd` path when the checkout is inside a directory containing
+spaces:
 
 ```bash
+cd "/c/Users/name/Desktop/2026 REVIEW/Quadra/examples/NMFS/pifsc_spatial_tuna"
+make full-tuna-workflow CXX=g++
 make run-full-tuna-workflow \
-  RSCRIPT="/c/Program Files/R/R-4.5.1/bin/Rscript.exe"
+  CXX=g++ \
+  RSCRIPT="C:/R/R-4.5.3/bin/Rscript.exe"
 ```
 
-The same override works with `fit-advanced-tuna`, `sample-advanced-tuna`, and
-the report targets. When invoking the workflow driver directly, use
-`--rscript "/c/Program Files/R/R-4.5.1/bin/Rscript.exe"`.
-
-The driver stops at the first failed stage and returns its exit code. Output
-locations and the simulation count can be overridden explicitly:
+Adjust the R version and location to the local installation. Forward-slash
+Windows paths such as `C:/R/...` work well in both the Make variable and the
+workflow driver. To run the compiled driver directly:
 
 ```bash
-build/run_tuna_full_workflow \
+./build/run_tuna_full_workflow.exe \
   --config config/tuna_assessment.conf \
   --output-dir build/assessment_outputs/data \
   --report-dir build/assessment_outputs/report \
-  --simulations 50
+  --simulations 50 \
+  --assessment-binary build/advanced_tuna_spatial_assessment_example.exe \
+  --rscript "C:/R/R-4.5.3/bin/Rscript.exe"
+```
+
+The explicit `--assessment-binary` is optional in current builds, but is a
+useful diagnostic override. Paths containing spaces are supported.
+
+## Configuration and command-line options
+
+The workflow driver stops at the first failed stage and returns that stage's
+exit code. Inspect all driver options with:
+
+```bash
+./build/run_tuna_full_workflow --help
+```
+
+The main options are `--config`, `--output-dir`, `--report-dir`,
+`--simulations`, `--assessment-binary`, `--report-script`, and `--rscript`.
+The corresponding common Make overrides are:
+
+```bash
+make run-full-tuna-workflow \
+  CONFIG=config/my_assessment.conf \
+  RUN_OUTPUT_DIR=build/my_run/data \
+  REPORT_OUTPUT_DIR=build/my_run/report \
+  RSCRIPT=/path/to/Rscript
+```
+
+The assessment executable can also be run without the workflow driver or
+report generation:
+
+```bash
+./build/advanced_tuna_spatial_assessment_example \
+  --config config/tuna_assessment.conf
 ```
 
 The generated report includes a self-contained interactive spatial fishery
@@ -73,19 +151,6 @@ visualization from existing assessment outputs with:
 
 ```bash
 make spatial-pulse-map
-```
-
-Use a different configuration without recompiling:
-
-```bash
-make fit-advanced-tuna CONFIG=config/my_assessment.conf
-```
-
-The executable also accepts the file directly:
-
-```bash
-build/advanced_tuna_spatial_assessment_example \
-  --config config/tuna_assessment.conf
 ```
 
 Precedence is:
