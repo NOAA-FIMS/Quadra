@@ -811,8 +811,7 @@ inline void print_gradient_table(const std::string &optimizer, int iteration,
 
   std::size_t within_tolerance = 0;
   for (double value : gradient) {
-    if (std::isfinite(value) &&
-        std::abs(value) <= options.gradient_tolerance)
+    if (std::isfinite(value) && std::abs(value) <= options.gradient_tolerance)
       ++within_tolerance;
   }
   const std::size_t max_index = order.empty() ? 0 : order.front();
@@ -847,8 +846,8 @@ inline void print_gradient_table(const std::string &optimizer, int iteration,
     std::cout << "  " << std::left << std::setw(38) << parameter_name(index)
               << std::right << std::scientific << std::setprecision(6)
               << (okay ? "\033[32m" : "\033[31m") << std::setw(16)
-              << gradient[index] << "\033[0m"
-              << "  " << (okay ? "within tol" : "above tol") << '\n';
+              << gradient[index] << "\033[0m" << "  "
+              << (okay ? "within tol" : "above tol") << '\n';
   }
   std::cout << std::defaultfloat << std::flush;
 }
@@ -869,8 +868,7 @@ optimize_laplace(ExactLaplaceEvaluator<Model> &evaluator,
   }
   if (options.max_iterations < 0 || options.memory < 0 ||
       options.print_every < 0 || options.gradient_table_every < 0 ||
-      options.max_evaluations < 0 ||
-      !(options.gradient_tolerance >= 0.0) ||
+      options.max_evaluations < 0 || !(options.gradient_tolerance >= 0.0) ||
       !(options.step_tolerance >= 0.0) || !(options.initial_step_scale > 0.0) ||
       !(options.maximum_direction_norm > 0.0) ||
       !(options.minimum_step_scale > 0.0) ||
@@ -914,10 +912,10 @@ optimize_laplace(ExactLaplaceEvaluator<Model> &evaluator,
     }
     if (options.print_every > 0 && options.gradient_table_every > 0 &&
         (iteration == 0 || iteration % options.gradient_table_every == 0)) {
-      detail::print_gradient_table(
-          "exact_laplace_lbfgs", iteration,
-          current.objective.laplace_objective_m, current.gradient,
-          current.objective.u_hat_m.size(), options);
+      detail::print_gradient_table("exact_laplace_lbfgs", iteration,
+                                   current.objective.laplace_objective_m,
+                                   current.gradient,
+                                   current.objective.u_hat_m.size(), options);
       last_gradient_table_iteration = iteration;
     }
     result.iterations = iteration;
@@ -1065,10 +1063,10 @@ optimize_laplace(ExactLaplaceEvaluator<Model> &evaluator,
   result.gradient_norm = detail::norm(current.gradient);
   if (options.print_every > 0 && options.gradient_table_every > 0 &&
       result.iterations != last_gradient_table_iteration) {
-    detail::print_gradient_table(
-        "exact_laplace_lbfgs final", result.iterations,
-        current.objective.laplace_objective_m, current.gradient,
-        current.objective.u_hat_m.size(), options);
+    detail::print_gradient_table("exact_laplace_lbfgs final", result.iterations,
+                                 current.objective.laplace_objective_m,
+                                 current.gradient,
+                                 current.objective.u_hat_m.size(), options);
   }
   result.evaluation = std::move(current);
   return result;
