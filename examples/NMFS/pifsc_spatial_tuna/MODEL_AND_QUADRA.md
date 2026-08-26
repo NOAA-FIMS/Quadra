@@ -365,7 +365,7 @@ determinant-gradient contraction without materializing a dense derivative of
 the Hessian:
 
 $$
-\operatorname{tr}(H_{uu}^{-1}\dot H_{uu}[d])
+\mathrm{tr}(H_{uu}^{-1}\dot H_{uu}[d])
 =\sum_k T[d,l_k,l_k],
 $$
 

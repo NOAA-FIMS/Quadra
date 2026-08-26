@@ -182,7 +182,7 @@ AI-development process should be adjusted to the selected venue.
 - Present
 
   $$
-  \operatorname{tr}(H_{uu}^{-1}\dot H_{uu}[d])
+  \mathrm{tr}(H_{uu}^{-1}\dot H_{uu}[d])
   =\sum_k T[d,l_k,l_k].
   $$
 
