@@ -19,9 +19,11 @@
 #include <cmath>
 #include <deque>
 #include <exception>
+#include <iomanip>
 #include <iostream>
 #include <memory>
 #include <stdexcept>
+#include <string>
 #include <thread>
 #include <utility>
 #include <vector>
@@ -54,7 +56,9 @@ struct LaplaceOptimizerOptions {
   int max_iterations = 100;
   int memory = 7;
   int print_every = 0;
+  int gradient_table_every = 10;
   int max_evaluations = 0;
+  std::vector<std::string> gradient_names;
   double gradient_tolerance = 1.0e-6;
   double step_tolerance = 1.0e-10;
   double initial_step_scale = 1.0;
@@ -793,6 +797,62 @@ lbfgs_direction(const std::vector<double> &gradient,
   return direction;
 }
 
+inline void print_gradient_table(const std::string &optimizer, int iteration,
+                                 double objective,
+                                 const std::vector<double> &gradient,
+                                 std::size_t random_effect_count,
+                                 const LaplaceOptimizerOptions &options) {
+  std::vector<std::size_t> order(gradient.size());
+  for (std::size_t i = 0; i < order.size(); ++i)
+    order[i] = i;
+  std::sort(order.begin(), order.end(), [&](std::size_t lhs, std::size_t rhs) {
+    return std::abs(gradient[lhs]) > std::abs(gradient[rhs]);
+  });
+
+  std::size_t within_tolerance = 0;
+  for (double value : gradient) {
+    if (std::isfinite(value) &&
+        std::abs(value) <= options.gradient_tolerance)
+      ++within_tolerance;
+  }
+  const std::size_t max_index = order.empty() ? 0 : order.front();
+  const double max_component =
+      order.empty() ? 0.0 : std::abs(gradient[max_index]);
+  const auto parameter_name = [&](std::size_t index) {
+    return index < options.gradient_names.size()
+               ? options.gradient_names[index]
+               : "fixed_" + std::to_string(index);
+  };
+
+  std::cout << '\n'
+            << '[' << optimizer << " gradient table]\n"
+            << "  outer_iteration: " << iteration << '\n'
+            << "  objective: " << objective << '\n'
+            << "  fixed_effects: " << gradient.size() << '\n'
+            << "  random_effects: " << random_effect_count << '\n'
+            << "  tolerance: " << options.gradient_tolerance << '\n'
+            << "  within_tolerance: " << within_tolerance << '/'
+            << gradient.size() << '\n'
+            << "  max_gc: " << max_component;
+  if (!order.empty())
+    std::cout << " (" << parameter_name(max_index) << ')';
+  std::cout << "\n\n"
+            << "  " << std::left << std::setw(38) << "parameter" << std::right
+            << std::setw(16) << "gradient" << "  status\n"
+            << "  " << std::string(38, '-') << "  " << std::string(14, '-')
+            << "  -------------\n";
+  for (std::size_t index : order) {
+    const bool okay = std::isfinite(gradient[index]) &&
+                      std::abs(gradient[index]) <= options.gradient_tolerance;
+    std::cout << "  " << std::left << std::setw(38) << parameter_name(index)
+              << std::right << std::scientific << std::setprecision(6)
+              << (okay ? "\033[32m" : "\033[31m") << std::setw(16)
+              << gradient[index] << "\033[0m"
+              << "  " << (okay ? "within tol" : "above tol") << '\n';
+  }
+  std::cout << std::defaultfloat << std::flush;
+}
+
 } // namespace detail
 
 // Optimize the exact Laplace marginal objective with a persistent evaluator.
@@ -808,7 +868,8 @@ optimize_laplace(ExactLaplaceEvaluator<Model> &evaluator,
         "optimize_laplace: fixed_initial cannot be empty");
   }
   if (options.max_iterations < 0 || options.memory < 0 ||
-      options.print_every < 0 || options.max_evaluations < 0 ||
+      options.print_every < 0 || options.gradient_table_every < 0 ||
+      options.max_evaluations < 0 ||
       !(options.gradient_tolerance >= 0.0) ||
       !(options.step_tolerance >= 0.0) || !(options.initial_step_scale > 0.0) ||
       !(options.maximum_direction_norm > 0.0) ||
@@ -831,6 +892,7 @@ optimize_laplace(ExactLaplaceEvaluator<Model> &evaluator,
 
   std::deque<std::vector<double>> steps;
   std::deque<std::vector<double>> gradient_changes;
+  int last_gradient_table_iteration = -1;
   for (int iteration = 0; iteration < options.max_iterations; ++iteration) {
     const double gradient_norm = detail::norm(current.gradient);
     result.history.push_back({iteration, current.objective.laplace_objective_m,
@@ -849,6 +911,14 @@ optimize_laplace(ExactLaplaceEvaluator<Model> &evaluator,
                 << "  hdot_ms: " << current.timings.hdot_ms << '\n'
                 << "  total_ms: " << current.timings.total_ms << '\n'
                 << std::flush;
+    }
+    if (options.print_every > 0 && options.gradient_table_every > 0 &&
+        (iteration == 0 || iteration % options.gradient_table_every == 0)) {
+      detail::print_gradient_table(
+          "exact_laplace_lbfgs", iteration,
+          current.objective.laplace_objective_m, current.gradient,
+          current.objective.u_hat_m.size(), options);
+      last_gradient_table_iteration = iteration;
     }
     result.iterations = iteration;
     if (gradient_norm <= options.gradient_tolerance) {
@@ -993,6 +1063,13 @@ optimize_laplace(ExactLaplaceEvaluator<Model> &evaluator,
   result.gradient = current.gradient;
   result.objective = current.objective.laplace_objective_m;
   result.gradient_norm = detail::norm(current.gradient);
+  if (options.print_every > 0 && options.gradient_table_every > 0 &&
+      result.iterations != last_gradient_table_iteration) {
+    detail::print_gradient_table(
+        "exact_laplace_lbfgs final", result.iterations,
+        current.objective.laplace_objective_m, current.gradient,
+        current.objective.u_hat_m.size(), options);
+  }
   result.evaluation = std::move(current);
   return result;
 }

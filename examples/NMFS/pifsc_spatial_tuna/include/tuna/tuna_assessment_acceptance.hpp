@@ -948,7 +948,8 @@ template <class Model>
 inline LaplaceExactLBFGSResult optimize_full_phase_public_exact_laplace(
     Model &model, const std::vector<double> &theta,
     const std::vector<double> &random, const ParameterPartition &partition,
-    const TunaFitOptions &options) {
+    const TunaFitOptions &options,
+    const std::vector<std::string> &fixed_names) {
   LaplaceObjectiveOptions objective_options;
   objective_options.include_constant_m = true;
   objective_options.compute_mixed_derivatives_m = true;
@@ -981,6 +982,8 @@ inline LaplaceExactLBFGSResult optimize_full_phase_public_exact_laplace(
   public_options.minimum_step_scale = std::min(options.min_step_m, 1e-10);
   public_options.sufficient_decrease = 1e-4;
   public_options.print_every = options.lbfgs_print_every_m;
+  public_options.gradient_table_every = 10;
+  public_options.gradient_names = fixed_names;
 
   const stats::LaplaceOptimizerResult public_fit =
       stats::optimize_laplace(evaluator, theta, public_options);
@@ -1326,7 +1329,7 @@ fit_spatial_assessment(const TunaSpatialAssessmentData &data,
       LaplaceExactLBFGSResult phase_fit;
       if (phase == TunaAssessmentPhase::Full) {
         phase_fit = optimize_full_phase_public_exact_laplace(
-            phase_model, theta, random, partition, options);
+            phase_model, theta, random, partition, options, fixed_names);
       } else {
         phase_fit = optimize_laplace_fixed_effects_exact_lbfgs(
             phase_model, theta, random, partition, lbfgs_options);
