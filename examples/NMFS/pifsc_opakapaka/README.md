@@ -27,9 +27,17 @@ random-effect modes, convergence diagnostics, and structure/backend metadata.
 
 ## Run
 
+Requirements are Bash, a C++17 compiler, and the vendored dependencies in the
+repository. From the repository root:
+
 ```bash
-bash examples/NMFS/pifsc_opakapaka/run_opakapaka_projection.sh
+./examples/NMFS/pifsc_opakapaka/run_opakapaka_projection.sh
 ```
+
+The same script can be invoked as `./run_opakapaka_projection.sh` from this
+directory. Set `CXX` to choose a compiler. The executable is written to
+`build/examples/pifsc_opakapaka`; generated CSV files go to this example's
+`outputs/` directory.
 
 Outputs are written to:
 
@@ -38,9 +46,13 @@ examples/NMFS/pifsc_opakapaka/outputs/synthetic_fit_summary.csv
 examples/NMFS/pifsc_opakapaka/outputs/synthetic_projection_scenarios.csv
 ```
 
-## Opakapaka Projection Validation
+## Opakapaka projection validation
 
-A synthetic opakapaka-style state-space projection model was implemented in both Quadra and TMB using identical data and model structure.
+A synthetic opakapaka-style state-space projection model was implemented in
+both Quadra and TMB using identical data and model structure. The values below
+are a recorded validation baseline, not assertions about every compiler,
+machine, or later optimizer configuration. Current-run values in `outputs/`
+are authoritative for the checked-out revision.
 
 ### Numerical Agreement
 
@@ -67,11 +79,14 @@ Quadra automatically identified the latent random-effects Hessian as tridiagonal
 
 This enabled use of the specialized tridiagonal Laplace backend instead of a general sparse or dense factorization.
 
-### Performance
+### Recorded performance
 
 | Metric | Quadra | TMB |
 |----------|----------|----------|
 | End-to-end runtime | ~0.18 s | ~0.49 s |
 | Peak RSS | ~5 MB | ~170 MB |
 
-In this benchmark Quadra achieved equivalent results while using substantially less memory and lower end-to-end runtime through automatic structure detection and specialized Laplace evaluation.
+These timings and memory measurements are illustrative and are not portable
+benchmarks. Compiler, optimization flags, hardware, and warm/cold process state
+all affect them. In the recorded run, Quadra achieved equivalent numerical
+results while using structure detection and a specialized Laplace evaluation.

@@ -1,16 +1,18 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-mkdir -p examples/NMFS/sefsc_red_snapper/outputs
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
+cd "$repo_root"
 
-c++ -DQUADRA_DEBUG_FD_FINAL_GRADIENT -DQUADRA_DEBUG_LAPLACE_GRADIENT_PARTS -std=c++17 -O3 \
+mkdir -p build/examples examples/NMFS/sefsc_red_snapper/outputs
+
+"${CXX:-c++}" -std=c++17 -O3 \
   -I. \
   -Iexternal/eigen \
   -Icore \
   -Iexternal/LBFGSpp/include \
-  \
-  -o examples/NMFS/sefsc_red_snapper/quadra/red_snapper_quadra_fit \
+  -o build/examples/sefsc_red_snapper_quadra_fit \
   examples/NMFS/sefsc_red_snapper/quadra/red_snapper_quadra_fit.cpp \
   examples/NMFS/sefsc_red_snapper/quadra/red_snapper_adgraph_global.cpp
 
-./examples/NMFS/sefsc_red_snapper/quadra/red_snapper_quadra_fit
+./build/examples/sefsc_red_snapper_quadra_fit

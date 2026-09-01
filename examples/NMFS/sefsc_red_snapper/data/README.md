@@ -1,5 +1,10 @@
 # Data
 
-Synthetic or public-data-safe input files will live here.
+This directory contains the synthetic observation series and projection
+scenarios used by the Red Snapper example:
 
-Do not commit generated outputs or confidential assessment data.
+- `synthetic_red_snapper_observations.csv`
+- `red_snapper_projection_scenarios.csv`
+
+The files are demonstration inputs, not official observations. Do not place
+confidential or controlled assessment data in this public example directory.

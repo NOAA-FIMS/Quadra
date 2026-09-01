@@ -11,7 +11,9 @@ RSCRIPT ?= Rscript
 
 CPPFLAGS += -Iinclude -I$(QUADRA_ROOT) -I$(QUADRA_ROOT)/external/eigen
 CXXFLAGS ?= -O2 -Wall -Wextra
-CXXFLAGS += -std=c++17
+# The source requires C++17. Keep that contract even when a caller supplies
+# custom optimization or sanitizer flags on the make command line.
+override CXXFLAGS += -std=c++17
 EXAMPLE_SRC := src/advanced_tuna_spatial_assessment_example.cpp
 EXAMPLE_BIN := $(BUILD_DIR)/advanced_tuna_spatial_assessment_example
 EXAMPLE_DEP := $(EXAMPLE_BIN).d

@@ -11,6 +11,23 @@ The assessment is configured at runtime with
 `config/tuna_assessment.conf`. The format is dependency-free `key = value`
 text; blank lines, `#` comments, and section labels are allowed.
 
+This is a synthetic demonstration, not an official assessment or management
+product.
+
+## Requirements
+
+Building requires GNU Make (or a compatible `make`), a C++17 compiler, and the
+vendored Eigen headers in the Quadra checkout. Set `CXX` on the Make command to
+select a compiler. Custom `CXXFLAGS` are supported; the Makefile always retains
+the required `-std=c++17`. Running fits and samplers can be compute-intensive.
+
+The C++ build and `make test-fast` do not require R. Fit/report targets require
+`Rscript` with `jsonlite`, `ggplot2`, and `svglite`. Optional OPAL data auditing
+requires user-supplied source data and any additional R packages used by the
+import script.
+
+## Quick start
+
 This directory is a self-contained Quadra fisheries example. Run the commands
 below from `examples/NMFS/pifsc_spatial_tuna`; its Makefile resolves the
 Quadra root three directories above it.
@@ -56,8 +73,21 @@ make run-full-tuna-workflow
 For a separate fit followed by posterior sampling:
 
 ```bash
+make test-fast
 make fit-advanced-tuna
 make sample-advanced-tuna
+```
+
+`test-fast` builds and runs the lightweight catch-conditioning/reference-point
+smoke test. `fit-advanced-tuna` performs fitting and report generation.
+`sample-advanced-tuna` expects a compatible fit checkpoint, runs posterior
+sampling and acceptance checks, and can take much longer. For a compile-only
+check, use `make advanced-tuna-example`.
+
+Equivalent commands from the repository root use `make -C`, for example:
+
+```bash
+make -C examples/NMFS/pifsc_spatial_tuna test-fast
 ```
 
 If R is not on `PATH`, set `RSCRIPT` to the executable returned by the R

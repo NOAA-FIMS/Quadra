@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
+cd "$repo_root"
+
 echo "Assessment-scale synthetic diagnostics: using QUADRA_LBFGS_GRAD_TOL=1.0e-2"
 echo "This scaling run is intended to exercise assessment-like random-effect behavior, not strict optimizer validation."
 echo
@@ -32,9 +35,15 @@ run_case() {
   rm -f examples/NMFS/afsc_walleye_pollock/outputs/walleye_pollock_huu_diagnostics.csv
 
   if [[ "$n" == "0" ]]; then
-    "${CXX:-c++}" -std=c++17 -g -I"external/eigen/"       -DWALLEYE_POLLOCK_HUU_DIAGNOSTICS       -DQUADRA_LBFGS_GRAD_TOL=1.0e-2       "$CPP" "$GLOB" -o "$exe"
+    "${CXX:-c++}" -std=c++17 -g -I. -Iexternal/eigen \
+      -DWALLEYE_POLLOCK_HUU_DIAGNOSTICS \
+      -DQUADRA_LBFGS_GRAD_TOL=1.0e-2 "$CPP" "$GLOB" -o "$exe"
   else
-    "${CXX:-c++}" -std=c++17 -g -I"external/eigen/"       -DWALLEYE_POLLOCK_HUU_DIAGNOSTICS       -DQUADRA_LBFGS_GRAD_TOL=1.0e-2       -DWALLEYE_POLLOCK_RANDOM_RECRUITMENT_COUNT="$n"       "$CPP" "$GLOB" -o "$exe"
+    "${CXX:-c++}" -std=c++17 -g -I. -Iexternal/eigen \
+      -DWALLEYE_POLLOCK_HUU_DIAGNOSTICS \
+      -DQUADRA_LBFGS_GRAD_TOL=1.0e-2 \
+      -DWALLEYE_POLLOCK_RANDOM_RECRUITMENT_COUNT="$n" \
+      "$CPP" "$GLOB" -o "$exe"
   fi
 
   set +e
@@ -63,13 +72,6 @@ run_case() {
     echo
     echo "Fixed-gradient diagnostics:"
     cat "$grad_diag"
-  fi
-
-  local fixed_hess_diag="examples/NMFS/afsc_walleye_pollock/outputs/walleye_pollock_fixed_hessian_diagnostics.csv"
-  if [[ -f "$fixed_hess_diag" ]]; then
-    echo
-    echo "Fixed-effect Hessian diagnostics:"
-    cat "$fixed_hess_diag"
   fi
 
   local fixed_hess_diag="examples/NMFS/afsc_walleye_pollock/outputs/walleye_pollock_fixed_hessian_diagnostics.csv"

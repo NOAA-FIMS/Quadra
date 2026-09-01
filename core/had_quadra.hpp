@@ -2798,6 +2798,28 @@ struct ThirdOrderScalar {
       : val(v), d1(direction), d2(Real(0.0)), d3(Real(0.0)) {}
 };
 
+// Comparisons select a branch from the scalar value, matching AReal's
+// value-based comparison semantics above. Derivatives then propagate through
+// the selected branch in the usual piecewise-smooth way.
+inline bool operator<(const ThirdOrderScalar &l, const ThirdOrderScalar &r) {
+  return l.val < r.val;
+}
+inline bool operator<=(const ThirdOrderScalar &l, const ThirdOrderScalar &r) {
+  return l.val <= r.val;
+}
+inline bool operator>(const ThirdOrderScalar &l, const ThirdOrderScalar &r) {
+  return l.val > r.val;
+}
+inline bool operator>=(const ThirdOrderScalar &l, const ThirdOrderScalar &r) {
+  return l.val >= r.val;
+}
+inline bool operator==(const ThirdOrderScalar &l, const ThirdOrderScalar &r) {
+  return l.val == r.val;
+}
+inline bool operator!=(const ThirdOrderScalar &l, const ThirdOrderScalar &r) {
+  return l.val != r.val;
+}
+
 struct DirectionalDerivatives3 {
   Real value = Real(0.0);
   Real first = Real(0.0);  // df(x)[d]
