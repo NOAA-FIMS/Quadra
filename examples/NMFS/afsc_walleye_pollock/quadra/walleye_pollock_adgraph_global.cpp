@@ -1,4 +1,4 @@
-#include "../../../../core/had_quadra.hpp"
+#include "../../../../external/had/had.h"
 namespace had {
 threadDefine ADGraph *g_ADGraph = nullptr;
 }
