@@ -1,0 +1,13 @@
+Literal control start evaluable: 0; mode strict
+Resuming independently generated cold checkpoint: 289.246284346965
+Learning cold-fit scaling column 0/84
+Learning cold-fit scaling column 14/84
+Learning cold-fit scaling column 28/84
+Learning cold-fit scaling column 42/84
+Learning cold-fit scaling column 56/84
+Learning cold-fit scaling column 70/84
+L-BFGS: outer eval =   1, fx =     289.243645, |grad| = [1;31m    0.114203[0m
+L-BFGS: outer eval =  17, fx =     289.236731, |grad| = [1;32m    0.000000[0m
+L-BFGS: stopped at first iterate satisfying requested fixed-effect gradient tolerance.
+Refinement pass 0, original gradient 0.000001
+Final objective 289.236731, full gradient 0.000001, converged 1

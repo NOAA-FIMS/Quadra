@@ -8,6 +8,12 @@ comparisons and a converged Quadra joint-likelihood fit initialized
 from the supplied SS3 parameter estimates.
 Striped marlin will use its own workspace once its inputs are supplied.
 
+An additional control-input initialization experiment now recovers the same
+optimum without reading SS3 fitted estimates or covariance. It needs an explicit
+catch-feasibility stage before evaluating the full likelihood. See
+[CONTROL_START.md](CONTROL_START.md) for the method, fixed-growth sensitivity,
+saved checkpoint results and [PDF report](output/pdf/swordfish_control_start.pdf).
+
 ## Run the model foundation and checks
 
 From this directory:

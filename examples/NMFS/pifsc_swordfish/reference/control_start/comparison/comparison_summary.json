@@ -1,0 +1,51 @@
+{
+  "passed": true,
+  "strict": {
+    "mode": "strict",
+    "initialization": "control native initial values; all historical deviations zero",
+    "reads_SS3_estimates": false,
+    "uses_SS3_covariance": false,
+    "fixed_male_L1": 83.2,
+    "initial_objective": null,
+    "literal_start_evaluable": false,
+    "catch_feasibility_stage": true,
+    "objective": 289.23673084721077,
+    "gradient_norm": 7.23479806639601e-07,
+    "converged": true,
+    "free_parameters": 84,
+    "evaluations": 17
+  },
+  "matched_fixed": {
+    "mode": "matched-fixed",
+    "initialization": "control native initial values; all historical deviations zero",
+    "reads_SS3_estimates": false,
+    "uses_SS3_covariance": false,
+    "fixed_male_L1": 83.4,
+    "initial_objective": null,
+    "literal_start_evaluable": false,
+    "catch_feasibility_stage": true,
+    "objective": 289.29963930562826,
+    "gradient_norm": 1.1488961340655023e-08,
+    "converged": true,
+    "free_parameters": 84,
+    "evaluations": 18
+  },
+  "ss3_initialized": {
+    "objective": 289.299639305825,
+    "gradient_norm": 8.94128498395071e-05,
+    "iterations": 90,
+    "converged": true,
+    "free_parameters": 84,
+    "initialization": "supplied SS3 fitted parameters",
+    "target": "joint penalized likelihood; no Laplace integration"
+  },
+  "matched_objective_difference": -1.9673507267725654e-10,
+  "maximum_parameter_difference_in_reference_SE": 1.3868622629201664e-05,
+  "maximum_matched_annual_SSB_difference_tonnes": 0.058926328107190784,
+  "interpretation": "Strict controls use male L1=83.2, so they define a different objective from Report.sso. Matched-fixed uses 83.4 with every free coordinate still initialized from controls.",
+  "literal_start": "The original full likelihood is not evaluable (empty predicted composition); the explicitly reported catch-only feasibility stage starts at the literal controls.",
+  "control_inputs_sha256": {
+    "swo2023_v004.dat": "7d28fff138faad2b7ce9a679b1596d5b0e49ac82b04b6957303553f177f77c4a",
+    "swo2023_v007.ctl": "eb2334ea68f221209bcdb94dc68a7a39d10323be7e2ba3a0c121e667d8640a7c"
+  }
+}

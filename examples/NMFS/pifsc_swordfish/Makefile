@@ -39,7 +39,7 @@ build/test_biology: tests/test_biology.cpp include/swordfish/biology.hpp include
 audit-biology: prepare build/audit_biology
 	./build/audit_biology build/ss3_biology_fixtures.txt build/biology_audit.csv
 
-test: audit audit-biology audit-population audit-likelihood build/test_dynamics build/test_biology build/test_population build/test_input_factory build/test_likelihood build/test_model_gradient build/test_benchmarks build/test_projection build/test_delta_method build/test_csv
+test: audit audit-biology audit-population audit-likelihood build/test_dynamics build/test_biology build/test_population build/test_input_factory build/test_likelihood build/test_model_gradient build/test_benchmarks build/test_projection build/test_delta_method build/test_csv build/test_control_start
 	./build/test_dynamics
 	./build/test_biology
 	./build/test_population
@@ -50,6 +50,7 @@ test: audit audit-biology audit-population audit-likelihood build/test_dynamics 
 	./build/test_projection
 	./build/test_delta_method
 	./build/test_csv
+	./build/test_control_start
 	$(PYTHON) -m unittest discover -s tests -p 'test_*.py'
 
 build/swordfish_population_input.hpp: scripts/prepare_population.py scripts/prepare_model.py scripts/swordfish_inputs.py data/raw/swo2023_v004.dat data/raw/swo2023_v007.ctl data/raw/Report.sso
@@ -199,3 +200,19 @@ test-portable: build/test_dynamics build/test_delta_method build/test_csv
 
 .PHONY: build-all
 build-all: prepare $(CPP_PROGRAMS)
+
+build/swordfish_control_start: src/swordfish_control_start.cpp $(wildcard include/swordfish/*.hpp) build/swordfish_control_input.hpp
+	$(CXX) $(CPPFLAGS) -I$(QUADRA_ROOT)/external/eigen $(CXXFLAGS) $(DEPFLAGS) $< -o $@
+
+build/test_control_start: tests/test_control_start.cpp $(wildcard include/swordfish/*.hpp) build/swordfish_control_input.hpp
+	$(CXX) $(CPPFLAGS) -I$(QUADRA_ROOT)/external/eigen $(CXXFLAGS) $(DEPFLAGS) $< -o $@
+.PHONY: test-control-start
+test-control-start: build/test_control_start
+	./build/test_control_start
+
+build/swordfish_control_input.hpp: scripts/prepare_control_start.py scripts/prepare_model.py scripts/swordfish_inputs.py data/raw/swo2023_v004.dat data/raw/swo2023_v007.ctl | build
+	$(PYTHON) scripts/prepare_control_start.py
+
+.PHONY: fit-control-start
+fit-control-start: build/swordfish_control_start
+	$(PYTHON) scripts/run_control_start.py

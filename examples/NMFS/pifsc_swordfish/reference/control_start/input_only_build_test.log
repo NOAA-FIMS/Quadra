@@ -1,0 +1,44 @@
+mkdir -p build
+python3 scripts/prepare_control_start.py
+Control-only input factory generated from .dat/.ctl (no Report.sso).
+c++ -Iinclude -Ibuild -I/Users/matthew.supernaw/FIMS-Testing/FIMS_Quadra/8_25/Quadra -I/Users/matthew.supernaw/FIMS-Testing/FIMS_Quadra/8_25/Quadra/external/eigen -std=c++17 -O2 -Wall -Wextra -Wpedantic -MMD -MP tests/test_control_start.cpp -o build/test_control_start
+In file included from tests/test_control_start.cpp:1:
+In file included from include/swordfish/control_start.hpp:7:
+In file included from include/swordfish/model.hpp:13:
+In file included from /Users/matthew.supernaw/FIMS-Testing/FIMS_Quadra/8_25/Quadra/model/parameter.hpp:7:
+In file included from /Users/matthew.supernaw/FIMS-Testing/FIMS_Quadra/8_25/Quadra/model/../math/transforms.hpp:3:
+In file included from /Users/matthew.supernaw/FIMS-Testing/FIMS_Quadra/8_25/Quadra/model/../math/../core/autodiff.hpp:14:
+/Users/matthew.supernaw/FIMS-Testing/FIMS_Quadra/8_25/Quadra/model/../math/../core/had_quadra.hpp:2320:58: warning: unused parameter 'vertex' [-Wunused-parameter]
+ 2320 | inline bool BatchDirectionHasLocalSignal(const ADVertex &vertex,
+      |                                                          ^
+/Users/matthew.supernaw/FIMS-Testing/FIMS_Quadra/8_25/Quadra/model/../math/../core/had_quadra.hpp:2321:56: warning: unused parameter 'e1' [-Wunused-parameter]
+ 2321 |                                          const ADEdge &e1, const ADEdge &e2,
+      |                                                        ^
+In file included from tests/test_control_start.cpp:1:
+In file included from include/swordfish/control_start.hpp:7:
+In file included from include/swordfish/model.hpp:13:
+In file included from /Users/matthew.supernaw/FIMS-Testing/FIMS_Quadra/8_25/Quadra/model/parameter.hpp:7:
+In file included from /Users/matthew.supernaw/FIMS-Testing/FIMS_Quadra/8_25/Quadra/model/../math/transforms.hpp:3:
+In file included from /Users/matthew.supernaw/FIMS-Testing/FIMS_Quadra/8_25/Quadra/model/../math/../core/autodiff.hpp:20:
+In file included from /Users/matthew.supernaw/FIMS-Testing/FIMS_Quadra/8_25/Quadra/model/../math/../core/../external/eigen/Eigen/Sparse:26:
+In file included from /Users/matthew.supernaw/FIMS-Testing/FIMS_Quadra/8_25/Quadra/model/../math/../core/../external/eigen/Eigen/SparseCore:61:
+/Users/matthew.supernaw/FIMS-Testing/FIMS_Quadra/8_25/Quadra/model/../math/../core/../external/eigen/Eigen/src/SparseCore/TriangularSolver.h:242:13: warning: variable 'count' set but not used [-Wunused-but-set-variable]
+  242 |       Index count = 0;
+      |             ^
+In file included from tests/test_control_start.cpp:1:
+In file included from include/swordfish/control_start.hpp:7:
+In file included from include/swordfish/model.hpp:13:
+In file included from /Users/matthew.supernaw/FIMS-Testing/FIMS_Quadra/8_25/Quadra/model/parameter.hpp:7:
+In file included from /Users/matthew.supernaw/FIMS-Testing/FIMS_Quadra/8_25/Quadra/model/../math/transforms.hpp:3:
+In file included from /Users/matthew.supernaw/FIMS-Testing/FIMS_Quadra/8_25/Quadra/model/../math/../core/autodiff.hpp:20:
+In file included from /Users/matthew.supernaw/FIMS-Testing/FIMS_Quadra/8_25/Quadra/model/../math/../core/../external/eigen/Eigen/Sparse:29:
+In file included from /Users/matthew.supernaw/FIMS-Testing/FIMS_Quadra/8_25/Quadra/model/../math/../core/../external/eigen/Eigen/SparseLU:35:
+/Users/matthew.supernaw/FIMS-Testing/FIMS_Quadra/8_25/Quadra/model/../math/../core/../external/eigen/Eigen/src/SparseLU/SparseLU_heap_relax_snode.h:77:9: warning: variable 'nsuper_et_post' set but not used [-Wunused-but-set-variable]
+   77 |   Index nsuper_et_post = 0; // Number of relaxed snodes in postordered etree
+      |         ^
+/Users/matthew.supernaw/FIMS-Testing/FIMS_Quadra/8_25/Quadra/model/../math/../core/../external/eigen/Eigen/src/SparseLU/SparseLU_heap_relax_snode.h:78:9: warning: variable 'nsuper_et' set but not used [-Wunused-but-set-variable]
+   78 |   Index nsuper_et = 0;      // Number of relaxed snodes in the original etree
+      |         ^
+5 warnings generated.
+./build/test_control_start
+Control starts, zero deviations, phase masks and feasibility gradient: PASS

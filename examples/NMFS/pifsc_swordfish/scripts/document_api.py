@@ -273,7 +273,7 @@ def main():
     for entry in entries:
         lines+=['## '+entry['file']+' :: '+entry['name'],'','`'+entry['signature']+'`','',entry['purpose'],'',f"Source: [{entry['file']}:{entry['line']}](../{entry['file']}#L{entry['line']})",'']
         if entry.get('documentation') and entry['documentation']!=entry['purpose']:lines+=['Contract details:','','```text',entry['documentation'],'```','']
-    (ROOT/'docs/API_REFERENCE.md').write_text('\n'.join(lines))
+    (ROOT/'docs/API_REFERENCE.md').write_text('\n'.join(line.rstrip() for line in '\n'.join(lines).splitlines())+'\n')
     print('Documented',len(entries),'named declarations with complete description coverage.')
 
 

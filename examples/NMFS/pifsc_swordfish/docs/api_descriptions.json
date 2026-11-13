@@ -136,5 +136,19 @@
   "src/swordfish_diagnostics.cpp::RescaledModel::operator()": "Evaluate the original joint objective after the constant coordinate transformation.",
   "src/swordfish_diagnostics.cpp::RescaledModel::evaluate_impl": "Provide the rescaled joint objective through the Quadra model evaluation interface.",
   "src/swordfish_projection_uncertainty.cpp::Output": "One labeled scenario-year-quantity point estimate, with a unique covariance/Jacobian output identifier.",
-  "src/swordfish_projection_uncertainty.cpp::flatten": "Flatten all scenario trajectories into a stable 250-output order shared by intervals, Jacobian rows and covariance labels."
+  "src/swordfish_projection_uncertainty.cpp::flatten": "Flatten all scenario trajectories into a stable 250-output order shared by intervals, Jacobian rows and covariance labels.",
+  "control_start_values": "Return literal control native values and zero historical recruitment deviations. An explicit matched-fixed sensitivity changes only male L1 from 83.2 to 83.4; no fitted free parameters or report values are read.",
+  "ControlStartPhase": "Active-coordinate view of the independent control-start model. Inactive coordinates remain at its checkpoint; the optional catch-only objective is a documented feasibility stage for an otherwise undefined full likelihood.",
+  "ControlStartPhase::ControlStartPhase": "Select independent coordinates using original control activation phases: 1, 8, 64 and 84 active values. Early deviations activate in phase 4 and main deviations in phase 3.",
+  "ControlStartPhase::parameter_names_impl": "Return the active canonical coordinate labels in unchanged full-model order.",
+  "ControlStartPhase::expand": "Expand active values into the complete bounded-logit vector while preserving all inactive checkpoint coordinates.",
+  "ControlStartPhase::operator()": "Evaluate the same final weighted joint target, or catch-only feasibility when explicitly enabled. Neither path reads SS3 estimates or saved covariance.",
+  "ControlStartPhase::evaluate_impl": "Expose the restricted scalar objective through the public Quadra model evaluation interface.",
+  "src/swordfish_control_start.cpp::ColdMetricModel": "Linear optimizer coordinate map learned by differentiating the cold trajectory only. Spectral regularization applies to optimization scaling and is not an inferential covariance or a changed statistical target.",
+  "src/swordfish_control_start.cpp::ColdMetricModel::ColdMetricModel": "Borrow the cold objective and copy its current coordinate center and constant scaling factor.",
+  "src/swordfish_control_start.cpp::ColdMetricModel::parameter_names_impl": "Preserve canonical coordinate ordering when applying cold-learned scaling.",
+  "src/swordfish_control_start.cpp::ColdMetricModel::expand": "Map scaled displacements to the original bounded-logit coordinates as center plus factor times displacement.",
+  "src/swordfish_control_start.cpp::ColdMetricModel::operator()": "Evaluate the unchanged full joint objective after cold-derived numerical scaling.",
+  "src/swordfish_control_start.cpp::ColdMetricModel::evaluate_impl": "Provide the scaled objective through the Quadra model interface.",
+  "src/swordfish_control_start.cpp::save_parameters": "Write all native parameters and 57 recruitment deviations to a distinct control-start checkpoint or final result CSV."
 }
