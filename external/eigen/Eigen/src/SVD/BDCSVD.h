@@ -1052,7 +1052,7 @@ void BDCSVD<MatrixType>::computeSingVals(const ArrayRef &col0,
       if (!(numext::isfinite)(fRight))
         std::cout << "f(" << rightShifted << ") =" << fRight << " ; " << left
                   << " " << shift << " " << right << "\n";
-        // assert((numext::isfinite)(fRight));
+      // assert((numext::isfinite)(fRight));
 #endif
 
 #ifdef EIGEN_BDCSVD_DEBUG_VERBOSE

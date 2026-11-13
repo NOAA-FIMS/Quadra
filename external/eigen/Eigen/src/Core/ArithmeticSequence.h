@@ -153,9 +153,9 @@ protected:
 
 public:
 #if EIGEN_HAS_CXX11 && ((!EIGEN_COMP_GNUC) || EIGEN_COMP_GNUC >= 48)
-  auto reverse() const -> decltype(Eigen::seqN(m_first + (m_size + fix<-1>()) *
-                                                             m_incr,
-                                               m_size, -m_incr)) {
+  auto reverse() const
+      -> decltype(Eigen::seqN(m_first + (m_size + fix<-1>()) * m_incr, m_size,
+                              -m_incr)) {
     return seqN(m_first + (m_size + fix<-1>()) * m_incr, m_size, -m_incr);
   }
 #else
@@ -232,12 +232,10 @@ auto seq(FirstType f, LastType l);
 
 #if EIGEN_HAS_CXX11
 template <typename FirstType, typename LastType>
-auto seq(FirstType f, LastType l)
-    -> decltype(seqN(
-        typename internal::cleanup_index_type<FirstType>::type(f),
-        (typename internal::cleanup_index_type<LastType>::type(l) -
-         typename internal::cleanup_index_type<FirstType>::type(f) +
-         fix<1>()))) {
+auto seq(FirstType f, LastType l) -> decltype(seqN(
+    typename internal::cleanup_index_type<FirstType>::type(f),
+    (typename internal::cleanup_index_type<LastType>::type(l) -
+     typename internal::cleanup_index_type<FirstType>::type(f) + fix<1>()))) {
   return seqN(typename internal::cleanup_index_type<FirstType>::type(f),
               (typename internal::cleanup_index_type<LastType>::type(l) -
                typename internal::cleanup_index_type<FirstType>::type(f) +
@@ -245,14 +243,13 @@ auto seq(FirstType f, LastType l)
 }
 
 template <typename FirstType, typename LastType, typename IncrType>
-auto seq(FirstType f, LastType l, IncrType incr)
-    -> decltype(seqN(
-        typename internal::cleanup_index_type<FirstType>::type(f),
-        (typename internal::cleanup_index_type<LastType>::type(l) -
-         typename internal::cleanup_index_type<FirstType>::type(f) +
-         typename internal::cleanup_seq_incr<IncrType>::type(incr)) /
-            typename internal::cleanup_seq_incr<IncrType>::type(incr),
-        typename internal::cleanup_seq_incr<IncrType>::type(incr))) {
+auto seq(FirstType f, LastType l, IncrType incr) -> decltype(seqN(
+    typename internal::cleanup_index_type<FirstType>::type(f),
+    (typename internal::cleanup_index_type<LastType>::type(l) -
+     typename internal::cleanup_index_type<FirstType>::type(f) +
+     typename internal::cleanup_seq_incr<IncrType>::type(incr)) /
+        typename internal::cleanup_seq_incr<IncrType>::type(incr),
+    typename internal::cleanup_seq_incr<IncrType>::type(incr))) {
   typedef typename internal::cleanup_seq_incr<IncrType>::type CleanedIncrType;
   return seqN(typename internal::cleanup_index_type<FirstType>::type(f),
               (typename internal::cleanup_index_type<LastType>::type(l) -
@@ -269,8 +266,7 @@ typename internal::enable_if<
     !(symbolic::is_symbolic<FirstType>::value ||
       symbolic::is_symbolic<LastType>::value),
     ArithmeticSequence<typename internal::cleanup_index_type<FirstType>::type,
-                       Index>>::type
-seq(FirstType f, LastType l) {
+                       Index>>::type seq(FirstType f, LastType l) {
   return seqN(typename internal::cleanup_index_type<FirstType>::type(f),
               Index((typename internal::cleanup_index_type<LastType>::type(l) -
                      typename internal::cleanup_index_type<FirstType>::type(f) +
@@ -431,8 +427,8 @@ auto lastN(SizeType size, IncrType incr)
  * \sa lastN(SizeType,IncrType, seqN(FirstType,SizeType),
  * seq(FirstType,LastType) */
 template <typename SizeType>
-auto lastN(SizeType size) -> decltype(seqN(Eigen::last + fix<1>() - size,
-                                           size)) {
+auto lastN(SizeType size)
+    -> decltype(seqN(Eigen::last + fix<1>() - size, size)) {
   return seqN(Eigen::last + fix<1>() - size, size);
 }
 #endif

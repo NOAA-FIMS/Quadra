@@ -356,16 +356,16 @@ struct reduce<Reducer, A, Ts...> {
 
 struct sum_op {
   template <typename A, typename B>
-  EIGEN_DEVICE_FUNC constexpr static EIGEN_STRONG_INLINE auto
-  run(A a, B b) -> decltype(a + b) {
+  EIGEN_DEVICE_FUNC constexpr static EIGEN_STRONG_INLINE auto run(A a, B b)
+      -> decltype(a + b) {
     return a + b;
   }
   static constexpr int Identity = 0;
 };
 struct product_op {
   template <typename A, typename B>
-  EIGEN_DEVICE_FUNC constexpr static EIGEN_STRONG_INLINE auto
-  run(A a, B b) -> decltype(a * b) {
+  EIGEN_DEVICE_FUNC constexpr static EIGEN_STRONG_INLINE auto run(A a, B b)
+      -> decltype(a * b) {
     return a * b;
   }
   static constexpr int Identity = 1;
@@ -486,10 +486,9 @@ constexpr EIGEN_STRONG_INLINE array<T, N> array_reverse(array<T, N> arr) {
 template <typename Reducer, typename T, std::size_t N, std::size_t n = N - 1>
 struct h_array_reduce {
   EIGEN_DEVICE_FUNC constexpr static EIGEN_STRONG_INLINE auto
-  run(array<T, N> arr, T identity)
-      -> decltype(Reducer::run(
-          h_array_reduce<Reducer, T, N, n - 1>::run(arr, identity),
-          array_get<n>(arr))) {
+  run(array<T, N> arr, T identity) -> decltype(Reducer::run(
+      h_array_reduce<Reducer, T, N, n - 1>::run(arr, identity),
+      array_get<n>(arr))) {
     return Reducer::run(
         h_array_reduce<Reducer, T, N, n - 1>::run(arr, identity),
         array_get<n>(arr));

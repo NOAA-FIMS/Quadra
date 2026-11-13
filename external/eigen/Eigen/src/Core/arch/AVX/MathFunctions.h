@@ -99,8 +99,8 @@ pexp<Packet4d>(const Packet4d &_x) {
 // For detail see here: http://www.beyond3d.com/content/articles/8/
 #if EIGEN_FAST_MATH
 template <>
-EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS EIGEN_UNUSED Packet8f
-psqrt<Packet8f>(const Packet8f &_x) {
+EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
+    EIGEN_UNUSED Packet8f psqrt<Packet8f>(const Packet8f &_x) {
   Packet8f minus_half_x = pmul(_x, pset1<Packet8f>(-0.5f));
   Packet8f denormal_mask =
       pandnot(pcmp_lt(_x, pset1<Packet8f>((std::numeric_limits<float>::min)())),
@@ -117,23 +117,23 @@ psqrt<Packet8f>(const Packet8f &_x) {
 #else
 
 template <>
-EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS EIGEN_UNUSED Packet8f
-psqrt<Packet8f>(const Packet8f &_x) {
+EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
+    EIGEN_UNUSED Packet8f psqrt<Packet8f>(const Packet8f &_x) {
   return _mm256_sqrt_ps(_x);
 }
 
 #endif
 
 template <>
-EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS EIGEN_UNUSED Packet4d
-psqrt<Packet4d>(const Packet4d &_x) {
+EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
+    EIGEN_UNUSED Packet4d psqrt<Packet4d>(const Packet4d &_x) {
   return _mm256_sqrt_pd(_x);
 }
 
 #if EIGEN_FAST_MATH
 template <>
-EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS EIGEN_UNUSED Packet8f
-prsqrt<Packet8f>(const Packet8f &_x) {
+EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
+    EIGEN_UNUSED Packet8f prsqrt<Packet8f>(const Packet8f &_x) {
   _EIGEN_DECLARE_CONST_Packet8f_FROM_INT(inf, 0x7f800000);
   _EIGEN_DECLARE_CONST_Packet8f(one_point_five, 1.5f);
   _EIGEN_DECLARE_CONST_Packet8f(minus_half, -0.5f);
@@ -167,16 +167,16 @@ prsqrt<Packet8f>(const Packet8f &_x) {
 
 #else
 template <>
-EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS EIGEN_UNUSED Packet8f
-prsqrt<Packet8f>(const Packet8f &_x) {
+EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
+    EIGEN_UNUSED Packet8f prsqrt<Packet8f>(const Packet8f &_x) {
   _EIGEN_DECLARE_CONST_Packet8f(one, 1.0f);
   return _mm256_div_ps(p8f_one, _mm256_sqrt_ps(_x));
 }
 #endif
 
 template <>
-EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS EIGEN_UNUSED Packet4d
-prsqrt<Packet4d>(const Packet4d &_x) {
+EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
+    EIGEN_UNUSED Packet4d prsqrt<Packet4d>(const Packet4d &_x) {
   _EIGEN_DECLARE_CONST_Packet4d(one, 1.0);
   return _mm256_div_pd(p4d_one, _mm256_sqrt_pd(_x));
 }

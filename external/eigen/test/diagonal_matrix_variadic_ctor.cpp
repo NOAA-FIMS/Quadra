@@ -164,8 +164,12 @@ template <> void constructorTest<float>() {
     for (Index k = 0; k < a.rows(); ++k)
       VERIFY(m(k, k) == raw[k]);
   }
-  { VERIFY_IMPLICIT_CONVERSION_3(DiagonalMatrix3, 1.2647, 2.56f, -3); }
-  { VERIFY_IMPLICIT_CONVERSION_4(DiagonalMatrix4, 1.2647, 2.56f, -3, 3.23f); }
+  {
+    VERIFY_IMPLICIT_CONVERSION_3(DiagonalMatrix3, 1.2647, 2.56f, -3);
+  }
+  {
+    VERIFY_IMPLICIT_CONVERSION_4(DiagonalMatrix4, 1.2647, 2.56f, -3, 3.23f);
+  }
   {
     VERIFY_IMPLICIT_CONVERSION_5(DiagonalMatrix5, 1.2647, 2.56f, -3, 3.23f, 2);
   }

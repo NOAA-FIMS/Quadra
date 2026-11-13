@@ -42,8 +42,8 @@ pcos<Packet4f>(const Packet4f &_x) {
 
 #ifndef EIGEN_COMP_CLANG
 template <>
-EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS EIGEN_UNUSED Packet4f
-prsqrt<Packet4f>(const Packet4f &x) {
+EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
+    EIGEN_UNUSED Packet4f prsqrt<Packet4f>(const Packet4f &x) {
   return vec_rsqrt(x);
 }
 #endif
@@ -51,15 +51,15 @@ prsqrt<Packet4f>(const Packet4f &x) {
 #ifdef __VSX__
 #ifndef EIGEN_COMP_CLANG
 template <>
-EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS EIGEN_UNUSED Packet2d
-prsqrt<Packet2d>(const Packet2d &x) {
+EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
+    EIGEN_UNUSED Packet2d prsqrt<Packet2d>(const Packet2d &x) {
   return vec_rsqrt(x);
 }
 #endif
 
 template <>
-EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS EIGEN_UNUSED Packet4f
-psqrt<Packet4f>(const Packet4f &x) {
+EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
+    EIGEN_UNUSED Packet4f psqrt<Packet4f>(const Packet4f &x) {
   return vec_sqrt(x);
 }
 

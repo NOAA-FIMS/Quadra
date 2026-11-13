@@ -317,7 +317,9 @@ template <typename Scalar> void dynamicVectorConstruction() {
     VERIFY_IS_EQUAL(v, (VectorX{{raw[0], raw[1], raw[2], raw[3]}}));
   }
 
-  { VERIFY_RAISES_ASSERT((VectorX{raw[0], raw[1], raw[2], raw[3]})); }
+  {
+    VERIFY_RAISES_ASSERT((VectorX{raw[0], raw[1], raw[2], raw[3]}));
+  }
   {
     VERIFY_RAISES_ASSERT((VectorX{
         {raw[0], raw[1], raw[2], raw[3]},

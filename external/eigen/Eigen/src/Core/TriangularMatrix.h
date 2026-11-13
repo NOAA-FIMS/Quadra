@@ -313,8 +313,7 @@ public:
 #if EIGEN_COMP_MSVC
   template <int Side, typename Other>
   EIGEN_DEVICE_FUNC inline const internal::triangular_solve_retval<
-      Side, TriangularView, Other>
-  solve(const MatrixBase<Other> &other) const {
+      Side, TriangularView, Other> solve(const MatrixBase<Other> &other) const {
     return Base::template solve<Side>(other);
   }
 #else
@@ -571,11 +570,9 @@ public:
   template <typename OtherDerived>
   EIGEN_DEVICE_FUNC
 #ifdef EIGEN_PARSED_BY_DOXYGEN
-      void
-      swap(TriangularBase<OtherDerived> &other)
+      void swap(TriangularBase<OtherDerived> &other)
 #else
-      void
-      swap(TriangularBase<OtherDerived> const &other)
+      void swap(TriangularBase<OtherDerived> const &other)
 #endif
   {
     EIGEN_STATIC_ASSERT_LVALUE(OtherDerived);

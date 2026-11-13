@@ -326,8 +326,8 @@ typename Minimizer::Scalar BVMinimize(const BVH1 &tree1, const BVH2 &tree2,
       for (vCur2 = vBegin2; vCur2 != vEnd2;
            ++vCur2) { // go through child volumes of second tree
         Helper2 helper(*oBegin1, minimizer);
-        minimum = (std::min)(
-            minimum, internal::minimize_helper(tree2, helper, *vCur2, minimum));
+        minimum = (std::min)(minimum, internal::minimize_helper(
+                                          tree2, helper, *vCur2, minimum));
       }
     }
 

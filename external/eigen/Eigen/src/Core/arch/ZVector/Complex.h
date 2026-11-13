@@ -311,8 +311,8 @@ EIGEN_STRONG_INLINE std::complex<float> pfirst<Packet2cf>(const Packet2cf &a) {
 
 #if !defined(__ARCH__) || (defined(__ARCH__) && __ARCH__ < 12)
 template <>
-EIGEN_STRONG_INLINE Packet2cf
-pset1<Packet2cf>(const std::complex<float> &from) {
+EIGEN_STRONG_INLINE
+    Packet2cf pset1<Packet2cf>(const std::complex<float> &from) {
   Packet2cf res;
   res.cd[0] = Packet1cd(vec_ld2f((const float *)&from));
   res.cd[1] = res.cd[0];
@@ -320,8 +320,8 @@ pset1<Packet2cf>(const std::complex<float> &from) {
 }
 #else
 template <>
-EIGEN_STRONG_INLINE Packet2cf
-pset1<Packet2cf>(const std::complex<float> &from) {
+EIGEN_STRONG_INLINE
+    Packet2cf pset1<Packet2cf>(const std::complex<float> &from) {
   Packet2cf res;
   if ((std::ptrdiff_t(&from) % 16) == 0)
     res.v = pload<Packet4f>((const float *)&from);

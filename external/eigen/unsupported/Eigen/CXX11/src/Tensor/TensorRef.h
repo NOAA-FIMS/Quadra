@@ -213,8 +213,8 @@ public:
 
 #if EIGEN_HAS_VARIADIC_TEMPLATES
   template <typename... IndexTypes>
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar
-  operator()(Index firstIndex, IndexTypes... otherIndices) const {
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const
+      Scalar operator()(Index firstIndex, IndexTypes... otherIndices) const {
     const std::size_t num_indices = (sizeof...(otherIndices) + 1);
     const array<Index, num_indices> indices{{ firstIndex, otherIndices... }};
     return coeff(indices);
@@ -304,8 +304,8 @@ public:
 #endif
 
   template <std::size_t NumIndices>
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar
-  coeff(const array<Index, NumIndices> &indices) const {
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const
+      Scalar coeff(const array<Index, NumIndices> &indices) const {
     const Dimensions &dims = this->dimensions();
     Index index = 0;
     if (PlainObjectType::Options & RowMajor) {

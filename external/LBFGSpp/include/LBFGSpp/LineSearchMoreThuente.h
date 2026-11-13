@@ -112,7 +112,7 @@ private:
             r1 = -u - sqrtd;
             r2 = -u + sqrtd;
         }
-        return (z3 * ba > Scalar(0)) ? ((std::max)(r1, r2)) : ((std::min)(r1, r2));
+        return (z3 * ba > Scalar(0)) ? ((std::max) (r1, r2)) : ((std::min) (r1, r2));
     }
 
     // Select the next step size according to the current step sizes,
@@ -170,8 +170,8 @@ private:
                 as;
             // Postprocessing the chosen step
             return (at > al) ?
-                (std::min)(at + deltau * (au - at), res) :
-                (std::max)(at + deltau * (au - at), res);
+                (std::min) (at + deltau * (au - at), res) :
+                (std::max) (at + deltau * (au - at), res);
         }
 
         // Simple extrapolation if au, fu, or gu is infinity
@@ -184,8 +184,8 @@ private:
         // Case 4: ft <= fl, gt * gl >= 0, |gt| >= |gl|
         // The following is not used in the paper, but it seems to be a reasonable safeguard
         return (at > al) ?
-            (std::min)(at + deltau * (au - at), ae) :
-            (std::max)(at + deltau * (au - at), ae);
+            (std::min) (at + deltau * (au - at), ae) :
+            (std::max) (at + deltau * (au - at), ae);
     }
 
 public:
@@ -477,7 +477,7 @@ public:
             {
                 // For Case 2, we apply the safeguarding rule
                 // newat = min(at + delta * (at - al), amax), delta in [1.1, 4]
-                new_step = (std::min)(step_max, step + delta_max * (step - I_lo));
+                new_step = (std::min) (step_max, step + delta_max * (step - I_lo));
 
                 // We can also consider the following scheme:
                 // First let step_selection() decide a value, and then project to the range above
@@ -495,8 +495,8 @@ public:
                 // For Case 1 and Case 3, use information of f and g to select new step
                 new_step = step_selection(I_lo, I_hi, step, fI_lo, fI_hi, ft, gI_lo, gI_hi, gt);
                 // Force new step in [step_min, step_max]
-                new_step = (std::max)(new_step, step_min);
-                new_step = (std::min)(new_step, step_max);
+                new_step = (std::max) (new_step, step_min);
+                new_step = (std::min) (new_step, step_max);
 
                 // Apply safeguarding rule related to step_min when necessary:
                 //     step+ in [alpha_min, max{delta_min * step, alpha_min}]
@@ -507,9 +507,9 @@ public:
                 if (use_step_min_safeguard)
                 {
                     const Scalar lower = step_min;
-                    const Scalar upper = (std::max)(step_min, delta_min * step);
-                    new_step = (std::max)(new_step, lower);
-                    new_step = (std::min)(new_step, upper);
+                    const Scalar upper = (std::max) (step_min, delta_min * step);
+                    new_step = (std::max) (new_step, lower);
+                    new_step = (std::min) (new_step, upper);
                 }
             }
 
@@ -563,8 +563,8 @@ public:
             // and I is contained in [step_min, step_max]
             if ((!bracketed) && (!in_case_2))
             {
-                const Scalar I_left = (std::min)(I_lo, I_hi);
-                const Scalar I_right = (std::max)(I_lo, I_hi);
+                const Scalar I_left = (std::min) (I_lo, I_hi);
+                const Scalar I_right = (std::max) (I_lo, I_hi);
                 bracketed = (I_left >= step_min && I_right <= step_max);
             }
 

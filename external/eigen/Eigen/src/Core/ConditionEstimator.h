@@ -67,7 +67,7 @@ rcond_invmatrix_L1_norm_estimate(const Decomposition &dec) {
   if (n == 0)
     return 0;
 
-    // Disable Index to float conversion warning
+  // Disable Index to float conversion warning
 #ifdef __INTEL_COMPILER
 #pragma warning push
 #pragma warning(disable : 2259)

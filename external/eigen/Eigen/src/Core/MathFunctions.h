@@ -804,13 +804,14 @@ template <typename Scalar> struct random_default_impl<Scalar, false, true> {
 #ifdef EIGEN_MAKING_DOCS
     return run(Scalar(NumTraits<Scalar>::IsSigned ? -10 : 0), Scalar(10));
 #else
-    enum {rand_bits = meta_floor_log2<(unsigned int)(RAND_MAX) + 1>::value,
-          scalar_bits = sizeof(Scalar) * CHAR_BIT,
-          shift = EIGEN_PLAIN_ENUM_MAX(0, int(rand_bits) - int(scalar_bits)),
-          offset =
-              NumTraits<Scalar>::IsSigned
-                  ? (1 << (EIGEN_PLAIN_ENUM_MIN(rand_bits, scalar_bits) - 1))
-                  : 0};
+    enum {
+      rand_bits = meta_floor_log2<(unsigned int)(RAND_MAX) + 1>::value,
+      scalar_bits = sizeof(Scalar) * CHAR_BIT,
+      shift = EIGEN_PLAIN_ENUM_MAX(0, int(rand_bits) - int(scalar_bits)),
+      offset = NumTraits<Scalar>::IsSigned
+                   ? (1 << (EIGEN_PLAIN_ENUM_MIN(rand_bits, scalar_bits) - 1))
+                   : 0
+    };
     return Scalar((std::rand() >> shift) - offset);
 #endif
   }
@@ -1407,11 +1408,9 @@ template <> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE double log(const double &x) {
 #endif
 
 template <typename T>
-EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
-    typename internal::enable_if<NumTraits<T>::IsSigned ||
-                                     NumTraits<T>::IsComplex,
-                                 typename NumTraits<T>::Real>::type
-    abs(const T &x) {
+EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE typename internal::enable_if<
+    NumTraits<T>::IsSigned || NumTraits<T>::IsComplex,
+    typename NumTraits<T>::Real>::type abs(const T &x) {
   EIGEN_USING_STD(abs);
   return abs(x);
 }

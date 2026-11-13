@@ -222,7 +222,7 @@ public:
 #endif
 #if !EIGEN_HAS_CXX11
         EIGEN_DEVICE_FUNC DenseStorage
-        & operator=(const DenseStorage &other) {
+        & operator=(const DenseStorage & other) {
     if (this != &other)
       m_data = other.m_data;
     return *this;

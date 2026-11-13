@@ -247,9 +247,9 @@ LevenbergMarquardt<FunctorType, Scalar>::minimizeOneStep(FVectorType &x) {
   if (fnorm != 0.)
     for (Index j = 0; j < n; ++j)
       if (wa2[permutation.indices()[j]] != 0.)
-        gnorm = (std::max)(
-            gnorm, abs(fjac.col(j).head(j + 1).dot(qtf.head(j + 1) / fnorm) /
-                       wa2[permutation.indices()[j]]));
+        gnorm = (std::max)(gnorm, abs(fjac.col(j).head(j + 1).dot(
+                                          qtf.head(j + 1) / fnorm) /
+                                      wa2[permutation.indices()[j]]));
 
   /* test for convergence of the gradient norm. */
   if (gnorm <= parameters.gtol)
@@ -508,9 +508,9 @@ LevenbergMarquardt<FunctorType, Scalar>::minimizeOptimumStorageOneStep(
   if (fnorm != 0.)
     for (j = 0; j < n; ++j)
       if (wa2[permutation.indices()[j]] != 0.)
-        gnorm = (std::max)(
-            gnorm, abs(fjac.col(j).head(j + 1).dot(qtf.head(j + 1) / fnorm) /
-                       wa2[permutation.indices()[j]]));
+        gnorm = (std::max)(gnorm, abs(fjac.col(j).head(j + 1).dot(
+                                          qtf.head(j + 1) / fnorm) /
+                                      wa2[permutation.indices()[j]]));
 
   /* test for convergence of the gradient norm. */
   if (gnorm <= parameters.gtol)

@@ -175,8 +175,8 @@ EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(sign, scalar_sign_op,
 template <typename Derived, typename ScalarExponent>
 inline const CwiseBinaryOp<
     internal::scalar_pow_op<Derived::Scalar, ScalarExponent>, Derived,
-    Constant<ScalarExponent>>
-pow(const Eigen::ArrayBase<Derived> &x, const ScalarExponent &exponent);
+    Constant<ScalarExponent>> pow(const Eigen::ArrayBase<Derived> &x,
+                                  const ScalarExponent &exponent);
 #else
 template <typename Derived, typename ScalarExponent>
 EIGEN_DEVICE_FUNC inline EIGEN_MSVC10_WORKAROUND_BINARYOP_RETURN_TYPE(

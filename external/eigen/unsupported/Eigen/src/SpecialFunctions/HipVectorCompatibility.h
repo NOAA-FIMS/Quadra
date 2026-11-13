@@ -16,8 +16,8 @@ namespace internal {
   template <typename T, typename U, unsigned int n>                            \
   struct NAME##_impl<hip_impl::Scalar_accessor<T, U, n>> : NAME##_impl<T> {};  \
   template <typename T, typename U, unsigned int n>                            \
-  struct NAME##_retval<hip_impl::Scalar_accessor<T, U, n>>                     \
-      : NAME##_retval<T> {};
+  struct NAME##                                                                \
+      _retval<hip_impl::Scalar_accessor<T, U, n>> : NAME##_retval<T> {};
 
 #define HIP_SCALAR_ACCESSOR_BUILDER_IGAMMA(NAME)                               \
   template <typename T, typename U, unsigned int n,                            \

@@ -326,8 +326,7 @@ public:
 #endif
 
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const typename internal::remove_all<
-      XprTypeNested>::type &
-  nestedExpression() const {
+      XprTypeNested>::type &nestedExpression() const {
     return m_xpr;
   }
 

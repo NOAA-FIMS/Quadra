@@ -1017,9 +1017,8 @@ template <typename Self, typename Op> struct OuterReducer<Self, Op, GpuDevice> {
       // this will be fixed by HIP PR#457
       EIGEN_DEVICE_FUNC
 #endif
-      bool
-      run(const Self &, Op &, const Device &, OutputType *,
-          typename Self::Index, typename Self::Index) {
+      bool run(const Self &, Op &, const Device &, OutputType *,
+               typename Self::Index, typename Self::Index) {
     gpu_assert(
         false &&
         "Should only be called to reduce doubles or floats on a gpu device");

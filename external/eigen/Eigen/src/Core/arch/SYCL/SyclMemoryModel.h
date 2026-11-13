@@ -116,13 +116,13 @@ public:
      * checking
      */
     virtual_pointer_t(const void *ptr)
-        : m_contents(reinterpret_cast<base_ptr_t>(ptr)){};
+        : m_contents(reinterpret_cast<base_ptr_t>(ptr)) {};
 
     /**
      * Creates a virtual_pointer_t from the given integer
      * number
      */
-    virtual_pointer_t(base_ptr_t u) : m_contents(u){};
+    virtual_pointer_t(base_ptr_t u) : m_contents(u) {};
   };
 
   /* Definition of a null pointer

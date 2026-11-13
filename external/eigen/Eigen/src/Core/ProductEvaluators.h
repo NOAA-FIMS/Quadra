@@ -1246,13 +1246,9 @@ struct permutation_matrix_product<ExpressionType, Side, Transposed,
              k = perm.indices().coeff(k)) {
           Block<Dest, Side == OnTheLeft ? 1 : Dest::RowsAtCompileTime,
                 Side == OnTheRight ? 1 : Dest::ColsAtCompileTime>(dst, k)
-              .swap(
-                  Block < Dest, Side == OnTheLeft ? 1 : Dest::RowsAtCompileTime,
-                  Side == OnTheRight
-                      ? 1
-                      : Dest::ColsAtCompileTime >
-                            (dst,
-                             ((Side == OnTheLeft) ^ Transposed) ? k0 : kPrev));
+              .swap(Block<Dest, Side == OnTheLeft ? 1 : Dest::RowsAtCompileTime,
+                          Side == OnTheRight ? 1 : Dest::ColsAtCompileTime>(
+                  dst, ((Side == OnTheLeft) ^ Transposed) ? k0 : kPrev));
 
           mask.coeffRef(k) = true;
           kPrev = k;
@@ -1267,13 +1263,15 @@ struct permutation_matrix_product<ExpressionType, Side, Transposed,
 
             =
 
-                Block < const MatrixTypeCleaned,
-            Side == OnTheLeft ? 1 : MatrixTypeCleaned::RowsAtCompileTime,
-            Side == OnTheRight ? 1
-                               : MatrixTypeCleaned::ColsAtCompileTime >
-                                     (mat, ((Side == OnTheRight) ^ Transposed)
-                                               ? perm.indices().coeff(i)
-                                               : i);
+                Block<const MatrixTypeCleaned,
+                      Side == OnTheLeft ? 1
+                                        : MatrixTypeCleaned::RowsAtCompileTime,
+                      Side == OnTheRight
+                          ? 1
+                          : MatrixTypeCleaned::ColsAtCompileTime>(
+                    mat, ((Side == OnTheRight) ^ Transposed)
+                             ? perm.indices().coeff(i)
+                             : i);
       }
     }
   }

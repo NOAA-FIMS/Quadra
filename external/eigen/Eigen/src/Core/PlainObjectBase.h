@@ -1063,8 +1063,10 @@ public:
   template <typename OtherDerived>
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void
   swap(DenseBase<OtherDerived> &other) {
-    enum {SwapPointers = internal::is_same<Derived, OtherDerived>::value &&
-                         Base::SizeAtCompileTime == Dynamic};
+    enum {
+      SwapPointers = internal::is_same<Derived, OtherDerived>::value &&
+                     Base::SizeAtCompileTime == Dynamic
+    };
     internal::matrix_swap_impl<Derived, OtherDerived, bool(SwapPointers)>::run(
         this->derived(), other.derived());
   }
@@ -1097,7 +1099,7 @@ public:
         INVALID_MATRIX_TEMPLATE_PARAMETERS)
   }
 
-  enum {IsPlainObjectBase = 1};
+  enum { IsPlainObjectBase = 1 };
 #endif
 public:
   // These apparently need to be down here for nvcc+icc to prevent duplicate

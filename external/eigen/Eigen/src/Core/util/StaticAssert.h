@@ -129,7 +129,9 @@ template <> struct static_assertion<true> {
 #if EIGEN_COMP_MSVC
 
 #define EIGEN_STATIC_ASSERT(CONDITION, MSG)                                    \
-  { Eigen::internal::static_assertion<bool(CONDITION)>::MSG; }
+  {                                                                            \
+    Eigen::internal::static_assertion<bool(CONDITION)>::MSG;                   \
+  }
 
 #else
   // In some cases clang interprets bool(CONDITION) as function declaration

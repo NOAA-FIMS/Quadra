@@ -33,13 +33,13 @@ enum { IsSkyline = SkylineBit };
       const Eigen::SkylineMatrixBase<OtherDerived> &other) {                   \
     return Base::operator Op(other.derived());                                 \
   }                                                                            \
-  EIGEN_STRONG_INLINE Derived &operator Op(const Derived & other) {            \
+  EIGEN_STRONG_INLINE Derived &operator Op(const Derived &other) {             \
     return Base::operator Op(other);                                           \
   }
 
 #define EIGEN_SKYLINE_INHERIT_SCALAR_ASSIGNMENT_OPERATOR(Derived, Op)          \
   template <typename Other>                                                    \
-  EIGEN_STRONG_INLINE Derived &operator Op(const Other & scalar) {             \
+  EIGEN_STRONG_INLINE Derived &operator Op(const Other &scalar) {              \
     return Base::operator Op(scalar);                                          \
   }
 

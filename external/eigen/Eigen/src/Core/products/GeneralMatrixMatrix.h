@@ -74,10 +74,12 @@ struct general_matrix_matrix_product<Index, LhsScalar, LhsStorageOrder,
     ResMapper res(_res, resStride, resIncr);
 
     Index kc = blocking.kc(); // cache block size along the K direction
-    Index mc = (std::min)(
-        rows, blocking.mc()); // cache block size along the M direction
-    Index nc = (std::min)(
-        cols, blocking.nc()); // cache block size along the N direction
+    Index mc =
+        (std::min)(rows,
+                   blocking.mc()); // cache block size along the M direction
+    Index nc =
+        (std::min)(cols,
+                   blocking.nc()); // cache block size along the N direction
 
     gemm_pack_lhs<LhsScalar, Index, LhsMapper, Traits::mr, Traits::LhsProgress,
                   typename Traits::LhsPacket4Packing, LhsStorageOrder>

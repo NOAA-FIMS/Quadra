@@ -446,8 +446,9 @@ HybridNonLinearSolver<FunctorType, Scalar>::solveNumericalDiffOneStep(
   if (internal::fdjac1(functor, x, fvec, fjac, parameters.nb_of_subdiagonals,
                        parameters.nb_of_superdiagonals, parameters.epsfcn) < 0)
     return HybridNonLinearSolverSpace::UserAsked;
-  nfev += (std::min)(
-      parameters.nb_of_subdiagonals + parameters.nb_of_superdiagonals + 1, n);
+  nfev += (std::min)(parameters.nb_of_subdiagonals +
+                         parameters.nb_of_superdiagonals + 1,
+                     n);
 
   wa2 = fjac.colwise().blueNorm();
 

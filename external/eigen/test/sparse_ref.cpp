@@ -22,7 +22,9 @@ inline void on_temporary_creation() {
 }
 
 #define EIGEN_SPARSE_CREATE_TEMPORARY_PLUGIN                                   \
-  { on_temporary_creation(); }
+  {                                                                            \
+    on_temporary_creation();                                                   \
+  }
 
 #include "main.h"
 #include <Eigen/SparseCore>

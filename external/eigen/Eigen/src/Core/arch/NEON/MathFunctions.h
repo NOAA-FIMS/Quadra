@@ -92,8 +92,8 @@ EIGEN_STRONG_INLINE Packet4bf pldexp(const Packet4bf &a,
 
 #if EIGEN_ARCH_ARM64 && !EIGEN_APPLE_DOUBLE_NEON_BUG
 template <>
-EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS EIGEN_UNUSED Packet2d
-pexp<Packet2d>(const Packet2d &x) {
+EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
+    EIGEN_UNUSED Packet2d pexp<Packet2d>(const Packet2d &x) {
   return pexp_double(x);
 }
 

@@ -13,13 +13,21 @@ static int nb_store;
 static int nb_storeu;
 
 #define EIGEN_DEBUG_ALIGNED_LOAD                                               \
-  { nb_load++; }
+  {                                                                            \
+    nb_load++;                                                                 \
+  }
 #define EIGEN_DEBUG_UNALIGNED_LOAD                                             \
-  { nb_loadu++; }
+  {                                                                            \
+    nb_loadu++;                                                                \
+  }
 #define EIGEN_DEBUG_ALIGNED_STORE                                              \
-  { nb_store++; }
+  {                                                                            \
+    nb_store++;                                                                \
+  }
 #define EIGEN_DEBUG_UNALIGNED_STORE                                            \
-  { nb_storeu++; }
+  {                                                                            \
+    nb_storeu++;                                                               \
+  }
 
 #define VERIFY_ALIGNED_UNALIGNED_COUNT(XPR, AL, UL, AS, US)                    \
   {                                                                            \

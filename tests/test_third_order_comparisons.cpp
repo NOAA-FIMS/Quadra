@@ -4,7 +4,8 @@
 
 /// Verify value-based branches independently of directional derivative seeds.
 /// Equal primal values must compare equal even when their seeds differ; a
-/// comparison chooses a branch but must not mutate either operand's derivatives.
+/// comparison chooses a branch but must not mutate either operand's
+/// derivatives.
 int main() {
   const had::ThirdOrderScalar low(1.0, 7.0), high(2.0, -3.0), same(1.0, -9.0);
   if (!(low < high) || !(low <= high) || !(high > low) || !(high >= low) ||

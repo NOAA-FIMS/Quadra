@@ -1195,24 +1195,24 @@ template <typename Scalar, typename Packet> void packetmath_notcomplex() {
     VERIFY(PacketSize == 1 ||
            !(numext::isnan)(internal::predux_min<PropagateNumbers>(
                internal::pload<Packet>(data1))));
-    VERIFY((numext::isnan)(
-        internal::predux_min<PropagateNaN>(internal::pload<Packet>(data1))));
+    VERIFY((numext::isnan)(internal::predux_min<PropagateNaN>(
+        internal::pload<Packet>(data1))));
     VERIFY(PacketSize == 1 ||
            !(numext::isnan)(internal::predux_max<PropagateNumbers>(
                internal::pload<Packet>(data1))));
-    VERIFY((numext::isnan)(
-        internal::predux_max<PropagateNaN>(internal::pload<Packet>(data1))));
+    VERIFY((numext::isnan)(internal::predux_max<PropagateNaN>(
+        internal::pload<Packet>(data1))));
     // All NaNs.
     for (int i = 0; i < 4 * PacketSize; ++i)
       data1[i] = NumTraits<Scalar>::quiet_NaN();
     VERIFY((numext::isnan)(internal::predux_min<PropagateNumbers>(
         internal::pload<Packet>(data1))));
-    VERIFY((numext::isnan)(
-        internal::predux_min<PropagateNaN>(internal::pload<Packet>(data1))));
+    VERIFY((numext::isnan)(internal::predux_min<PropagateNaN>(
+        internal::pload<Packet>(data1))));
     VERIFY((numext::isnan)(internal::predux_max<PropagateNumbers>(
         internal::pload<Packet>(data1))));
-    VERIFY((numext::isnan)(
-        internal::predux_max<PropagateNaN>(internal::pload<Packet>(data1))));
+    VERIFY((numext::isnan)(internal::predux_max<PropagateNaN>(
+        internal::pload<Packet>(data1))));
 
     // Test NaN propagation for coefficient-wise min and max.
     for (int i = 0; i < PacketSize; ++i) {

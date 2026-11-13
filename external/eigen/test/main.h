@@ -138,7 +138,9 @@ inline void on_temporary_creation(long int size) {
 }
 
 #define EIGEN_DENSE_STORAGE_CTOR_PLUGIN                                        \
-  { on_temporary_creation(size); }
+  {                                                                            \
+    on_temporary_creation(size);                                               \
+  }
 
 #define VERIFY_EVALUATION_COUNT(XPR, N)                                        \
   {                                                                            \
@@ -287,7 +289,7 @@ static std::vector<std::string> eigen_assert_list;
           << "One of the following asserts should have been triggered:\n";     \
       for (uint ai = 0; ai < eigen_assert_list.size(); ++ai)                   \
         std::cerr << "  " << eigen_assert_list[ai] << "\n";                    \
-      VERIFY(Eigen::should_raise_an_assert &&#a);                              \
+      VERIFY(Eigen::should_raise_an_assert && #a);                             \
     } catch (Eigen::eigen_assert_exception) {                                  \
       Eigen::internal::push_assert = false;                                    \
       VERIFY(true);                                                            \
@@ -316,7 +318,7 @@ static std::vector<std::string> eigen_assert_list;
     Eigen::report_on_cerr_on_assert_failure = false;                           \
     try {                                                                      \
       a;                                                                       \
-      VERIFY(Eigen::should_raise_an_assert &&#a);                              \
+      VERIFY(Eigen::should_raise_an_assert && #a);                             \
     } catch (Eigen::eigen_assert_exception &) {                                \
       VERIFY(true);                                                            \
     }                                                                          \
@@ -340,7 +342,7 @@ static std::vector<std::string> eigen_assert_list;
     Eigen::report_on_cerr_on_assert_failure = false;                           \
     try {                                                                      \
       a;                                                                       \
-      VERIFY(Eigen::should_raise_an_assert &&#a);                              \
+      VERIFY(Eigen::should_raise_an_assert && #a);                             \
     } catch (Eigen::eigen_static_assert_exception &) {                         \
       VERIFY(true);                                                            \
     }                                                                          \
@@ -366,9 +368,11 @@ static std::vector<std::string> eigen_assert_list;
 #else // EIGEN_NO_ASSERTION_CHECKING
 
 #define VERIFY_RAISES_ASSERT(a)                                                \
-  {}
+  {                                                                            \
+  }
 #define VERIFY_RAISES_STATIC_ASSERT(a)                                         \
-  {}
+  {                                                                            \
+  }
 
 #endif // EIGEN_NO_ASSERTION_CHECKING
 

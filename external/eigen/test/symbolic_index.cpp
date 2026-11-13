@@ -29,9 +29,9 @@ template <typename T> void check_is_symbolic(const T &) {
   STATIC_CHECK((symbolic::is_symbolic<T>::value))
 }
 
-template <typename T> void check_isnot_symbolic(const T &) {
-  STATIC_CHECK((!symbolic::is_symbolic<T>::value))
-}
+template <typename T>
+void check_isnot_symbolic(const T &){
+    STATIC_CHECK((!symbolic::is_symbolic<T>::value))}
 
 #define VERIFY_EQ_INT(A, B) VERIFY_IS_APPROX(int(A), int(B))
 

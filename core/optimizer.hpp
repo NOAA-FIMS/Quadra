@@ -200,11 +200,12 @@ OptPatternInfo analyze_final_random_effect_pattern(
 /// fixed_idx and u_star follows random_idx. graph and structured_runtime are
 /// caller-owned workspaces, not independent model inputs. Optional last_logdet
 /// pointers are caches and optional timing pointers accumulate milliseconds.
-/// In the fixed-only case no random Hessian exists: evaluate the joint value and
-/// gradient directly, return empty grad_u and zero normalization/logdet terms,
-/// and invalidate last_logdet_available instead of reusing a latent-model cache.
-/// With random effects, retain the existing structured Laplace evaluation path.
-/// Model/derivative failures propagate to the optimizer's checked evaluation.
+/// In the fixed-only case no random Hessian exists: evaluate the joint value
+/// and gradient directly, return empty grad_u and zero normalization/logdet
+/// terms, and invalidate last_logdet_available instead of reusing a
+/// latent-model cache. With random effects, retain the existing structured
+/// Laplace evaluation path. Model/derivative failures propagate to the
+/// optimizer's checked evaluation.
 template <typename Model>
 LaplaceResult<Model> laplace_eval_at_u_star_persistent_structured(
     Model &model, ParameterVector &params, const std::vector<int> &fixed_idx,
@@ -238,10 +239,12 @@ LaplaceResult<Model> laplace_eval_at_u_star_persistent_structured(
     res.laplace_logdet = 0.0;
     res.laplace_constant = 0.0;
     res.value = joint.value;
-    if (last_logdet_available != nullptr) *last_logdet_available = false;
+    if (last_logdet_available != nullptr)
+      *last_logdet_available = false;
     if (timing_joint_ad_ms != nullptr)
       *timing_joint_ad_ms += std::chrono::duration<double, std::milli>(
-          std::chrono::steady_clock::now() - start).count();
+                                 std::chrono::steady_clock::now() - start)
+                                 .count();
     return res;
   }
 

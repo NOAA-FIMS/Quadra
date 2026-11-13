@@ -75,16 +75,24 @@ EIGEN_DONT_INLINE void sparselu_gemm(Index m, Index n, Index d, const Scalar *A,
 
         // load and expand a RN x RK block of B
         Packet b00, b10, b20, b30, b01, b11, b21, b31;
-        { b00 = pset1<Packet>(Bc0[0]); }
-        { b10 = pset1<Packet>(Bc0[1]); }
+        {
+          b00 = pset1<Packet>(Bc0[0]);
+        }
+        {
+          b10 = pset1<Packet>(Bc0[1]);
+        }
         if (RK == 4) {
           b20 = pset1<Packet>(Bc0[2]);
         }
         if (RK == 4) {
           b30 = pset1<Packet>(Bc0[3]);
         }
-        { b01 = pset1<Packet>(Bc1[0]); }
-        { b11 = pset1<Packet>(Bc1[1]); }
+        {
+          b01 = pset1<Packet>(Bc1[0]);
+        }
+        {
+          b11 = pset1<Packet>(Bc1[1]);
+        }
         if (RK == 4) {
           b21 = pset1<Packet>(Bc1[2]);
         }

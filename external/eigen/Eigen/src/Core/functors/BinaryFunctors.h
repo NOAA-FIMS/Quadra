@@ -410,8 +410,8 @@ struct scalar_difference_op : binary_op_base<LhsScalar, RhsScalar> {
 #else
   scalar_difference_op(){EIGEN_SCALAR_BINARY_OP_PLUGIN}
 #endif
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const result_type
-  operator()(const LhsScalar &a, const RhsScalar &b) const {
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const
+      result_type operator()(const LhsScalar &a, const RhsScalar &b) const {
     return a - b;
   }
   template <typename Packet>
@@ -447,8 +447,8 @@ struct scalar_quotient_op : binary_op_base<LhsScalar, RhsScalar> {
 #else
   scalar_quotient_op(){EIGEN_SCALAR_BINARY_OP_PLUGIN}
 #endif
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const result_type
-  operator()(const LhsScalar &a, const RhsScalar &b) const {
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const
+      result_type operator()(const LhsScalar &a, const RhsScalar &b) const {
     return a / b;
   }
   template <typename Packet>
@@ -548,8 +548,8 @@ struct scalar_absolute_difference_op : binary_op_base<LhsScalar, RhsScalar> {
 #else
   scalar_absolute_difference_op(){EIGEN_SCALAR_BINARY_OP_PLUGIN}
 #endif
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const result_type
-  operator()(const LhsScalar &a, const RhsScalar &b) const {
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const
+      result_type operator()(const LhsScalar &a, const RhsScalar &b) const {
     return numext::absdiff(a, b);
   }
   template <typename Packet>

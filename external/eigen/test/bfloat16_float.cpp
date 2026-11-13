@@ -171,8 +171,8 @@ void test_conversion() {
 #endif
 
   // NaNs and infinities.
-  VERIFY(!(numext::isinf)(
-      static_cast<float>(bfloat16(3.38e38f)))); // Largest finite number.
+  VERIFY(!(numext::isinf)(static_cast<float>(
+      bfloat16(3.38e38f)))); // Largest finite number.
   VERIFY(!(numext::isnan)(static_cast<float>(bfloat16(0.0f))));
   VERIFY((numext::isinf)(static_cast<float>(bfloat16(__bfloat16_raw(0xff80)))));
   VERIFY((numext::isnan)(static_cast<float>(bfloat16(__bfloat16_raw(0xffc0)))));

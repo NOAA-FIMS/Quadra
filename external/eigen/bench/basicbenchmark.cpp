@@ -13,7 +13,7 @@ int main(int argc, char *argv[]) {
   //   #define MODES ((Xd)(20)(10000))
 
 #define _GENERATE_HEADER(R, ARG, EL)                                           \
-  << BOOST_PP_STRINGIZE(BOOST_PP_SEQ_HEAD(EL))                                 \
+  << BOOST_PP_STRINGIZE(BOOST_PP_SEQ_HEAD(EL))                                                        \
                         << "-"                                                 \
                         << BOOST_PP_STRINGIZE(BOOST_PP_SEQ_ELEM(1,EL)) << "x"                                   \
                                       << BOOST_PP_STRINGIZE(BOOST_PP_SEQ_ELEM(1,EL)) << "   /   "

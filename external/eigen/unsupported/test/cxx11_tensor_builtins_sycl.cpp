@@ -294,13 +294,13 @@ void test_binary_builtins_fixed_arg2(const Eigen::SyclDevice &sycl_device,
 #define DECLARE_BINARY_STRUCT(FUNC)                                            \
   struct op_##FUNC {                                                           \
     template <typename T1, typename T2>                                        \
-    auto operator()(const T1 &x,                                               \
-                    const T2 &y) -> decltype(cl::sycl::FUNC(x, y)) {           \
+    auto operator()(const T1 &x, const T2 &y)                                  \
+        -> decltype(cl::sycl::FUNC(x, y)) {                                    \
       return cl::sycl::FUNC(x, y);                                             \
     }                                                                          \
     template <typename T1, typename T2>                                        \
-    auto operator()(const TensorMap<T1> &x,                                    \
-                    const TensorMap<T2> &y) -> decltype(x.FUNC(y)) {           \
+    auto operator()(const TensorMap<T1> &x, const TensorMap<T2> &y)            \
+        -> decltype(x.FUNC(y)) {                                               \
       return x.FUNC(y);                                                        \
     }                                                                          \
   };

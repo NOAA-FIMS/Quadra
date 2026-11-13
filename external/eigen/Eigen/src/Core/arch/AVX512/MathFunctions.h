@@ -39,8 +39,8 @@ namespace internal {
       preinterpret<Packet16bf, Packet16i>(pset1<Packet16i>(X))
 
 template <>
-EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS EIGEN_UNUSED Packet16f
-plog<Packet16f>(const Packet16f &_x) {
+EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
+    EIGEN_UNUSED Packet16f plog<Packet16f>(const Packet16f &_x) {
   return plog_float(_x);
 }
 
@@ -169,8 +169,8 @@ EIGEN_STRONG_INLINE Packet16bf pldexp(const Packet16bf &a,
 // further reducing its effective latency.
 #if EIGEN_FAST_MATH
 template <>
-EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS EIGEN_UNUSED Packet16f
-psqrt<Packet16f>(const Packet16f &_x) {
+EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
+    EIGEN_UNUSED Packet16f psqrt<Packet16f>(const Packet16f &_x) {
   Packet16f neg_half = pmul(_x, pset1<Packet16f>(-.5f));
   __mmask16 denormal_mask =
       _mm512_kand(_mm512_cmp_ps_mask(
@@ -230,8 +230,8 @@ EIGEN_STRONG_INLINE Packet16f prsqrt<Packet16f>(const Packet16f &x) {
 #elif EIGEN_FAST_MATH
 
 template <>
-EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS EIGEN_UNUSED Packet16f
-prsqrt<Packet16f>(const Packet16f &_x) {
+EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
+    EIGEN_UNUSED Packet16f prsqrt<Packet16f>(const Packet16f &_x) {
   _EIGEN_DECLARE_CONST_Packet16f_FROM_INT(inf, 0x7f800000);
   _EIGEN_DECLARE_CONST_Packet16f(one_point_five, 1.5f);
   _EIGEN_DECLARE_CONST_Packet16f(minus_half, -0.5f);
@@ -275,8 +275,8 @@ BF16_PACKET_FUNCTION(Packet16f, Packet16bf, prsqrt)
 // prsqrt for double.
 #if EIGEN_FAST_MATH
 template <>
-EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS EIGEN_UNUSED Packet8d
-prsqrt<Packet8d>(const Packet8d &_x) {
+EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
+    EIGEN_UNUSED Packet8d prsqrt<Packet8d>(const Packet8d &_x) {
   _EIGEN_DECLARE_CONST_Packet8d(one_point_five, 1.5);
   _EIGEN_DECLARE_CONST_Packet8d(minus_half, -0.5);
   _EIGEN_DECLARE_CONST_Packet8d_FROM_INT64(inf, 0x7ff0000000000000LL);
@@ -322,8 +322,8 @@ template <> EIGEN_STRONG_INLINE Packet8d prsqrt<Packet8d>(const Packet8d &x) {
 #endif
 
 template <>
-EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS EIGEN_UNUSED Packet16f
-plog1p<Packet16f>(const Packet16f &_x) {
+EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
+    EIGEN_UNUSED Packet16f plog1p<Packet16f>(const Packet16f &_x) {
   return generic_plog1p(_x);
 }
 
@@ -342,8 +342,8 @@ BF16_PACKET_FUNCTION(Packet16f, Packet16bf, pexpm1)
 #endif
 
 template <>
-EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS EIGEN_UNUSED Packet16f
-psin<Packet16f>(const Packet16f &_x) {
+EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
+    EIGEN_UNUSED Packet16f psin<Packet16f>(const Packet16f &_x) {
   return psin_float(_x);
 }
 

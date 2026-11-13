@@ -213,18 +213,17 @@ VectorwiseOp<ExpressionType, Direction>::hnormalized() const {
                            Direction == Horizontal ? _expression().cols() - 1
                                                    : _expression().cols())
       .cwiseQuotient(
-          Replicate < HNormalized_Factors,
-          Direction == Vertical ? HNormalized_SizeMinusOne : 1,
-          Direction == Horizontal
-              ? HNormalized_SizeMinusOne
-              : 1 > (HNormalized_Factors(
-                         _expression(),
-                         Direction == Vertical ? _expression().rows() - 1 : 0,
-                         Direction == Horizontal ? _expression().cols() - 1 : 0,
-                         Direction == Vertical ? 1 : _expression().rows(),
-                         Direction == Horizontal ? 1 : _expression().cols()),
-                     Direction == Vertical ? _expression().rows() - 1 : 1,
-                     Direction == Horizontal ? _expression().cols() - 1 : 1));
+          Replicate<HNormalized_Factors,
+                    Direction == Vertical ? HNormalized_SizeMinusOne : 1,
+                    Direction == Horizontal ? HNormalized_SizeMinusOne : 1>(
+              HNormalized_Factors(
+                  _expression(),
+                  Direction == Vertical ? _expression().rows() - 1 : 0,
+                  Direction == Horizontal ? _expression().cols() - 1 : 0,
+                  Direction == Vertical ? 1 : _expression().rows(),
+                  Direction == Horizontal ? 1 : _expression().cols()),
+              Direction == Vertical ? _expression().rows() - 1 : 1,
+              Direction == Horizontal ? _expression().cols() - 1 : 1));
 }
 
 namespace internal {
@@ -291,12 +290,13 @@ struct homogeneous_left_product_impl<Homogeneous<MatrixType, Vertical>, Lhs>
   template <typename Dest> EIGEN_DEVICE_FUNC void evalTo(Dest &dst) const {
     // FIXME investigate how to allow lazy evaluation of this product when
     // possible
-    dst = Block < const LhsMatrixTypeNested,
-    LhsMatrixTypeNested::RowsAtCompileTime,
-    LhsMatrixTypeNested::ColsAtCompileTime == Dynamic
-        ? Dynamic
-        : LhsMatrixTypeNested::ColsAtCompileTime - 1 >
-              (m_lhs, 0, 0, m_lhs.rows(), m_lhs.cols() - 1) * m_rhs;
+    dst =
+        Block<const LhsMatrixTypeNested, LhsMatrixTypeNested::RowsAtCompileTime,
+              LhsMatrixTypeNested::ColsAtCompileTime == Dynamic
+                  ? Dynamic
+                  : LhsMatrixTypeNested::ColsAtCompileTime - 1>(
+            m_lhs, 0, 0, m_lhs.rows(), m_lhs.cols() - 1) *
+        m_rhs;
     dst += m_lhs.col(m_lhs.cols() - 1)
                .rowwise()
                .template replicate<MatrixType::ColsAtCompileTime>(m_rhs.cols());
@@ -335,11 +335,12 @@ struct homogeneous_right_product_impl<Homogeneous<MatrixType, Horizontal>, Rhs>
   template <typename Dest> EIGEN_DEVICE_FUNC void evalTo(Dest &dst) const {
     // FIXME investigate how to allow lazy evaluation of this product when
     // possible
-    dst = m_lhs * Block < const RhsNested,
-    RhsNested::RowsAtCompileTime == Dynamic ? Dynamic
-                                            : RhsNested::RowsAtCompileTime - 1,
-    RhsNested::ColsAtCompileTime >
-        (m_rhs, 0, 0, m_rhs.rows() - 1, m_rhs.cols());
+    dst = m_lhs * Block<const RhsNested,
+                        RhsNested::RowsAtCompileTime == Dynamic
+                            ? Dynamic
+                            : RhsNested::RowsAtCompileTime - 1,
+                        RhsNested::ColsAtCompileTime>(
+                      m_rhs, 0, 0, m_rhs.rows() - 1, m_rhs.cols());
     dst += m_rhs.row(m_rhs.rows() - 1)
                .colwise()
                .template replicate<MatrixType::RowsAtCompileTime>(m_lhs.rows());

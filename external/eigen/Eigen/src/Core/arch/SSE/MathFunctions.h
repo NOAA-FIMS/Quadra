@@ -108,16 +108,16 @@ psqrt<Packet4f>(const Packet4f &_x) {
 #else
 
 template <>
-EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS EIGEN_UNUSED Packet4f
-psqrt<Packet4f>(const Packet4f &x) {
+EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
+    EIGEN_UNUSED Packet4f psqrt<Packet4f>(const Packet4f &x) {
   return _mm_sqrt_ps(x);
 }
 
 #endif
 
 template <>
-EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS EIGEN_UNUSED Packet2d
-psqrt<Packet2d>(const Packet2d &x) {
+EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
+    EIGEN_UNUSED Packet2d psqrt<Packet2d>(const Packet2d &x) {
   return _mm_sqrt_pd(x);
 }
 
@@ -130,8 +130,8 @@ psqrt<Packet16b>(const Packet16b &x) {
 #if EIGEN_FAST_MATH
 
 template <>
-EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS EIGEN_UNUSED Packet4f
-prsqrt<Packet4f>(const Packet4f &_x) {
+EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
+    EIGEN_UNUSED Packet4f prsqrt<Packet4f>(const Packet4f &_x) {
   _EIGEN_DECLARE_CONST_Packet4f(one_point_five, 1.5f);
   _EIGEN_DECLARE_CONST_Packet4f(minus_half, -0.5f);
   _EIGEN_DECLARE_CONST_Packet4f_FROM_INT(inf, 0x7f800000u);
@@ -165,8 +165,8 @@ prsqrt<Packet4f>(const Packet4f &_x) {
 #else
 
 template <>
-EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS EIGEN_UNUSED Packet4f
-prsqrt<Packet4f>(const Packet4f &x) {
+EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
+    EIGEN_UNUSED Packet4f prsqrt<Packet4f>(const Packet4f &x) {
   // Unfortunately we can't use the much faster mm_rsqrt_ps since it only
   // provides an approximation.
   return _mm_div_ps(pset1<Packet4f>(1.0f), _mm_sqrt_ps(x));
@@ -175,8 +175,8 @@ prsqrt<Packet4f>(const Packet4f &x) {
 #endif
 
 template <>
-EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS EIGEN_UNUSED Packet2d
-prsqrt<Packet2d>(const Packet2d &x) {
+EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
+    EIGEN_UNUSED Packet2d prsqrt<Packet2d>(const Packet2d &x) {
   return _mm_div_pd(pset1<Packet2d>(1.0), _mm_sqrt_pd(x));
 }
 

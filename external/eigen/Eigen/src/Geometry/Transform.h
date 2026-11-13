@@ -749,8 +749,8 @@ public:
   EIGEN_DEVICE_FUNC inline Block<MatrixType,
                                  int(Mode) == int(Projective) ? HDim : Dim, Dim>
   linearExt() {
-    return m_matrix.template block < int(Mode) == int(Projective) ? HDim : Dim,
-           Dim > (0, 0);
+    return m_matrix
+        .template block<int(Mode) == int(Projective) ? HDim : Dim, Dim>(0, 0);
   }
   /** \internal
    * \returns the Dim x Dim linear part if the transformation is affine,
@@ -759,8 +759,8 @@ public:
   EIGEN_DEVICE_FUNC inline const Block<
       MatrixType, int(Mode) == int(Projective) ? HDim : Dim, Dim>
   linearExt() const {
-    return m_matrix.template block < int(Mode) == int(Projective) ? HDim : Dim,
-           Dim > (0, 0);
+    return m_matrix
+        .template block<int(Mode) == int(Projective) ? HDim : Dim, Dim>(0, 0);
   }
 
   /** \internal
@@ -770,8 +770,8 @@ public:
   EIGEN_DEVICE_FUNC inline Block<MatrixType,
                                  int(Mode) == int(Projective) ? HDim : Dim, 1>
   translationExt() {
-    return m_matrix.template block < int(Mode) == int(Projective) ? HDim : Dim,
-           1 > (0, Dim);
+    return m_matrix
+        .template block<int(Mode) == int(Projective) ? HDim : Dim, 1>(0, Dim);
   }
   /** \internal
    * \returns the translation part if the transformation is affine,
@@ -780,8 +780,8 @@ public:
   EIGEN_DEVICE_FUNC inline const Block<
       MatrixType, int(Mode) == int(Projective) ? HDim : Dim, 1>
   translationExt() const {
-    return m_matrix.template block < int(Mode) == int(Projective) ? HDim : Dim,
-           1 > (0, Dim);
+    return m_matrix
+        .template block<int(Mode) == int(Projective) ? HDim : Dim, 1>(0, Dim);
   }
 
 #ifdef EIGEN_TRANSFORM_PLUGIN
