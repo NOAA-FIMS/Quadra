@@ -23,6 +23,8 @@ TESTS = \
 	tests/test_poisson_random_effect \
 	tests/test_ar1_random_walk \
 	tests/test_stats \
+	tests/test_fixed_only_optimizer \
+	tests/test_third_order_comparisons \
 	tests/test_stats_exact_laplace \
 	tests/test_stats_laplace_optimizer \
 	tests/test_nuts \
@@ -120,6 +122,8 @@ run-tests: $(TESTS)
 	./tests/test_poisson_random_effect
 	./tests/test_ar1_random_walk
 	./tests/test_stats
+	./tests/test_fixed_only_optimizer
+	./tests/test_third_order_comparisons
 	./tests/test_stats_exact_laplace
 	./tests/test_stats_laplace_optimizer
 	./tests/test_nuts
@@ -790,3 +794,9 @@ benchmark-plot-factorization-reuse:
 
 benchmark-plot-report:
 	Rscript benchmarks/analysis/build_benchmark_plot_report.R
+
+tests/test_fixed_only_optimizer: tests/test_fixed_only_optimizer.cpp core/optimizer.hpp core/laplace.hpp core/autodiff/model_gradient.hpp
+	$(CXX) $(CXXFLAGS) -o $@ $<
+
+tests/test_third_order_comparisons: tests/test_third_order_comparisons.cpp core/had_quadra.hpp
+	$(CXX) $(CXXFLAGS) -o $@ $<

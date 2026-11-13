@@ -1,0 +1,16 @@
+{
+  "status": "deterministic reconstruction; published bootstrap medians are not validation targets",
+  "scenarios": 5,
+  "years": [
+    2022,
+    2031
+  ],
+  "quantities_compared": 100,
+  "maximum_absolute_relative_difference": 0.5037663204703426,
+  "unresolved": [
+    "Original scenario forecast files and 100 bootstrap fitted models were not supplied.",
+    "Methods specify 2008-2010 reference SPR; table labels 1998-2000.",
+    "Status quo uses matching equilibrium annual F with fixed apical rates; realized pooled annual F varies with age composition.",
+    "Scenario 1 uses the literal dynamic baseline; equilibrium 20% B0 is a different target."
+  ]
+}

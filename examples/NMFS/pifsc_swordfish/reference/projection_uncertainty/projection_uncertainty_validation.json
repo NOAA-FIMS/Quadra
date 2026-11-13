@@ -1,0 +1,36 @@
+{
+  "passed": true,
+  "intervals": 250,
+  "point_estimate_maximum_relative_difference": 7.105427357601002e-15,
+  "interval": "pointwise 95% log-scale Wald; not simultaneous bands or future outcome prediction intervals",
+  "parameter_uncertainty": "full 84-coordinate local joint-likelihood covariance",
+  "target_rule": "recalibrate each scenario and 2019-2021 fishing mixture under each parameter perturbation",
+  "omitted": [
+    "future recruitment process variation",
+    "model structural uncertainty",
+    "original assessment bootstrap resampling"
+  ],
+  "input_sha256": {
+    "build/quadra_fitted_parameters.csv": "2472274d12d98c67509eb45ac8833b050b8e6f69004d4d656b3721e21a8fe193",
+    "build/coordinate_covariance.csv": "be1910b44fd1537ece8adf76620d5c85d22fc5aa602257ff85213e1f1346dca5",
+    "build/uncertainty_coordinates.csv": "6860e0652b679db7a289e8a370107163592197477d22d6f4acd2d046a20f30d9",
+    "data/projection_scenarios.csv": "3462a29c898f4bb1c59f1f8aa71d558ca83f9deee393fcb30fcce2e6c4e8f31d",
+    "reference/source_manifest.json": "bbaa1ab71b70d69bc97010829151e11a80b3c085d8b02f30db5599f07bae03da"
+  },
+  "numerical": {
+    "passed": true,
+    "parameters": 84,
+    "outputs": 250,
+    "steps": [
+      0.0001,
+      5e-05
+    ],
+    "maximum_relative_SE_step_change": 4.559732853737231e-06,
+    "maximum_relative_gradient_step_change": 5.550741123044214e-07,
+    "directional_checks": 4,
+    "maximum_scaled_directional_error": 1.150283077421605e-05,
+    "interval": "pointwise 95% log-scale Wald; native SE via delta method",
+    "target_rule": "recalibrate scenario targets and fishing pattern for every parameter perturbation",
+    "future_recruitment_process_variation": false
+  }
+}

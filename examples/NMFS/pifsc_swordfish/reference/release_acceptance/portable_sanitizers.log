@@ -1,0 +1,18 @@
+mkdir -p build
+c++ -Iinclude -Ibuild -I../../.. -I../../../external/eigen -std=c++17 -O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer -MMD -MP tests/test_dynamics.cpp -o build/test_dynamics
+c++ -Iinclude -Ibuild -I../../.. -I../../../external/eigen -std=c++17 -O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer -MMD -MP tests/test_delta_method.cpp -o build/test_delta_method
+c++ -Iinclude -Ibuild -I../../.. -std=c++17 -O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer -MMD -MP tests/test_csv.cpp -o build/test_csv
+./build/test_dynamics
+Dynamics limits, plus group, settlement, BH, and Quadra AD derivatives: PASS
+./build/test_delta_method
+Correlated delta covariance, coordinate invariance, and interval checks pass
+./build/test_csv
+Strict CSV numeric, record, and scenario checks pass
+python3 -m unittest discover -s tests -p 'test_runtime.py'
+..Failed run retained at /var/folders/bv/byqg9jfs6bb_g4wgb73nxhnxgdgtxx/T/tmp75hgwety/.release.failed-qz5mj41y
+..Running timeout
+.
+----------------------------------------------------------------------
+Ran 5 tests in 0.114s
+
+OK

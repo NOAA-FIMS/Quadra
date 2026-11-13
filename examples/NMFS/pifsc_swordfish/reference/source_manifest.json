@@ -1,0 +1,42 @@
+[
+  {
+    "file": "swo2023_v004.dat",
+    "bytes": 186003,
+    "sha256": "7d28fff138faad2b7ce9a679b1596d5b0e49ac82b04b6957303553f177f77c4a"
+  },
+  {
+    "file": "swo2023_v007.ctl",
+    "bytes": 34681,
+    "sha256": "eb2334ea68f221209bcdb94dc68a7a39d10323be7e2ba3a0c121e667d8640a7c"
+  },
+  {
+    "file": "starter.ss",
+    "bytes": 2236,
+    "sha256": "ea2046ada65901dea41b78989888492bada01a59b0efe4296959748242fb64ec"
+  },
+  {
+    "file": "forecast.ss",
+    "bytes": 4343,
+    "sha256": "dde31aab931929f2ad9701a7c6c87bf52a126fd5610a3bd0b2871dcadca21bfe"
+  },
+  {
+    "file": "Report.sso",
+    "bytes": 10117005,
+    "sha256": "70f61295a63ca49d1fc3b5297189578e436cbf62852ec54610201c32a6bd1165"
+  },
+  {
+    "file": "ISC23_ANNEX11-Stock_Assessment_Report_for_North_Pacific_Ocean_Swordfish_FINAL.pdf",
+    "bytes": 3578167,
+    "sha256": "83b051e6af8640be86f8086ec4e1a7c708dbb0815b7e225b2c10d8ca11156696"
+  },
+  {
+    "file": "North Pacific Swordfish 2023 Stock Assessment - SS3 Files & Reference Points Summary.docx",
+    "bytes": 6059691,
+    "sha256": "31ab823a4504cbc78d8fcbfc80e7f974d5492d0c2255a75e65d2a4396317e4bb"
+  },
+  {
+    "file": "North Pacific Swordfish 2023 Stock Assessment - SS3 Files & Reference Points Summary.pdf",
+    "bytes": 755146,
+    "sha256": "0ec9ac16a7a4e71b4ce0a57d35a76ed116c37eeacc279b78234be5e53e3e12bf"
+  }
+]

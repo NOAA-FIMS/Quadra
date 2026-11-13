@@ -1,0 +1,12 @@
+{
+  "passed": true,
+  "comparisons": 1551,
+  "tolerance_relative_with_unit_floor": 2e-05,
+  "maximum_relative_error": 4.816156261899443e-06,
+  "mean_2017_2021_tonnes": 95720.70712582991,
+  "rounded_ss3_report_mean_tonnes": 95720.72,
+  "published_assessment_mean_tonnes": 95732,
+  "difference_from_published_tonnes": -11.292874170088908,
+  "twenty_percent_dynamic_target_tonnes": 19144.141425165984,
+  "reason_for_separate_baselines": "Supplied Report.sso is a rerun. Published PDF mean and rounded report mean differ; retain both."
+}

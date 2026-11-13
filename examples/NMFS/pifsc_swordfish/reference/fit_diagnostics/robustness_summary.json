@@ -1,0 +1,8 @@
+{
+  "passed": true,
+  "starts": 3,
+  "baseline_objective": 289.299639305825,
+  "maximum_objective_difference": 1.9679191609611735e-10,
+  "coordinate_rescaling": "constant Cholesky factor of local covariance; original-coordinate objective and gradient chain rule verified",
+  "scope": "local perturbed starts; no global optimum claim"
+}

@@ -1,0 +1,14 @@
+{
+  "file": "ISC23_ANNEX11-Stock_Assessment_Report_for_North_Pacific_Ocean_Swordfish_FINAL.pdf",
+  "sha256": "83b051e6af8640be86f8086ec4e1a7c708dbb0815b7e225b2c10d8ca11156696",
+  "table": 12,
+  "pdf_page": 53,
+  "printed_page": 51,
+  "extraction": "PDFKit text extraction, visually verified against rendered page",
+  "statistics": "published table medians from bootstrap projections; not single fitted-parameter trajectories",
+  "scenario_2_conflict": "Table says 1998-2000; methods section 2.12 (PDF page 20) says 2008-2010",
+  "other_conflicts": [
+    "Summary Table S3 caption refers to striped marlin and 2021-2040; Table 12 correctly names swordfish and 2022-2031.",
+    "Projection prose calls outputs means and standard deviations; Table 12 labels them medians."
+  ]
+}

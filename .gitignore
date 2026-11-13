@@ -79,3 +79,8 @@ remove_*.sh
 #logs
 examples/NMFS/*/outputs/*.log
 # Editors
+
+# Fixed-only optimizer regression binary
+tests/test_fixed_only_optimizer
+
+tests/test_third_order_comparisons

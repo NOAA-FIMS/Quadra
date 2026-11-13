@@ -1,0 +1,13 @@
+Component,logL*Lambda,Lambda
+TOTAL,289.3,NA
+Catch,2.92335e-08,NA
+Equil_catch,0,NA
+Survey,-164.951,NA
+Length_comp,481.252,NA
+Recruitment,-27.018,1
+InitEQ_Regime,0,1
+Forecast_Recruitment,0,1
+Parm_priors,0,1
+Parm_softbounds,0.0162791,NA
+Parm_devs,0,1
+Crash_Pen,0,1

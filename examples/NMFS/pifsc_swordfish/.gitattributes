@@ -1,0 +1,6 @@
+# Comparison snapshots include byte hashes. Preserve generated CSV line endings
+# instead of changing their bytes during checkout or index normalization.
+*.csv -text whitespace=trailing-space,space-before-tab,cr-at-eol
+
+# PDF manuals and scientific figures are binary review artifacts.
+*.pdf binary

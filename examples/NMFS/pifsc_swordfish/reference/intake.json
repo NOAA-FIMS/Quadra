@@ -1,0 +1,35 @@
+{
+  "ss3_version": "#V3.30.20.00;_safe;_compile_date:_Sep 30 2022;_Stock_Synthesis_by_Richard_Methot_(NOAA)_using_ADMB_13.0",
+  "dimensions": {
+    "start_year": 1975,
+    "end_year": 2021,
+    "seasons": 4,
+    "season_months": [
+      3,
+      3,
+      3,
+      3
+    ],
+    "subseasons": 2,
+    "spawn_month": 5.0,
+    "sexes": 2,
+    "plus_group_age": 15,
+    "areas": 1
+  },
+  "table_rows": {
+    "catch_fits.csv": 3648,
+    "likelihood_components.csv": 12,
+    "parameters.csv": 132,
+    "derived_quantities.csv": 261,
+    "seasonal_time_series.csv": 200,
+    "annual_stock_status.csv": 48,
+    "index_fits.csv": 164,
+    "length_fit_summary.csv": 351,
+    "fleets.csv": 27
+  },
+  "historical_seasonal_rows": 188,
+  "missing_for_original_initialization": [
+    "ss.par"
+  ],
+  "status": "SS3 benchmark extraction only; no Quadra fit performed"
+}

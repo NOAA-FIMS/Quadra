@@ -1,0 +1,11 @@
+{
+  "pdf": "output/pdf/swordfish_operations_and_api_guide.pdf",
+  "sha256": "df7b164b74ed91f575d23164113c5af8c8ab4dfdfc1fdeb3145631a54664b8a0",
+  "pages": 41,
+  "named_declarations": 280,
+  "shared_framework_appendix": true,
+  "all_pages_rendered": true,
+  "visual_review": "All pages reviewed; source signatures include named parameters, with detailed contracts in source and Markdown.",
+  "text_bounds_violations": 0,
+  "api_inventory_sha256": "23819469b05dea5101fc41d22a1e1cc83534ffdddef88d5ad233dc9399986ffc"
+}

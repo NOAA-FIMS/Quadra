@@ -556,11 +556,25 @@ Eigen::MatrixXd dense_random_hessian_from_gradient_fd(
   return 0.5 * (hessian + hessian.transpose());
 }
 
+/// Solve the conditional latent mode; an empty latent index set returns immediately.
+/// @param model Model supplying the joint objective.
+/// @param params Full parameter specification and transform metadata.
+/// @param x Fixed coordinates in fixed_idx order.
+/// @param fixed_idx Indices of optimized fixed parameters in params.
+/// @param random_idx Indices of latent parameters in params; may be empty.
+/// @param graph Caller-owned differentiation workspace for mode calculations.
+/// @param u_init_override Optional starting latent coordinates in random_idx order.
+/// @return Conditional latent mode, or an empty vector when there are no latent parameters.
+/// @details The no-latent case returns before any model evaluation. A fixed-only
+/// objective must not incur a fictitious inner optimization or random Hessian;
+/// its objective/gradient are evaluated by the outer fixed-only path.
 template <typename Model>
 std::vector<double> solve_random_effects_laplace(
     Model &model, ParameterVector &params, const Eigen::VectorXd &x,
     const std::vector<int> &fixed_idx, const std::vector<int> &random_idx,
     had::ADGraph &graph, const std::vector<double> *u_init_override = nullptr) {
+  // No latent variables means there is no inner mode problem to evaluate.
+  if (random_idx.empty()) return {};
   const int max_iter = 20;
   const double tol = 1e-8;
 

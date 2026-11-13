@@ -104,3 +104,22 @@ This synthetic, end-to-end assessment example includes:
 - exact posterior sampling with pCN, AD-NUTS, and native nonlinear transport proposals
 - conditional random-effect reconstruction, reference points, and projections
 - a detailed mathematical and computational specification in `MODEL_AND_QUADRA.md`
+
+### PIFSC / ISC North Pacific Swordfish
+
+Path: [pifsc_swordfish](pifsc_swordfish/README.md)
+
+This assessment implementation imports the supplied SS3 v3.30.20 inputs and
+reproduces sex-specific seasonal dynamics, likelihoods, historical stock series,
+and equilibrium reference points. It includes a converged joint Quadra fit,
+local perturbed-start checks, parameter covariance, deterministic projection
+scenarios, and local projection uncertainty. The legacy spawning-time convention
+and unresolved differences from published bootstrap forecasts are explicit.
+
+A clean isolated release workflow validates source/covariance provenance and
+publishes a new bundle only after its acceptance gates pass. See the example's
+[operations and API PDF](pifsc_swordfish/output/pdf/swordfish_operations_and_api_guide.pdf)
+and [release contract](pifsc_swordfish/RELEASE_READINESS.md). Original supplied
+source files remain local and excluded from git; derived comparison summaries
+are retained for review. Independent scientific review and hosted CI execution
+remain separate from the recorded local acceptance results.

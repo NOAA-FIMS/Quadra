@@ -10,6 +10,7 @@
 
 namespace quadra {
 
+/// First-order objective, coordinate gradient, norm and reports; no Hessian is constructed.
 struct GradientResult {
   double objective_value_m = 0.0;
   double gradient_norm_m = 0.0;
@@ -18,6 +19,7 @@ struct GradientResult {
   std::vector<ReportValue> reports_m;
 };
 
+/// Return the Euclidean norm of an ordinary coordinate vector.
 inline double euclidean_norm(const std::vector<double> &x) {
   double out = 0.0;
   for (double xi : x) {
@@ -26,6 +28,14 @@ inline double euclidean_norm(const std::vector<double> &x) {
   return std::sqrt(out);
 }
 
+/// Evaluate a model on a fresh AD tape and reverse first-order adjoints only.
+/// @param model Initialized through its Quadra interface on a fresh evaluation context.
+/// @param parameters Independent model coordinates in parameter_names order.
+/// @return Objective value, coordinate gradient/norm, input coordinates and report values.
+/// @throws std::invalid_argument If parameters is empty; model evaluation errors propagate.
+/// @details Reversing only first-order adjoints is intentional. Building a Hessian
+/// here would add memory/work that GradientResult cannot return. This method does
+/// not change the model target or silently integrate any random effects.
 template <class Model>
 GradientResult evaluate_gradient(Model &model,
                                  const std::vector<double> &parameters) {
@@ -43,7 +53,8 @@ GradientResult evaluate_gradient(Model &model,
   std::vector<AD> x = to_ad(parameters);
   AD objective = model.template evaluate<AD>(x, ctx);
 
-  scope.backward(objective);
+  // GradientResult contains no curvature; avoid building the full Hessian.
+  scope.backward_first_order(objective);
   Eigen::VectorXd g_eigen = extract_gradient(x);
 
   GradientResult result;

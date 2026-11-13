@@ -1,0 +1,9 @@
+{
+  "objective": 289.299639305825,
+  "gradient_norm": 8.94128498395071e-05,
+  "iterations": 90,
+  "converged": true,
+  "free_parameters": 84,
+  "initialization": "supplied SS3 fitted parameters",
+  "target": "joint penalized likelihood; no Laplace integration"
+}

@@ -1,0 +1,10 @@
+# Preserve supplied assessment files locally; record hashes in reference/.
+/data/raw/*
+!/data/raw/.gitkeep
+__pycache__/
+
+/runs/
+
+/tmp/
+
+/Rplots.pdf

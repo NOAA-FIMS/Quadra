@@ -1,0 +1,24 @@
+name: Swordfish portable acceptance
+on:
+  pull_request:
+  push:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  portable:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v6
+      - name: Portable contracts and framework regressions
+        working-directory: examples/NMFS/pifsc_swordfish
+        run: make test-portable test-framework
+      - name: Address and undefined-behavior checks
+        working-directory: examples/NMFS/pifsc_swordfish
+        run: make -B test-portable CXXFLAGS='-std=c++17 -O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer'
+# Full SS3 acceptance requires the eight privately supplied assessment files.
+# Run scripts/run_release.py locally or in an approved fixture-enabled environment.

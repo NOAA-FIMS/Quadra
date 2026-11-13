@@ -1,0 +1,142 @@
+{
+  "status": "passed",
+  "scope": "operational acceptance for the supplied swordfish case; independent scientific approval and published bootstrap replay remain outstanding",
+  "environment": {
+    "python": "3.14.2 (main, Dec  5 2025, 16:49:16) [Clang 16.0.0 (clang-1600.0.26.6)]",
+    "platform": "macOS-15.7.7-arm64-arm-64bit-Mach-O",
+    "compiler": "Apple clang version 16.0.0 (clang-1600.0.26.6)",
+    "R": "Rscript (R) version 4.4.3 (2025-02-28)"
+  },
+  "stages": [
+    {
+      "name": "clean_build_all",
+      "command": [
+        "make",
+        "CXX=c++",
+        "PYTHON=/Users/matthew.supernaw/opt/python@3.14/bin/python3.14",
+        "build-all"
+      ],
+      "seconds": 49.601732291979715,
+      "returncode": 0,
+      "log": "logs/01_clean_build_all.log"
+    },
+    {
+      "name": "unit_and_ss3_audits",
+      "command": [
+        "make",
+        "CXX=c++",
+        "PYTHON=/Users/matthew.supernaw/opt/python@3.14/bin/python3.14",
+        "test"
+      ],
+      "seconds": 6.183392791979713,
+      "returncode": 0,
+      "log": "logs/02_unit_and_ss3_audits.log"
+    },
+    {
+      "name": "framework_regressions",
+      "command": [
+        "make",
+        "CXX=c++",
+        "PYTHON=/Users/matthew.supernaw/opt/python@3.14/bin/python3.14",
+        "test-framework"
+      ],
+      "seconds": 12.79724370801705,
+      "returncode": 0,
+      "log": "logs/03_framework_regressions.log"
+    },
+    {
+      "name": "build_fit",
+      "command": [
+        "make",
+        "CXX=c++",
+        "PYTHON=/Users/matthew.supernaw/opt/python@3.14/bin/python3.14",
+        "build/swordfish_assessment"
+      ],
+      "seconds": 0.04093999997712672,
+      "returncode": 0,
+      "log": "logs/04_build_fit.log"
+    },
+    {
+      "name": "fit",
+      "command": [
+        "/Users/matthew.supernaw/FIMS-Testing/FIMS_Quadra/8_25/Quadra/examples/NMFS/pifsc_swordfish/runs/.swordfish-release-003.inprogress-_pf_bnsi/workspace/examples/NMFS/pifsc_swordfish/build/swordfish_assessment",
+        "--fit",
+        "500"
+      ],
+      "seconds": 39.91099075000966,
+      "returncode": 0,
+      "log": "logs/05_fit.log"
+    },
+    {
+      "name": "fit_and_benchmarks",
+      "command": [
+        "make",
+        "CXX=c++",
+        "PYTHON=/Users/matthew.supernaw/opt/python@3.14/bin/python3.14",
+        "compare-fit",
+        "benchmarks"
+      ],
+      "seconds": 0.5011347499967087,
+      "returncode": 0,
+      "log": "logs/06_fit_and_benchmarks.log"
+    },
+    {
+      "name": "fresh_curvature",
+      "command": [
+        "make",
+        "CXX=c++",
+        "PYTHON=/Users/matthew.supernaw/opt/python@3.14/bin/python3.14",
+        "uncertainty"
+      ],
+      "seconds": 153.50475012499373,
+      "returncode": 0,
+      "log": "logs/07_fresh_curvature.log"
+    },
+    {
+      "name": "perturbed_starts",
+      "command": [
+        "make",
+        "CXX=c++",
+        "PYTHON=/Users/matthew.supernaw/opt/python@3.14/bin/python3.14",
+        "robustness"
+      ],
+      "seconds": 69.54080041698762,
+      "returncode": 0,
+      "log": "logs/08_perturbed_starts.log"
+    },
+    {
+      "name": "projection_acceptance",
+      "command": [
+        "make",
+        "CXX=c++",
+        "PYTHON=/Users/matthew.supernaw/opt/python@3.14/bin/python3.14",
+        "test-projection",
+        "test-projection-uncertainty"
+      ],
+      "seconds": 14.260151541006053,
+      "returncode": 0,
+      "log": "logs/09_projection_acceptance.log"
+    },
+    {
+      "name": "figures",
+      "command": [
+        "make",
+        "CXX=c++",
+        "PYTHON=/Users/matthew.supernaw/opt/python@3.14/bin/python3.14",
+        "plot-projections",
+        "plot-projection-uncertainty"
+      ],
+      "seconds": 0.880120166024426,
+      "returncode": 0,
+      "log": "logs/10_figures.log"
+    }
+  ],
+  "release_directory": "runs/swordfish-release-003",
+  "release_manifest_sha256": "946452923378bb0e5464f4047a96572b59f5154b4cf40d41b788a7d696c62cf4",
+  "source_files": 2171,
+  "artifact_files": 116,
+  "current_source_matches_release": true,
+  "framework_regressions": 5,
+  "hosted_ci": "configured for Ubuntu/macOS; not executed in this session",
+  "sanitizers": "Local portable tests passed AddressSanitizer and UndefinedBehaviorSanitizer on the final source"
+}

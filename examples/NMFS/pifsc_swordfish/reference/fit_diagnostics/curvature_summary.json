@@ -1,0 +1,1 @@
+{"method":"central differences of exact AD gradients; logit coordinates; joint likelihood","steps":[0.0001,0.00005],"relative_asymmetry":1.610987626121039e-07,"relative_step_difference":2.33644067077962e-06,"minimum_eigenvalue":0.001943461867661642,"maximum_eigenvalue":40642.55482069126,"condition_number":20912452.9258668,"maximum_relative_SE_step_change":9.490233638165257e-06}

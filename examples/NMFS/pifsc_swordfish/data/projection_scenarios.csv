@@ -1,0 +1,6 @@
+scenario,name,target,value,reference_first_year,reference_last_year
+1,Dynamic20,equilibrium_SSB_fraction_of_dynamic_mean,0.2,2017,2021
+2,Reference2008_2010,mean_historical_SPR,0,2008,2010
+3,SPR30,equilibrium_SPR,0.3,0,0
+4,MSY,maximum_equilibrium_yield,0,0,0
+5,StatusQuo2019_2021,mean_historical_annual_F,0,2019,2021

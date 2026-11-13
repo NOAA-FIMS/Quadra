@@ -1,0 +1,8 @@
+{
+  "steps": [
+    0.0001,
+    5e-05
+  ],
+  "maximum_relative_SE_change": 6.8348427382236565e-06,
+  "passed": true
+}

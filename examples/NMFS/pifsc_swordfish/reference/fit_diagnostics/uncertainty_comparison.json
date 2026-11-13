@@ -1,0 +1,241 @@
+{
+  "method": "local joint likelihood, fixed biology and hyperparameters; delta method",
+  "tolerance_relative": 0.01,
+  "comparisons": [
+    {
+      "quantity": "SR_LN(R0)",
+      "quadra_se": 0.0502223340432241,
+      "ss3_se": 0.0502225,
+      "relative_difference": 3.3044308009877454e-06
+    },
+    {
+      "quantity": "InitF_seas_1_flt_6",
+      "quadra_se": 0.6309635832685642,
+      "ss3_se": 0.630962,
+      "relative_difference": 2.5092930542314207e-06
+    },
+    {
+      "quantity": "SizeSel_fleet_1_p1",
+      "quadra_se": 2.931473533554127,
+      "ss3_se": 2.93148,
+      "relative_difference": 2.20586388888222e-06
+    },
+    {
+      "quantity": "SizeSel_fleet_1_p3",
+      "quadra_se": 0.09751746146643472,
+      "ss3_se": 0.0975176,
+      "relative_difference": 1.420600643120551e-06
+    },
+    {
+      "quantity": "SizeSel_fleet_1_p4",
+      "quadra_se": 0.2319525826236669,
+      "ss3_se": 0.231952,
+      "relative_difference": 2.5118285977843158e-06
+    },
+    {
+      "quantity": "SizeSel_fleet_2_p1",
+      "quadra_se": 3.110240255710671,
+      "ss3_se": 3.11023,
+      "relative_difference": 3.297412304315017e-06
+    },
+    {
+      "quantity": "SizeSel_fleet_2_p2",
+      "quadra_se": 3.334570627989832,
+      "ss3_se": 3.33456,
+      "relative_difference": 3.1872240511265915e-06
+    },
+    {
+      "quantity": "SizeSel_fleet_3_p1",
+      "quadra_se": 4.515129494280768,
+      "ss3_se": 4.51512,
+      "relative_difference": 2.1027748473567698e-06
+    },
+    {
+      "quantity": "SizeSel_fleet_3_p3",
+      "quadra_se": 0.1201928426211142,
+      "ss3_se": 0.120193,
+      "relative_difference": 1.3093847878176135e-06
+    },
+    {
+      "quantity": "SizeSel_fleet_3_p4",
+      "quadra_se": 0.3743380344970682,
+      "ss3_se": 0.374337,
+      "relative_difference": 2.7635447958918036e-06
+    },
+    {
+      "quantity": "SizeSel_fleet_4_p1",
+      "quadra_se": 32.18027973819255,
+      "ss3_se": 32.1789,
+      "relative_difference": 4.287710868156047e-05
+    },
+    {
+      "quantity": "SizeSel_fleet_4_p2",
+      "quadra_se": 33.81061661124409,
+      "ss3_se": 33.8097,
+      "relative_difference": 2.711089551499235e-05
+    },
+    {
+      "quantity": "SizeSel_fleet_6_p1",
+      "quadra_se": 9.374532052558106,
+      "ss3_se": 9.37452,
+      "relative_difference": 1.2856720243981101e-06
+    },
+    {
+      "quantity": "SizeSel_fleet_6_p3",
+      "quadra_se": 0.3929966603387375,
+      "ss3_se": 0.392997,
+      "relative_difference": 8.642846192064013e-07
+    },
+    {
+      "quantity": "SizeSel_fleet_6_p4",
+      "quadra_se": 0.9968518739626185,
+      "ss3_se": 0.996846,
+      "relative_difference": 5.892547713992613e-06
+    },
+    {
+      "quantity": "SizeSel_fleet_7_p1",
+      "quadra_se": 18.67616605176237,
+      "ss3_se": 18.6759,
+      "relative_difference": 1.4245726437378536e-05
+    },
+    {
+      "quantity": "SizeSel_fleet_7_p2",
+      "quadra_se": 5.401122253145639,
+      "ss3_se": 5.40062,
+      "relative_difference": 9.299916410321352e-05
+    },
+    {
+      "quantity": "SizeSel_fleet_7_p3",
+      "quadra_se": 0.2576803383838771,
+      "ss3_se": 0.257678,
+      "relative_difference": 9.074829349309255e-06
+    },
+    {
+      "quantity": "SizeSel_fleet_7_p4",
+      "quadra_se": 5.465141743997937,
+      "ss3_se": 5.46483,
+      "relative_difference": 5.704550698504285e-05
+    },
+    {
+      "quantity": "SizeSel_fleet_8_p1",
+      "quadra_se": 6.417632250198203,
+      "ss3_se": 6.41763,
+      "relative_difference": 3.506275998432784e-07
+    },
+    {
+      "quantity": "SizeSel_fleet_8_p2",
+      "quadra_se": 43.1214316766626,
+      "ss3_se": 43.1211,
+      "relative_difference": 7.691748647564722e-06
+    },
+    {
+      "quantity": "SizeSel_fleet_8_p3",
+      "quadra_se": 0.2102429739584261,
+      "ss3_se": 0.210243,
+      "relative_difference": 1.2386416636811504e-07
+    },
+    {
+      "quantity": "SizeSel_fleet_8_p4",
+      "quadra_se": 0.5026855987734091,
+      "ss3_se": 0.502685,
+      "relative_difference": 1.1911503408068569e-06
+    },
+    {
+      "quantity": "SizeSel_fleet_1_p1_block_2_1",
+      "quadra_se": 13.3860416562653,
+      "ss3_se": 13.386,
+      "relative_difference": 3.111927782795121e-06
+    },
+    {
+      "quantity": "SizeSel_fleet_1_p3_block_2_1",
+      "quadra_se": 0.9210500882035494,
+      "ss3_se": 0.921049,
+      "relative_difference": 1.1814827978184894e-06
+    },
+    {
+      "quantity": "SizeSel_fleet_1_p4_block_2_1",
+      "quadra_se": 44.85676539879846,
+      "ss3_se": 44.8568,
+      "relative_difference": 7.713702614431384e-07
+    },
+    {
+      "quantity": "SizeSel_fleet_2_p1_block_1_1",
+      "quadra_se": 3.189177984064219,
+      "ss3_se": 3.18917,
+      "relative_difference": 2.503492827043985e-06
+    },
+    {
+      "quantity": "SizeSel_fleet_2_p2_block_1_1",
+      "quadra_se": 3.740956355644385,
+      "ss3_se": 3.74096,
+      "relative_difference": 9.741765790716173e-07
+    },
+    {
+      "quantity": "SSB_unfished",
+      "quadra_se": 5012.578541787066,
+      "ss3_se": 5012.59,
+      "relative_difference": 2.285886724129327e-06
+    },
+    {
+      "quantity": "SSB_Btgt",
+      "quadra_se": 1002.51570860339,
+      "ss3_se": 1002.52,
+      "relative_difference": 4.280609474105468e-06
+    },
+    {
+      "quantity": "annF_Btgt",
+      "quadra_se": 0.003601851600880085,
+      "ss3_se": 0.00360181,
+      "relative_difference": 1.154999294383785e-05
+    },
+    {
+      "quantity": "Dead_Catch_Btgt",
+      "quadra_se": 642.5785842159423,
+      "ss3_se": 642.581,
+      "relative_difference": 3.759501226552331e-06
+    },
+    {
+      "quantity": "SSB_SPR",
+      "quadra_se": 887.9424851175813,
+      "ss3_se": 887.945,
+      "relative_difference": 2.832250216799892e-06
+    },
+    {
+      "quantity": "annF_SPR",
+      "quadra_se": 0.003798093818039449,
+      "ss3_se": 0.00379805,
+      "relative_difference": 1.153698330691455e-05
+    },
+    {
+      "quantity": "Dead_Catch_SPR",
+      "quadra_se": 647.2699627095276,
+      "ss3_se": 647.273,
+      "relative_difference": 4.692441168407946e-06
+    },
+    {
+      "quantity": "SSB_MSY",
+      "quadra_se": 813.9822168174849,
+      "ss3_se": 813.984,
+      "relative_difference": 2.190684970648782e-06
+    },
+    {
+      "quantity": "annF_MSY",
+      "quadra_se": 0.003996746447289347,
+      "ss3_se": 0.00399669,
+      "relative_difference": 1.4123509540997503e-05
+    },
+    {
+      "quantity": "Dead_Catch_MSY",
+      "quadra_se": 648.4422216874817,
+      "ss3_se": 648.445,
+      "relative_difference": 4.284576977764409e-06
+    },
+    {
+      "quantity": "SSB_2021",
+      "quadra_se": 6008.864781832641,
+      "ss3_se": 6008.87,
+      "relative_difference": 8.684107593026624e-07
+    }
+  ],
+  "passed": true
+}
