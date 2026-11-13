@@ -201,7 +201,7 @@ struct Sizes {
 #endif
 
   EIGEN_DEVICE_FUNC
-      EIGEN_STRONG_INLINE Index operator[](const Index index) const {
+  EIGEN_STRONG_INLINE Index operator[](const Index index) const {
     switch (index) {
     case 0:
       return internal::get<0, Base>::value;

@@ -109,8 +109,8 @@ public:
 #endif
 
   EIGEN_DEVICE_FUNC
-      EIGEN_STRONG_INLINE CwiseBinaryOp(const Lhs &aLhs, const Rhs &aRhs,
-                                        const BinaryOp &func = BinaryOp())
+  EIGEN_STRONG_INLINE CwiseBinaryOp(const Lhs &aLhs, const Rhs &aRhs,
+                                    const BinaryOp &func = BinaryOp())
       : m_lhs(aLhs), m_rhs(aRhs), m_functor(func) {
     EIGEN_CHECK_BINARY_COMPATIBILIY(BinaryOp, typename Lhs::Scalar,
                                     typename Rhs::Scalar);

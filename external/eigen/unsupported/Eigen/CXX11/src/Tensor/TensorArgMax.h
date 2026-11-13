@@ -302,7 +302,7 @@ struct TensorEvaluator<const TensorTupleReducerOp<ReduceOp, Dims, ArgType>,
 #endif
 
   EIGEN_DEVICE_FUNC
-      EIGEN_STRONG_INLINE TensorOpCost costPerCoeff(bool vectorized) const {
+  EIGEN_STRONG_INLINE TensorOpCost costPerCoeff(bool vectorized) const {
     const double compute_cost =
         1.0 + (m_return_dim < 0 ? 0.0
                                 : (TensorOpCost::ModCost<Index>() +
