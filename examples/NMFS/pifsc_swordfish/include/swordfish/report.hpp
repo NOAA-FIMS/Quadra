@@ -36,16 +36,17 @@ inline void write_reference_points(const InputData &data,
         !std::isfinite(r.ssb) || !std::isfinite(r.recruitment) ||
         !std::isfinite(r.yield) || !std::isfinite(r.annual_f))
       throw std::runtime_error("Nonfinite model reference point");
-    out << point.first << ',' << r.scale << ',' << r.spr << ',' << r.ssb
-        << ',' << r.recruitment << ',' << r.yield << ',' << r.annual_f << '\n';
+    out << point.first << ',' << r.scale << ',' << r.spr << ',' << r.ssb << ','
+        << r.recruitment << ',' << r.yield << ',' << r.annual_f << '\n';
   }
   out.flush();
   if (!out)
     throw std::runtime_error("Failed writing model reference points");
 }
 /// Write historical annual/seasonal trajectories, fitted indices, length
-/// diagnostics, likelihood components and management reference points to the supplied output folder. Release
-/// publication is performed by the isolated runner.
+/// diagnostics, likelihood components and management reference points to the
+/// supplied output folder. Release publication is performed by the isolated
+/// runner.
 /// @param data Validated original-input schema for the supported swordfish
 /// assessment.
 /// @param p Native canonical-name parameter map; all required fixed and

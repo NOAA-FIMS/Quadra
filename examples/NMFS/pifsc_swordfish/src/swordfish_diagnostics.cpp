@@ -120,7 +120,8 @@ int main(int argc, char **argv) {
         out << '\n';
       }
     } else if (mode == "benchmarks") {
-      swordfish::write_reference_points(data, native.first, native.second, "build");
+      swordfish::write_reference_points(data, native.first, native.second,
+                                        "build");
     } else if (mode == "starts") {
       std::ifstream cov("build/coordinate_covariance.csv");
       if (!std::getline(cov, line))
