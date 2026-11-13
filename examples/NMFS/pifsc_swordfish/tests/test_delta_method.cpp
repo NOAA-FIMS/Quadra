@@ -48,23 +48,33 @@ int main() {
       throw std::runtime_error("Indefinite covariance accepted");
     Eigen::Matrix2d hessian;
     hessian << 4, 1, 1, 2;
-    const auto curvature=swordfish::validated_local_curvature(hessian,hessian);
-    near(curvature.covariance(0,0),2./7.);
-    near(curvature.covariance(0,1),-1./7.);
-    near(curvature.covariance(1,1),4./7.);
-    near(curvature.maximum_se_step_change,0);
-    for(int mode=0;mode<4;++mode){
-      Eigen::Matrix2d bad=hessian;
-      if(mode==0)bad(0,0)=-4;
-      if(mode==1)bad(0,1)=3;
-      if(mode==2)bad*=1.01;
-      if(mode==3)bad.setZero();
-      bool failed=false;
-      try{(void)swordfish::validated_local_curvature(bad,hessian);}
-      catch(const std::exception &){failed=true;}
-      if(!failed)throw std::runtime_error("Invalid/unstable Hessian accepted");
+    const auto curvature =
+        swordfish::validated_local_curvature(hessian, hessian);
+    near(curvature.covariance(0, 0), 2. / 7.);
+    near(curvature.covariance(0, 1), -1. / 7.);
+    near(curvature.covariance(1, 1), 4. / 7.);
+    near(curvature.maximum_se_step_change, 0);
+    for (int mode = 0; mode < 4; ++mode) {
+      Eigen::Matrix2d bad = hessian;
+      if (mode == 0)
+        bad(0, 0) = -4;
+      if (mode == 1)
+        bad(0, 1) = 3;
+      if (mode == 2)
+        bad *= 1.01;
+      if (mode == 3)
+        bad.setZero();
+      bool failed = false;
+      try {
+        (void)swordfish::validated_local_curvature(bad, hessian);
+      } catch (const std::exception &) {
+        failed = true;
+      }
+      if (!failed)
+        throw std::runtime_error("Invalid/unstable Hessian accepted");
     }
-    std::cout << "Validated full curvature, correlated delta covariance, coordinate invariance, and "
+    std::cout << "Validated full curvature, correlated delta covariance, "
+                 "coordinate invariance, and "
                  "interval checks pass\n";
     return 0;
   } catch (const std::exception &e) {
