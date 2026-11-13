@@ -1,0 +1,6 @@
+Native input: /private/tmp/quadra-native-only-u1crkl1r/model.json
+Native model: 84 independent coordinates; initial objective 289.299639305649
+Objective: 289.299639305649; gradient norm: 9.38582936193366e-05; reference points written.
+Native input: /private/tmp/quadra-native-only-u1crkl1r/modified.json
+Native model: 84 independent coordinates; initial objective 289.444083805687
+Objective: 289.444083805687; gradient norm: 104.101467446799; reference points written.

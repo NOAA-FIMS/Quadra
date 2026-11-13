@@ -1,0 +1,32 @@
+{
+  "description": "Fresh native .par-start fit with full correlated local reference-point uncertainty; two-step curvature/Jacobian validation and ten SS3 reference SE checks pass.",
+  "source_git_commit": "45eb70509e834ea5a8c711d4196c6aa6d417f5fe",
+  "implementation_files_sha256": {
+    "include/swordfish/local_curvature.hpp": "0202f3e48e7ff4506671b0c45420d97b837749313be91f2dc020da99169c681a",
+    "include/swordfish/reference_uncertainty.hpp": "fe718fa2ee58df25fe1f05d92ac1454bb3cdfc7ae0b066ecb14ec354b03c6a30",
+    "include/swordfish/model.hpp": "1b7a08d963cff05d01ce946ec66dbeb5db8ce9f83dab4b6a479db6bcd8a243a1",
+    "include/swordfish/benchmarks.hpp": "a091724dae4202297d049ad556263966235b65ed772963a4cb5d33448a769d96",
+    "include/swordfish/delta_method.hpp": "3962b10d9d319acd481d6a6f4603fe495116551922def1d92643b57fba0e360c",
+    "src/swordfish_native.cpp": "a3dcfc91c010c12f13634de0f9efe5bcbe635ccc73eca2c99a9fa1d9d8c93405",
+    "scripts/run_native.py": "e2d485c4df1d8126c0accae571df7c6ffa97ed42979bfbeb569f55612140b7a3",
+    "scripts/native_input.py": "13631b36f11c8d8be5bb1d8a2e8a474683a0697ee059c664149ba830648e861c"
+  },
+  "files_sha256": {
+    "reference_jacobian_coarse.csv": "db8f2b4b2b6d9ff8caf270ae16022eb3df6f61ab4be110086c733c9139cc8dd2",
+    "reference_hessian_coarse.csv": "a68bc7198a3ef81877efbba071483455ad24febefdb1ae1b7f5ddc3ed1a5ea04",
+    "management_reference_point_uncertainty.csv": "7607c1d8f7a8844135dc6920593a93e360c1cc0dd91beec49ad474b72d5f1c84",
+    "management_reference_points.csv": "ee3793a3c926c7a4ac3654cd78d9c6c355924ddbcfb7ca5eb7398883a74bc5e4",
+    "reference_uncertainty_summary.json": "3c0dc42df0952a6ac03ccc25222370b9cc7ed14d802d542cf1e218109cf4eac5",
+    "reference_coordinate_covariance.csv": "0893d1847e3cfb657df6e88388c9f9f80f3d23afae5eef6f7f7078a7fae75d6b",
+    "SS3_reference_SE_comparison.json": "0109549d6ad6ce36be742aaed99432d00df0b5d076f42d73d3e8ccccf7fe76ed",
+    "reference_SE_comparison.json": "2b67ac0afafd557488a2605f11b1b0550d5ef7abb4f99b7d3ce4b5b30c6f5ce8",
+    "quadra_fitted_parameters.csv": "28fc28fac8498bd491d20da4cd850521bc8791e6bea91e6cf78b4511dc3d6ec7",
+    "quadra_fit_summary.json": "a1f57166551c687dc4292faddbe47197b4b94a98f2747d000dfc624435180239",
+    "reference_hessian_fine.csv": "6bd2bb1ec4cdcdfe46c734dff69d81a49f63944143e3fba846116229745664e7",
+    "native_uncertainty.log": "619aa9dfd68222db6b346861382748fb18438d04795753490be65cf34060f64e",
+    "run_status.json": "15bfec16a2380c53ba8c8fdd8aca98f0017b8c1ebf7faa72ab582cd603ed537e",
+    "reference_jacobian_fine.csv": "66120f305fd0487697162a4136d08af76ff56a23b8b3740c129ffc75ca4c3e47",
+    "management_reference_point_covariance.csv": "4d798d9a97d6b0017e5043550041472443465211f915596e596de503ec3e099b"
+  },
+  "input_json_not_published": true
+}

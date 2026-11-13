@@ -1206,6 +1206,37 @@ Calculate catch, index, length-composition, recruitment and soft-bound component
 
 Source: [include/swordfish/likelihood.hpp:372](../include/swordfish/likelihood.hpp#L372)
 
+## include/swordfish/local_curvature.hpp :: LocalCurvature
+
+`LocalCurvature`
+
+Full independent-coordinate covariance from validated local curvature, with a second-step covariance and numerical diagnostics.
+
+Source: [include/swordfish/local_curvature.hpp:8](../include/swordfish/local_curvature.hpp#L8)
+
+Contract details:
+
+```text
+Full optimizer-coordinate covariance plus two-step numerical diagnostics.
+```
+
+## include/swordfish/local_curvature.hpp :: validated_local_curvature
+
+`LocalCurvature validated_local_curvature(const Eigen::MatrixXd & coarse, const Eigen::MatrixXd & fine)`
+
+Validate two finite-difference Hessians for finite values, symmetry, step stability and positive definiteness, then invert without regularization and check SE stability.
+
+Source: [include/swordfish/local_curvature.hpp:17](../include/swordfish/local_curvature.hpp#L17)
+
+Contract details:
+
+```text
+Validate two finite-difference Hessians and invert positive local curvature.
+Both steps must be symmetric/stable to 1e-5 relative norm, positive definite,
+and give marginal SEs stable to 0.1%. Singular/indefinite curvature is rejected;
+no eigenvalue clipping, ridge, diagonal-only approximation or saved covariance.
+```
+
 ## include/swordfish/model.hpp :: SwordfishModel
 
 `SwordfishModel`
@@ -1339,7 +1370,7 @@ Source: [include/swordfish/model.hpp:158](../include/swordfish/model.hpp#L158)
 
 Decode the model coordinate vector with the likelihood constraints and return its standard equilibrium management reference points as post-fit derived outputs.
 
-Source: [include/swordfish/model.hpp:168](../include/swordfish/model.hpp#L168)
+Source: [include/swordfish/model.hpp:169](../include/swordfish/model.hpp#L169)
 
 ## include/swordfish/model.hpp :: SwordfishModel::operator()
 
@@ -1347,7 +1378,7 @@ Source: [include/swordfish/model.hpp:168](../include/swordfish/model.hpp#L168)
 
 Return only the joint scalar objective for a supplied fitting-coordinate vector.
 
-Source: [include/swordfish/model.hpp:180](../include/swordfish/model.hpp#L180)
+Source: [include/swordfish/model.hpp:181](../include/swordfish/model.hpp#L181)
 
 Contract details:
 
@@ -1368,7 +1399,94 @@ transform-density term.
 
 Evaluate the scalar objective through Quadra's model interface and register it in the report context.
 
-Source: [include/swordfish/model.hpp:192](../include/swordfish/model.hpp#L192)
+Source: [include/swordfish/model.hpp:193](../include/swordfish/model.hpp#L193)
+
+## include/swordfish/native_io.hpp :: native_number
+
+`void native_number(std::istream & in, T & value)`
+
+Read one finite numeric value from the versioned native transport; reject invalid or truncated tokens.
+
+Source: [include/swordfish/native_io.hpp:13](../include/swordfish/native_io.hpp#L13)
+
+Contract details:
+
+```text
+Read a finite numeric field, rejecting truncation and invalid stream tokens.
+```
+
+## include/swordfish/native_io.hpp :: native_count
+
+`size_t native_count(std::istream & in)`
+
+Read and bound a native collection length before allocating model data.
+
+Source: [include/swordfish/native_io.hpp:18](../include/swordfish/native_io.hpp#L18)
+
+Contract details:
+
+```text
+Read a bounded collection length before allocating observation containers.
+```
+
+## include/swordfish/native_io.hpp :: native_array
+
+`void native_array(std::istream & in, std::array<T, N> & a)`
+
+Read a statically sized numeric array from the typed native stream.
+
+Source: [include/swordfish/native_io.hpp:24](../include/swordfish/native_io.hpp#L24)
+
+Contract details:
+
+```text
+Fill fixed arrays from their statically declared schema width.
+```
+
+## include/swordfish/native_io.hpp :: native_vector
+
+`void native_vector(std::istream & in, std::vector<double> & v)`
+
+Read a length-prefixed finite numeric vector from native transport.
+
+Source: [include/swordfish/native_io.hpp:28](../include/swordfish/native_io.hpp#L28)
+
+Contract details:
+
+```text
+Read a length-prefixed scalar vector.
+```
+
+## include/swordfish/native_io.hpp :: native_table
+
+`void native_table(std::istream & in, std::vector<std::array<T, N>> & v)`
+
+Read a length-prefixed fixed-width numeric settings table.
+
+Source: [include/swordfish/native_io.hpp:32](../include/swordfish/native_io.hpp#L32)
+
+Contract details:
+
+```text
+Read a length-prefixed fixed-width settings table.
+```
+
+## include/swordfish/native_io.hpp :: read_native_input
+
+`std::pair<InputData, Deviations<double>> read_native_input(std::istream & in)`
+
+Read the complete native model data and explicit historical deviations without generated factories or SS3 fixtures; validate finite values, counts, constraints and supported dimensions.
+
+Source: [include/swordfish/native_io.hpp:39](../include/swordfish/native_io.hpp#L39)
+
+Contract details:
+
+```text
+Read a native state and its initial deviations from a validated frontend stream.
+C++ repeats finite/count/duplicate/shape checks and invokes InputData validation.
+The public JSON format is documented by native_input.py; transport order is
+private to this version. The initial parameter map uses each native value.
+```
 
 ## include/swordfish/population.hpp :: Deviations
 
@@ -1770,6 +1888,69 @@ Read a complete native fitted CSV using strict numeric parsing and canonical rec
 
 Source: [include/swordfish/reference_io.hpp:79](../include/swordfish/reference_io.hpp#L79)
 
+## include/swordfish/reference_uncertainty.hpp :: ReferenceEstimate
+
+`ReferenceEstimate`
+
+One flattened management reference-point quantity, native units, point estimate and proportion-interval flag.
+
+Source: [include/swordfish/reference_uncertainty.hpp:17](../include/swordfish/reference_uncertainty.hpp#L17)
+
+Contract details:
+
+```text
+One reference-point quantity with native units; proportions get bounded intervals.
+```
+
+## include/swordfish/reference_uncertainty.hpp :: reference_estimates
+
+`std::vector<ReferenceEstimate> reference_estimates(const SwordfishModel & model, const std::vector<double> & x)`
+
+Flatten all six quantities for each of four model reference points; enforce known structural zeros and target proportions to avoid numerical root noise.
+
+Source: [include/swordfish/reference_uncertainty.hpp:26](../include/swordfish/reference_uncertainty.hpp#L26)
+
+Contract details:
+
+```text
+Flatten all six standard quantities for each benchmark into a stable 24-row order.
+Known unfished zeros/SPR=1 and target SPR=.2 are exact constants. Btgt20 raw
+SPR is .2/h under the supported positive Beverton-Holt equilibrium, avoiding
+spurious root-rounding derivatives when h is fixed.
+```
+
+## include/swordfish/reference_uncertainty.hpp :: write_uncertainty_matrix
+
+`void write_uncertainty_matrix(const std::filesystem::path & path, const Eigen::MatrixXd & matrix, const std::vector<std::string> & rows, const std::vector<std::string> & columns)`
+
+Write a finite, dimension-checked labeled matrix with all coordinate/output correlations retained.
+
+Source: [include/swordfish/reference_uncertainty.hpp:42](../include/swordfish/reference_uncertainty.hpp#L42)
+
+Contract details:
+
+```text
+Write a finite labeled matrix, retaining full coordinate/output correlations.
+```
+
+## include/swordfish/reference_uncertainty.hpp :: write_reference_point_uncertainty
+
+`void write_reference_point_uncertainty(SwordfishModel & model, const std::vector<double> & x, const std::filesystem::path & folder, std::ostream & progress)`
+
+Compute fresh two-step AD-gradient curvature and two-step reference-point Jacobians, propagate the full covariance, and write validated SEs, CVs and 95% local intervals without SS3 files or saved covariance.
+
+Source: [include/swordfish/reference_uncertainty.hpp:56](../include/swordfish/reference_uncertainty.hpp#L56)
+
+Contract details:
+
+```text
+Calculate fresh curvature and propagate J V J-transpose for this fitted model.
+The caller must have verified convergence. Every estimate uses the same native
+parameter/deviation decoding and profiled Q as the fit. Hessian and Jacobian
+checks at 1e-4 and 5e-5 reject numerical instability. Outputs are conditional
+local parameter intervals; no forecast process, bootstrap or model uncertainty.
+```
+
 ## include/swordfish/report.hpp :: write_reference_points
 
 `void write_reference_points(const InputData & data, const ParameterValues<double> & p, const Deviations<double> & dev, const std::filesystem::path & folder)`
@@ -1794,14 +1975,15 @@ fitting caller; SS3 values are used only by separate comparison checks.
 
 Write historical trajectories, fitted observations, likelihood components and management reference points for the supplied fitted model state. Every fit/report caller receives the same derived-output calculation; release publication is handled separately.
 
-Source: [include/swordfish/report.hpp:57](../include/swordfish/report.hpp#L57)
+Source: [include/swordfish/report.hpp:58](../include/swordfish/report.hpp#L58)
 
 Contract details:
 
 ```text
 Write historical annual/seasonal trajectories, fitted indices, length
-diagnostics, likelihood components and management reference points to the supplied output folder. Release
-publication is performed by the isolated runner.
+diagnostics, likelihood components and management reference points to the
+supplied output folder. Release publication is performed by the isolated
+runner.
 @param data Validated original-input schema for the supported swordfish
 assessment.
 @param p Native canonical-name parameter map; all required fixed and
@@ -2387,6 +2569,20 @@ Run swordfish diagnostics; return zero on success and nonzero on a failed
 check or invalid input.
 ```
 
+## src/swordfish_native.cpp :: main
+
+`int main(int argc, char ** argv)`
+
+Run swordfish native; return zero on success and nonzero on a failed check or invalid input.
+
+Source: [src/swordfish_native.cpp:17](../src/swordfish_native.cpp#L17)
+
+Contract details:
+
+```text
+Evaluate or fit a native model state and write its complete derived outputs.
+```
+
 ## src/swordfish_projection.cpp :: main
 
 `int main()`
@@ -2589,7 +2785,7 @@ contracts.
 
 Test helper for test delta method: near. See the typed signature and assertions in the linked test source.
 
-Source: [tests/test_delta_method.cpp:5](../tests/test_delta_method.cpp#L5)
+Source: [tests/test_delta_method.cpp:6](../tests/test_delta_method.cpp#L6)
 
 Contract details:
 
@@ -2604,7 +2800,7 @@ assertions in the linked test source.
 
 Run test delta method; return zero on success and nonzero on a failed check or invalid input.
 
-Source: [tests/test_delta_method.cpp:11](../tests/test_delta_method.cpp#L11)
+Source: [tests/test_delta_method.cpp:12](../tests/test_delta_method.cpp#L12)
 
 Contract details:
 
@@ -3655,6 +3851,33 @@ Notes
 C++ declarations are obtained from Clang AST JSON and Python declarations from ast. Anonymous lambdas, vendor internals and generated factory bodies are excluded explicitly. Description coverage is enforced before publishing the inventory; regenerate after changing declaration locations.
 ```
 
+## scripts/export_native.py :: convert
+
+`convert(source, values)`
+
+Map parsed observations/settings and explicit native starts into the named schema.
+
+Source: [scripts/export_native.py:9](../scripts/export_native.py#L9)
+
+Contract details:
+
+```text
+Map parsed observations/settings and explicit native starts into the named schema.
+
+Existing numeric settings are preserved, including selectivity block
+functions, bias ramp, observation inclusion and likelihood weights. Native
+starts may come from a complete Quadra parameter CSV. No fitted trajectory
+or SS3 report quantities become observations or population drivers.
+```
+
+## scripts/export_native.py :: main
+
+`main()`
+
+Export once from parsed input JSON or optional SS3 observations/control sources.
+
+Source: [scripts/export_native.py:50](../scripts/export_native.py#L50)
+
 ## scripts/import_ss3.py :: read_lines
 
 `read_lines(path)`
@@ -3788,6 +4011,89 @@ Notes
 -----
 Section/table matching is version specific. Raw files are preserved byte for byte and referenced by hashes. Extracted report tables are reference data, not an alternative observation source for the model.
 ```
+
+## scripts/native_input.py :: exact_keys
+
+`exact_keys(value, keys, label)`
+
+Reject missing/unknown fields instead of silently accepting misspelled settings.
+
+Source: [scripts/native_input.py:24](../scripts/native_input.py#L24)
+
+## scripts/native_input.py :: atom
+
+`atom(value, kind)`
+
+Validate a scalar/fixed array and encode finite typed values for the C++ reader.
+
+Source: [scripts/native_input.py:30](../scripts/native_input.py#L30)
+
+## scripts/native_input.py :: record
+
+`record(value, fields, label)`
+
+Validate one named record and serialize fields in the transport's declared order.
+
+Source: [scripts/native_input.py:51](../scripts/native_input.py#L51)
+
+## scripts/native_input.py :: rows
+
+`rows(value)`
+
+Bound variable collection sizes before serializing or allocating model observations.
+
+Source: [scripts/native_input.py:57](../scripts/native_input.py#L57)
+
+## scripts/native_input.py :: encode
+
+`encode(document)`
+
+Validate native schema v1 and produce a typed in-memory stream for the reusable model.
+
+Source: [scripts/native_input.py:63](../scripts/native_input.py#L63)
+
+Contract details:
+
+```text
+Validate native schema v1 and produce a typed in-memory stream for the reusable model.
+
+All observations/settings are supplied by this document. Estimated values
+must be strictly inside bounds and main deviations must already sum to zero.
+Parameter names and supported dimensions belong to this swordfish model,
+rather than a general arbitrary-species schema. No source files are opened.
+```
+
+## scripts/native_input.py :: validate_layout
+
+`validate_layout(document)`
+
+Reject unsupported layouts and invalid observation references before launching C++.
+
+Source: [scripts/native_input.py:127](../scripts/native_input.py#L127)
+
+## scripts/native_input.py :: unique_object
+
+`unique_object(pairs)`
+
+Reject duplicate JSON object keys before values can be silently replaced.
+
+Source: [scripts/native_input.py:165](../scripts/native_input.py#L165)
+
+## scripts/native_input.py :: load
+
+`load(text)`
+
+Load strict JSON, rejecting nonfinite constants and ambiguous duplicate keys.
+
+Source: [scripts/native_input.py:174](../scripts/native_input.py#L174)
+
+## scripts/native_input.py :: load.bad_constant
+
+`bad_constant(value)`
+
+Reject JSON extensions for NaN and infinity.
+
+Source: [scripts/native_input.py:176](../scripts/native_input.py#L176)
 
 ## scripts/prepare_biology.py :: prepare
 
@@ -4195,6 +4501,24 @@ Optimization receives no Report.sso, fitted parameter CSV or saved covariance.
 The matched-fixed sensitivity changes only the explicit fixed male-growth
 setting. Existing output directories are rejected rather than overwritten.
 Optimizer stdout/stderr is streamed to the terminal and flushed to a log.
+```
+
+## scripts/run_native.py :: main
+
+`main()`
+
+Validate JSON, stream native data to the backend and save exact input provenance.
+
+Source: [scripts/run_native.py:12](../scripts/run_native.py#L12)
+
+Contract details:
+
+```text
+Validate JSON, stream native data to the backend and save exact input provenance.
+
+The binary is compiled once by make native-swordfish. Dataset changes need
+no compilation, generated C++ factory, SS3 source files or reference outputs.
+Existing output directories are rejected. Progress streams to the terminal.
 ```
 
 ## scripts/run_release.py :: verify_sources
@@ -5060,6 +5384,70 @@ Verify no nonfinite observations. This helper belongs to the source validation t
 
 Source: [tests/test_inputs.py:65](../tests/test_inputs.py#L65)
 
+## tests/test_native_input.py :: field_default
+
+`field_default(kind)`
+
+Make typed scalar/array placeholders for a format-only synthetic fixture.
+
+Source: [tests/test_native_input.py:12](../tests/test_native_input.py#L12)
+
+## tests/test_native_input.py :: fixture
+
+`fixture()`
+
+Create a complete native schema example for validation tests, without real observations.
+
+Source: [tests/test_native_input.py:18](../tests/test_native_input.py#L18)
+
+## tests/test_native_input.py :: NativeInputTests
+
+`NativeInputTests`
+
+Reject ambiguous JSON and malformed model states before the backend runs.
+
+Source: [tests/test_native_input.py:35](../tests/test_native_input.py#L35)
+
+## tests/test_native_input.py :: NativeInputTests.test_valid_transport_and_roundtrip
+
+`test_valid_transport_and_roundtrip(self)`
+
+Check named-schema roundtrip and private transport version without source conversion.
+
+Source: [tests/test_native_input.py:37](../tests/test_native_input.py#L37)
+
+## tests/test_native_input.py :: NativeInputTests.test_uncertainty_cli
+
+`test_uncertainty_cli(self)`
+
+Expose uncertainty help and reject interval calculation without fit mode.
+
+Source: [tests/test_native_input.py:43](../tests/test_native_input.py#L43)
+
+## tests/test_native_input.py :: NativeInputTests.test_json_duplicates_and_nonfinite
+
+`test_json_duplicates_and_nonfinite(self)`
+
+Reject duplicate object keys, NaN and infinity at the JSON boundary.
+
+Source: [tests/test_native_input.py:53](../tests/test_native_input.py#L53)
+
+## tests/test_native_input.py :: NativeInputTests.test_types_shapes_and_unknown_fields
+
+`test_types_shapes_and_unknown_fields(self)`
+
+Reject booleans as numbers, fractional integers, bad arrays and misspelled keys.
+
+Source: [tests/test_native_input.py:58](../tests/test_native_input.py#L58)
+
+## tests/test_native_input.py :: NativeInputTests.test_bounds_names_and_deviation_constraints
+
+`test_bounds_names_and_deviation_constraints(self)`
+
+Reject incomplete/duplicate names, invalid starts and dependent-deviation inconsistencies.
+
+Source: [tests/test_native_input.py:65](../tests/test_native_input.py#L65)
+
 ## tests/test_runtime.py :: RuntimeTests
 
 `RuntimeTests`
@@ -5163,3 +5551,11 @@ Source: [scripts/plot_projection_uncertainty.R:13](../scripts/plot_projection_un
 Draw the plot projections figure using base R graphics; the source defines units, colors, interval interpretation and export devices.
 
 Source: [scripts/plot_projections.R:11](../scripts/plot_projections.R#L11)
+
+## scripts/plot_reference_uncertainty.R :: plot_points
+
+`plot_points <- function(quantity, title, label, log_scale=FALSE)`
+
+Draw the plot reference uncertainty figure using base R graphics; the source defines units, colors, interval interpretation and export devices.
+
+Source: [scripts/plot_reference_uncertainty.R:11](../scripts/plot_reference_uncertainty.R#L11)

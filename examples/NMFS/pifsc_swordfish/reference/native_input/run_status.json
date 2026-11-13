@@ -1,0 +1,8 @@
+{
+  "status": "completed",
+  "mode": "fit",
+  "input_sha256": "8098b8c44e631b11183ff828291823cf4091d33508f042b5c6477cc81adc475e",
+  "binary_sha256": "791edc78415ad696d353cda4a8d0ee7488d8f844f40066a5177c020286b24138",
+  "ss3_files_used": false,
+  "returncode": 0
+}

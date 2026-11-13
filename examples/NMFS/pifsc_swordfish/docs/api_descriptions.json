@@ -153,5 +153,17 @@
   "src/swordfish_control_start.cpp::save_parameters": "Write all native parameters and 57 recruitment deviations to a distinct control-start checkpoint or final result CSV.",
   "management_reference_points": "Calculate unfished, Btgt20, SPR20 and MSY derived outputs from supplied fitted parameters and deviations using terminal biology and terminal-year fishing mixture. No SS3 reference values enter these calculations.",
   "SwordfishModel::reference_points": "Decode the model coordinate vector with the likelihood constraints and return its standard equilibrium management reference points as post-fit derived outputs.",
-  "write_reference_points": "Write the standard independently calculated management reference-point table for the supplied fitted state; reject nonfinite values and propagate output failures."
+  "write_reference_points": "Write the standard independently calculated management reference-point table for the supplied fitted state; reject nonfinite values and propagate output failures.",
+  "native_number": "Read one finite numeric value from the versioned native transport; reject invalid or truncated tokens.",
+  "native_count": "Read and bound a native collection length before allocating model data.",
+  "native_array": "Read a statically sized numeric array from the typed native stream.",
+  "native_vector": "Read a length-prefixed finite numeric vector from native transport.",
+  "native_table": "Read a length-prefixed fixed-width numeric settings table.",
+  "read_native_input": "Read the complete native model data and explicit historical deviations without generated factories or SS3 fixtures; validate finite values, counts, constraints and supported dimensions.",
+  "LocalCurvature": "Full independent-coordinate covariance from validated local curvature, with a second-step covariance and numerical diagnostics.",
+  "validated_local_curvature": "Validate two finite-difference Hessians for finite values, symmetry, step stability and positive definiteness, then invert without regularization and check SE stability.",
+  "ReferenceEstimate": "One flattened management reference-point quantity, native units, point estimate and proportion-interval flag.",
+  "reference_estimates": "Flatten all six quantities for each of four model reference points; enforce known structural zeros and target proportions to avoid numerical root noise.",
+  "write_uncertainty_matrix": "Write a finite, dimension-checked labeled matrix with all coordinate/output correlations retained.",
+  "write_reference_point_uncertainty": "Compute fresh two-step AD-gradient curvature and two-step reference-point Jacobians, propagate the full covariance, and write validated SEs, CVs and 95% local intervals without SS3 files or saved covariance."
 }

@@ -8,6 +8,14 @@ comparisons and a converged Quadra joint-likelihood fit initialized
 from the supplied SS3 parameter estimates.
 Striped marlin will use its own workspace once its inputs are supplied.
 
+To run directly from normalized input, use `make native-swordfish`, then
+`./swordfish --input build/native/swordfish.json --output build/native/my-fit`.
+See [NATIVE_INPUT.md](NATIVE_INPUT.md) for the self-contained JSON schema, local
+example, optional exporter and validation. The runtime requires no SS3 files.
+Add `--uncertainty` to calculate reference-point standard errors, CVs and 95%
+intervals from fresh full local covariance; see
+[REFERENCE_POINT_UNCERTAINTY.md](REFERENCE_POINT_UNCERTAINTY.md).
+
 An additional control-input initialization experiment now recovers the same
 optimum without reading SS3 fitted estimates or covariance. It needs an explicit
 catch-feasibility stage before evaluating the full likelihood. See

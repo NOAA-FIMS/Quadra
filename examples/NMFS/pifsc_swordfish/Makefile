@@ -221,3 +221,9 @@ SS_PAR ?= data/raw/ss.par
 .PHONY: fit-ss-par
 fit-ss-par:
 	$(PYTHON) scripts/run_ss_par.py "$(SS_PAR)"
+
+.PHONY: native-swordfish
+native-swordfish: build/swordfish_native
+
+build/swordfish_native: src/swordfish_native.cpp $(wildcard include/swordfish/*.hpp) | build
+	$(CXX) $(CPPFLAGS) -I$(QUADRA_ROOT)/external/eigen $(CXXFLAGS) $(DEPFLAGS) $< -o $@

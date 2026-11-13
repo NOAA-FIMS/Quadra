@@ -1,0 +1,20 @@
+{
+  "passed": true,
+  "objective": 289.2996393056489,
+  "maximum_relative_table_errors": {
+    "quadra_fitted_annual.csv": 1.3663824806667327e-14,
+    "quadra_fitted_seasonal.csv": 1.3663824806667327e-14,
+    "quadra_fitted_index_fits.csv": 3.9968028886505635e-14,
+    "quadra_fitted_length_fits.csv": 5.203689809050267e-14,
+    "quadra_fitted_likelihood.csv": 3.3402672846500982e-15,
+    "management_reference_points.csv": 1.021162530962384e-14
+  },
+  "isolated_runtime_has_ss3_sources": false,
+  "isolated_runtime_has_reference_fixtures": false,
+  "modified_recruitment_unfished_SSB_ratio": 1.0099999999999993,
+  "binary_sha256": "791edc78415ad696d353cda4a8d0ee7488d8f844f40066a5177c020286b24138",
+  "isolated_path": "/private/tmp/quadra-native-only-u1crkl1r",
+  "malformed_transport_rejected": true,
+  "existing_output_preserved": true,
+  "python_checks_passed": 16
+}

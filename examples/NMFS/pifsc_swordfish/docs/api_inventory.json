@@ -2220,6 +2220,68 @@
     },
     {
       "language": "C++",
+      "file": "include/swordfish/local_curvature.hpp",
+      "line": 8,
+      "name": "LocalCurvature",
+      "kind": "class/struct",
+      "signature": "LocalCurvature",
+      "parameters": [],
+      "fields": [
+        {
+          "name": "covariance",
+          "type": "Eigen::MatrixXd"
+        },
+        {
+          "name": "coarse_covariance",
+          "type": "Eigen::MatrixXd"
+        },
+        {
+          "name": "asymmetry",
+          "type": "double"
+        },
+        {
+          "name": "step_difference",
+          "type": "double"
+        },
+        {
+          "name": "minimum_eigenvalue",
+          "type": "double"
+        },
+        {
+          "name": "maximum_eigenvalue",
+          "type": "double"
+        },
+        {
+          "name": "maximum_se_step_change",
+          "type": "double"
+        }
+      ],
+      "documentation": "Full optimizer-coordinate covariance plus two-step numerical diagnostics.",
+      "purpose": "Full independent-coordinate covariance from validated local curvature, with a second-step covariance and numerical diagnostics."
+    },
+    {
+      "language": "C++",
+      "file": "include/swordfish/local_curvature.hpp",
+      "line": 17,
+      "name": "validated_local_curvature",
+      "kind": "function",
+      "signature": "LocalCurvature validated_local_curvature(const Eigen::MatrixXd & coarse, const Eigen::MatrixXd & fine)",
+      "parameters": [
+        {
+          "name": "coarse",
+          "type": "const Eigen::MatrixXd &"
+        },
+        {
+          "name": "fine",
+          "type": "const Eigen::MatrixXd &"
+        }
+      ],
+      "fields": [],
+      "documentation": "Validate two finite-difference Hessians and invert positive local curvature.\nBoth steps must be symmetric/stable to 1e-5 relative norm, positive definite,\nand give marginal SEs stable to 0.1%. Singular/indefinite curvature is rejected;\nno eigenvalue clipping, ridge, diagonal-only approximation or saved covariance.",
+      "purpose": "Validate two finite-difference Hessians for finite values, symmetry, step stability and positive definiteness, then invert without regularization and check SE stability."
+    },
+    {
+      "language": "C++",
       "file": "include/swordfish/model.hpp",
       "line": 28,
       "name": "SwordfishModel",
@@ -2378,7 +2440,7 @@
     {
       "language": "C++",
       "file": "include/swordfish/model.hpp",
-      "line": 168,
+      "line": 169,
       "name": "SwordfishModel::reference_points",
       "kind": "function",
       "signature": "std::vector<std::pair<std::string, BenchmarkResult>> SwordfishModel::reference_points(const std::vector<double> & x) const",
@@ -2395,7 +2457,7 @@
     {
       "language": "C++",
       "file": "include/swordfish/model.hpp",
-      "line": 180,
+      "line": 181,
       "name": "SwordfishModel::operator()",
       "kind": "function",
       "signature": "T SwordfishModel::operator()(const std::vector<T> & x) const",
@@ -2412,7 +2474,7 @@
     {
       "language": "C++",
       "file": "include/swordfish/model.hpp",
-      "line": 192,
+      "line": 193,
       "name": "SwordfishModel::evaluate_impl",
       "kind": "function",
       "signature": "T SwordfishModel::evaluate_impl(const std::vector<T> & x, quadra::ModelReportContext & context) const",
@@ -2429,6 +2491,124 @@
       "fields": [],
       "documentation": "",
       "purpose": "Evaluate the scalar objective through Quadra's model interface and register it in the report context."
+    },
+    {
+      "language": "C++",
+      "file": "include/swordfish/native_io.hpp",
+      "line": 13,
+      "name": "native_number",
+      "kind": "function",
+      "signature": "void native_number(std::istream & in, T & value)",
+      "parameters": [
+        {
+          "name": "in",
+          "type": "std::istream &"
+        },
+        {
+          "name": "value",
+          "type": "T &"
+        }
+      ],
+      "fields": [],
+      "documentation": "Read a finite numeric field, rejecting truncation and invalid stream tokens.",
+      "purpose": "Read one finite numeric value from the versioned native transport; reject invalid or truncated tokens."
+    },
+    {
+      "language": "C++",
+      "file": "include/swordfish/native_io.hpp",
+      "line": 18,
+      "name": "native_count",
+      "kind": "function",
+      "signature": "size_t native_count(std::istream & in)",
+      "parameters": [
+        {
+          "name": "in",
+          "type": "std::istream &"
+        }
+      ],
+      "fields": [],
+      "documentation": "Read a bounded collection length before allocating observation containers.",
+      "purpose": "Read and bound a native collection length before allocating model data."
+    },
+    {
+      "language": "C++",
+      "file": "include/swordfish/native_io.hpp",
+      "line": 24,
+      "name": "native_array",
+      "kind": "function",
+      "signature": "void native_array(std::istream & in, std::array<T, N> & a)",
+      "parameters": [
+        {
+          "name": "in",
+          "type": "std::istream &"
+        },
+        {
+          "name": "a",
+          "type": "std::array<T, N> &"
+        }
+      ],
+      "fields": [],
+      "documentation": "Fill fixed arrays from their statically declared schema width.",
+      "purpose": "Read a statically sized numeric array from the typed native stream."
+    },
+    {
+      "language": "C++",
+      "file": "include/swordfish/native_io.hpp",
+      "line": 28,
+      "name": "native_vector",
+      "kind": "function",
+      "signature": "void native_vector(std::istream & in, std::vector<double> & v)",
+      "parameters": [
+        {
+          "name": "in",
+          "type": "std::istream &"
+        },
+        {
+          "name": "v",
+          "type": "std::vector<double> &"
+        }
+      ],
+      "fields": [],
+      "documentation": "Read a length-prefixed scalar vector.",
+      "purpose": "Read a length-prefixed finite numeric vector from native transport."
+    },
+    {
+      "language": "C++",
+      "file": "include/swordfish/native_io.hpp",
+      "line": 32,
+      "name": "native_table",
+      "kind": "function",
+      "signature": "void native_table(std::istream & in, std::vector<std::array<T, N>> & v)",
+      "parameters": [
+        {
+          "name": "in",
+          "type": "std::istream &"
+        },
+        {
+          "name": "v",
+          "type": "std::vector<std::array<T, N>> &"
+        }
+      ],
+      "fields": [],
+      "documentation": "Read a length-prefixed fixed-width settings table.",
+      "purpose": "Read a length-prefixed fixed-width numeric settings table."
+    },
+    {
+      "language": "C++",
+      "file": "include/swordfish/native_io.hpp",
+      "line": 39,
+      "name": "read_native_input",
+      "kind": "function",
+      "signature": "std::pair<InputData, Deviations<double>> read_native_input(std::istream & in)",
+      "parameters": [
+        {
+          "name": "in",
+          "type": "std::istream &"
+        }
+      ],
+      "fields": [],
+      "documentation": "Read a native state and its initial deviations from a validated frontend stream.\nC++ repeats finite/count/duplicate/shape checks and invokes InputData validation.\nThe public JSON format is documented by native_input.py; transport order is\nprivate to this version. The initial parameter map uses each native value.",
+      "purpose": "Read the complete native model data and explicit historical deviations without generated factories or SS3 fixtures; validate finite values, counts, constraints and supported dimensions."
     },
     {
       "language": "C++",
@@ -3160,6 +3340,118 @@
     },
     {
       "language": "C++",
+      "file": "include/swordfish/reference_uncertainty.hpp",
+      "line": 17,
+      "name": "ReferenceEstimate",
+      "kind": "class/struct",
+      "signature": "ReferenceEstimate",
+      "parameters": [],
+      "fields": [
+        {
+          "name": "benchmark",
+          "type": "std::string"
+        },
+        {
+          "name": "quantity",
+          "type": "std::string"
+        },
+        {
+          "name": "units",
+          "type": "std::string"
+        },
+        {
+          "name": "value",
+          "type": "double"
+        },
+        {
+          "name": "proportion",
+          "type": "bool"
+        }
+      ],
+      "documentation": "One reference-point quantity with native units; proportions get bounded intervals.",
+      "purpose": "One flattened management reference-point quantity, native units, point estimate and proportion-interval flag."
+    },
+    {
+      "language": "C++",
+      "file": "include/swordfish/reference_uncertainty.hpp",
+      "line": 26,
+      "name": "reference_estimates",
+      "kind": "function",
+      "signature": "std::vector<ReferenceEstimate> reference_estimates(const SwordfishModel & model, const std::vector<double> & x)",
+      "parameters": [
+        {
+          "name": "model",
+          "type": "const SwordfishModel &"
+        },
+        {
+          "name": "x",
+          "type": "const std::vector<double> &"
+        }
+      ],
+      "fields": [],
+      "documentation": "Flatten all six standard quantities for each benchmark into a stable 24-row order.\nKnown unfished zeros/SPR=1 and target SPR=.2 are exact constants. Btgt20 raw\nSPR is .2/h under the supported positive Beverton-Holt equilibrium, avoiding\nspurious root-rounding derivatives when h is fixed.",
+      "purpose": "Flatten all six quantities for each of four model reference points; enforce known structural zeros and target proportions to avoid numerical root noise."
+    },
+    {
+      "language": "C++",
+      "file": "include/swordfish/reference_uncertainty.hpp",
+      "line": 42,
+      "name": "write_uncertainty_matrix",
+      "kind": "function",
+      "signature": "void write_uncertainty_matrix(const std::filesystem::path & path, const Eigen::MatrixXd & matrix, const std::vector<std::string> & rows, const std::vector<std::string> & columns)",
+      "parameters": [
+        {
+          "name": "path",
+          "type": "const std::filesystem::path &"
+        },
+        {
+          "name": "matrix",
+          "type": "const Eigen::MatrixXd &"
+        },
+        {
+          "name": "rows",
+          "type": "const std::vector<std::string> &"
+        },
+        {
+          "name": "columns",
+          "type": "const std::vector<std::string> &"
+        }
+      ],
+      "fields": [],
+      "documentation": "Write a finite labeled matrix, retaining full coordinate/output correlations.",
+      "purpose": "Write a finite, dimension-checked labeled matrix with all coordinate/output correlations retained."
+    },
+    {
+      "language": "C++",
+      "file": "include/swordfish/reference_uncertainty.hpp",
+      "line": 56,
+      "name": "write_reference_point_uncertainty",
+      "kind": "function",
+      "signature": "void write_reference_point_uncertainty(SwordfishModel & model, const std::vector<double> & x, const std::filesystem::path & folder, std::ostream & progress)",
+      "parameters": [
+        {
+          "name": "model",
+          "type": "SwordfishModel &"
+        },
+        {
+          "name": "x",
+          "type": "const std::vector<double> &"
+        },
+        {
+          "name": "folder",
+          "type": "const std::filesystem::path &"
+        },
+        {
+          "name": "progress",
+          "type": "std::ostream &"
+        }
+      ],
+      "fields": [],
+      "documentation": "Calculate fresh curvature and propagate J V J-transpose for this fitted model.\nThe caller must have verified convergence. Every estimate uses the same native\nparameter/deviation decoding and profiled Q as the fit. Hessian and Jacobian\nchecks at 1e-4 and 5e-5 reject numerical instability. Outputs are conditional\nlocal parameter intervals; no forecast process, bootstrap or model uncertainty.",
+      "purpose": "Compute fresh two-step AD-gradient curvature and two-step reference-point Jacobians, propagate the full covariance, and write validated SEs, CVs and 95% local intervals without SS3 files or saved covariance."
+    },
+    {
+      "language": "C++",
       "file": "include/swordfish/report.hpp",
       "line": 24,
       "name": "write_reference_points",
@@ -3190,7 +3482,7 @@
     {
       "language": "C++",
       "file": "include/swordfish/report.hpp",
-      "line": 57,
+      "line": 58,
       "name": "write_fitted_outputs",
       "kind": "function",
       "signature": "void write_fitted_outputs(const InputData & data, const ParameterValues<double> & p, const Deviations<double> & dev, const std::filesystem::path & folder)",
@@ -3213,7 +3505,7 @@
         }
       ],
       "fields": [],
-      "documentation": "Write historical annual/seasonal trajectories, fitted indices, length\ndiagnostics, likelihood components and management reference points to the supplied output folder. Release\npublication is performed by the isolated runner.\n@param data Validated original-input schema for the supported swordfish\nassessment.\n@param p Native canonical-name parameter map; all required fixed and\nestimated values must be present.\n@param dev Year-to-log-recruitment-deviation map; the caller enforces the\nmain-period constraint.\n@param folder Existing scratch output directory; publication is managed by\nthe release runner.",
+      "documentation": "Write historical annual/seasonal trajectories, fitted indices, length\ndiagnostics, likelihood components and management reference points to the\nsupplied output folder. Release publication is performed by the isolated\nrunner.\n@param data Validated original-input schema for the supported swordfish\nassessment.\n@param p Native canonical-name parameter map; all required fixed and\nestimated values must be present.\n@param dev Year-to-log-recruitment-deviation map; the caller enforces the\nmain-period constraint.\n@param folder Existing scratch output directory; publication is managed by\nthe release runner.",
       "purpose": "Write historical trajectories, fitted observations, likelihood components and management reference points for the supplied fitted model state. Every fit/report caller receives the same derived-output calculation; release publication is handled separately."
     },
     {
@@ -4152,6 +4444,27 @@
     },
     {
       "language": "C++",
+      "file": "src/swordfish_native.cpp",
+      "line": 17,
+      "name": "main",
+      "kind": "function",
+      "signature": "int main(int argc, char ** argv)",
+      "parameters": [
+        {
+          "name": "argc",
+          "type": "int"
+        },
+        {
+          "name": "argv",
+          "type": "char **"
+        }
+      ],
+      "fields": [],
+      "documentation": "Evaluate or fit a native model state and write its complete derived outputs.",
+      "purpose": "Run swordfish native; return zero on success and nonzero on a failed check or invalid input."
+    },
+    {
+      "language": "C++",
       "file": "src/swordfish_projection.cpp",
       "line": 20,
       "name": "main",
@@ -4396,7 +4709,7 @@
     {
       "language": "C++",
       "file": "tests/test_delta_method.cpp",
-      "line": 5,
+      "line": 6,
       "name": "near",
       "kind": "function",
       "signature": "void near(double a, double b)",
@@ -4417,7 +4730,7 @@
     {
       "language": "C++",
       "file": "tests/test_delta_method.cpp",
-      "line": 11,
+      "line": 12,
       "name": "main",
       "kind": "function",
       "signature": "int main()",
@@ -5273,6 +5586,26 @@
     },
     {
       "language": "Python",
+      "file": "scripts/export_native.py",
+      "line": 9,
+      "name": "convert",
+      "kind": "function",
+      "signature": "convert(source, values)",
+      "purpose": "Map parsed observations/settings and explicit native starts into the named schema.",
+      "documentation": "Map parsed observations/settings and explicit native starts into the named schema.\n\nExisting numeric settings are preserved, including selectivity block\nfunctions, bias ramp, observation inclusion and likelihood weights. Native\nstarts may come from a complete Quadra parameter CSV. No fitted trajectory\nor SS3 report quantities become observations or population drivers."
+    },
+    {
+      "language": "Python",
+      "file": "scripts/export_native.py",
+      "line": 50,
+      "name": "main",
+      "kind": "function",
+      "signature": "main()",
+      "purpose": "Export once from parsed input JSON or optional SS3 observations/control sources.",
+      "documentation": "Export once from parsed input JSON or optional SS3 observations/control sources."
+    },
+    {
+      "language": "Python",
       "file": "scripts/import_ss3.py",
       "line": 25,
       "name": "read_lines",
@@ -5320,6 +5653,96 @@
       "signature": "main()",
       "purpose": "Execute the import ss3 command, write its documented outputs and exit nonzero if validation fails.",
       "documentation": "Execute the import ss3 command, write its documented outputs and exit nonzero if validation fails.\n\nNotes\n-----\nSection/table matching is version specific. Raw files are preserved byte for byte and referenced by hashes. Extracted report tables are reference data, not an alternative observation source for the model."
+    },
+    {
+      "language": "Python",
+      "file": "scripts/native_input.py",
+      "line": 24,
+      "name": "exact_keys",
+      "kind": "function",
+      "signature": "exact_keys(value, keys, label)",
+      "purpose": "Reject missing/unknown fields instead of silently accepting misspelled settings.",
+      "documentation": "Reject missing/unknown fields instead of silently accepting misspelled settings."
+    },
+    {
+      "language": "Python",
+      "file": "scripts/native_input.py",
+      "line": 30,
+      "name": "atom",
+      "kind": "function",
+      "signature": "atom(value, kind)",
+      "purpose": "Validate a scalar/fixed array and encode finite typed values for the C++ reader.",
+      "documentation": "Validate a scalar/fixed array and encode finite typed values for the C++ reader."
+    },
+    {
+      "language": "Python",
+      "file": "scripts/native_input.py",
+      "line": 51,
+      "name": "record",
+      "kind": "function",
+      "signature": "record(value, fields, label)",
+      "purpose": "Validate one named record and serialize fields in the transport's declared order.",
+      "documentation": "Validate one named record and serialize fields in the transport's declared order."
+    },
+    {
+      "language": "Python",
+      "file": "scripts/native_input.py",
+      "line": 57,
+      "name": "rows",
+      "kind": "function",
+      "signature": "rows(value)",
+      "purpose": "Bound variable collection sizes before serializing or allocating model observations.",
+      "documentation": "Bound variable collection sizes before serializing or allocating model observations."
+    },
+    {
+      "language": "Python",
+      "file": "scripts/native_input.py",
+      "line": 63,
+      "name": "encode",
+      "kind": "function",
+      "signature": "encode(document)",
+      "purpose": "Validate native schema v1 and produce a typed in-memory stream for the reusable model.",
+      "documentation": "Validate native schema v1 and produce a typed in-memory stream for the reusable model.\n\nAll observations/settings are supplied by this document. Estimated values\nmust be strictly inside bounds and main deviations must already sum to zero.\nParameter names and supported dimensions belong to this swordfish model,\nrather than a general arbitrary-species schema. No source files are opened."
+    },
+    {
+      "language": "Python",
+      "file": "scripts/native_input.py",
+      "line": 127,
+      "name": "validate_layout",
+      "kind": "function",
+      "signature": "validate_layout(document)",
+      "purpose": "Reject unsupported layouts and invalid observation references before launching C++.",
+      "documentation": "Reject unsupported layouts and invalid observation references before launching C++."
+    },
+    {
+      "language": "Python",
+      "file": "scripts/native_input.py",
+      "line": 165,
+      "name": "unique_object",
+      "kind": "function",
+      "signature": "unique_object(pairs)",
+      "purpose": "Reject duplicate JSON object keys before values can be silently replaced.",
+      "documentation": "Reject duplicate JSON object keys before values can be silently replaced."
+    },
+    {
+      "language": "Python",
+      "file": "scripts/native_input.py",
+      "line": 174,
+      "name": "load",
+      "kind": "function",
+      "signature": "load(text)",
+      "purpose": "Load strict JSON, rejecting nonfinite constants and ambiguous duplicate keys.",
+      "documentation": "Load strict JSON, rejecting nonfinite constants and ambiguous duplicate keys."
+    },
+    {
+      "language": "Python",
+      "file": "scripts/native_input.py",
+      "line": 176,
+      "name": "load.bad_constant",
+      "kind": "function",
+      "signature": "bad_constant(value)",
+      "purpose": "Reject JSON extensions for NaN and infinity.",
+      "documentation": "Reject JSON extensions for NaN and infinity."
     },
     {
       "language": "Python",
@@ -5490,6 +5913,16 @@
       "signature": "main()",
       "purpose": "Execute fresh strict/matched-fixed fits, then read the saved reference only for comparison.",
       "documentation": "Execute fresh strict/matched-fixed fits, then read the saved reference only for comparison.\n\nOptimization receives no Report.sso, fitted parameter CSV or saved covariance.\nThe matched-fixed sensitivity changes only the explicit fixed male-growth\nsetting. Existing output directories are rejected rather than overwritten.\nOptimizer stdout/stderr is streamed to the terminal and flushed to a log."
+    },
+    {
+      "language": "Python",
+      "file": "scripts/run_native.py",
+      "line": 12,
+      "name": "main",
+      "kind": "function",
+      "signature": "main()",
+      "purpose": "Validate JSON, stream native data to the backend and save exact input provenance.",
+      "documentation": "Validate JSON, stream native data to the backend and save exact input provenance.\n\nThe binary is compiled once by make native-swordfish. Dataset changes need\nno compilation, generated C++ factory, SS3 source files or reference outputs.\nExisting output directories are rejected. Progress streams to the terminal."
     },
     {
       "language": "Python",
@@ -5893,6 +6326,86 @@
     },
     {
       "language": "Python",
+      "file": "tests/test_native_input.py",
+      "line": 12,
+      "name": "field_default",
+      "kind": "function",
+      "signature": "field_default(kind)",
+      "purpose": "Make typed scalar/array placeholders for a format-only synthetic fixture.",
+      "documentation": "Make typed scalar/array placeholders for a format-only synthetic fixture."
+    },
+    {
+      "language": "Python",
+      "file": "tests/test_native_input.py",
+      "line": 18,
+      "name": "fixture",
+      "kind": "function",
+      "signature": "fixture()",
+      "purpose": "Create a complete native schema example for validation tests, without real observations.",
+      "documentation": "Create a complete native schema example for validation tests, without real observations."
+    },
+    {
+      "language": "Python",
+      "file": "tests/test_native_input.py",
+      "line": 35,
+      "name": "NativeInputTests",
+      "kind": "class",
+      "signature": "NativeInputTests",
+      "purpose": "Reject ambiguous JSON and malformed model states before the backend runs.",
+      "documentation": "Reject ambiguous JSON and malformed model states before the backend runs."
+    },
+    {
+      "language": "Python",
+      "file": "tests/test_native_input.py",
+      "line": 37,
+      "name": "NativeInputTests.test_valid_transport_and_roundtrip",
+      "kind": "function",
+      "signature": "test_valid_transport_and_roundtrip(self)",
+      "purpose": "Check named-schema roundtrip and private transport version without source conversion.",
+      "documentation": "Check named-schema roundtrip and private transport version without source conversion."
+    },
+    {
+      "language": "Python",
+      "file": "tests/test_native_input.py",
+      "line": 43,
+      "name": "NativeInputTests.test_uncertainty_cli",
+      "kind": "function",
+      "signature": "test_uncertainty_cli(self)",
+      "purpose": "Expose uncertainty help and reject interval calculation without fit mode.",
+      "documentation": "Expose uncertainty help and reject interval calculation without fit mode."
+    },
+    {
+      "language": "Python",
+      "file": "tests/test_native_input.py",
+      "line": 53,
+      "name": "NativeInputTests.test_json_duplicates_and_nonfinite",
+      "kind": "function",
+      "signature": "test_json_duplicates_and_nonfinite(self)",
+      "purpose": "Reject duplicate object keys, NaN and infinity at the JSON boundary.",
+      "documentation": "Reject duplicate object keys, NaN and infinity at the JSON boundary."
+    },
+    {
+      "language": "Python",
+      "file": "tests/test_native_input.py",
+      "line": 58,
+      "name": "NativeInputTests.test_types_shapes_and_unknown_fields",
+      "kind": "function",
+      "signature": "test_types_shapes_and_unknown_fields(self)",
+      "purpose": "Reject booleans as numbers, fractional integers, bad arrays and misspelled keys.",
+      "documentation": "Reject booleans as numbers, fractional integers, bad arrays and misspelled keys."
+    },
+    {
+      "language": "Python",
+      "file": "tests/test_native_input.py",
+      "line": 65,
+      "name": "NativeInputTests.test_bounds_names_and_deviation_constraints",
+      "kind": "function",
+      "signature": "test_bounds_names_and_deviation_constraints(self)",
+      "purpose": "Reject incomplete/duplicate names, invalid starts and dependent-deviation inconsistencies.",
+      "documentation": "Reject incomplete/duplicate names, invalid starts and dependent-deviation inconsistencies."
+    },
+    {
+      "language": "Python",
       "file": "tests/test_runtime.py",
       "line": 12,
       "name": "RuntimeTests",
@@ -6018,6 +6531,15 @@
       "kind": "function",
       "signature": "draw <- function()",
       "purpose": "Draw the plot projections figure using base R graphics; the source defines units, colors, interval interpretation and export devices."
+    },
+    {
+      "language": "R",
+      "file": "scripts/plot_reference_uncertainty.R",
+      "line": 11,
+      "name": "plot_points",
+      "kind": "function",
+      "signature": "plot_points <- function(quantity, title, label, log_scale=FALSE)",
+      "purpose": "Draw the plot reference uncertainty figure using base R graphics; the source defines units, colors, interval interpretation and export devices."
     }
   ]
 }

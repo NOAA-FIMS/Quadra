@@ -1,0 +1,21 @@
+{
+  "description": "Native normalized-input runtime equivalence and isolated execution; no SS3 source files or reference fixtures required at runtime.",
+  "source_git_commit": "45eb70509e834ea5a8c711d4196c6aa6d417f5fe",
+  "native_json_sha256": "8098b8c44e631b11183ff828291823cf4091d33508f042b5c6477cc81adc475e",
+  "native_json_not_published": true,
+  "implementation_files_sha256": {
+    "include/swordfish/native_io.hpp": "a497fb7854aec4d8d4da51f99a823fe2d3fc36790408aefbcd539fa7b3f76dcc",
+    "src/swordfish_native.cpp": "a972ae459b6fdf5ac78a5e546b71370a0e36bc973bb9214d86508e5c8f8e1495",
+    "scripts/native_input.py": "13631b36f11c8d8be5bb1d8a2e8a474683a0697ee059c664149ba830648e861c",
+    "scripts/run_native.py": "acd98037e50bef27e5935a165a8a087df47128601ae8857df41fee78212cf6d6",
+    "scripts/export_native.py": "c06516e37dc185682503186f106ebf675e044897ab3862b05827f918a750323b",
+    "swordfish": "abfc175f9505d402bffec8de7977f8d208e23bae8dcce465b86ec365cc1cbb21"
+  },
+  "files_sha256": {
+    "management_reference_points.csv": "136d7f52b76f204f90c873a6657afacad4f9e3aa231b80a805f61c0297a19b27",
+    "isolated_runtime.log": "96144966f501695f107c991ee2eead435fd673ba7b0ddb812e8767cbfa6e5ddd",
+    "quadra_fit_summary.json": "5c58aaa57063ada23cc019b2ee4c36b51bbff4cd7b9a56fd0b137e4e89c4c015",
+    "validation.json": "c0d1203bf3e208604ffd46a9fa5779ea885ea8f2c7992ac9146b95bdba77c70e",
+    "run_status.json": "6e44d2905eba40940aa5672a6c1760e8cc4b410d755c59850aec4b0ba9e7dadd"
+  }
+}
