@@ -1,0 +1,21 @@
+{
+  "parameter_file_sha256": "9e06c5fe4be3e21ebc6c1a05f91ca5533359acb86ab895285411c35faf6f39cd",
+  "observation_control_sha256": {
+    "swo2023_v004.dat": "7d28fff138faad2b7ce9a679b1596d5b0e49ac82b04b6957303553f177f77c4a",
+    "swo2023_v007.ctl": "eb2334ea68f221209bcdb94dc68a7a39d10323be7e2ba3a0c121e667d8640a7c"
+  },
+  "saved_ss3_metadata": {
+    "ss3_parameter_count": 86,
+    "ss3_objective": 289.299635060701,
+    "ss3_maximum_gradient": 5.82152741601093e-05,
+    "checksum999": 6.97864341941,
+    "forecast_recruitment": 0.0,
+    "dummy_parameter": 1.0,
+    "main_deviation_sum": 4.900350958347843e-13,
+    "mapped_native_parameters": 74,
+    "historical_deviations": 57
+  },
+  "initialization": "supplied ss.par, including fixed settings and historical deviations",
+  "report_sso_used": false,
+  "saved_covariance_used": false
+}

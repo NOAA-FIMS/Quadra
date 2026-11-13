@@ -195,4 +195,20 @@ public:
     return (*this)((lo + hi) / 2);
   }
 };
+
+/// Derive the standard unfished, biomass-20%, SPR-20% and MSY reference points.
+/// Values are computed from the supplied parameters and deviations, with terminal
+/// biology and the terminal-year fleet/season fishing mixture. No SS3 reference
+/// values are read. Call after fitting; equilibrium root solves are not part of
+/// the historical likelihood or its automatic differentiation tape.
+inline std::vector<std::pair<std::string, BenchmarkResult>>
+management_reference_points(const InputData &data,
+                            const ParameterValues<double> &parameters,
+                            const Deviations<double> &deviations) {
+  Benchmarks calculator(data, parameters, deviations);
+  return {{"unfished", calculator(0)},
+          {"Btgt20", calculator.target(.2, true)},
+          {"SPR20", calculator.target(.2, false)},
+          {"MSY", calculator.msy()}};
+}
 } // namespace swordfish

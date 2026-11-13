@@ -88,10 +88,21 @@ optimizer progress in the terminal and saves `fit.log`, `initial_gradient.log`,
 comparison CSVs, and fitted outputs under its own `build/` subdirectory. Existing
 output directories are rejected. The canonical fit is not overwritten.
 
+Reference points are now automatic fitted-model outputs in
+`build/management_reference_points.csv`. Each `.par` run also writes
+`benchmark_comparison.json` and requires all ten reference-point checks against
+the saved printed SS3 targets to pass, in addition to objective convergence.
+These comparisons happen after the model independently calculates its points.
+The model API exposes the same calculation as `model.reference_points(x)`.
+The standard historical fit, control-start fits and report regeneration also
+write the table; no separate benchmark command is required.
+
 The [saved experiment](reference/ss_par/comparison_summary.json) and its
 [hash manifest](reference/ss_par/manifest.json) preserve the derived results;
 the original `.par` file remains excluded from version control. No new
-uncertainty, reference-point or projection results are certified by this test.
+uncertainty or projection results are certified by this test. The subsequent
+[integrated reference-point run](reference/model_reference_points/benchmark_comparison.json)
+passes all ten SS3 checks, with maximum relative error about `5.69e-6`.
 
 The [one-page PDF report](output/pdf/swordfish_ss_par_start.pdf) presents the
 comparison. Regenerate it with `python scripts/build_ss_par_report.py` in the

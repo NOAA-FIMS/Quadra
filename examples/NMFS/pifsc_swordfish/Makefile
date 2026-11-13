@@ -127,8 +127,8 @@ benchmarks: build/swordfish_diagnostics
 	./build/swordfish_diagnostics benchmarks
 	$(PYTHON) scripts/compare_benchmarks.py
 
-build/test_benchmarks: tests/test_benchmarks.cpp include/swordfish/benchmarks.hpp build/swordfish_input.hpp
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(DEPFLAGS) $< -o $@
+build/test_benchmarks: tests/test_benchmarks.cpp $(wildcard include/swordfish/*.hpp) build/swordfish_input.hpp
+	$(CXX) $(CPPFLAGS) -I$(QUADRA_ROOT)/external/eigen $(CXXFLAGS) $(DEPFLAGS) $< -o $@
 .PHONY: test-benchmarks
 test-benchmarks: build/test_benchmarks benchmarks
 	./build/test_benchmarks

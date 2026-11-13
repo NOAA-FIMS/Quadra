@@ -18,6 +18,13 @@ For Jon's supplied `ss.par`, `make fit-ss-par` runs a separate fit initialized
 directly from that saved vector. See [SS_PAR_START.md](SS_PAR_START.md) for
 results, mapping and the distinction between a fitted snapshot and pre-fit values.
 
+Every fitted model report now includes `management_reference_points.csv` with
+unfished, biomass-20%, SPR-20% and MSY reference points. The calculations use
+that run's fitted parameters and terminal-year fishing mixture. The `.par`
+runner also checks all ten comparable quantities against saved SS3 targets.
+`make benchmarks` remains a convenience for regenerating/checking the table;
+it is no longer needed to produce reference points after a fit.
+
 ## Run the model foundation and checks
 
 From this directory:

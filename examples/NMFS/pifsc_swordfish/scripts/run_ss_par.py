@@ -10,6 +10,7 @@ import shlex
 import subprocess
 import sys
 from prepare_model import generate_header
+from compare_benchmarks import compare as compare_reference_points
 from runtime import atomic_json, file_hash
 from ss_par import parse
 from swordfish_inputs import load_inputs
@@ -115,12 +116,21 @@ def run(parameter_file, output):
                   profiled_q='Supplied Q values are mapped; Quadra analytically profiles Q at every objective evaluation.',
                   main_deviation_constraint='Final main deviation is reconstructed as negative sum; input sum tolerance 1e-8.',
                   binary_sha256=file_hash(binary))
+    # Reference points are now ordinary fitted-model outputs. Read saved SS3
+    # targets only here, after fitting, for the independent comparison gate.
+    ss3_targets = json.loads((ROOT/'reference/fit_diagnostics/benchmark_comparison.json').read_text())
+    point_comparison = compare_reference_points(scratch/'management_reference_points.csv',
+                                                {r['quantity']: r['ss3'] for r in ss3_targets['checks']})
+    atomic_json(output/'benchmark_comparison.json', point_comparison)
+    result['reference_points_file'] = 'build/management_reference_points.csv'
+    result['reference_points_match_ss3'] = point_comparison['passed']
+    result['passed'] = result['passed'] and point_comparison['passed']
     result['maximum_parameter_difference_in_reference_SE'] = max(abs(r['difference_in_reference_SE']) for r in parameter_rows)
     result['maximum_annual_ssb_difference_tonnes'] = max(abs(r['difference_tonnes']) for r in annual_rows)
     atomic_json(output/'comparison_summary.json', result)
     if not result['passed']:
         raise ValueError('SS3 .par agreement check failed; inspect comparison_summary.json')
-    print('PASS: Quadra fit agrees with the SS3 .par objective and existing Quadra optimum.', flush=True)
+    print('PASS: Quadra fit and model reference points agree with SS3.', flush=True)
     return result
 
 

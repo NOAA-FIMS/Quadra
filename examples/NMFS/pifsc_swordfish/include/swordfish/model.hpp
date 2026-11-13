@@ -10,6 +10,7 @@
  */
 #pragma once
 #include "core/model/quadra_model.hpp"
+#include "benchmarks.hpp"
 #include "likelihood.hpp"
 #include "model/parameter.hpp"
 
@@ -158,6 +159,15 @@ public:
     auto decoded = decode(x);
     const auto run = run_population(data, decoded.first, decoded.second);
     return evaluate_likelihood(data, decoded.first, decoded.second, run);
+  }
+  /// Calculate standard management reference points at the supplied model state.
+  /// This derived-output operation uses the same decoding and constraints as the
+  /// likelihood, terminal biology and terminal-year fishing mixture. It does not
+  /// add equilibrium calculations to optimizer evaluations or read SS3 outputs.
+  std::vector<std::pair<std::string, BenchmarkResult>>
+  reference_points(const std::vector<double> &x) const {
+    const auto native = decode(x);
+    return management_reference_points(data, native.first, native.second);
   }
   /// Return only the joint scalar objective for a supplied fitting-coordinate
   /// vector.

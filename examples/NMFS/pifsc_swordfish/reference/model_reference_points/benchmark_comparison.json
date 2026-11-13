@@ -1,0 +1,76 @@
+{
+  "passed": true,
+  "tolerance_relative": 1e-05,
+  "checks": [
+    {
+      "quantity": "SSB_unfished",
+      "quadra": 99807.80920359421,
+      "ss3": 99807.8,
+      "relative_error": 9.221317579452887e-08,
+      "passed": true
+    },
+    {
+      "quantity": "SSB_Btgt",
+      "quadra": 19961.56184071884,
+      "ss3": 19961.6,
+      "relative_error": 1.9116343959040006e-06,
+      "passed": true
+    },
+    {
+      "quantity": "Dead_Catch_Btgt",
+      "quadra": 14814.71396799926,
+      "ss3": 14814.7,
+      "relative_error": 9.428472570464674e-07,
+      "passed": true
+    },
+    {
+      "quantity": "annF_Btgt",
+      "quadra": 0.1583197385344632,
+      "ss3": 0.15832,
+      "relative_error": 1.6515003586230076e-06,
+      "passed": true
+    },
+    {
+      "quantity": "SSB_SPR",
+      "quadra": 17680.24048749384,
+      "ss3": 17680.2,
+      "relative_error": 2.289990715006852e-06,
+      "passed": true
+    },
+    {
+      "quantity": "Dead_Catch_SPR",
+      "quadra": 14908.70294485085,
+      "ss3": 14908.7,
+      "relative_error": 1.975256627678795e-07,
+      "passed": true
+    },
+    {
+      "quantity": "annF_SPR",
+      "quadra": 0.1704940871617381,
+      "ss3": 0.170494,
+      "relative_error": 5.112305307216516e-07,
+      "passed": true
+    },
+    {
+      "quantity": "SSB_MSY",
+      "quadra": 16387.89321505014,
+      "ss3": 16387.8,
+      "relative_error": 5.6880758942265735e-06,
+      "passed": true
+    },
+    {
+      "quantity": "Dead_Catch_MSY",
+      "quadra": 14924.49652567482,
+      "ss3": 14924.5,
+      "relative_error": 2.3279340546904378e-07,
+      "passed": true
+    },
+    {
+      "quantity": "annF_MSY",
+      "quadra": 0.1780777930373753,
+      "ss3": 0.178078,
+      "relative_error": 1.1622020950202133e-06,
+      "passed": true
+    }
+  ]
+}

@@ -68,6 +68,10 @@ Python 3, a C++17 compiler and the repository's Eigen headers are required.
 
 The runner creates a new directory under `build/control_start/`, records input
 and binary hashes, runs both configurations, then compares their results.
+Each fit automatically writes `management_reference_points.csv` using its own
+fitted parameters; strict controls and matched fixed growth retain their distinct
+configurations. This new output does not retroactively add reference-point
+validation to the historical checkpoint snapshots below.
 Optimizer progress appears in the terminal and is also saved in `strict.log`
 and `matched_fixed.log` in that directory.
 Existing output directories are rejected. `optimizer_iterations` records the

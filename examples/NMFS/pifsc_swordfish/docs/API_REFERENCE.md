@@ -126,6 +126,14 @@ by the two-step forecast uncertainty validation; this is not a global
 optimizer for arbitrary selectivity models.
 ```
 
+## include/swordfish/benchmarks.hpp :: management_reference_points
+
+`std::vector<std::pair<std::string, BenchmarkResult>> management_reference_points(const InputData & data, const ParameterValues<double> & parameters, const Deviations<double> & deviations)`
+
+Calculate unfished, Btgt20, SPR20 and MSY derived outputs from supplied fitted parameters and deviations using terminal biology and terminal-year fishing mixture. No SS3 reference values enter these calculations.
+
+Source: [include/swordfish/benchmarks.hpp:205](../include/swordfish/benchmarks.hpp#L205)
+
 ## include/swordfish/biology.hpp :: ParameterValues
 
 `std::map<std::string, T>`
@@ -1204,7 +1212,7 @@ Source: [include/swordfish/likelihood.hpp:372](../include/swordfish/likelihood.h
 
 Quadra model adapter for the 84-coordinate joint penalized-likelihood target; historical recruitment deviations are optimized, not Laplace-integrated.
 
-Source: [include/swordfish/model.hpp:27](../include/swordfish/model.hpp#L27)
+Source: [include/swordfish/model.hpp:28](../include/swordfish/model.hpp#L28)
 
 Contract details:
 
@@ -1225,7 +1233,7 @@ reconstructed after transforming the independent coordinates.
 
 One independent fitting coordinate: canonical name, native bounds/value and optional recruitment year.
 
-Source: [include/swordfish/model.hpp:35](../include/swordfish/model.hpp#L35)
+Source: [include/swordfish/model.hpp:36](../include/swordfish/model.hpp#L36)
 
 Contract details:
 
@@ -1244,7 +1252,7 @@ covariance/gradient coordinate order.
 
 Build the fitting-coordinate schema from estimated control parameters and independent early/main recruitment deviations.
 
-Source: [include/swordfish/model.hpp:51](../include/swordfish/model.hpp#L51)
+Source: [include/swordfish/model.hpp:52](../include/swordfish/model.hpp#L52)
 
 Contract details:
 
@@ -1264,7 +1272,7 @@ early age-structure effects.
 
 Return canonical names in the same order as fitting coordinates and covariance matrices.
 
-Source: [include/swordfish/model.hpp:72](../include/swordfish/model.hpp#L72)
+Source: [include/swordfish/model.hpp:73](../include/swordfish/model.hpp#L73)
 
 Contract details:
 
@@ -1281,7 +1289,7 @@ covariance rows.
 
 Transform interior native starting values to bounded-logit coordinates and reject starts at or beyond bounds.
 
-Source: [include/swordfish/model.hpp:82](../include/swordfish/model.hpp#L82)
+Source: [include/swordfish/model.hpp:83](../include/swordfish/model.hpp#L83)
 
 Contract details:
 
@@ -1298,7 +1306,7 @@ order.
 
 Create Quadra's parameter vector, treating every independent coordinate as a joint optimized parameter.
 
-Source: [include/swordfish/model.hpp:96](../include/swordfish/model.hpp#L96)
+Source: [include/swordfish/model.hpp:97](../include/swordfish/model.hpp#L97)
 
 Contract details:
 
@@ -1315,7 +1323,7 @@ optimized joint parameters.
 
 Transform fitting coordinates to native parameters/deviations and enforce the zero-sum main-deviation constraint, including the dependent final year.
 
-Source: [include/swordfish/model.hpp:120](../include/swordfish/model.hpp#L120)
+Source: [include/swordfish/model.hpp:121](../include/swordfish/model.hpp#L121)
 
 ## include/swordfish/model.hpp :: SwordfishModel::likelihood
 
@@ -1323,7 +1331,15 @@ Source: [include/swordfish/model.hpp:120](../include/swordfish/model.hpp#L120)
 
 Decode coordinates, run the population and return the complete component-wise likelihood result.
 
-Source: [include/swordfish/model.hpp:157](../include/swordfish/model.hpp#L157)
+Source: [include/swordfish/model.hpp:158](../include/swordfish/model.hpp#L158)
+
+## include/swordfish/model.hpp :: SwordfishModel::reference_points
+
+`std::vector<std::pair<std::string, BenchmarkResult>> SwordfishModel::reference_points(const std::vector<double> & x) const`
+
+Decode the model coordinate vector with the likelihood constraints and return its standard equilibrium management reference points as post-fit derived outputs.
+
+Source: [include/swordfish/model.hpp:168](../include/swordfish/model.hpp#L168)
 
 ## include/swordfish/model.hpp :: SwordfishModel::operator()
 
@@ -1331,7 +1347,7 @@ Source: [include/swordfish/model.hpp:157](../include/swordfish/model.hpp#L157)
 
 Return only the joint scalar objective for a supplied fitting-coordinate vector.
 
-Source: [include/swordfish/model.hpp:170](../include/swordfish/model.hpp#L170)
+Source: [include/swordfish/model.hpp:180](../include/swordfish/model.hpp#L180)
 
 Contract details:
 
@@ -1352,7 +1368,7 @@ transform-density term.
 
 Evaluate the scalar objective through Quadra's model interface and register it in the report context.
 
-Source: [include/swordfish/model.hpp:182](../include/swordfish/model.hpp#L182)
+Source: [include/swordfish/model.hpp:192](../include/swordfish/model.hpp#L192)
 
 ## include/swordfish/population.hpp :: Deviations
 
@@ -1754,19 +1770,37 @@ Read a complete native fitted CSV using strict numeric parsing and canonical rec
 
 Source: [include/swordfish/reference_io.hpp:79](../include/swordfish/reference_io.hpp#L79)
 
+## include/swordfish/report.hpp :: write_reference_points
+
+`void write_reference_points(const InputData & data, const ParameterValues<double> & p, const Deviations<double> & dev, const std::filesystem::path & folder)`
+
+Write the standard independently calculated management reference-point table for the supplied fitted state; reject nonfinite values and propagate output failures.
+
+Source: [include/swordfish/report.hpp:24](../include/swordfish/report.hpp#L24)
+
+Contract details:
+
+```text
+Write independently calculated reference points for this fitted model state.
+The standard table includes unfished, Btgt20, SPR20 and MSY. Biomass/catch
+are tonnes, recruitment is thousands, and annual F uses SS3 units 4 ages
+1..10. The output directory must already exist. Failures propagate to the
+fitting caller; SS3 values are used only by separate comparison checks.
+```
+
 ## include/swordfish/report.hpp :: write_fitted_outputs
 
 `void write_fitted_outputs(const InputData & data, const ParameterValues<double> & p, const Deviations<double> & dev, const std::filesystem::path & folder)`
 
-Write historical annual/seasonal trajectories, fitted indices, length diagnostics and likelihood components to the supplied output folder. Release publication is performed by the isolated runner.
+Write historical trajectories, fitted observations, likelihood components and management reference points for the supplied fitted model state. Every fit/report caller receives the same derived-output calculation; release publication is handled separately.
 
-Source: [include/swordfish/report.hpp:29](../include/swordfish/report.hpp#L29)
+Source: [include/swordfish/report.hpp:57](../include/swordfish/report.hpp#L57)
 
 Contract details:
 
 ```text
 Write historical annual/seasonal trajectories, fitted indices, length
-diagnostics and likelihood components to the supplied output folder. Release
+diagnostics, likelihood components and management reference points to the supplied output folder. Release
 publication is performed by the isolated runner.
 @param data Validated original-input schema for the supported swordfish
 assessment.
@@ -2282,7 +2316,7 @@ A new output directory is mandatory so failed attempts remain reviewable.
 
 Constant linear coordinate adapter using the fitted covariance Cholesky factor; the likelihood and native bounds are unchanged.
 
-Source: [src/swordfish_diagnostics.cpp:25](../src/swordfish_diagnostics.cpp#L25)
+Source: [src/swordfish_diagnostics.cpp:26](../src/swordfish_diagnostics.cpp#L26)
 
 Contract details:
 
@@ -2297,7 +2331,7 @@ factor; the likelihood and native bounds are unchanged.
 
 Store the underlying model, fitted coordinate center and constant linear rescaling matrix.
 
-Source: [src/swordfish_diagnostics.cpp:31](../src/swordfish_diagnostics.cpp#L31)
+Source: [src/swordfish_diagnostics.cpp:32](../src/swordfish_diagnostics.cpp#L32)
 
 Contract details:
 
@@ -2312,7 +2346,7 @@ rescaling matrix.
 
 Return the underlying model coordinate names in unchanged order.
 
-Source: [src/swordfish_diagnostics.cpp:35](../src/swordfish_diagnostics.cpp#L35)
+Source: [src/swordfish_diagnostics.cpp:36](../src/swordfish_diagnostics.cpp#L36)
 
 ## src/swordfish_diagnostics.cpp :: RescaledModel::original
 
@@ -2320,7 +2354,7 @@ Source: [src/swordfish_diagnostics.cpp:35](../src/swordfish_diagnostics.cpp#L35)
 
 Map rescaled optimizer coordinates back to original bounded-logit coordinates as center plus factor times displacement.
 
-Source: [src/swordfish_diagnostics.cpp:42](../src/swordfish_diagnostics.cpp#L42)
+Source: [src/swordfish_diagnostics.cpp:43](../src/swordfish_diagnostics.cpp#L43)
 
 ## src/swordfish_diagnostics.cpp :: RescaledModel::operator()
 
@@ -2328,7 +2362,7 @@ Source: [src/swordfish_diagnostics.cpp:42](../src/swordfish_diagnostics.cpp#L42)
 
 Evaluate the original joint objective after the constant coordinate transformation.
 
-Source: [src/swordfish_diagnostics.cpp:52](../src/swordfish_diagnostics.cpp#L52)
+Source: [src/swordfish_diagnostics.cpp:53](../src/swordfish_diagnostics.cpp#L53)
 
 ## src/swordfish_diagnostics.cpp :: RescaledModel::evaluate_impl
 
@@ -2336,7 +2370,7 @@ Source: [src/swordfish_diagnostics.cpp:52](../src/swordfish_diagnostics.cpp#L52)
 
 Provide the rescaled joint objective through the Quadra model evaluation interface.
 
-Source: [src/swordfish_diagnostics.cpp:56](../src/swordfish_diagnostics.cpp#L56)
+Source: [src/swordfish_diagnostics.cpp:57](../src/swordfish_diagnostics.cpp#L57)
 
 ## src/swordfish_diagnostics.cpp :: main
 
@@ -2344,7 +2378,7 @@ Source: [src/swordfish_diagnostics.cpp:56](../src/swordfish_diagnostics.cpp#L56)
 
 Run swordfish diagnostics; return zero on success and nonzero on a failed check or invalid input.
 
-Source: [src/swordfish_diagnostics.cpp:62](../src/swordfish_diagnostics.cpp#L62)
+Source: [src/swordfish_diagnostics.cpp:63](../src/swordfish_diagnostics.cpp#L63)
 
 Contract details:
 
@@ -2419,7 +2453,7 @@ a failed check or invalid input.
 
 Run test benchmarks; return zero on success and nonzero on a failed check or invalid input.
 
-Source: [tests/test_benchmarks.cpp:7](../tests/test_benchmarks.cpp#L7)
+Source: [tests/test_benchmarks.cpp:10](../tests/test_benchmarks.cpp#L10)
 
 Contract details:
 
@@ -3249,13 +3283,31 @@ Notes
 Full covariance propagation is checked independently for selected cross-output entries. Bounds are pointwise local log-scale Wald intervals. They exclude future recruitment process variation and cannot be interpreted as simultaneous trajectory coverage or bootstrap quantiles.
 ```
 
+## scripts/compare_benchmarks.py :: compare
+
+`compare(points_path, report)`
+
+Compare a model-generated reference-point CSV with ten printed SS3 targets.
+
+Source: [scripts/compare_benchmarks.py:7](../scripts/compare_benchmarks.py#L7)
+
+Contract details:
+
+```text
+Compare a model-generated reference-point CSV with ten printed SS3 targets.
+
+Expected values are supplied only after model calculation; no SS3 values
+enter equilibrium calculations. The 1e-5 relative tolerance accommodates
+rounded report targets. Missing reference rows or fields fail explicitly.
+```
+
 ## scripts/compare_benchmarks.py :: main
 
 `main()`
 
 Execute the compare benchmarks command, write its documented outputs and exit nonzero if validation fails.
 
-Source: [scripts/compare_benchmarks.py:7](../scripts/compare_benchmarks.py#L7)
+Source: [scripts/compare_benchmarks.py:26](../scripts/compare_benchmarks.py#L26)
 
 Contract details:
 
@@ -4310,7 +4362,7 @@ The supported unattended workflow uses a frozen source/input copy and serial sta
 
 Validate/map .par values, compile against original dat/ctl, and fit from them.
 
-Source: [scripts/run_ss_par.py:20](../scripts/run_ss_par.py#L20)
+Source: [scripts/run_ss_par.py:21](../scripts/run_ss_par.py#L21)
 
 Contract details:
 
@@ -4330,7 +4382,7 @@ Compiler selection respects CXX; requires C++17 and the repository headers.
 
 Accept a local .par file and optional new output directory; show optimizer progress.
 
-Source: [scripts/run_ss_par.py:127](../scripts/run_ss_par.py#L127)
+Source: [scripts/run_ss_par.py:137](../scripts/run_ss_par.py#L137)
 
 ## scripts/runtime.py :: atomic_json
 

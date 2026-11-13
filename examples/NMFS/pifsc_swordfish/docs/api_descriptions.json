@@ -115,7 +115,7 @@
   "positive_delta_interval": "Construct a pointwise positive 95% interval from a positive estimate and nonnegative native variance; reject nonfinite results.",
   "read_reference_parameters": "Read versioned SS3 fitted-value/deviation fixtures with exact mapping, counts and finite values; retain the report/control distinction.",
   "read_fitted_parameters": "Read a complete native fitted CSV using strict numeric parsing and canonical recruitment-deviation names; reject unknown, duplicate or missing rows.",
-  "write_fitted_outputs": "Write historical annual/seasonal trajectories, fitted indices, length diagnostics and likelihood components to the supplied output folder. Release publication is performed by the isolated runner.",
+  "write_fitted_outputs": "Write historical trajectories, fitted observations, likelihood components and management reference points for the supplied fitted model state. Every fit/report caller receives the same derived-output calculation; release publication is handled separately.",
   "src/audit_dynamics.cpp::Check": "Accumulate finite benchmark comparison counts and worst absolute/tolerance-scaled errors for this audit.",
   "src/audit_dynamics.cpp::Check::compare": "Compare one finite model/reference pair using absolute plus relative tolerance, updating the audit summary.",
   "src/audit_dynamics.cpp::read": "Read one typed comparison-fixture token and throw if the fixture is truncated or malformed.",
@@ -150,5 +150,8 @@
   "src/swordfish_control_start.cpp::ColdMetricModel::expand": "Map scaled displacements to the original bounded-logit coordinates as center plus factor times displacement.",
   "src/swordfish_control_start.cpp::ColdMetricModel::operator()": "Evaluate the unchanged full joint objective after cold-derived numerical scaling.",
   "src/swordfish_control_start.cpp::ColdMetricModel::evaluate_impl": "Provide the scaled objective through the Quadra model interface.",
-  "src/swordfish_control_start.cpp::save_parameters": "Write all native parameters and 57 recruitment deviations to a distinct control-start checkpoint or final result CSV."
+  "src/swordfish_control_start.cpp::save_parameters": "Write all native parameters and 57 recruitment deviations to a distinct control-start checkpoint or final result CSV.",
+  "management_reference_points": "Calculate unfished, Btgt20, SPR20 and MSY derived outputs from supplied fitted parameters and deviations using terminal biology and terminal-year fishing mixture. No SS3 reference values enter these calculations.",
+  "SwordfishModel::reference_points": "Decode the model coordinate vector with the likelihood constraints and return its standard equilibrium management reference points as post-fit derived outputs.",
+  "write_reference_points": "Write the standard independently calculated management reference-point table for the supplied fitted state; reject nonfinite values and propagate output failures."
 }

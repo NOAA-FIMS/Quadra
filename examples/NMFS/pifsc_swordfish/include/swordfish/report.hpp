@@ -9,14 +9,42 @@
  * one CSV as a release.
  */
 #pragma once
+#include "benchmarks.hpp"
 #include "likelihood.hpp"
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
 
 namespace swordfish {
+/// Write independently calculated reference points for this fitted model state.
+/// The standard table includes unfished, Btgt20, SPR20 and MSY. Biomass/catch
+/// are tonnes, recruitment is thousands, and annual F uses SS3 units 4 ages
+/// 1..10. The output directory must already exist. Failures propagate to the
+/// fitting caller; SS3 values are used only by separate comparison checks.
+inline void write_reference_points(const InputData &data,
+                                   const ParameterValues<double> &p,
+                                   const Deviations<double> &dev,
+                                   const std::filesystem::path &folder) {
+  const auto points = management_reference_points(data, p, dev);
+  std::ofstream out(folder / "management_reference_points.csv");
+  out << "benchmark,F_multiplier,SPR,SSB_tonnes,recruitment_thousands,dead_"
+         "catch_tonnes,annual_F_SS3_units4_ages1_10\n"
+      << std::setprecision(16);
+  for (const auto &point : points) {
+    const auto &r = point.second;
+    if (!std::isfinite(r.scale) || !std::isfinite(r.spr) ||
+        !std::isfinite(r.ssb) || !std::isfinite(r.recruitment) ||
+        !std::isfinite(r.yield) || !std::isfinite(r.annual_f))
+      throw std::runtime_error("Nonfinite model reference point");
+    out << point.first << ',' << r.scale << ',' << r.spr << ',' << r.ssb
+        << ',' << r.recruitment << ',' << r.yield << ',' << r.annual_f << '\n';
+  }
+  out.flush();
+  if (!out)
+    throw std::runtime_error("Failed writing model reference points");
+}
 /// Write historical annual/seasonal trajectories, fitted indices, length
-/// diagnostics and likelihood components to the supplied output folder. Release
+/// diagnostics, likelihood components and management reference points to the supplied output folder. Release
 /// publication is performed by the isolated runner.
 /// @param data Validated original-input schema for the supported swordfish
 /// assessment.
@@ -108,5 +136,6 @@ inline void write_fitted_outputs(const InputData &data,
   components << "TOTAL," << fit.total << '\n';
   if (!seasonal || !annual || !indices || !lengths || !components)
     throw std::runtime_error("Failed writing fitted assessment outputs");
+  write_reference_points(data, p, dev, folder);
 }
 } // namespace swordfish

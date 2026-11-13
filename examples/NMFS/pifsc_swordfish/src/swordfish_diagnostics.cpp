@@ -11,6 +11,7 @@
 #include "swordfish/benchmarks.hpp"
 #include "swordfish/model.hpp"
 #include "swordfish/reference_io.hpp"
+#include "swordfish/report.hpp"
 #include "swordfish_input.hpp"
 #include <fstream>
 #include <iomanip>
@@ -119,22 +120,7 @@ int main(int argc, char **argv) {
         out << '\n';
       }
     } else if (mode == "benchmarks") {
-      swordfish::Benchmarks benchmarks(data, native.first, native.second);
-      std::ofstream out("build/management_reference_points.csv");
-      out << "benchmark,F_multiplier,SPR,SSB_tonnes,recruitment_thousands,dead_"
-             "catch_tonnes,annual_F_SS3_units4_ages1_10\n"
-          << std::setprecision(16);
-      for (const auto &row :
-           std::vector<std::pair<std::string, swordfish::BenchmarkResult>>{
-               {"unfished", benchmarks(0)},
-               {"Btgt20", benchmarks.target(.2, true)},
-               {"SPR20", benchmarks.target(.2, false)},
-               {"MSY", benchmarks.msy()}}) {
-        const auto &r = row.second;
-        out << row.first << ',' << r.scale << ',' << r.spr << ',' << r.ssb
-            << ',' << r.recruitment << ',' << r.yield << ',' << r.annual_f
-            << '\n';
-      }
+      swordfish::write_reference_points(data, native.first, native.second, "build");
     } else if (mode == "starts") {
       std::ifstream cov("build/coordinate_covariance.csv");
       if (!std::getline(cov, line))

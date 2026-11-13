@@ -164,6 +164,31 @@
     },
     {
       "language": "C++",
+      "file": "include/swordfish/benchmarks.hpp",
+      "line": 205,
+      "name": "management_reference_points",
+      "kind": "function",
+      "signature": "std::vector<std::pair<std::string, BenchmarkResult>> management_reference_points(const InputData & data, const ParameterValues<double> & parameters, const Deviations<double> & deviations)",
+      "parameters": [
+        {
+          "name": "data",
+          "type": "const InputData &"
+        },
+        {
+          "name": "parameters",
+          "type": "const ParameterValues<double> &"
+        },
+        {
+          "name": "deviations",
+          "type": "const Deviations<double> &"
+        }
+      ],
+      "fields": [],
+      "documentation": "",
+      "purpose": "Calculate unfished, Btgt20, SPR20 and MSY derived outputs from supplied fitted parameters and deviations using terminal biology and terminal-year fishing mixture. No SS3 reference values enter these calculations."
+    },
+    {
+      "language": "C++",
       "file": "include/swordfish/biology.hpp",
       "line": 23,
       "name": "ParameterValues",
@@ -2196,7 +2221,7 @@
     {
       "language": "C++",
       "file": "include/swordfish/model.hpp",
-      "line": 27,
+      "line": 28,
       "name": "SwordfishModel",
       "kind": "class/struct",
       "signature": "SwordfishModel",
@@ -2225,7 +2250,7 @@
     {
       "language": "C++",
       "file": "include/swordfish/model.hpp",
-      "line": 35,
+      "line": 36,
       "name": "SwordfishModel::FreeParameter",
       "kind": "class/struct",
       "signature": "SwordfishModel::FreeParameter",
@@ -2258,7 +2283,7 @@
     {
       "language": "C++",
       "file": "include/swordfish/model.hpp",
-      "line": 51,
+      "line": 52,
       "name": "SwordfishModel::SwordfishModel",
       "kind": "function",
       "signature": "SwordfishModel::SwordfishModel(InputData input, ParameterValues<double> p, Deviations<double> deviations)",
@@ -2283,7 +2308,7 @@
     {
       "language": "C++",
       "file": "include/swordfish/model.hpp",
-      "line": 72,
+      "line": 73,
       "name": "SwordfishModel::parameter_names_impl",
       "kind": "function",
       "signature": "std::vector<std::string> SwordfishModel::parameter_names_impl() const",
@@ -2295,7 +2320,7 @@
     {
       "language": "C++",
       "file": "include/swordfish/model.hpp",
-      "line": 82,
+      "line": 83,
       "name": "SwordfishModel::initial_vector",
       "kind": "function",
       "signature": "std::vector<double> SwordfishModel::initial_vector() const",
@@ -2307,7 +2332,7 @@
     {
       "language": "C++",
       "file": "include/swordfish/model.hpp",
-      "line": 96,
+      "line": 97,
       "name": "SwordfishModel::initial_parameters",
       "kind": "function",
       "signature": "quadra::ParameterVector SwordfishModel::initial_parameters() const",
@@ -2319,7 +2344,7 @@
     {
       "language": "C++",
       "file": "include/swordfish/model.hpp",
-      "line": 120,
+      "line": 121,
       "name": "SwordfishModel::decode",
       "kind": "function",
       "signature": "std::pair<ParameterValues<T>, Deviations<T>> SwordfishModel::decode(const std::vector<T> & x) const",
@@ -2336,7 +2361,7 @@
     {
       "language": "C++",
       "file": "include/swordfish/model.hpp",
-      "line": 157,
+      "line": 158,
       "name": "SwordfishModel::likelihood",
       "kind": "function",
       "signature": "LikelihoodResult<T> SwordfishModel::likelihood(const std::vector<T> & x) const",
@@ -2353,7 +2378,24 @@
     {
       "language": "C++",
       "file": "include/swordfish/model.hpp",
-      "line": 170,
+      "line": 168,
+      "name": "SwordfishModel::reference_points",
+      "kind": "function",
+      "signature": "std::vector<std::pair<std::string, BenchmarkResult>> SwordfishModel::reference_points(const std::vector<double> & x) const",
+      "parameters": [
+        {
+          "name": "x",
+          "type": "const std::vector<double> &"
+        }
+      ],
+      "fields": [],
+      "documentation": "",
+      "purpose": "Decode the model coordinate vector with the likelihood constraints and return its standard equilibrium management reference points as post-fit derived outputs."
+    },
+    {
+      "language": "C++",
+      "file": "include/swordfish/model.hpp",
+      "line": 180,
       "name": "SwordfishModel::operator()",
       "kind": "function",
       "signature": "T SwordfishModel::operator()(const std::vector<T> & x) const",
@@ -2370,7 +2412,7 @@
     {
       "language": "C++",
       "file": "include/swordfish/model.hpp",
-      "line": 182,
+      "line": 192,
       "name": "SwordfishModel::evaluate_impl",
       "kind": "function",
       "signature": "T SwordfishModel::evaluate_impl(const std::vector<T> & x, quadra::ModelReportContext & context) const",
@@ -3119,7 +3161,36 @@
     {
       "language": "C++",
       "file": "include/swordfish/report.hpp",
-      "line": 29,
+      "line": 24,
+      "name": "write_reference_points",
+      "kind": "function",
+      "signature": "void write_reference_points(const InputData & data, const ParameterValues<double> & p, const Deviations<double> & dev, const std::filesystem::path & folder)",
+      "parameters": [
+        {
+          "name": "data",
+          "type": "const InputData &"
+        },
+        {
+          "name": "p",
+          "type": "const ParameterValues<double> &"
+        },
+        {
+          "name": "dev",
+          "type": "const Deviations<double> &"
+        },
+        {
+          "name": "folder",
+          "type": "const std::filesystem::path &"
+        }
+      ],
+      "fields": [],
+      "documentation": "Write independently calculated reference points for this fitted model state.\nThe standard table includes unfished, Btgt20, SPR20 and MSY. Biomass/catch\nare tonnes, recruitment is thousands, and annual F uses SS3 units 4 ages\n1..10. The output directory must already exist. Failures propagate to the\nfitting caller; SS3 values are used only by separate comparison checks.",
+      "purpose": "Write the standard independently calculated management reference-point table for the supplied fitted state; reject nonfinite values and propagate output failures."
+    },
+    {
+      "language": "C++",
+      "file": "include/swordfish/report.hpp",
+      "line": 57,
       "name": "write_fitted_outputs",
       "kind": "function",
       "signature": "void write_fitted_outputs(const InputData & data, const ParameterValues<double> & p, const Deviations<double> & dev, const std::filesystem::path & folder)",
@@ -3142,8 +3213,8 @@
         }
       ],
       "fields": [],
-      "documentation": "Write historical annual/seasonal trajectories, fitted indices, length\ndiagnostics and likelihood components to the supplied output folder. Release\npublication is performed by the isolated runner.\n@param data Validated original-input schema for the supported swordfish\nassessment.\n@param p Native canonical-name parameter map; all required fixed and\nestimated values must be present.\n@param dev Year-to-log-recruitment-deviation map; the caller enforces the\nmain-period constraint.\n@param folder Existing scratch output directory; publication is managed by\nthe release runner.",
-      "purpose": "Write historical annual/seasonal trajectories, fitted indices, length diagnostics and likelihood components to the supplied output folder. Release publication is performed by the isolated runner."
+      "documentation": "Write historical annual/seasonal trajectories, fitted indices, length\ndiagnostics, likelihood components and management reference points to the supplied output folder. Release\npublication is performed by the isolated runner.\n@param data Validated original-input schema for the supported swordfish\nassessment.\n@param p Native canonical-name parameter map; all required fixed and\nestimated values must be present.\n@param dev Year-to-log-recruitment-deviation map; the caller enforces the\nmain-period constraint.\n@param folder Existing scratch output directory; publication is managed by\nthe release runner.",
+      "purpose": "Write historical trajectories, fitted observations, likelihood components and management reference points for the supplied fitted model state. Every fit/report caller receives the same derived-output calculation; release publication is handled separately."
     },
     {
       "language": "C++",
@@ -3944,7 +4015,7 @@
     {
       "language": "C++",
       "file": "src/swordfish_diagnostics.cpp",
-      "line": 25,
+      "line": 26,
       "name": "RescaledModel",
       "kind": "class/struct",
       "signature": "RescaledModel",
@@ -3969,7 +4040,7 @@
     {
       "language": "C++",
       "file": "src/swordfish_diagnostics.cpp",
-      "line": 31,
+      "line": 32,
       "name": "RescaledModel::RescaledModel",
       "kind": "function",
       "signature": "RescaledModel::RescaledModel(const swordfish::SwordfishModel & m, std::vector<double> c, Eigen::MatrixXd f)",
@@ -3994,7 +4065,7 @@
     {
       "language": "C++",
       "file": "src/swordfish_diagnostics.cpp",
-      "line": 35,
+      "line": 36,
       "name": "RescaledModel::parameter_names_impl",
       "kind": "function",
       "signature": "std::vector<std::string> RescaledModel::parameter_names_impl() const",
@@ -4006,7 +4077,7 @@
     {
       "language": "C++",
       "file": "src/swordfish_diagnostics.cpp",
-      "line": 42,
+      "line": 43,
       "name": "RescaledModel::original",
       "kind": "function",
       "signature": "std::vector<T> RescaledModel::original(const std::vector<T> & z) const",
@@ -4023,7 +4094,7 @@
     {
       "language": "C++",
       "file": "src/swordfish_diagnostics.cpp",
-      "line": 52,
+      "line": 53,
       "name": "RescaledModel::operator()",
       "kind": "function",
       "signature": "T RescaledModel::operator()(const std::vector<T> & z) const",
@@ -4040,7 +4111,7 @@
     {
       "language": "C++",
       "file": "src/swordfish_diagnostics.cpp",
-      "line": 56,
+      "line": 57,
       "name": "RescaledModel::evaluate_impl",
       "kind": "function",
       "signature": "T RescaledModel::evaluate_impl(const std::vector<T> & z, quadra::ModelReportContext & ) const",
@@ -4061,7 +4132,7 @@
     {
       "language": "C++",
       "file": "src/swordfish_diagnostics.cpp",
-      "line": 62,
+      "line": 63,
       "name": "main",
       "kind": "function",
       "signature": "int main(int argc, char ** argv)",
@@ -4160,7 +4231,7 @@
     {
       "language": "C++",
       "file": "tests/test_benchmarks.cpp",
-      "line": 7,
+      "line": 10,
       "name": "main",
       "kind": "function",
       "signature": "int main()",
@@ -5014,6 +5085,16 @@
       "language": "Python",
       "file": "scripts/compare_benchmarks.py",
       "line": 7,
+      "name": "compare",
+      "kind": "function",
+      "signature": "compare(points_path, report)",
+      "purpose": "Compare a model-generated reference-point CSV with ten printed SS3 targets.",
+      "documentation": "Compare a model-generated reference-point CSV with ten printed SS3 targets.\n\nExpected values are supplied only after model calculation; no SS3 values\nenter equilibrium calculations. The 1e-5 relative tolerance accommodates\nrounded report targets. Missing reference rows or fields fail explicitly."
+    },
+    {
+      "language": "Python",
+      "file": "scripts/compare_benchmarks.py",
+      "line": 26,
       "name": "main",
       "kind": "function",
       "signature": "main()",
@@ -5473,7 +5554,7 @@
     {
       "language": "Python",
       "file": "scripts/run_ss_par.py",
-      "line": 20,
+      "line": 21,
       "name": "run",
       "kind": "function",
       "signature": "run(parameter_file, output)",
@@ -5483,7 +5564,7 @@
     {
       "language": "Python",
       "file": "scripts/run_ss_par.py",
-      "line": 127,
+      "line": 137,
       "name": "main",
       "kind": "function",
       "signature": "main()",

@@ -1,0 +1,24 @@
+{
+  "description": "Fresh .par fit with automatic model-derived reference points; all ten saved SS3 printed-target comparisons pass.",
+  "source_git_commit": "ff241a8a5e21da25e50e83e906b22e4f00b2d737",
+  "implementation_files_sha256": {
+    "include/swordfish/benchmarks.hpp": "a091724dae4202297d049ad556263966235b65ed772963a4cb5d33448a769d96",
+    "include/swordfish/model.hpp": "1b7a08d963cff05d01ce946ec66dbeb5db8ce9f83dab4b6a479db6bcd8a243a1",
+    "include/swordfish/report.hpp": "6371ae2a72646a94ff7b1e42301326357a68e2def0c453d9f60062d84ff6fe43",
+    "src/swordfish_assessment.cpp": "7f5ce2156f60bc4d119da459e403be8440b20faf344aa6323167fa486e9b0207",
+    "scripts/run_ss_par.py": "b935b850ad3bbc9df342afc5c02a9c9d3344b0cac16b28686e5db0e90ddd10f5",
+    "scripts/ss_par.py": "7ddeb7769b7f63af5b301caf4e3afe30664d6df9f84f81ad3dad1731885e2c5a",
+    "scripts/compare_benchmarks.py": "65ea5442145b4410697739fee38b815a38433467f2904ad0a0e18af298f800df"
+  },
+  "ss3_targets_sha256": "80ea4da4aa363750c4c00eb896bf3f66a6574373fe5f8c14c61640f7a31892e0",
+  "canonical_fit_unchanged": true,
+  "files_sha256": {
+    "comparison_summary.json": "2b94682112a65ae1ddb9da460cc1053105b9a9d30676363e40b14e545694ea23",
+    "input_manifest.json": "9234f371a42d7035de2012491b3b02d49898e62bbfa9dded93216136673b1658",
+    "management_reference_points.csv": "ee3793a3c926c7a4ac3654cd78d9c6c355924ddbcfb7ca5eb7398883a74bc5e4",
+    "quadra_fitted_parameters.csv": "faafe02635ac16d510b91344c33785eb3b5bb26d99a3489d27fd32d463c527c5",
+    "quadra_fit_summary.json": "db9f62cf3ec1bd427dda5b5aced4a285cf31c1f44eb16ef5806541c24ed52a10",
+    "fit.log": "d625b4c7845b504060cf119df6e76a214d39dac8bc0b2a565348fe3292284210",
+    "benchmark_comparison.json": "1fbabf2bc2920d561ba23b083482d2eb8f1fc5bb724dc29525586674cd2fa6aa"
+  }
+}
