@@ -14,6 +14,10 @@ catch-feasibility stage before evaluating the full likelihood. See
 [CONTROL_START.md](CONTROL_START.md) for the method, fixed-growth sensitivity,
 saved checkpoint results and [PDF report](output/pdf/swordfish_control_start.pdf).
 
+For Jon's supplied `ss.par`, `make fit-ss-par` runs a separate fit initialized
+directly from that saved vector. See [SS_PAR_START.md](SS_PAR_START.md) for
+results, mapping and the distinction between a fitted snapshot and pre-fit values.
+
 ## Run the model foundation and checks
 
 From this directory:

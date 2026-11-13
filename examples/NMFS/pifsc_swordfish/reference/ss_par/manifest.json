@@ -1,0 +1,29 @@
+{
+  "description": "Quadra initialization from Jon-provided fitted SS3 ss.par snapshot; original raw file excluded.",
+  "source_git_commit": "80bea4196fafc88fd7d4ad1bd698f3615a5a6b6f",
+  "implementation_files_sha256": {
+    "scripts/ss_par.py": "7ddeb7769b7f63af5b301caf4e3afe30664d6df9f84f81ad3dad1731885e2c5a",
+    "scripts/run_ss_par.py": "ab6f52e6f3a676a3157d68b5cf9022a7c164aec1659b1c9030bc109fac66c2c7",
+    "src/swordfish_assessment.cpp": "7f5ce2156f60bc4d119da459e403be8440b20faf344aa6323167fa486e9b0207"
+  },
+  "ss3_rerun": false,
+  "canonical_fit_unchanged": true,
+  "files_sha256": {
+    "quadra_fitted_index_fits.csv": "23b837e4f331ef0299d582680f7e75008044b698bc99dd4bbc18067cb9b5a168",
+    "quadra_fitted_annual.csv": "0090f73bf29cd91f02e27d636dd16842c4056058f99e42a10b716d332c0c8a69",
+    "quadra_fitted_likelihood.csv": "9192fba5104c0ccbb939c442bbd361f3990d5ffca8485bda8016a56b248f6ab1",
+    "comparison_summary.json": "97ab2e0adb737171b15c49e141ea3967e166153684aeab656c9c58d75c8d4a34",
+    "input_manifest.json": "9234f371a42d7035de2012491b3b02d49898e62bbfa9dded93216136673b1658",
+    "initial_parameters.csv": "bfe27264f49fe8d15cfa77ea472a33e54e228c1a8c5b2a258032c30653f20cd6",
+    "initial_gradient.log": "9434ff6ae16b3b6b2eec1999dd0e0a3381939cb7dad7c0d5676bb84622e229ee",
+    "quadra_fitted_length_fits.csv": "4632e6c0e0cdaf5ca0392bc43137d9c0159fcc16b6e860aa7ff99bbd692d42d5",
+    "initial_objective_gradient.csv": "274ac272a0e27576b69ffb6e9ce984f53bb000b3938d93c8ff57220a5219012c",
+    "quadra_fitted_seasonal.csv": "e32cc20e29e979f494bbe2a746b40ce4161fedf058f8761f75a28c9c3692e7bc",
+    "quadra_fitted_parameters.csv": "faafe02635ac16d510b91344c33785eb3b5bb26d99a3489d27fd32d463c527c5",
+    "parameter_comparison.csv": "48d6b9f60f7b3b8addab61f3bee903a85baf2e8bc4c7ece2973705078d1a3580",
+    "quadra_fit_summary.json": "db9f62cf3ec1bd427dda5b5aced4a285cf31c1f44eb16ef5806541c24ed52a10",
+    "fit.log": "6999823c733c777ce05878c5d238f0d605926a2ea726f4f35b48ed453fb074f2",
+    "annual_ssb_comparison.csv": "1c7483c418c7d59f16805ca02ad64470d0b0e733f97eb4e9d4f2318a8aac8d9d",
+    "quadra_fit_trace.csv": "c8a546e3795e99153b8c66e49d50f621e82811b6e13def5f6efbe2aae5f42043"
+  }
+}

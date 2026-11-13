@@ -216,3 +216,8 @@ build/swordfish_control_input.hpp: scripts/prepare_control_start.py scripts/prep
 .PHONY: fit-control-start
 fit-control-start: build/swordfish_control_start
 	$(PYTHON) scripts/run_control_start.py
+
+SS_PAR ?= data/raw/ss.par
+.PHONY: fit-ss-par
+fit-ss-par:
+	$(PYTHON) scripts/run_ss_par.py "$(SS_PAR)"

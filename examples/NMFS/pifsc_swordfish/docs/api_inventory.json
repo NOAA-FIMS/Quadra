@@ -643,7 +643,7 @@
     {
       "language": "C++",
       "file": "include/swordfish/control_start.hpp",
-      "line": 12,
+      "line": 15,
       "name": "control_start_values",
       "kind": "function",
       "signature": "std::pair<ParameterValues<double>, Deviations<double>> control_start_values(const InputData & data, bool match_fixed_growth)",
@@ -658,13 +658,13 @@
         }
       ],
       "fields": [],
-      "documentation": "Build literal native control starts and zero historical recruitment deviations.\nThe optional male-growth override is an explicit fixed-configuration sensitivity,\nnot a source of fitted free parameters; strict mode leaves every control value intact.",
+      "documentation": "",
       "purpose": "Return literal control native values and zero historical recruitment deviations. An explicit matched-fixed sensitivity changes only male L1 from 83.2 to 83.4; no fitted free parameters or report values are read."
     },
     {
       "language": "C++",
       "file": "include/swordfish/control_start.hpp",
-      "line": 21,
+      "line": 28,
       "name": "ControlStartPhase",
       "kind": "class/struct",
       "signature": "ControlStartPhase",
@@ -687,13 +687,13 @@
           "type": "bool"
         }
       ],
-      "documentation": "Restrict optimization to one control activation phase, retaining inactive values.\nThe full model owns the objective and native bounds. base is a fitting vector,\nnot a native parameter map, so selection introduces no extra transformation.",
+      "documentation": "Restrict optimization to one control activation phase, retaining inactive\nvalues. The full model owns the objective and native bounds. base is a\nfitting vector, not a native parameter map, so selection introduces no extra\ntransformation.",
       "purpose": "Active-coordinate view of the independent control-start model. Inactive coordinates remain at its checkpoint; the optional catch-only objective is a documented feasibility stage for an otherwise undefined full likelihood."
     },
     {
       "language": "C++",
       "file": "include/swordfish/control_start.hpp",
-      "line": 27,
+      "line": 35,
       "name": "ControlStartPhase::ControlStartPhase",
       "kind": "function",
       "signature": "ControlStartPhase::ControlStartPhase(swordfish::SwordfishModel & m, std::vector<double> point, int phase, bool feasibility)",
@@ -716,25 +716,25 @@
         }
       ],
       "fields": [],
-      "documentation": "Borrow a model and copy the full coordinate checkpoint for an activation phase.",
+      "documentation": "Borrow a model and copy the full coordinate checkpoint for an activation\nphase.",
       "purpose": "Select independent coordinates using original control activation phases: 1, 8, 64 and 84 active values. Early deviations activate in phase 4 and main deviations in phase 3."
     },
     {
       "language": "C++",
       "file": "include/swordfish/control_start.hpp",
-      "line": 37,
+      "line": 59,
       "name": "ControlStartPhase::parameter_names_impl",
       "kind": "function",
       "signature": "std::vector<std::string> ControlStartPhase::parameter_names_impl() const",
       "parameters": [],
       "fields": [],
-      "documentation": "Return active names in optimizer order, preserving the original full ordering.",
+      "documentation": "Return active names in optimizer order, preserving the original full\nordering.",
       "purpose": "Return the active canonical coordinate labels in unchanged full-model order."
     },
     {
       "language": "C++",
       "file": "include/swordfish/control_start.hpp",
-      "line": 39,
+      "line": 67,
       "name": "ControlStartPhase::expand",
       "kind": "function",
       "signature": "std::vector<T> ControlStartPhase::expand(const std::vector<T> & point) const",
@@ -745,13 +745,13 @@
         }
       ],
       "fields": [],
-      "documentation": "Expand active coordinates into the full fitting vector, keeping inactive values fixed.",
+      "documentation": "Expand active coordinates into the full fitting vector, keeping inactive\nvalues fixed.",
       "purpose": "Expand active values into the complete bounded-logit vector while preserving all inactive checkpoint coordinates."
     },
     {
       "language": "C++",
       "file": "include/swordfish/control_start.hpp",
-      "line": 45,
+      "line": 79,
       "name": "ControlStartPhase::operator()",
       "kind": "function",
       "signature": "T ControlStartPhase::operator()(const std::vector<T> & point) const",
@@ -762,13 +762,13 @@
         }
       ],
       "fields": [],
-      "documentation": "Evaluate the full final-phase likelihood through the active-coordinate map.",
+      "documentation": "Evaluate the full final-phase likelihood through the active-coordinate\nmap.",
       "purpose": "Evaluate the same final weighted joint target, or catch-only feasibility when explicitly enabled. Neither path reads SS3 estimates or saved covariance."
     },
     {
       "language": "C++",
       "file": "include/swordfish/control_start.hpp",
-      "line": 53,
+      "line": 100,
       "name": "ControlStartPhase::evaluate_impl",
       "kind": "function",
       "signature": "T ControlStartPhase::evaluate_impl(const std::vector<T> & point, quadra::ModelReportContext & ) const",
@@ -783,7 +783,7 @@
         }
       ],
       "fields": [],
-      "documentation": "Expose the phase objective through the public Quadra model interface.",
+      "documentation": "",
       "purpose": "Expose the restricted scalar objective through the public Quadra model evaluation interface."
     },
     {
@@ -3781,7 +3781,7 @@
     {
       "language": "C++",
       "file": "src/swordfish_control_start.cpp",
-      "line": 24,
+      "line": 26,
       "name": "ColdMetricModel",
       "kind": "class/struct",
       "signature": "ColdMetricModel",
@@ -3800,13 +3800,13 @@
           "type": "Eigen::MatrixXd"
         }
       ],
-      "documentation": "Optimize in a constant metric learned exclusively from the current cold trajectory.\nNo statistical Jacobian is added: this is a linear MLE coordinate change.",
+      "documentation": "Optimize in a constant metric learned exclusively from the current cold\ntrajectory. No statistical Jacobian is added: this is a linear MLE\ncoordinate change.",
       "purpose": "Linear optimizer coordinate map learned by differentiating the cold trajectory only. Spectral regularization applies to optimization scaling and is not an inferential covariance or a changed statistical target."
     },
     {
       "language": "C++",
       "file": "src/swordfish_control_start.cpp",
-      "line": 27,
+      "line": 32,
       "name": "ColdMetricModel::ColdMetricModel",
       "kind": "function",
       "signature": "ColdMetricModel::ColdMetricModel(swordfish::SwordfishModel & m, std::vector<double> point, Eigen::MatrixXd matrix)",
@@ -3825,13 +3825,13 @@
         }
       ],
       "fields": [],
-      "documentation": "Borrow the objective and copy the cold checkpoint and positive optimization metric.",
+      "documentation": "Borrow the objective and copy the cold checkpoint and positive\noptimization metric.",
       "purpose": "Borrow the cold objective and copy its current coordinate center and constant scaling factor."
     },
     {
       "language": "C++",
       "file": "src/swordfish_control_start.cpp",
-      "line": 29,
+      "line": 36,
       "name": "ColdMetricModel::parameter_names_impl",
       "kind": "function",
       "signature": "std::vector<std::string> ColdMetricModel::parameter_names_impl() const",
@@ -3843,7 +3843,7 @@
     {
       "language": "C++",
       "file": "src/swordfish_control_start.cpp",
-      "line": 31,
+      "line": 42,
       "name": "ColdMetricModel::expand",
       "kind": "function",
       "signature": "std::vector<T> ColdMetricModel::expand(const std::vector<T> & z) const",
@@ -3854,13 +3854,13 @@
         }
       ],
       "fields": [],
-      "documentation": "Map scaled displacements back to the original bounded-logit coordinates.",
+      "documentation": "",
       "purpose": "Map scaled displacements to the original bounded-logit coordinates as center plus factor times displacement."
     },
     {
       "language": "C++",
       "file": "src/swordfish_control_start.cpp",
-      "line": 34,
+      "line": 55,
       "name": "ColdMetricModel::operator()",
       "kind": "function",
       "signature": "T ColdMetricModel::operator()(const std::vector<T> & z) const",
@@ -3877,7 +3877,7 @@
     {
       "language": "C++",
       "file": "src/swordfish_control_start.cpp",
-      "line": 35,
+      "line": 58,
       "name": "ColdMetricModel::evaluate_impl",
       "kind": "function",
       "signature": "T ColdMetricModel::evaluate_impl(const std::vector<T> & z, quadra::ModelReportContext & ) const",
@@ -3892,13 +3892,13 @@
         }
       ],
       "fields": [],
-      "documentation": "Provide the same scalar target through Quadra's model interface.",
+      "documentation": "",
       "purpose": "Provide the scaled objective through the Quadra model interface."
     },
     {
       "language": "C++",
       "file": "src/swordfish_control_start.cpp",
-      "line": 39,
+      "line": 65,
       "name": "save_parameters",
       "kind": "function",
       "signature": "void save_parameters(const std::filesystem::path & path, const swordfish::ParameterValues<double> & p, const swordfish::Deviations<double> & dev)",
@@ -3917,13 +3917,13 @@
         }
       ],
       "fields": [],
-      "documentation": "Write native values and all deviations; this path never changes the canonical fit.",
+      "documentation": "Write native values and all deviations; this path never changes the\ncanonical fit.",
       "purpose": "Write all native parameters and 57 recruitment deviations to a distinct control-start checkpoint or final result CSV."
     },
     {
       "language": "C++",
       "file": "src/swordfish_control_start.cpp",
-      "line": 48,
+      "line": 80,
       "name": "main",
       "kind": "function",
       "signature": "int main(int argc, char ** argv)",
@@ -4284,13 +4284,13 @@
     {
       "language": "C++",
       "file": "tests/test_control_start.cpp",
-      "line": 7,
+      "line": 8,
       "name": "main",
       "kind": "function",
       "signature": "int main()",
       "parameters": [],
       "fields": [],
-      "documentation": "Verify literal controls/zero deviations, phase masks and the recovery objective gradient.",
+      "documentation": "Verify literal controls/zero deviations, phase masks and the recovery\nobjective gradient.",
       "purpose": "Run test control start; return zero on success and nonzero on a failed check or invalid input."
     },
     {
@@ -4972,6 +4972,26 @@
     },
     {
       "language": "Python",
+      "file": "scripts/build_ss_par_report.py",
+      "line": 12,
+      "name": "build",
+      "kind": "function",
+      "signature": "build(evidence, output)",
+      "purpose": "Present saved fit evidence and initialization limits without rerunning either model.",
+      "documentation": "Present saved fit evidence and initialization limits without rerunning either model."
+    },
+    {
+      "language": "Python",
+      "file": "scripts/build_ss_par_report.py",
+      "line": 69,
+      "name": "main",
+      "kind": "function",
+      "signature": "main()",
+      "purpose": "Select saved evidence and an optional PDF destination.",
+      "documentation": "Select saved evidence and an optional PDF destination."
+    },
+    {
+      "language": "Python",
       "file": "scripts/check_projection_uncertainty.py",
       "line": 11,
       "name": "read",
@@ -5452,6 +5472,26 @@
     },
     {
       "language": "Python",
+      "file": "scripts/run_ss_par.py",
+      "line": 20,
+      "name": "run",
+      "kind": "function",
+      "signature": "run(parameter_file, output)",
+      "purpose": "Validate/map .par values, compile against original dat/ctl, and fit from them.",
+      "documentation": "Validate/map .par values, compile against original dat/ctl, and fit from them.\n\nAll generated fixtures and fitted outputs are isolated beneath a new output\ndirectory; the existing canonical fit is never replaced. The ordinary\nassessment executable reads .par-derived fixtures rather than Report.sso.\nOnly the post-fit comparison reads the saved canonical Quadra summary.\nCompiler selection respects CXX; requires C++17 and the repository headers."
+    },
+    {
+      "language": "Python",
+      "file": "scripts/run_ss_par.py",
+      "line": 127,
+      "name": "main",
+      "kind": "function",
+      "signature": "main()",
+      "purpose": "Accept a local .par file and optional new output directory; show optimizer progress.",
+      "documentation": "Accept a local .par file and optional new output directory; show optimizer progress."
+    },
+    {
+      "language": "Python",
       "file": "scripts/runtime.py",
       "line": 9,
       "name": "atomic_json",
@@ -5529,6 +5569,16 @@
       "signature": "main()",
       "purpose": "Dispatch covariance begin/finish/verify commands from the example directory.",
       "documentation": "Dispatch covariance begin/finish/verify commands from the example directory.\n\nNotes\n-----\nAll hashes are content based. Covariance identity covers the complete native fit and relevant source/configuration, so touching timestamps cannot make a stale covariance valid. JSON publication uses a sibling temporary file and replacement; this is not a distributed-filesystem transaction."
+    },
+    {
+      "language": "Python",
+      "file": "scripts/ss_par.py",
+      "line": 6,
+      "name": "parse",
+      "kind": "function",
+      "signature": "parse(path, inputs)",
+      "purpose": "Map SS3 parameter groups in control-file order to all 131 native values.",
+      "documentation": "Map SS3 parameter groups in control-file order to all 131 native values.\n\nThe mapping covers 20 biology, 5 stock-recruit, 1 initial-F, 8 Q and\n40 selectivity values (including expanded time blocks), plus 20 early and\n37 main recruitment deviations. Dummy, checksum and forecast entries are\nrecorded separately. Unknown, duplicate, missing, nonfinite or incorrectly\nsized groups are rejected. The .par header describes its saved SS3 fit;\nit does not prove that these were the original pre-optimization values."
     },
     {
       "language": "Python",
@@ -5819,6 +5869,56 @@
       "signature": "test_stage_timeout_records_failure(self)",
       "purpose": "A timed-out stage must stop its process group and retain a failure log record.",
       "documentation": "A timed-out stage must stop its process group and retain a failure log record."
+    },
+    {
+      "language": "Python",
+      "file": "tests/test_ss_par.py",
+      "line": 13,
+      "name": "ParameterFileTests",
+      "kind": "class",
+      "signature": "ParameterFileTests",
+      "purpose": "Exercise native group ordering, recruitment constraints and malformed input rejection.",
+      "documentation": "Exercise native group ordering, recruitment constraints and malformed input rejection."
+    },
+    {
+      "language": "Python",
+      "file": "tests/test_ss_par.py",
+      "line": 16,
+      "name": "ParameterFileTests.setUpClass",
+      "kind": "function",
+      "signature": "setUpClass(cls)",
+      "purpose": "Construct a synthetic .par from control starts; no Jon-provided file is needed.",
+      "documentation": "Construct a synthetic .par from control starts; no Jon-provided file is needed."
+    },
+    {
+      "language": "Python",
+      "file": "tests/test_ss_par.py",
+      "line": 33,
+      "name": "ParameterFileTests.read",
+      "kind": "function",
+      "signature": "read(self, text)",
+      "purpose": "Parse temporary text through the public file reader and actual control schema.",
+      "documentation": "Parse temporary text through the public file reader and actual control schema."
+    },
+    {
+      "language": "Python",
+      "file": "tests/test_ss_par.py",
+      "line": 39,
+      "name": "ParameterFileTests.test_complete_mapping",
+      "kind": "function",
+      "signature": "test_complete_mapping(self)",
+      "purpose": "Check every native mapping, expanded selectivity block and deviation year.",
+      "documentation": "Check every native mapping, expanded selectivity block and deviation year."
+    },
+    {
+      "language": "Python",
+      "file": "tests/test_ss_par.py",
+      "line": 54,
+      "name": "ParameterFileTests.test_malformed_groups",
+      "kind": "function",
+      "signature": "test_malformed_groups(self)",
+      "purpose": "Reject missing/duplicate/extra/nonfinite groups and nonzero recruitment sums.",
+      "documentation": "Reject missing/duplicate/extra/nonfinite groups and nonzero recruitment sums."
     },
     {
       "language": "R",

@@ -1,0 +1,24 @@
+{
+  "initial_objective": 289.299639306,
+  "initial_gradient_norm": 0.00421730536406,
+  "quadra": {
+    "objective": 289.299639305649,
+    "gradient_norm": 9.3858272163835e-05,
+    "iterations": 27,
+    "converged": true,
+    "free_parameters": 84,
+    "initialization": "supplied SS3 fitted parameters",
+    "target": "joint penalized likelihood; no Laplace integration"
+  },
+  "ss3_objective": 289.299635060701,
+  "quadra_minus_ss3_objective": 4.244948001996818e-06,
+  "quadra_minus_existing_quadra_objective": -1.7598722479306161e-10,
+  "objective_tolerance": 0.0001,
+  "passed": true,
+  "interpretation": "Agreement from a saved SS3 fitted vector; no SS3 rerun or original pre-fit starting vector is established.",
+  "profiled_q": "Supplied Q values are mapped; Quadra analytically profiles Q at every objective evaluation.",
+  "main_deviation_constraint": "Final main deviation is reconstructed as negative sum; input sum tolerance 1e-8.",
+  "binary_sha256": "6d7074bd66ef88ff792edce25ea3d2416e6ce89da8b3cac45418f23c1d80b616",
+  "maximum_parameter_difference_in_reference_SE": 1.3808921289669029e-05,
+  "maximum_annual_ssb_difference_tonnes": 0.10840281939817942
+}

@@ -375,15 +375,7 @@ Source: [include/swordfish/biology.hpp:474](../include/swordfish/biology.hpp#L47
 
 Return literal control native values and zero historical recruitment deviations. An explicit matched-fixed sensitivity changes only male L1 from 83.2 to 83.4; no fitted free parameters or report values are read.
 
-Source: [include/swordfish/control_start.hpp:12](../include/swordfish/control_start.hpp#L12)
-
-Contract details:
-
-```text
-Build literal native control starts and zero historical recruitment deviations.
-The optional male-growth override is an explicit fixed-configuration sensitivity,
-not a source of fitted free parameters; strict mode leaves every control value intact.
-```
+Source: [include/swordfish/control_start.hpp:15](../include/swordfish/control_start.hpp#L15)
 
 ## include/swordfish/control_start.hpp :: ControlStartPhase
 
@@ -391,14 +383,15 @@ not a source of fitted free parameters; strict mode leaves every control value i
 
 Active-coordinate view of the independent control-start model. Inactive coordinates remain at its checkpoint; the optional catch-only objective is a documented feasibility stage for an otherwise undefined full likelihood.
 
-Source: [include/swordfish/control_start.hpp:21](../include/swordfish/control_start.hpp#L21)
+Source: [include/swordfish/control_start.hpp:28](../include/swordfish/control_start.hpp#L28)
 
 Contract details:
 
 ```text
-Restrict optimization to one control activation phase, retaining inactive values.
-The full model owns the objective and native bounds. base is a fitting vector,
-not a native parameter map, so selection introduces no extra transformation.
+Restrict optimization to one control activation phase, retaining inactive
+values. The full model owns the objective and native bounds. base is a
+fitting vector, not a native parameter map, so selection introduces no extra
+transformation.
 ```
 
 ## include/swordfish/control_start.hpp :: ControlStartPhase::ControlStartPhase
@@ -407,12 +400,13 @@ not a native parameter map, so selection introduces no extra transformation.
 
 Select independent coordinates using original control activation phases: 1, 8, 64 and 84 active values. Early deviations activate in phase 4 and main deviations in phase 3.
 
-Source: [include/swordfish/control_start.hpp:27](../include/swordfish/control_start.hpp#L27)
+Source: [include/swordfish/control_start.hpp:35](../include/swordfish/control_start.hpp#L35)
 
 Contract details:
 
 ```text
-Borrow a model and copy the full coordinate checkpoint for an activation phase.
+Borrow a model and copy the full coordinate checkpoint for an activation
+phase.
 ```
 
 ## include/swordfish/control_start.hpp :: ControlStartPhase::parameter_names_impl
@@ -421,12 +415,13 @@ Borrow a model and copy the full coordinate checkpoint for an activation phase.
 
 Return the active canonical coordinate labels in unchanged full-model order.
 
-Source: [include/swordfish/control_start.hpp:37](../include/swordfish/control_start.hpp#L37)
+Source: [include/swordfish/control_start.hpp:59](../include/swordfish/control_start.hpp#L59)
 
 Contract details:
 
 ```text
-Return active names in optimizer order, preserving the original full ordering.
+Return active names in optimizer order, preserving the original full
+ordering.
 ```
 
 ## include/swordfish/control_start.hpp :: ControlStartPhase::expand
@@ -435,12 +430,13 @@ Return active names in optimizer order, preserving the original full ordering.
 
 Expand active values into the complete bounded-logit vector while preserving all inactive checkpoint coordinates.
 
-Source: [include/swordfish/control_start.hpp:39](../include/swordfish/control_start.hpp#L39)
+Source: [include/swordfish/control_start.hpp:67](../include/swordfish/control_start.hpp#L67)
 
 Contract details:
 
 ```text
-Expand active coordinates into the full fitting vector, keeping inactive values fixed.
+Expand active coordinates into the full fitting vector, keeping inactive
+values fixed.
 ```
 
 ## include/swordfish/control_start.hpp :: ControlStartPhase::operator()
@@ -449,12 +445,13 @@ Expand active coordinates into the full fitting vector, keeping inactive values 
 
 Evaluate the same final weighted joint target, or catch-only feasibility when explicitly enabled. Neither path reads SS3 estimates or saved covariance.
 
-Source: [include/swordfish/control_start.hpp:45](../include/swordfish/control_start.hpp#L45)
+Source: [include/swordfish/control_start.hpp:79](../include/swordfish/control_start.hpp#L79)
 
 Contract details:
 
 ```text
-Evaluate the full final-phase likelihood through the active-coordinate map.
+Evaluate the full final-phase likelihood through the active-coordinate
+map.
 ```
 
 ## include/swordfish/control_start.hpp :: ControlStartPhase::evaluate_impl
@@ -463,13 +460,7 @@ Evaluate the full final-phase likelihood through the active-coordinate map.
 
 Expose the restricted scalar objective through the public Quadra model evaluation interface.
 
-Source: [include/swordfish/control_start.hpp:53](../include/swordfish/control_start.hpp#L53)
-
-Contract details:
-
-```text
-Expose the phase objective through the public Quadra model interface.
-```
+Source: [include/swordfish/control_start.hpp:100](../include/swordfish/control_start.hpp#L100)
 
 ## include/swordfish/csv.hpp :: csv_line
 
@@ -2192,13 +2183,14 @@ check or invalid input.
 
 Linear optimizer coordinate map learned by differentiating the cold trajectory only. Spectral regularization applies to optimization scaling and is not an inferential covariance or a changed statistical target.
 
-Source: [src/swordfish_control_start.cpp:24](../src/swordfish_control_start.cpp#L24)
+Source: [src/swordfish_control_start.cpp:26](../src/swordfish_control_start.cpp#L26)
 
 Contract details:
 
 ```text
-Optimize in a constant metric learned exclusively from the current cold trajectory.
-No statistical Jacobian is added: this is a linear MLE coordinate change.
+Optimize in a constant metric learned exclusively from the current cold
+trajectory. No statistical Jacobian is added: this is a linear MLE
+coordinate change.
 ```
 
 ## src/swordfish_control_start.cpp :: ColdMetricModel::ColdMetricModel
@@ -2207,12 +2199,13 @@ No statistical Jacobian is added: this is a linear MLE coordinate change.
 
 Borrow the cold objective and copy its current coordinate center and constant scaling factor.
 
-Source: [src/swordfish_control_start.cpp:27](../src/swordfish_control_start.cpp#L27)
+Source: [src/swordfish_control_start.cpp:32](../src/swordfish_control_start.cpp#L32)
 
 Contract details:
 
 ```text
-Borrow the objective and copy the cold checkpoint and positive optimization metric.
+Borrow the objective and copy the cold checkpoint and positive
+optimization metric.
 ```
 
 ## src/swordfish_control_start.cpp :: ColdMetricModel::parameter_names_impl
@@ -2221,7 +2214,7 @@ Borrow the objective and copy the cold checkpoint and positive optimization metr
 
 Preserve canonical coordinate ordering when applying cold-learned scaling.
 
-Source: [src/swordfish_control_start.cpp:29](../src/swordfish_control_start.cpp#L29)
+Source: [src/swordfish_control_start.cpp:36](../src/swordfish_control_start.cpp#L36)
 
 Contract details:
 
@@ -2235,13 +2228,7 @@ Preserve the canonical coordinate label ordering for the public optimizer.
 
 Map scaled displacements to the original bounded-logit coordinates as center plus factor times displacement.
 
-Source: [src/swordfish_control_start.cpp:31](../src/swordfish_control_start.cpp#L31)
-
-Contract details:
-
-```text
-Map scaled displacements back to the original bounded-logit coordinates.
-```
+Source: [src/swordfish_control_start.cpp:42](../src/swordfish_control_start.cpp#L42)
 
 ## src/swordfish_control_start.cpp :: ColdMetricModel::operator()
 
@@ -2249,7 +2236,7 @@ Map scaled displacements back to the original bounded-logit coordinates.
 
 Evaluate the unchanged full joint objective after cold-derived numerical scaling.
 
-Source: [src/swordfish_control_start.cpp:34](../src/swordfish_control_start.cpp#L34)
+Source: [src/swordfish_control_start.cpp:55](../src/swordfish_control_start.cpp#L55)
 
 ## src/swordfish_control_start.cpp :: ColdMetricModel::evaluate_impl
 
@@ -2257,13 +2244,7 @@ Source: [src/swordfish_control_start.cpp:34](../src/swordfish_control_start.cpp#
 
 Provide the scaled objective through the Quadra model interface.
 
-Source: [src/swordfish_control_start.cpp:35](../src/swordfish_control_start.cpp#L35)
-
-Contract details:
-
-```text
-Provide the same scalar target through Quadra's model interface.
-```
+Source: [src/swordfish_control_start.cpp:58](../src/swordfish_control_start.cpp#L58)
 
 ## src/swordfish_control_start.cpp :: save_parameters
 
@@ -2271,12 +2252,13 @@ Provide the same scalar target through Quadra's model interface.
 
 Write all native parameters and 57 recruitment deviations to a distinct control-start checkpoint or final result CSV.
 
-Source: [src/swordfish_control_start.cpp:39](../src/swordfish_control_start.cpp#L39)
+Source: [src/swordfish_control_start.cpp:65](../src/swordfish_control_start.cpp#L65)
 
 Contract details:
 
 ```text
-Write native values and all deviations; this path never changes the canonical fit.
+Write native values and all deviations; this path never changes the
+canonical fit.
 ```
 
 ## src/swordfish_control_start.cpp :: main
@@ -2285,7 +2267,7 @@ Write native values and all deviations; this path never changes the canonical fi
 
 Run swordfish control start; return zero on success and nonzero on a failed check or invalid input.
 
-Source: [src/swordfish_control_start.cpp:48](../src/swordfish_control_start.cpp#L48)
+Source: [src/swordfish_control_start.cpp:80](../src/swordfish_control_start.cpp#L80)
 
 Contract details:
 
@@ -2535,12 +2517,13 @@ invalid input.
 
 Run test control start; return zero on success and nonzero on a failed check or invalid input.
 
-Source: [tests/test_control_start.cpp:7](../tests/test_control_start.cpp#L7)
+Source: [tests/test_control_start.cpp:8](../tests/test_control_start.cpp#L8)
 
 Contract details:
 
 ```text
-Verify literal controls/zero deviations, phase masks and the recovery objective gradient.
+Verify literal controls/zero deviations, phase masks and the recovery
+objective gradient.
 ```
 
 ## tests/test_csv.cpp :: rejects
@@ -3208,6 +3191,22 @@ Notes
 -----
 The guide is a presentation of the checked API inventory and optional accepted-run evidence. PDF dependencies are separate from the numerical runtime. Rebuilding the PDF does not itself certify model science; render and inspect the resulting pages before delivery.
 ```
+
+## scripts/build_ss_par_report.py :: build
+
+`build(evidence, output)`
+
+Present saved fit evidence and initialization limits without rerunning either model.
+
+Source: [scripts/build_ss_par_report.py:12](../scripts/build_ss_par_report.py#L12)
+
+## scripts/build_ss_par_report.py :: main
+
+`main()`
+
+Select saved evidence and an optional PDF destination.
+
+Source: [scripts/build_ss_par_report.py:69](../scripts/build_ss_par_report.py#L69)
 
 ## scripts/check_projection_uncertainty.py :: read
 
@@ -4305,6 +4304,34 @@ Notes
 The supported unattended workflow uses a frozen source/input copy and serial stages. Scratch outputs remain unpublished until every numerical gate passes. A destination lock coordinates this runner only; an uncatchable termination can leave a lock requiring operator inspection. Original data and failed runs stay local.
 ```
 
+## scripts/run_ss_par.py :: run
+
+`run(parameter_file, output)`
+
+Validate/map .par values, compile against original dat/ctl, and fit from them.
+
+Source: [scripts/run_ss_par.py:20](../scripts/run_ss_par.py#L20)
+
+Contract details:
+
+```text
+Validate/map .par values, compile against original dat/ctl, and fit from them.
+
+All generated fixtures and fitted outputs are isolated beneath a new output
+directory; the existing canonical fit is never replaced. The ordinary
+assessment executable reads .par-derived fixtures rather than Report.sso.
+Only the post-fit comparison reads the saved canonical Quadra summary.
+Compiler selection respects CXX; requires C++17 and the repository headers.
+```
+
+## scripts/run_ss_par.py :: main
+
+`main()`
+
+Accept a local .par file and optional new output directory; show optimizer progress.
+
+Source: [scripts/run_ss_par.py:127](../scripts/run_ss_par.py#L127)
+
 ## scripts/runtime.py :: atomic_json
 
 `atomic_json(path, value)`
@@ -4504,6 +4531,27 @@ Dispatch covariance begin/finish/verify commands from the example directory.
 Notes
 -----
 All hashes are content based. Covariance identity covers the complete native fit and relevant source/configuration, so touching timestamps cannot make a stale covariance valid. JSON publication uses a sibling temporary file and replacement; this is not a distributed-filesystem transaction.
+```
+
+## scripts/ss_par.py :: parse
+
+`parse(path, inputs)`
+
+Map SS3 parameter groups in control-file order to all 131 native values.
+
+Source: [scripts/ss_par.py:6](../scripts/ss_par.py#L6)
+
+Contract details:
+
+```text
+Map SS3 parameter groups in control-file order to all 131 native values.
+
+The mapping covers 20 biology, 5 stock-recruit, 1 initial-F, 8 Q and
+40 selectivity values (including expanded time blocks), plus 20 early and
+37 main recruitment deviations. Dummy, checksum and forecast entries are
+recorded separately. Unknown, duplicate, missing, nonfinite or incorrectly
+sized groups are rejected. The .par header describes its saved SS3 fit;
+it does not prove that these were the original pre-optimization values.
 ```
 
 ## scripts/swordfish_inputs.py :: Row
@@ -5007,6 +5055,46 @@ Source: [tests/test_runtime.py:45](../tests/test_runtime.py#L45)
 A timed-out stage must stop its process group and retain a failure log record.
 
 Source: [tests/test_runtime.py:56](../tests/test_runtime.py#L56)
+
+## tests/test_ss_par.py :: ParameterFileTests
+
+`ParameterFileTests`
+
+Exercise native group ordering, recruitment constraints and malformed input rejection.
+
+Source: [tests/test_ss_par.py:13](../tests/test_ss_par.py#L13)
+
+## tests/test_ss_par.py :: ParameterFileTests.setUpClass
+
+`setUpClass(cls)`
+
+Construct a synthetic .par from control starts; no Jon-provided file is needed.
+
+Source: [tests/test_ss_par.py:16](../tests/test_ss_par.py#L16)
+
+## tests/test_ss_par.py :: ParameterFileTests.read
+
+`read(self, text)`
+
+Parse temporary text through the public file reader and actual control schema.
+
+Source: [tests/test_ss_par.py:33](../tests/test_ss_par.py#L33)
+
+## tests/test_ss_par.py :: ParameterFileTests.test_complete_mapping
+
+`test_complete_mapping(self)`
+
+Check every native mapping, expanded selectivity block and deviation year.
+
+Source: [tests/test_ss_par.py:39](../tests/test_ss_par.py#L39)
+
+## tests/test_ss_par.py :: ParameterFileTests.test_malformed_groups
+
+`test_malformed_groups(self)`
+
+Reject missing/duplicate/extra/nonfinite groups and nonzero recruitment sums.
+
+Source: [tests/test_ss_par.py:54](../tests/test_ss_par.py#L54)
 
 ## scripts/plot_projection_uncertainty.R :: draw
 

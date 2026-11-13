@@ -1,0 +1,7 @@
+Free parameters: 84; main recruitment deviations constrained to sum zero.
+Optimizing joint likelihood from SS3 parameter values...
+L-BFGS: outer eval =   1, fx =     289.299639, |grad| = [1;31m    0.004217[0m
+L-BFGS: outer eval =  25, fx =     289.299639, |grad| = [1;31m    0.000179[0m
+L-BFGS: outer eval =  27, fx =     289.299639, |grad| = [1;32m    0.000094[0m
+L-BFGS: stopped at first iterate satisfying requested fixed-effect gradient tolerance.
+Objective: 289.299639; gradient norm: 0.000094; seconds: 10.710309
