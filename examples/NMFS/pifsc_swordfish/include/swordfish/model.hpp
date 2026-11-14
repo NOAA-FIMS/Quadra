@@ -42,6 +42,10 @@ public:
   ParameterValues<double> baseline;
   Deviations<double> baseline_deviations;
   std::vector<FreeParameter> free;
+  /// Evaluation-scoped numeric biology; disable only for
+  /// validation/benchmarking. Biological estimation flags automatically select
+  /// the differentiable fallback.
+  bool use_fixed_biology_cache = true;
   /// Build the fitting-coordinate schema from estimated control parameters and
   /// independent early/main recruitment deviations.
   /// @param input Input schema transferred into the owning model adapter.
@@ -157,8 +161,11 @@ public:
   template <class T>
   LikelihoodResult<T> likelihood(const std::vector<T> &x) const {
     auto decoded = decode(x);
-    const auto run = run_population(data, decoded.first, decoded.second);
-    return evaluate_likelihood(data, decoded.first, decoded.second, run);
+    FixedBiology fixed(data, baseline, use_fixed_biology_cache);
+    const auto run =
+        run_population(data, decoded.first, decoded.second, &fixed);
+    return evaluate_likelihood(data, decoded.first, decoded.second, run, 5,
+                               &fixed);
   }
   /// Calculate standard management reference points at the supplied model
   /// state. This derived-output operation uses the same decoding and

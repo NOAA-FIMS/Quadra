@@ -1708,6 +1708,130 @@
     },
     {
       "language": "C++",
+      "file": "include/swordfish/fixed_biology.hpp",
+      "line": 11,
+      "name": "NumericLengthKeys",
+      "kind": "alias",
+      "signature": "std::array<std::vector<std::vector<double>>, 2>",
+      "parameters": [],
+      "fields": [],
+      "documentation": "Numeric sex/age/length probabilities for one within-year sampling time.",
+      "purpose": "Ordinary double-valued sex/age/length probabilities for a single within-year time; no AD tape state."
+    },
+    {
+      "language": "C++",
+      "file": "include/swordfish/fixed_biology.hpp",
+      "line": 19,
+      "name": "FixedBiology",
+      "kind": "class/struct",
+      "signature": "FixedBiology",
+      "parameters": [],
+      "fields": [
+        {
+          "name": "data",
+          "type": "const InputData &"
+        },
+        {
+          "name": "parameters",
+          "type": "ParameterValues<double>"
+        },
+        {
+          "name": "usable",
+          "type": "bool"
+        },
+        {
+          "name": "keys",
+          "type": "std::map<double, NumericLengthKeys>"
+        },
+        {
+          "name": "beginning_weights",
+          "type": "std::map<double, State<double>>"
+        },
+        {
+          "name": "length_weights",
+          "type": "std::array<std::vector<double>, 2>"
+        },
+        {
+          "name": "mature_weights",
+          "type": "std::array<double, nage>"
+        }
+      ],
+      "documentation": "A small evaluation-scoped workspace for biology whose parameters are fixed.\nKeeping the dependency check explicit makes the fast path conservative:\nestimating any biological parameter disables the entire numeric workspace.\nThe small native parameter snapshot is owned; input data must outlive this\nworkspace. Values are recomputed for each evaluation, so changed inputs\ncannot leave stale persistent state. Only ordinary doubles are stored.",
+      "purpose": "Evaluation-scoped numeric biology workspace shared by population and observations. Owns the parameter snapshot, borrows input data, and disables itself conservatively when biology is estimated."
+    },
+    {
+      "language": "C++",
+      "file": "include/swordfish/fixed_biology.hpp",
+      "line": 30,
+      "name": "FixedBiology::FixedBiology",
+      "kind": "function",
+      "signature": "FixedBiology::FixedBiology(const InputData & d, const ParameterValues<double> & p, bool requested)",
+      "parameters": [
+        {
+          "name": "d",
+          "type": "const InputData &"
+        },
+        {
+          "name": "p",
+          "type": "const ParameterValues<double> &"
+        },
+        {
+          "name": "requested",
+          "type": "bool"
+        }
+      ],
+      "fields": [],
+      "documentation": "Check biological estimation flags before calculating any cached quantity.",
+      "purpose": "Check biological estimation flags before precomputing ordinary length weights and mature weights; no cross-evaluation AD state is retained."
+    },
+    {
+      "language": "C++",
+      "file": "include/swordfish/fixed_biology.hpp",
+      "line": 49,
+      "name": "FixedBiology::enabled",
+      "kind": "function",
+      "signature": "bool FixedBiology::enabled() const",
+      "parameters": [],
+      "fields": [],
+      "documentation": "True only when all biological parameter dependencies are fixed.",
+      "purpose": "Report whether all biological dependencies are fixed and the numeric workspace was requested."
+    },
+    {
+      "language": "C++",
+      "file": "include/swordfish/fixed_biology.hpp",
+      "line": 51,
+      "name": "FixedBiology::length_keys",
+      "kind": "function",
+      "signature": "const NumericLengthKeys &(double) FixedBiology::length_keys(double time)",
+      "parameters": [
+        {
+          "name": "time",
+          "type": "double"
+        }
+      ],
+      "fields": [],
+      "documentation": "Compute a time's numeric age-length keys once, shared across consumers.",
+      "purpose": "Calculate each time-specific sex/age/length probability table once within this evaluation; reject use when biological parameters are estimated."
+    },
+    {
+      "language": "C++",
+      "file": "include/swordfish/fixed_biology.hpp",
+      "line": 66,
+      "name": "FixedBiology::weights_at_age",
+      "kind": "function",
+      "signature": "const State<double> &(double) FixedBiology::weights_at_age(double time)",
+      "parameters": [
+        {
+          "name": "time",
+          "type": "double"
+        }
+      ],
+      "fields": [],
+      "documentation": "Compute beginning-season individual weights once for each requested time.",
+      "purpose": "Calculate individual beginning-season weights once per within-year time for fixed biological settings."
+    },
+    {
+      "language": "C++",
       "file": "include/swordfish/likelihood.hpp",
       "line": 26,
       "name": "likelihood_weight",
@@ -1862,10 +1986,10 @@
     {
       "language": "C++",
       "file": "include/swordfish/likelihood.hpp",
-      "line": 135,
+      "line": 137,
       "name": "sampled_lengths",
       "kind": "function",
-      "signature": "std::array<std::vector<T>, 2> sampled_lengths(const InputData & data, const ParameterValues<T> & p, const PopulationSeason<T> & row, const std::vector<T> & curve, const ObservationTime & time, const LengthKeys<T> * cached)",
+      "signature": "std::array<std::vector<T>, 2> sampled_lengths(const InputData & data, const ParameterValues<T> & p, const PopulationSeason<T> & row, const std::vector<T> & curve, const ObservationTime & time, const LengthKeys<T> * cached, const NumericLengthKeys * fixed)",
       "parameters": [
         {
           "name": "data",
@@ -1890,6 +2014,10 @@
         {
           "name": "cached",
           "type": "const LengthKeys<T> *"
+        },
+        {
+          "name": "fixed",
+          "type": "const NumericLengthKeys *"
         }
       ],
       "fields": [],
@@ -1899,7 +2027,7 @@
     {
       "language": "C++",
       "file": "include/swordfish/likelihood.hpp",
-      "line": 174,
+      "line": 188,
       "name": "profiled_log_q",
       "kind": "function",
       "signature": "T profiled_log_q(const std::vector<T> & log_base, const std::vector<double> & observed, const std::vector<double> & se, const std::vector<bool> & use, bool bias_adjust)",
@@ -1932,7 +2060,7 @@
     {
       "language": "C++",
       "file": "include/swordfish/likelihood.hpp",
-      "line": 214,
+      "line": 228,
       "name": "lognormal_index_nll",
       "kind": "function",
       "signature": "T lognormal_index_nll(const T & log_expected, double observed, double se, int sd_offset)",
@@ -1961,7 +2089,7 @@
     {
       "language": "C++",
       "file": "include/swordfish/likelihood.hpp",
-      "line": 232,
+      "line": 246,
       "name": "multinomial_deviance",
       "kind": "function",
       "signature": "T multinomial_deviance(const std::vector<double> & observed, const std::vector<T> & expected, double n)",
@@ -1986,7 +2114,7 @@
     {
       "language": "C++",
       "file": "include/swordfish/likelihood.hpp",
-      "line": 256,
+      "line": 270,
       "name": "stabilized_catch_nll",
       "kind": "function",
       "signature": "T stabilized_catch_nll(double observed, const T & predicted, double se)",
@@ -2011,7 +2139,7 @@
     {
       "language": "C++",
       "file": "include/swordfish/likelihood.hpp",
-      "line": 275,
+      "line": 289,
       "name": "selectivity_soft_bounds",
       "kind": "function",
       "signature": "T selectivity_soft_bounds(const InputData & data, const ParameterValues<T> & p)",
@@ -2032,7 +2160,7 @@
     {
       "language": "C++",
       "file": "include/swordfish/likelihood.hpp",
-      "line": 301,
+      "line": 315,
       "name": "recruitment_nll",
       "kind": "function",
       "signature": "T recruitment_nll(const InputData & data, const ParameterValues<T> & p, const Deviations<T> & dev)",
@@ -2057,7 +2185,7 @@
     {
       "language": "C++",
       "file": "include/swordfish/likelihood.hpp",
-      "line": 326,
+      "line": 340,
       "name": "IndexFit",
       "kind": "class/struct",
       "signature": "IndexFit",
@@ -2110,7 +2238,7 @@
     {
       "language": "C++",
       "file": "include/swordfish/likelihood.hpp",
-      "line": 336,
+      "line": 350,
       "name": "LengthFit",
       "kind": "class/struct",
       "signature": "LengthFit",
@@ -2159,7 +2287,7 @@
     {
       "language": "C++",
       "file": "include/swordfish/likelihood.hpp",
-      "line": 349,
+      "line": 363,
       "name": "LikelihoodResult",
       "kind": "class/struct",
       "signature": "LikelihoodResult",
@@ -2188,10 +2316,10 @@
     {
       "language": "C++",
       "file": "include/swordfish/likelihood.hpp",
-      "line": 372,
+      "line": 387,
       "name": "evaluate_likelihood",
       "kind": "function",
-      "signature": "LikelihoodResult<T> evaluate_likelihood(const InputData & data, const ParameterValues<T> & p, const Deviations<T> & deviations, const PopulationRun<T> & run, int phase)",
+      "signature": "LikelihoodResult<T> evaluate_likelihood(const InputData & data, const ParameterValues<T> & p, const Deviations<T> & deviations, const PopulationRun<T> & run, int phase, FixedBiology * fixed)",
       "parameters": [
         {
           "name": "data",
@@ -2212,6 +2340,10 @@
         {
           "name": "phase",
           "type": "int"
+        },
+        {
+          "name": "fixed",
+          "type": "FixedBiology *"
         }
       ],
       "fields": [],
@@ -2262,7 +2394,7 @@
     {
       "language": "C++",
       "file": "include/swordfish/local_curvature.hpp",
-      "line": 17,
+      "line": 18,
       "name": "validated_local_curvature",
       "kind": "function",
       "signature": "LocalCurvature validated_local_curvature(const Eigen::MatrixXd & coarse, const Eigen::MatrixXd & fine)",
@@ -2277,7 +2409,7 @@
         }
       ],
       "fields": [],
-      "documentation": "Validate two finite-difference Hessians and invert positive local curvature.\nBoth steps must be symmetric/stable to 1e-5 relative norm, positive definite,\nand give marginal SEs stable to 0.1%. Singular/indefinite curvature is rejected;\nno eigenvalue clipping, ridge, diagonal-only approximation or saved covariance.",
+      "documentation": "Validate two finite-difference Hessians and invert positive local curvature.\nBoth steps must be symmetric/stable to 1e-5 relative norm, positive\ndefinite, and give marginal SEs stable to 0.1%. Singular/indefinite\ncurvature is rejected; no eigenvalue clipping, ridge, diagonal-only\napproximation or saved covariance.",
       "purpose": "Validate two finite-difference Hessians for finite values, symmetry, step stability and positive definiteness, then invert without regularization and check SE stability."
     },
     {
@@ -2304,6 +2436,10 @@
         {
           "name": "free",
           "type": "std::vector<FreeParameter>"
+        },
+        {
+          "name": "use_fixed_biology_cache",
+          "type": "bool"
         }
       ],
       "documentation": "Quadra model adapter for the 84-coordinate joint penalized-likelihood\ntarget; historical recruitment deviations are optimized, not\nLaplace-integrated.\n@details This is joint penalized maximum likelihood: recruitment deviations\nare optimized parameters, not Laplace-integrated latent variables. The logit\nis only an optimization reparameterization; no transformation-density\nJacobian is added. The dependent final main recruitment deviation is\nreconstructed after transforming the independent coordinates.",
@@ -2345,7 +2481,7 @@
     {
       "language": "C++",
       "file": "include/swordfish/model.hpp",
-      "line": 52,
+      "line": 56,
       "name": "SwordfishModel::SwordfishModel",
       "kind": "function",
       "signature": "SwordfishModel::SwordfishModel(InputData input, ParameterValues<double> p, Deviations<double> deviations)",
@@ -2370,7 +2506,7 @@
     {
       "language": "C++",
       "file": "include/swordfish/model.hpp",
-      "line": 73,
+      "line": 77,
       "name": "SwordfishModel::parameter_names_impl",
       "kind": "function",
       "signature": "std::vector<std::string> SwordfishModel::parameter_names_impl() const",
@@ -2382,7 +2518,7 @@
     {
       "language": "C++",
       "file": "include/swordfish/model.hpp",
-      "line": 83,
+      "line": 87,
       "name": "SwordfishModel::initial_vector",
       "kind": "function",
       "signature": "std::vector<double> SwordfishModel::initial_vector() const",
@@ -2394,7 +2530,7 @@
     {
       "language": "C++",
       "file": "include/swordfish/model.hpp",
-      "line": 97,
+      "line": 101,
       "name": "SwordfishModel::initial_parameters",
       "kind": "function",
       "signature": "quadra::ParameterVector SwordfishModel::initial_parameters() const",
@@ -2406,7 +2542,7 @@
     {
       "language": "C++",
       "file": "include/swordfish/model.hpp",
-      "line": 121,
+      "line": 125,
       "name": "SwordfishModel::decode",
       "kind": "function",
       "signature": "std::pair<ParameterValues<T>, Deviations<T>> SwordfishModel::decode(const std::vector<T> & x) const",
@@ -2423,7 +2559,7 @@
     {
       "language": "C++",
       "file": "include/swordfish/model.hpp",
-      "line": 158,
+      "line": 162,
       "name": "SwordfishModel::likelihood",
       "kind": "function",
       "signature": "LikelihoodResult<T> SwordfishModel::likelihood(const std::vector<T> & x) const",
@@ -2440,7 +2576,7 @@
     {
       "language": "C++",
       "file": "include/swordfish/model.hpp",
-      "line": 169,
+      "line": 176,
       "name": "SwordfishModel::reference_points",
       "kind": "function",
       "signature": "std::vector<std::pair<std::string, BenchmarkResult>> SwordfishModel::reference_points(const std::vector<double> & x) const",
@@ -2457,7 +2593,7 @@
     {
       "language": "C++",
       "file": "include/swordfish/model.hpp",
-      "line": 181,
+      "line": 188,
       "name": "SwordfishModel::operator()",
       "kind": "function",
       "signature": "T SwordfishModel::operator()(const std::vector<T> & x) const",
@@ -2474,7 +2610,7 @@
     {
       "language": "C++",
       "file": "include/swordfish/model.hpp",
-      "line": 193,
+      "line": 200,
       "name": "SwordfishModel::evaluate_impl",
       "kind": "function",
       "signature": "T SwordfishModel::evaluate_impl(const std::vector<T> & x, quadra::ModelReportContext & context) const",
@@ -2533,7 +2669,7 @@
     {
       "language": "C++",
       "file": "include/swordfish/native_io.hpp",
-      "line": 24,
+      "line": 27,
       "name": "native_array",
       "kind": "function",
       "signature": "void native_array(std::istream & in, std::array<T, N> & a)",
@@ -2548,13 +2684,13 @@
         }
       ],
       "fields": [],
-      "documentation": "Fill fixed arrays from their statically declared schema width.",
+      "documentation": "",
       "purpose": "Read a statically sized numeric array from the typed native stream."
     },
     {
       "language": "C++",
       "file": "include/swordfish/native_io.hpp",
-      "line": 28,
+      "line": 32,
       "name": "native_vector",
       "kind": "function",
       "signature": "void native_vector(std::istream & in, std::vector<double> & v)",
@@ -2575,7 +2711,7 @@
     {
       "language": "C++",
       "file": "include/swordfish/native_io.hpp",
-      "line": 32,
+      "line": 39,
       "name": "native_table",
       "kind": "function",
       "signature": "void native_table(std::istream & in, std::vector<std::array<T, N>> & v)",
@@ -2590,13 +2726,13 @@
         }
       ],
       "fields": [],
-      "documentation": "Read a length-prefixed fixed-width settings table.",
+      "documentation": "",
       "purpose": "Read a length-prefixed fixed-width numeric settings table."
     },
     {
       "language": "C++",
       "file": "include/swordfish/native_io.hpp",
-      "line": 39,
+      "line": 50,
       "name": "read_native_input",
       "kind": "function",
       "signature": "std::pair<InputData, Deviations<double>> read_native_input(std::istream & in)",
@@ -2607,13 +2743,13 @@
         }
       ],
       "fields": [],
-      "documentation": "Read a native state and its initial deviations from a validated frontend stream.\nC++ repeats finite/count/duplicate/shape checks and invokes InputData validation.\nThe public JSON format is documented by native_input.py; transport order is\nprivate to this version. The initial parameter map uses each native value.",
+      "documentation": "",
       "purpose": "Read the complete native model data and explicit historical deviations without generated factories or SS3 fixtures; validate finite values, counts, constraints and supported dimensions."
     },
     {
       "language": "C++",
       "file": "include/swordfish/population.hpp",
-      "line": 22,
+      "line": 24,
       "name": "Deviations",
       "kind": "alias",
       "signature": "std::map<int, T>",
@@ -2625,7 +2761,7 @@
     {
       "language": "C++",
       "file": "include/swordfish/population.hpp",
-      "line": 29,
+      "line": 31,
       "name": "SeasonalBiology",
       "kind": "class/struct",
       "signature": "SeasonalBiology",
@@ -2654,10 +2790,10 @@
     {
       "language": "C++",
       "file": "include/swordfish/population.hpp",
-      "line": 49,
+      "line": 52,
       "name": "seasonal_biology",
       "kind": "function",
-      "signature": "SeasonalBiology<T> seasonal_biology(const InputData & data, const ParameterValues<T> & p, const std::vector<std::vector<T>> & curves, int season)",
+      "signature": "SeasonalBiology<T> seasonal_biology(const InputData & data, const ParameterValues<T> & p, const std::vector<std::vector<T>> & curves, int season, FixedBiology * fixed)",
       "parameters": [
         {
           "name": "data",
@@ -2674,6 +2810,10 @@
         {
           "name": "season",
           "type": "int"
+        },
+        {
+          "name": "fixed",
+          "type": "FixedBiology *"
         }
       ],
       "fields": [],
@@ -2683,7 +2823,7 @@
     {
       "language": "C++",
       "file": "include/swordfish/population.hpp",
-      "line": 93,
+      "line": 116,
       "name": "fishing_at_age",
       "kind": "function",
       "signature": "std::vector<State<T>> fishing_at_age(const std::array<T, nfishing> & apical, const SeasonalBiology<T> & b)",
@@ -2704,7 +2844,7 @@
     {
       "language": "C++",
       "file": "include/swordfish/population.hpp",
-      "line": 106,
+      "line": 129,
       "name": "HybridResult",
       "kind": "class/struct",
       "signature": "HybridResult",
@@ -2729,7 +2869,7 @@
     {
       "language": "C++",
       "file": "include/swordfish/population.hpp",
-      "line": 111,
+      "line": 134,
       "name": "HybridResult::HybridResult<T>",
       "kind": "function",
       "signature": "HybridResult::HybridResult<T>()",
@@ -2741,7 +2881,7 @@
     {
       "language": "C++",
       "file": "include/swordfish/population.hpp",
-      "line": 132,
+      "line": 155,
       "name": "hybrid_catch",
       "kind": "function",
       "signature": "HybridResult<T> hybrid_catch(const InputData & data, const State<T> & numbers, const SeasonalBiology<T> & biology, const std::array<double, nfishing> & observed, double duration)",
@@ -2774,7 +2914,7 @@
     {
       "language": "C++",
       "file": "include/swordfish/population.hpp",
-      "line": 234,
+      "line": 257,
       "name": "recruitment_bias",
       "kind": "function",
       "signature": "double recruitment_bias(const InputData & data, int year)",
@@ -2795,7 +2935,7 @@
     {
       "language": "C++",
       "file": "include/swordfish/population.hpp",
-      "line": 264,
+      "line": 287,
       "name": "adjusted_recruitment",
       "kind": "function",
       "signature": "T adjusted_recruitment(const InputData & data, const ParameterValues<T> & p, const Deviations<T> & dev, int year, const T & expected)",
@@ -2828,7 +2968,7 @@
     {
       "language": "C++",
       "file": "include/swordfish/population.hpp",
-      "line": 288,
+      "line": 311,
       "name": "seasonal_ssb",
       "kind": "function",
       "signature": "T seasonal_ssb(const InputData & data, const State<T> & numbers, const std::vector<State<T>> & fishing, const SeasonalBiology<T> & biology, int season)",
@@ -2861,7 +3001,7 @@
     {
       "language": "C++",
       "file": "include/swordfish/population.hpp",
-      "line": 310,
+      "line": 333,
       "name": "Equilibrium",
       "kind": "class/struct",
       "signature": "Equilibrium",
@@ -2886,7 +3026,7 @@
     {
       "language": "C++",
       "file": "include/swordfish/population.hpp",
-      "line": 330,
+      "line": 353,
       "name": "equilibrium",
       "kind": "function",
       "signature": "Equilibrium<T> equilibrium(const InputData & data, const ParameterValues<T> & p, const std::array<SeasonalBiology<T>, 4> & biology, const std::array<std::array<T, nfishing>, 4> & apical, const T & recruitment)",
@@ -2919,7 +3059,7 @@
     {
       "language": "C++",
       "file": "include/swordfish/population.hpp",
-      "line": 386,
+      "line": 409,
       "name": "InitialPopulation",
       "kind": "class/struct",
       "signature": "InitialPopulation",
@@ -2944,7 +3084,7 @@
     {
       "language": "C++",
       "file": "include/swordfish/population.hpp",
-      "line": 406,
+      "line": 429,
       "name": "initialize_population",
       "kind": "function",
       "signature": "InitialPopulation<T> initialize_population(const InputData & data, const ParameterValues<T> & p, const Deviations<T> & deviations, const std::array<SeasonalBiology<T>, 4> & biology)",
@@ -2973,7 +3113,7 @@
     {
       "language": "C++",
       "file": "include/swordfish/population.hpp",
-      "line": 453,
+      "line": 476,
       "name": "PopulationSeason",
       "kind": "class/struct",
       "signature": "PopulationSeason",
@@ -3026,7 +3166,7 @@
     {
       "language": "C++",
       "file": "include/swordfish/population.hpp",
-      "line": 466,
+      "line": 489,
       "name": "PopulationRun",
       "kind": "class/struct",
       "signature": "PopulationRun",
@@ -3047,10 +3187,10 @@
     {
       "language": "C++",
       "file": "include/swordfish/population.hpp",
-      "line": 483,
+      "line": 508,
       "name": "run_population",
       "kind": "function",
-      "signature": "PopulationRun<T> run_population(const InputData & data, const ParameterValues<T> & p, const Deviations<T> & deviations)",
+      "signature": "PopulationRun<T> run_population(const InputData & data, const ParameterValues<T> & p, const Deviations<T> & deviations, FixedBiology * fixed)",
       "parameters": [
         {
           "name": "data",
@@ -3063,6 +3203,10 @@
         {
           "name": "deviations",
           "type": "const Deviations<T> &"
+        },
+        {
+          "name": "fixed",
+          "type": "FixedBiology *"
         }
       ],
       "fields": [],
@@ -3341,7 +3485,7 @@
     {
       "language": "C++",
       "file": "include/swordfish/reference_uncertainty.hpp",
-      "line": 17,
+      "line": 19,
       "name": "ReferenceEstimate",
       "kind": "class/struct",
       "signature": "ReferenceEstimate",
@@ -3368,13 +3512,13 @@
           "type": "bool"
         }
       ],
-      "documentation": "One reference-point quantity with native units; proportions get bounded intervals.",
+      "documentation": "One reference-point quantity with native units; proportions get bounded\nintervals.",
       "purpose": "One flattened management reference-point quantity, native units, point estimate and proportion-interval flag."
     },
     {
       "language": "C++",
       "file": "include/swordfish/reference_uncertainty.hpp",
-      "line": 26,
+      "line": 29,
       "name": "reference_estimates",
       "kind": "function",
       "signature": "std::vector<ReferenceEstimate> reference_estimates(const SwordfishModel & model, const std::vector<double> & x)",
@@ -3389,13 +3533,13 @@
         }
       ],
       "fields": [],
-      "documentation": "Flatten all six standard quantities for each benchmark into a stable 24-row order.\nKnown unfished zeros/SPR=1 and target SPR=.2 are exact constants. Btgt20 raw\nSPR is .2/h under the supported positive Beverton-Holt equilibrium, avoiding\nspurious root-rounding derivatives when h is fixed.",
+      "documentation": "",
       "purpose": "Flatten all six quantities for each of four model reference points; enforce known structural zeros and target proportions to avoid numerical root noise."
     },
     {
       "language": "C++",
       "file": "include/swordfish/reference_uncertainty.hpp",
-      "line": 42,
+      "line": 61,
       "name": "write_uncertainty_matrix",
       "kind": "function",
       "signature": "void write_uncertainty_matrix(const std::filesystem::path & path, const Eigen::MatrixXd & matrix, const std::vector<std::string> & rows, const std::vector<std::string> & columns)",
@@ -3418,13 +3562,13 @@
         }
       ],
       "fields": [],
-      "documentation": "Write a finite labeled matrix, retaining full coordinate/output correlations.",
+      "documentation": "Write a finite labeled matrix, retaining full coordinate/output\ncorrelations.",
       "purpose": "Write a finite, dimension-checked labeled matrix with all coordinate/output correlations retained."
     },
     {
       "language": "C++",
       "file": "include/swordfish/reference_uncertainty.hpp",
-      "line": 56,
+      "line": 89,
       "name": "write_reference_point_uncertainty",
       "kind": "function",
       "signature": "void write_reference_point_uncertainty(SwordfishModel & model, const std::vector<double> & x, const std::filesystem::path & folder, std::ostream & progress)",
@@ -3447,7 +3591,7 @@
         }
       ],
       "fields": [],
-      "documentation": "Calculate fresh curvature and propagate J V J-transpose for this fitted model.\nThe caller must have verified convergence. Every estimate uses the same native\nparameter/deviation decoding and profiled Q as the fit. Hessian and Jacobian\nchecks at 1e-4 and 5e-5 reject numerical instability. Outputs are conditional\nlocal parameter intervals; no forecast process, bootstrap or model uncertainty.",
+      "documentation": "Calculate fresh curvature and propagate J V J-transpose for this fitted\nmodel. The caller must have verified convergence. Every estimate uses the\nsame native parameter/deviation decoding and profiled Q as the fit. Hessian\nand Jacobian checks at 1e-4 and 5e-5 reject numerical instability. Outputs\nare conditional local parameter intervals; no forecast process, bootstrap or\nmodel uncertainty.",
       "purpose": "Compute fresh two-step AD-gradient curvature and two-step reference-point Jacobians, propagate the full covariance, and write validated SEs, CVs and 95% local intervals without SS3 files or saved covariance."
     },
     {
@@ -4890,6 +5034,39 @@
       "fields": [],
       "documentation": "Run test dynamics; return zero on success and nonzero on a failed check or\ninvalid input.",
       "purpose": "Run test dynamics; return zero on success and nonzero on a failed check or invalid input."
+    },
+    {
+      "language": "C++",
+      "file": "tests/test_fixed_biology.cpp",
+      "line": 10,
+      "name": "compare_paths",
+      "kind": "function",
+      "signature": "void compare_paths(swordfish::SwordfishModel & model, const std::vector<double> & point)",
+      "parameters": [
+        {
+          "name": "model",
+          "type": "swordfish::SwordfishModel &"
+        },
+        {
+          "name": "point",
+          "type": "const std::vector<double> &"
+        }
+      ],
+      "fields": [],
+      "documentation": "Compare the entire objective/gradient, keeping the original equations as the\noracle.",
+      "purpose": "Compare the full cached and original objectives and all coordinate gradients at the same model state, using the original equations as the validation oracle."
+    },
+    {
+      "language": "C++",
+      "file": "tests/test_fixed_biology.cpp",
+      "line": 27,
+      "name": "main",
+      "kind": "function",
+      "signature": "int main()",
+      "parameters": [],
+      "fields": [],
+      "documentation": "Check cached/uncached agreement, cache invalidation and estimated-growth\nfallback.",
+      "purpose": "Run test fixed biology; return zero on success and nonzero on a failed check or invalid input."
     },
     {
       "language": "C++",

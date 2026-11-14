@@ -16,6 +16,10 @@ Add `--uncertainty` to calculate reference-point standard errors, CVs and 95%
 intervals from fresh full local covariance; see
 [REFERENCE_POINT_UNCERTAINTY.md](REFERENCE_POINT_UNCERTAINTY.md).
 
+Fixed biological calculations now share an evaluation-scoped numeric workspace.
+Estimating biology automatically retains its full differentiable path. See
+[PERFORMANCE.md](PERFORMANCE.md) for the design, benchmarks and validation.
+
 An additional control-input initialization experiment now recovers the same
 optimum without reading SS3 fitted estimates or covariance. It needs an explicit
 catch-feasibility stage before evaluating the full likelihood. See

@@ -1,0 +1,379 @@
+python3 scripts/prepare_model.py
+{
+  "raw_catch_rows": 2223,
+  "raw_index_rows": 164,
+  "raw_length_samples": 446,
+  "included_length_samples": 351,
+  "control_parameters": 74,
+  "fixed_parameter_differences": [
+    {
+      "parameter": "L_at_Amin_Mal_GP_1",
+      "control_initial": 83.2,
+      "report_value": 83.4
+    }
+  ],
+  "status": "Original inputs parsed; report fixtures enable conditional dynamics validation only"
+}
+python3 scripts/prepare_biology.py
+Prepared 194290 biological comparisons using 74 explicitly mapped fitted parameters.
+python3 scripts/prepare_population.py
+Prepared original catch inputs and 57 fitted recruitment deviations; no population states used as inputs.
+python3 scripts/prepare_likelihood.py
+Prepared 12 objective components, 164 index fits and 351 length fits as targets only.
+python3 scripts/prepare_biology.py
+Prepared 194290 biological comparisons using 74 explicitly mapped fitted parameters.
+c++ -Iinclude -Ibuild -I../../.. -std=c++17 -O2 -Wall -Wextra -Wpedantic -MMD -MP src/audit_dynamics.cpp -o build/audit_dynamics
+./build/audit_dynamics build/ss3_replay.txt build/dynamics_audit.csv build/biology_fitted_parameters.txt
+age1plus_biomass: PASS (188, max error 0.190574)
+begin_numbers: PASS (6016, max error 0.00230142)
+catch_numbers: PASS (114304, max error 0.000112028)
+independent_body_weight: PASS (6016, max error 0.000489387)
+independent_f_at_age: PASS (114304, max error 2.33855e-06)
+independent_mature_weight: PASS (16, max error 0.000488906)
+mass_balance: PASS (6016, max error 2.27374e-13)
+mean_length_begin: PASS (120, max error 0.000483137)
+mean_length_mid: PASS (120, max error 0.000496223)
+midseason_numbers: PASS (6016, max error 0.00251866)
+spawning_biomass_ss33020: PASS (47, max error 0.0655783)
+total_biomass: PASS (188, max error 0.190574)
+c++ -Iinclude -Ibuild -I../../.. -std=c++17 -O2 -Wall -Wextra -Wpedantic -MMD -MP src/audit_biology.cpp -o build/audit_biology
+./build/audit_biology build/ss3_biology_fixtures.txt build/biology_audit.csv
+age_selectivity: PASS (162432, max error 9.92624e-06, tolerance fraction 0.683021, case 1994/2/0/1/1/1/0)
+alk: PASS (13056, max error 4.99453e-07, tolerance fraction 0.210172, case 2021/2/2/2/0/7/36)
+effective_parameter: PASS (1598, max error 0, tolerance fraction 0, case )
+length_begin: PASS (128, max error 0.000483137, tolerance fraction 0.10891, case 2021/1/0/2/0/2/0)
+length_mid: PASS (128, max error 0.000496223, tolerance fraction 0.110585, case 2021/3/0/2/0/1/0)
+length_selectivity: PASS (9588, max error 1.37394e-05, tolerance fraction 0.890678, case 1994/0/0/1/1/0/17)
+mature_weight: PASS (64, max error 0.000488906, tolerance fraction 0.120284, case 2021/1/0/1/0/5/0)
+sd_begin: PASS (128, max error 4.83137e-05, tolerance fraction 0.035737, case 2021/1/0/2/0/2/0)
+sd_mid: PASS (128, max error 4.96223e-05, tolerance fraction 0.0352913, case 2021/1/0/2/0/2/0)
+selected_length: PASS (3328, max error 0.000585718, tolerance fraction 0.1211, case 2021/3/0/2/3/1/0)
+selected_weight: PASS (3456, max error 0.000789091, tolerance fraction 0.140439, case 2021/2/0/1/8/6/0)
+weight_begin: PASS (128, max error 0.000489387, tolerance fraction 0.113494, case 2021/1/0/1/0/5/0)
+weight_mid: PASS (128, max error 0.000499929, tolerance fraction 0.109411, case 2021/2/0/1/0/5/0)
+python3 scripts/prepare_population.py
+Prepared original catch inputs and 57 fitted recruitment deviations; no population states used as inputs.
+c++ -Iinclude -Ibuild -I../../.. -std=c++17 -O2 -Wall -Wextra -Wpedantic -MMD -MP src/audit_population.cpp -o build/audit_population
+./build/audit_population build/biology_fitted_parameters.txt build/population_fitted_deviations.txt build/initialization_targets.txt build/ss3_replay.txt build/population_audit.csv build/population_trajectory.csv
+age1plus_biomass: PASS (188, max error 0.186635, tolerance fraction 0.083099)
+apical_f: PASS (3572, max error 1.49891e-06, tolerance fraction 0.181862)
+begin_numbers: PASS (6016, max error 0.000845816, tolerance fraction 0.240611)
+catch_numbers: PASS (114304, max error 7.18009e-05, tolerance fraction 0.367072)
+f_at_age: PASS (114304, max error 2.46281e-06, tolerance fraction 0.378086)
+initial_equilibrium_numbers: PASS (32, max error 0.000951449, tolerance fraction 0.256459)
+initial_historical_numbers: PASS (32, max error 0.000681454, tolerance fraction 0.173823)
+initial_recruitment: PASS (1, max error 0.000341199, tolerance fraction 0.00290801)
+initial_ssb: PASS (1, max error 0.0353815, tolerance fraction 0.0577121)
+mass_balance: PASS (6016, max error 3.41061e-13, tolerance fraction 0.000490052)
+midseason_numbers: PASS (6016, max error 0.000825297, tolerance fraction 0.21361)
+recruitment: PASS (47, max error 0.00502935, tolerance fraction 0.176037)
+spawning_biomass: PASS (47, max error 0.132876, tolerance fraction 0.120636)
+total_biomass: PASS (188, max error 0.214378, tolerance fraction 0.0959722)
+virgin_numbers: PASS (32, max error 0.00033152, tolerance fraction 0.0723863)
+virgin_recruitment: PASS (1, max error 0.000561274, tolerance fraction 0.00472762)
+virgin_ssb: PASS (1, max error 0.0282149, tolerance fraction 0.0134603)
+python3 scripts/prepare_model.py
+{
+  "raw_catch_rows": 2223,
+  "raw_index_rows": 164,
+  "raw_length_samples": 446,
+  "included_length_samples": 351,
+  "control_parameters": 74,
+  "fixed_parameter_differences": [
+    {
+      "parameter": "L_at_Amin_Mal_GP_1",
+      "control_initial": 83.2,
+      "report_value": 83.4
+    }
+  ],
+  "status": "Original inputs parsed; report fixtures enable conditional dynamics validation only"
+}
+c++ -Iinclude -Ibuild -I../../.. -std=c++17 -O2 -Wall -Wextra -Wpedantic -MMD -MP src/audit_likelihood.cpp -o build/audit_likelihood
+./build/audit_likelihood build/biology_fitted_parameters.txt build/population_fitted_deviations.txt build/likelihood_targets.txt build
+TOTAL: predicted 289.3, SS3 289.3, difference -0.000360627
+Catch: predicted 2.92337e-08, SS3 2.92335e-08, difference 2.01777e-13
+Equil_catch: predicted 0, SS3 0, difference 0
+Survey: predicted -164.951, SS3 -164.951, difference -2.7175e-05
+Length_comp: predicted 481.252, SS3 481.252, difference 0.000427209
+Recruitment: predicted -27.018, SS3 -27.018, difference -3.99268e-05
+InitEQ_Regime: predicted 0, SS3 0, difference 0
+Forecast_Recruitment: predicted 0, SS3 0, difference 0
+Parm_priors: predicted 0, SS3 0, difference 0
+Parm_softbounds: predicted 0.0162792, SS3 0.0162791, difference 1.36905e-07
+Parm_devs: predicted 0, SS3 0, difference 0
+Crash_Pen: predicted 0, SS3 0, difference 0
+component_Catch: PASS (max error 2.01777e-13, tolerance fraction 1.00889e-10)
+component_Crash_Pen: PASS (max error 0, tolerance fraction 0)
+component_Equil_catch: PASS (max error 0, tolerance fraction 0)
+component_Forecast_Recruitment: PASS (max error 0, tolerance fraction 0)
+component_InitEQ_Regime: PASS (max error 0, tolerance fraction 0)
+component_Length_comp: PASS (max error 0.000427209, tolerance fraction 0.0627094)
+component_Parm_devs: PASS (max error 0, tolerance fraction 0)
+component_Parm_priors: PASS (max error 0, tolerance fraction 0)
+component_Parm_softbounds: PASS (max error 1.36905e-07, tolerance fraction 6.84472e-05)
+component_Recruitment: PASS (max error 3.99268e-05, tolerance fraction 0.0175875)
+component_Survey: PASS (max error 2.7175e-05, tolerance fraction 0.00744621)
+component_TOTAL: PASS (max error 0.000360627, tolerance fraction 0.0737026)
+index_base: PASS (max error 0.0190488, tolerance fraction 0.519706)
+index_log_residual: PASS (max error 1.03715e-05, tolerance fraction 0.886334)
+index_nll: PASS (max error 6.0105e-05, tolerance fraction 0.525757)
+index_prediction: PASS (max error 3.50185e-05, tolerance fraction 0.311465)
+index_q: PASS (max error 1.0794e-08, tolerance fraction 0.195291)
+index_se: PASS (max error 0, tolerance fraction 0)
+length_expected_mean: PASS (max error 0.000709251, tolerance fraction 0.292525)
+length_nll: PASS (max error 0.000203213, tolerance fraction 0.139336)
+length_observed_mean: PASS (max error 0.000497621, tolerance fraction 0.206154)
+length_sample_size: PASS (max error 0, tolerance fraction 0)
+c++ -Iinclude -Ibuild -I../../.. -I../../../external/eigen -std=c++17 -O2 -Wall -Wextra -Wpedantic -MMD -MP tests/test_biology.cpp -o build/test_biology
+In file included from tests/test_biology.cpp:1:
+In file included from ../../../core/autodiff/model_gradient.hpp:7:
+In file included from ../../../core/autodiff/../autodiff.hpp:14:
+../../../core/autodiff/../had_quadra.hpp:2320:58: warning: unused parameter 'vertex' [-Wunused-parameter]
+ 2320 | inline bool BatchDirectionHasLocalSignal(const ADVertex &vertex,
+      |                                                          ^
+../../../core/autodiff/../had_quadra.hpp:2321:56: warning: unused parameter 'e1' [-Wunused-parameter]
+ 2321 |                                          const ADEdge &e1, const ADEdge &e2,
+      |                                                        ^
+In file included from tests/test_biology.cpp:1:
+In file included from ../../../core/autodiff/model_gradient.hpp:7:
+In file included from ../../../core/autodiff/../autodiff.hpp:20:
+In file included from ../../../core/autodiff/../../external/eigen/Eigen/Sparse:26:
+In file included from ../../../core/autodiff/../../external/eigen/Eigen/SparseCore:61:
+../../../core/autodiff/../../external/eigen/Eigen/src/SparseCore/TriangularSolver.h:242:13: warning: variable 'count' set but not used [-Wunused-but-set-variable]
+  242 |       Index count = 0;
+      |             ^
+In file included from tests/test_biology.cpp:1:
+In file included from ../../../core/autodiff/model_gradient.hpp:7:
+In file included from ../../../core/autodiff/../autodiff.hpp:20:
+In file included from ../../../core/autodiff/../../external/eigen/Eigen/Sparse:29:
+In file included from ../../../core/autodiff/../../external/eigen/Eigen/SparseLU:35:
+../../../core/autodiff/../../external/eigen/Eigen/src/SparseLU/SparseLU_heap_relax_snode.h:77:9: warning: variable 'nsuper_et_post' set but not used [-Wunused-but-set-variable]
+   77 |   Index nsuper_et_post = 0; // Number of relaxed snodes in postordered etree
+      |         ^
+../../../core/autodiff/../../external/eigen/Eigen/src/SparseLU/SparseLU_heap_relax_snode.h:78:9: warning: variable 'nsuper_et' set but not used [-Wunused-but-set-variable]
+   78 |   Index nsuper_et = 0;      // Number of relaxed snodes in the original etree
+      |         ^
+5 warnings generated.
+c++ -Iinclude -Ibuild -I../../.. -I../../../external/eigen -std=c++17 -O2 -Wall -Wextra -Wpedantic -MMD -MP tests/test_population.cpp -o build/test_population
+In file included from tests/test_population.cpp:1:
+In file included from ../../../core/autodiff/model_gradient.hpp:7:
+In file included from ../../../core/autodiff/../autodiff.hpp:14:
+../../../core/autodiff/../had_quadra.hpp:2320:58: warning: unused parameter 'vertex' [-Wunused-parameter]
+ 2320 | inline bool BatchDirectionHasLocalSignal(const ADVertex &vertex,
+      |                                                          ^
+../../../core/autodiff/../had_quadra.hpp:2321:56: warning: unused parameter 'e1' [-Wunused-parameter]
+ 2321 |                                          const ADEdge &e1, const ADEdge &e2,
+      |                                                        ^
+In file included from tests/test_population.cpp:1:
+In file included from ../../../core/autodiff/model_gradient.hpp:7:
+In file included from ../../../core/autodiff/../autodiff.hpp:20:
+In file included from ../../../core/autodiff/../../external/eigen/Eigen/Sparse:26:
+In file included from ../../../core/autodiff/../../external/eigen/Eigen/SparseCore:61:
+../../../core/autodiff/../../external/eigen/Eigen/src/SparseCore/TriangularSolver.h:242:13: warning: variable 'count' set but not used [-Wunused-but-set-variable]
+  242 |       Index count = 0;
+      |             ^
+In file included from tests/test_population.cpp:1:
+In file included from ../../../core/autodiff/model_gradient.hpp:7:
+In file included from ../../../core/autodiff/../autodiff.hpp:20:
+In file included from ../../../core/autodiff/../../external/eigen/Eigen/Sparse:29:
+In file included from ../../../core/autodiff/../../external/eigen/Eigen/SparseLU:35:
+../../../core/autodiff/../../external/eigen/Eigen/src/SparseLU/SparseLU_heap_relax_snode.h:77:9: warning: variable 'nsuper_et_post' set but not used [-Wunused-but-set-variable]
+   77 |   Index nsuper_et_post = 0; // Number of relaxed snodes in postordered etree
+      |         ^
+../../../core/autodiff/../../external/eigen/Eigen/src/SparseLU/SparseLU_heap_relax_snode.h:78:9: warning: variable 'nsuper_et' set but not used [-Wunused-but-set-variable]
+   78 |   Index nsuper_et = 0;      // Number of relaxed snodes in the original etree
+      |         ^
+5 warnings generated.
+c++ -Iinclude -Ibuild -I../../.. -std=c++17 -O2 -Wall -Wextra -Wpedantic -MMD -MP tests/test_input_factory.cpp -o build/test_input_factory
+c++ -Iinclude -Ibuild -I../../.. -I../../../external/eigen -std=c++17 -O2 -Wall -Wextra -Wpedantic -MMD -MP tests/test_likelihood.cpp -o build/test_likelihood
+In file included from tests/test_likelihood.cpp:1:
+In file included from ../../../core/autodiff/model_gradient.hpp:7:
+In file included from ../../../core/autodiff/../autodiff.hpp:14:
+../../../core/autodiff/../had_quadra.hpp:2320:58: warning: unused parameter 'vertex' [-Wunused-parameter]
+ 2320 | inline bool BatchDirectionHasLocalSignal(const ADVertex &vertex,
+      |                                                          ^
+../../../core/autodiff/../had_quadra.hpp:2321:56: warning: unused parameter 'e1' [-Wunused-parameter]
+ 2321 |                                          const ADEdge &e1, const ADEdge &e2,
+      |                                                        ^
+In file included from tests/test_likelihood.cpp:1:
+In file included from ../../../core/autodiff/model_gradient.hpp:7:
+In file included from ../../../core/autodiff/../autodiff.hpp:20:
+In file included from ../../../core/autodiff/../../external/eigen/Eigen/Sparse:26:
+In file included from ../../../core/autodiff/../../external/eigen/Eigen/SparseCore:61:
+../../../core/autodiff/../../external/eigen/Eigen/src/SparseCore/TriangularSolver.h:242:13: warning: variable 'count' set but not used [-Wunused-but-set-variable]
+  242 |       Index count = 0;
+      |             ^
+In file included from tests/test_likelihood.cpp:1:
+In file included from ../../../core/autodiff/model_gradient.hpp:7:
+In file included from ../../../core/autodiff/../autodiff.hpp:20:
+In file included from ../../../core/autodiff/../../external/eigen/Eigen/Sparse:29:
+In file included from ../../../core/autodiff/../../external/eigen/Eigen/SparseLU:35:
+../../../core/autodiff/../../external/eigen/Eigen/src/SparseLU/SparseLU_heap_relax_snode.h:77:9: warning: variable 'nsuper_et_post' set but not used [-Wunused-but-set-variable]
+   77 |   Index nsuper_et_post = 0; // Number of relaxed snodes in postordered etree
+      |         ^
+../../../core/autodiff/../../external/eigen/Eigen/src/SparseLU/SparseLU_heap_relax_snode.h:78:9: warning: variable 'nsuper_et' set but not used [-Wunused-but-set-variable]
+   78 |   Index nsuper_et = 0;      // Number of relaxed snodes in the original etree
+      |         ^
+5 warnings generated.
+c++ -Iinclude -Ibuild -I../../.. -I../../../external/eigen -std=c++17 -O2 -Wall -Wextra -Wpedantic -MMD -MP tests/test_model_gradient.cpp -o build/test_model_gradient
+In file included from tests/test_model_gradient.cpp:1:
+In file included from ../../../core/autodiff/model_gradient.hpp:7:
+In file included from ../../../core/autodiff/../autodiff.hpp:14:
+../../../core/autodiff/../had_quadra.hpp:2320:58: warning: unused parameter 'vertex' [-Wunused-parameter]
+ 2320 | inline bool BatchDirectionHasLocalSignal(const ADVertex &vertex,
+      |                                                          ^
+../../../core/autodiff/../had_quadra.hpp:2321:56: warning: unused parameter 'e1' [-Wunused-parameter]
+ 2321 |                                          const ADEdge &e1, const ADEdge &e2,
+      |                                                        ^
+In file included from tests/test_model_gradient.cpp:1:
+In file included from ../../../core/autodiff/model_gradient.hpp:7:
+In file included from ../../../core/autodiff/../autodiff.hpp:20:
+In file included from ../../../core/autodiff/../../external/eigen/Eigen/Sparse:26:
+In file included from ../../../core/autodiff/../../external/eigen/Eigen/SparseCore:61:
+../../../core/autodiff/../../external/eigen/Eigen/src/SparseCore/TriangularSolver.h:242:13: warning: variable 'count' set but not used [-Wunused-but-set-variable]
+  242 |       Index count = 0;
+      |             ^
+In file included from tests/test_model_gradient.cpp:1:
+In file included from ../../../core/autodiff/model_gradient.hpp:7:
+In file included from ../../../core/autodiff/../autodiff.hpp:20:
+In file included from ../../../core/autodiff/../../external/eigen/Eigen/Sparse:29:
+In file included from ../../../core/autodiff/../../external/eigen/Eigen/SparseLU:35:
+../../../core/autodiff/../../external/eigen/Eigen/src/SparseLU/SparseLU_heap_relax_snode.h:77:9: warning: variable 'nsuper_et_post' set but not used [-Wunused-but-set-variable]
+   77 |   Index nsuper_et_post = 0; // Number of relaxed snodes in postordered etree
+      |         ^
+../../../core/autodiff/../../external/eigen/Eigen/src/SparseLU/SparseLU_heap_relax_snode.h:78:9: warning: variable 'nsuper_et' set but not used [-Wunused-but-set-variable]
+   78 |   Index nsuper_et = 0;      // Number of relaxed snodes in the original etree
+      |         ^
+5 warnings generated.
+c++ -Iinclude -Ibuild -I../../.. -I../../../external/eigen -std=c++17 -O2 -Wall -Wextra -Wpedantic -MMD -MP tests/test_benchmarks.cpp -o build/test_benchmarks
+In file included from tests/test_benchmarks.cpp:2:
+In file included from include/swordfish/model.hpp:15:
+In file included from ../../../model/parameter.hpp:7:
+In file included from ../../../model/../math/transforms.hpp:3:
+In file included from ../../../model/../math/../core/autodiff.hpp:14:
+../../../model/../math/../core/had_quadra.hpp:2320:58: warning: unused parameter 'vertex' [-Wunused-parameter]
+ 2320 | inline bool BatchDirectionHasLocalSignal(const ADVertex &vertex,
+      |                                                          ^
+../../../model/../math/../core/had_quadra.hpp:2321:56: warning: unused parameter 'e1' [-Wunused-parameter]
+ 2321 |                                          const ADEdge &e1, const ADEdge &e2,
+      |                                                        ^
+In file included from tests/test_benchmarks.cpp:2:
+In file included from include/swordfish/model.hpp:15:
+In file included from ../../../model/parameter.hpp:7:
+In file included from ../../../model/../math/transforms.hpp:3:
+In file included from ../../../model/../math/../core/autodiff.hpp:20:
+In file included from ../../../model/../math/../core/../external/eigen/Eigen/Sparse:26:
+In file included from ../../../model/../math/../core/../external/eigen/Eigen/SparseCore:61:
+../../../model/../math/../core/../external/eigen/Eigen/src/SparseCore/TriangularSolver.h:242:13: warning: variable 'count' set but not used [-Wunused-but-set-variable]
+  242 |       Index count = 0;
+      |             ^
+In file included from tests/test_benchmarks.cpp:2:
+In file included from include/swordfish/model.hpp:15:
+In file included from ../../../model/parameter.hpp:7:
+In file included from ../../../model/../math/transforms.hpp:3:
+In file included from ../../../model/../math/../core/autodiff.hpp:20:
+In file included from ../../../model/../math/../core/../external/eigen/Eigen/Sparse:29:
+In file included from ../../../model/../math/../core/../external/eigen/Eigen/SparseLU:35:
+../../../model/../math/../core/../external/eigen/Eigen/src/SparseLU/SparseLU_heap_relax_snode.h:77:9: warning: variable 'nsuper_et_post' set but not used [-Wunused-but-set-variable]
+   77 |   Index nsuper_et_post = 0; // Number of relaxed snodes in postordered etree
+      |         ^
+../../../model/../math/../core/../external/eigen/Eigen/src/SparseLU/SparseLU_heap_relax_snode.h:78:9: warning: variable 'nsuper_et' set but not used [-Wunused-but-set-variable]
+   78 |   Index nsuper_et = 0;      // Number of relaxed snodes in the original etree
+      |         ^
+5 warnings generated.
+c++ -Iinclude -Ibuild -I../../.. -std=c++17 -O2 -Wall -Wextra -Wpedantic -MMD -MP tests/test_projection.cpp -o build/test_projection
+c++ -Iinclude -Ibuild -I../../.. -std=c++17 -O2 -Wall -Wextra -Wpedantic -MMD -MP tests/test_csv.cpp -o build/test_csv
+python3 scripts/prepare_control_start.py
+Control-only input factory generated from .dat/.ctl (no Report.sso).
+c++ -Iinclude -Ibuild -I../../.. -I../../../external/eigen -std=c++17 -O2 -Wall -Wextra -Wpedantic -MMD -MP tests/test_control_start.cpp -o build/test_control_start
+In file included from tests/test_control_start.cpp:1:
+In file included from ../../../core/autodiff/model_gradient.hpp:7:
+In file included from ../../../core/autodiff/../autodiff.hpp:14:
+../../../core/autodiff/../had_quadra.hpp:2320:58: warning: unused parameter 'vertex' [-Wunused-parameter]
+ 2320 | inline bool BatchDirectionHasLocalSignal(const ADVertex &vertex,
+      |                                                          ^
+../../../core/autodiff/../had_quadra.hpp:2321:56: warning: unused parameter 'e1' [-Wunused-parameter]
+ 2321 |                                          const ADEdge &e1, const ADEdge &e2,
+      |                                                        ^
+In file included from tests/test_control_start.cpp:1:
+In file included from ../../../core/autodiff/model_gradient.hpp:7:
+In file included from ../../../core/autodiff/../autodiff.hpp:20:
+In file included from ../../../core/autodiff/../../external/eigen/Eigen/Sparse:26:
+In file included from ../../../core/autodiff/../../external/eigen/Eigen/SparseCore:61:
+../../../core/autodiff/../../external/eigen/Eigen/src/SparseCore/TriangularSolver.h:242:13: warning: variable 'count' set but not used [-Wunused-but-set-variable]
+  242 |       Index count = 0;
+      |             ^
+In file included from tests/test_control_start.cpp:1:
+In file included from ../../../core/autodiff/model_gradient.hpp:7:
+In file included from ../../../core/autodiff/../autodiff.hpp:20:
+In file included from ../../../core/autodiff/../../external/eigen/Eigen/Sparse:29:
+In file included from ../../../core/autodiff/../../external/eigen/Eigen/SparseLU:35:
+../../../core/autodiff/../../external/eigen/Eigen/src/SparseLU/SparseLU_heap_relax_snode.h:77:9: warning: variable 'nsuper_et_post' set but not used [-Wunused-but-set-variable]
+   77 |   Index nsuper_et_post = 0; // Number of relaxed snodes in postordered etree
+      |         ^
+../../../core/autodiff/../../external/eigen/Eigen/src/SparseLU/SparseLU_heap_relax_snode.h:78:9: warning: variable 'nsuper_et' set but not used [-Wunused-but-set-variable]
+   78 |   Index nsuper_et = 0;      // Number of relaxed snodes in the original etree
+      |         ^
+5 warnings generated.
+c++ -Iinclude -Ibuild -I../../.. -I../../../external/eigen -std=c++17 -O2 -Wall -Wextra -Wpedantic -MMD -MP tests/test_fixed_biology.cpp -o build/test_fixed_biology
+In file included from tests/test_fixed_biology.cpp:1:
+In file included from ../../../core/autodiff/model_gradient.hpp:7:
+In file included from ../../../core/autodiff/../autodiff.hpp:14:
+../../../core/autodiff/../had_quadra.hpp:2320:58: warning: unused parameter 'vertex' [-Wunused-parameter]
+ 2320 | inline bool BatchDirectionHasLocalSignal(const ADVertex &vertex,
+      |                                                          ^
+../../../core/autodiff/../had_quadra.hpp:2321:56: warning: unused parameter 'e1' [-Wunused-parameter]
+ 2321 |                                          const ADEdge &e1, const ADEdge &e2,
+      |                                                        ^
+In file included from tests/test_fixed_biology.cpp:1:
+In file included from ../../../core/autodiff/model_gradient.hpp:7:
+In file included from ../../../core/autodiff/../autodiff.hpp:20:
+In file included from ../../../core/autodiff/../../external/eigen/Eigen/Sparse:26:
+In file included from ../../../core/autodiff/../../external/eigen/Eigen/SparseCore:61:
+../../../core/autodiff/../../external/eigen/Eigen/src/SparseCore/TriangularSolver.h:242:13: warning: variable 'count' set but not used [-Wunused-but-set-variable]
+  242 |       Index count = 0;
+      |             ^
+In file included from tests/test_fixed_biology.cpp:1:
+In file included from ../../../core/autodiff/model_gradient.hpp:7:
+In file included from ../../../core/autodiff/../autodiff.hpp:20:
+In file included from ../../../core/autodiff/../../external/eigen/Eigen/Sparse:29:
+In file included from ../../../core/autodiff/../../external/eigen/Eigen/SparseLU:35:
+../../../core/autodiff/../../external/eigen/Eigen/src/SparseLU/SparseLU_heap_relax_snode.h:77:9: warning: variable 'nsuper_et_post' set but not used [-Wunused-but-set-variable]
+   77 |   Index nsuper_et_post = 0; // Number of relaxed snodes in postordered etree
+      |         ^
+../../../core/autodiff/../../external/eigen/Eigen/src/SparseLU/SparseLU_heap_relax_snode.h:78:9: warning: variable 'nsuper_et' set but not used [-Wunused-but-set-variable]
+   78 |   Index nsuper_et = 0;      // Number of relaxed snodes in the original etree
+      |         ^
+5 warnings generated.
+./build/test_dynamics
+Dynamics limits, plus group, settlement, BH, and Quadra AD derivatives: PASS
+./build/test_biology
+Biology probability limits, weights, maturity, block boundaries, mirrors, plus group and Quadra derivatives: PASS
+./build/test_population
+Hybrid mixed-unit inversion, zero/infeasible catches, recruitment ramp and initialization/solver derivatives: PASS
+./build/test_input_factory
+Generated C++ original-observation factory: PASS
+./build/test_likelihood
+Likelihood offsets, phase weights, Q profiling and analytic/Quadra derivatives: PASS
+./build/test_model_gradient
+All 84 full-objective AD derivatives and zero-sum constraint: PASS (maximum error 1.10538e-06)
+./build/test_benchmarks
+Equilibrium roots, MSY, parameter dependence and automatic fitted reference points pass
+./build/test_projection
+Dynamic unfished and projection equilibrium, recruitment, yield and F checks pass
+./build/test_delta_method
+Validated full curvature, correlated delta covariance, coordinate invariance, and interval checks pass
+./build/test_csv
+Strict CSV numeric, record, and scenario checks pass
+./build/test_control_start
+Control starts, zero deviations, phase masks and feasibility gradient: PASS
+./build/test_fixed_biology
+Fixed biology objective/all gradients, changed inputs and estimated-growth fallback: PASS
+python3 -m unittest discover -s tests -p 'test_*.py'
+............Failed run retained at /var/folders/bv/byqg9jfs6bb_g4wgb73nxhnxgdgtxx/T/tmpcrfl_9ds/.release.failed-raxxl6b5
+..Running timeout
+...
+----------------------------------------------------------------------
+Ran 17 tests in 0.297s
+
+OK

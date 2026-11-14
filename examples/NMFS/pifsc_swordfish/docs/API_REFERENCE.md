@@ -984,6 +984,95 @@ Return expected recruitment from spawning biomass, virgin recruitment, virgin sp
 
 Source: [include/swordfish/dynamics.hpp:218](../include/swordfish/dynamics.hpp#L218)
 
+## include/swordfish/fixed_biology.hpp :: NumericLengthKeys
+
+`std::array<std::vector<std::vector<double>>, 2>`
+
+Ordinary double-valued sex/age/length probabilities for a single within-year time; no AD tape state.
+
+Source: [include/swordfish/fixed_biology.hpp:11](../include/swordfish/fixed_biology.hpp#L11)
+
+Contract details:
+
+```text
+Numeric sex/age/length probabilities for one within-year sampling time.
+```
+
+## include/swordfish/fixed_biology.hpp :: FixedBiology
+
+`FixedBiology`
+
+Evaluation-scoped numeric biology workspace shared by population and observations. Owns the parameter snapshot, borrows input data, and disables itself conservatively when biology is estimated.
+
+Source: [include/swordfish/fixed_biology.hpp:19](../include/swordfish/fixed_biology.hpp#L19)
+
+Contract details:
+
+```text
+A small evaluation-scoped workspace for biology whose parameters are fixed.
+Keeping the dependency check explicit makes the fast path conservative:
+estimating any biological parameter disables the entire numeric workspace.
+The small native parameter snapshot is owned; input data must outlive this
+workspace. Values are recomputed for each evaluation, so changed inputs
+cannot leave stale persistent state. Only ordinary doubles are stored.
+```
+
+## include/swordfish/fixed_biology.hpp :: FixedBiology::FixedBiology
+
+`FixedBiology::FixedBiology(const InputData & d, const ParameterValues<double> & p, bool requested)`
+
+Check biological estimation flags before precomputing ordinary length weights and mature weights; no cross-evaluation AD state is retained.
+
+Source: [include/swordfish/fixed_biology.hpp:30](../include/swordfish/fixed_biology.hpp#L30)
+
+Contract details:
+
+```text
+Check biological estimation flags before calculating any cached quantity.
+```
+
+## include/swordfish/fixed_biology.hpp :: FixedBiology::enabled
+
+`bool FixedBiology::enabled() const`
+
+Report whether all biological dependencies are fixed and the numeric workspace was requested.
+
+Source: [include/swordfish/fixed_biology.hpp:49](../include/swordfish/fixed_biology.hpp#L49)
+
+Contract details:
+
+```text
+True only when all biological parameter dependencies are fixed.
+```
+
+## include/swordfish/fixed_biology.hpp :: FixedBiology::length_keys
+
+`const NumericLengthKeys &(double) FixedBiology::length_keys(double time)`
+
+Calculate each time-specific sex/age/length probability table once within this evaluation; reject use when biological parameters are estimated.
+
+Source: [include/swordfish/fixed_biology.hpp:51](../include/swordfish/fixed_biology.hpp#L51)
+
+Contract details:
+
+```text
+Compute a time's numeric age-length keys once, shared across consumers.
+```
+
+## include/swordfish/fixed_biology.hpp :: FixedBiology::weights_at_age
+
+`const State<double> &(double) FixedBiology::weights_at_age(double time)`
+
+Calculate individual beginning-season weights once per within-year time for fixed biological settings.
+
+Source: [include/swordfish/fixed_biology.hpp:66](../include/swordfish/fixed_biology.hpp#L66)
+
+Contract details:
+
+```text
+Compute beginning-season individual weights once for each requested time.
+```
+
 ## include/swordfish/likelihood.hpp :: likelihood_weight
 
 `double likelihood_weight(const InputData & data, int component, int fleet, int phase)`
@@ -1089,11 +1178,11 @@ Source: [include/swordfish/likelihood.hpp:114](../include/swordfish/likelihood.h
 
 ## include/swordfish/likelihood.hpp :: sampled_lengths
 
-`std::array<std::vector<T>, 2> sampled_lengths(const InputData & data, const ParameterValues<T> & p, const PopulationSeason<T> & row, const std::vector<T> & curve, const ObservationTime & time, const LengthKeys<T> * cached)`
+`std::array<std::vector<T>, 2> sampled_lengths(const InputData & data, const ParameterValues<T> & p, const PopulationSeason<T> & row, const std::vector<T> & curve, const ObservationTime & time, const LengthKeys<T> * cached, const NumericLengthKeys * fixed)`
 
 Project selected surviving numbers into sex-specific sampled length frequencies for an observation time.
 
-Source: [include/swordfish/likelihood.hpp:135](../include/swordfish/likelihood.hpp#L135)
+Source: [include/swordfish/likelihood.hpp:137](../include/swordfish/likelihood.hpp#L137)
 
 ## include/swordfish/likelihood.hpp :: profiled_log_q
 
@@ -1101,7 +1190,7 @@ Source: [include/swordfish/likelihood.hpp:135](../include/swordfish/likelihood.h
 
 Analytically profile log catchability as an inverse-variance-weighted log residual mean, using the exact source stabilization.
 
-Source: [include/swordfish/likelihood.hpp:174](../include/swordfish/likelihood.hpp#L174)
+Source: [include/swordfish/likelihood.hpp:188](../include/swordfish/likelihood.hpp#L188)
 
 ## include/swordfish/likelihood.hpp :: lognormal_index_nll
 
@@ -1109,7 +1198,7 @@ Source: [include/swordfish/likelihood.hpp:174](../include/swordfish/likelihood.h
 
 Evaluate the index lognormal negative log-likelihood under the configured standard-deviation offset convention.
 
-Source: [include/swordfish/likelihood.hpp:214](../include/swordfish/likelihood.hpp#L214)
+Source: [include/swordfish/likelihood.hpp:228](../include/swordfish/likelihood.hpp#L228)
 
 ## include/swordfish/likelihood.hpp :: multinomial_deviance
 
@@ -1117,7 +1206,7 @@ Source: [include/swordfish/likelihood.hpp:214](../include/swordfish/likelihood.h
 
 Calculate sample-size-weighted multinomial composition deviance against a perfect-fit offset after probability stabilization.
 
-Source: [include/swordfish/likelihood.hpp:232](../include/swordfish/likelihood.hpp#L232)
+Source: [include/swordfish/likelihood.hpp:246](../include/swordfish/likelihood.hpp#L246)
 
 ## include/swordfish/likelihood.hpp :: stabilized_catch_nll
 
@@ -1125,7 +1214,7 @@ Source: [include/swordfish/likelihood.hpp:232](../include/swordfish/likelihood.h
 
 Evaluate SS3's stabilized log catch residual penalty for observed and predicted fleet-unit catch.
 
-Source: [include/swordfish/likelihood.hpp:256](../include/swordfish/likelihood.hpp#L256)
+Source: [include/swordfish/likelihood.hpp:270](../include/swordfish/likelihood.hpp#L270)
 
 ## include/swordfish/likelihood.hpp :: selectivity_soft_bounds
 
@@ -1133,7 +1222,7 @@ Source: [include/swordfish/likelihood.hpp:256](../include/swordfish/likelihood.h
 
 Evaluate the supported symmetric-beta soft-bound penalty on estimated selectivity parameters.
 
-Source: [include/swordfish/likelihood.hpp:275](../include/swordfish/likelihood.hpp#L275)
+Source: [include/swordfish/likelihood.hpp:289](../include/swordfish/likelihood.hpp#L289)
 
 ## include/swordfish/likelihood.hpp :: recruitment_nll
 
@@ -1141,7 +1230,7 @@ Source: [include/swordfish/likelihood.hpp:275](../include/swordfish/likelihood.h
 
 Sum squared historical log recruitment deviations and the bias-weighted log-sigma contribution for the joint likelihood target.
 
-Source: [include/swordfish/likelihood.hpp:301](../include/swordfish/likelihood.hpp#L301)
+Source: [include/swordfish/likelihood.hpp:315](../include/swordfish/likelihood.hpp#L315)
 
 ## include/swordfish/likelihood.hpp :: IndexFit
 
@@ -1149,7 +1238,7 @@ Source: [include/swordfish/likelihood.hpp:301](../include/swordfish/likelihood.h
 
 Index observation prediction, profiled catchability, residual, error and unweighted likelihood contribution.
 
-Source: [include/swordfish/likelihood.hpp:326](../include/swordfish/likelihood.hpp#L326)
+Source: [include/swordfish/likelihood.hpp:340](../include/swordfish/likelihood.hpp#L340)
 
 Contract details:
 
@@ -1167,7 +1256,7 @@ contribution; component lambdas are applied in the aggregate objective.
 
 Length-sample prediction and diagnostics, including effective sample size, observed/predicted means and deviance.
 
-Source: [include/swordfish/likelihood.hpp:336](../include/swordfish/likelihood.hpp#L336)
+Source: [include/swordfish/likelihood.hpp:350](../include/swordfish/likelihood.hpp#L350)
 
 Contract details:
 
@@ -1185,7 +1274,7 @@ unweighted multinomial perfect-fit-offset contribution.
 
 Joint objective total, named weighted components, fitted indices and included length-sample diagnostics.
 
-Source: [include/swordfish/likelihood.hpp:349](../include/swordfish/likelihood.hpp#L349)
+Source: [include/swordfish/likelihood.hpp:363](../include/swordfish/likelihood.hpp#L363)
 
 Contract details:
 
@@ -1200,11 +1289,11 @@ coordinates.
 
 ## include/swordfish/likelihood.hpp :: evaluate_likelihood
 
-`LikelihoodResult<T> evaluate_likelihood(const InputData & data, const ParameterValues<T> & p, const Deviations<T> & deviations, const PopulationRun<T> & run, int phase)`
+`LikelihoodResult<T> evaluate_likelihood(const InputData & data, const ParameterValues<T> & p, const Deviations<T> & deviations, const PopulationRun<T> & run, int phase, FixedBiology * fixed)`
 
 Calculate catch, index, length-composition, recruitment and soft-bound components from a population trajectory; preserve all configured lambdas.
 
-Source: [include/swordfish/likelihood.hpp:372](../include/swordfish/likelihood.hpp#L372)
+Source: [include/swordfish/likelihood.hpp:387](../include/swordfish/likelihood.hpp#L387)
 
 ## include/swordfish/local_curvature.hpp :: LocalCurvature
 
@@ -1226,15 +1315,16 @@ Full optimizer-coordinate covariance plus two-step numerical diagnostics.
 
 Validate two finite-difference Hessians for finite values, symmetry, step stability and positive definiteness, then invert without regularization and check SE stability.
 
-Source: [include/swordfish/local_curvature.hpp:17](../include/swordfish/local_curvature.hpp#L17)
+Source: [include/swordfish/local_curvature.hpp:18](../include/swordfish/local_curvature.hpp#L18)
 
 Contract details:
 
 ```text
 Validate two finite-difference Hessians and invert positive local curvature.
-Both steps must be symmetric/stable to 1e-5 relative norm, positive definite,
-and give marginal SEs stable to 0.1%. Singular/indefinite curvature is rejected;
-no eigenvalue clipping, ridge, diagonal-only approximation or saved covariance.
+Both steps must be symmetric/stable to 1e-5 relative norm, positive
+definite, and give marginal SEs stable to 0.1%. Singular/indefinite
+curvature is rejected; no eigenvalue clipping, ridge, diagonal-only
+approximation or saved covariance.
 ```
 
 ## include/swordfish/model.hpp :: SwordfishModel
@@ -1283,7 +1373,7 @@ covariance/gradient coordinate order.
 
 Build the fitting-coordinate schema from estimated control parameters and independent early/main recruitment deviations.
 
-Source: [include/swordfish/model.hpp:52](../include/swordfish/model.hpp#L52)
+Source: [include/swordfish/model.hpp:56](../include/swordfish/model.hpp#L56)
 
 Contract details:
 
@@ -1303,7 +1393,7 @@ early age-structure effects.
 
 Return canonical names in the same order as fitting coordinates and covariance matrices.
 
-Source: [include/swordfish/model.hpp:73](../include/swordfish/model.hpp#L73)
+Source: [include/swordfish/model.hpp:77](../include/swordfish/model.hpp#L77)
 
 Contract details:
 
@@ -1320,7 +1410,7 @@ covariance rows.
 
 Transform interior native starting values to bounded-logit coordinates and reject starts at or beyond bounds.
 
-Source: [include/swordfish/model.hpp:83](../include/swordfish/model.hpp#L83)
+Source: [include/swordfish/model.hpp:87](../include/swordfish/model.hpp#L87)
 
 Contract details:
 
@@ -1337,7 +1427,7 @@ order.
 
 Create Quadra's parameter vector, treating every independent coordinate as a joint optimized parameter.
 
-Source: [include/swordfish/model.hpp:97](../include/swordfish/model.hpp#L97)
+Source: [include/swordfish/model.hpp:101](../include/swordfish/model.hpp#L101)
 
 Contract details:
 
@@ -1354,7 +1444,7 @@ optimized joint parameters.
 
 Transform fitting coordinates to native parameters/deviations and enforce the zero-sum main-deviation constraint, including the dependent final year.
 
-Source: [include/swordfish/model.hpp:121](../include/swordfish/model.hpp#L121)
+Source: [include/swordfish/model.hpp:125](../include/swordfish/model.hpp#L125)
 
 ## include/swordfish/model.hpp :: SwordfishModel::likelihood
 
@@ -1362,7 +1452,7 @@ Source: [include/swordfish/model.hpp:121](../include/swordfish/model.hpp#L121)
 
 Decode coordinates, run the population and return the complete component-wise likelihood result.
 
-Source: [include/swordfish/model.hpp:158](../include/swordfish/model.hpp#L158)
+Source: [include/swordfish/model.hpp:162](../include/swordfish/model.hpp#L162)
 
 ## include/swordfish/model.hpp :: SwordfishModel::reference_points
 
@@ -1370,7 +1460,7 @@ Source: [include/swordfish/model.hpp:158](../include/swordfish/model.hpp#L158)
 
 Decode the model coordinate vector with the likelihood constraints and return its standard equilibrium management reference points as post-fit derived outputs.
 
-Source: [include/swordfish/model.hpp:169](../include/swordfish/model.hpp#L169)
+Source: [include/swordfish/model.hpp:176](../include/swordfish/model.hpp#L176)
 
 ## include/swordfish/model.hpp :: SwordfishModel::operator()
 
@@ -1378,7 +1468,7 @@ Source: [include/swordfish/model.hpp:169](../include/swordfish/model.hpp#L169)
 
 Return only the joint scalar objective for a supplied fitting-coordinate vector.
 
-Source: [include/swordfish/model.hpp:181](../include/swordfish/model.hpp#L181)
+Source: [include/swordfish/model.hpp:188](../include/swordfish/model.hpp#L188)
 
 Contract details:
 
@@ -1399,7 +1489,7 @@ transform-density term.
 
 Evaluate the scalar objective through Quadra's model interface and register it in the report context.
 
-Source: [include/swordfish/model.hpp:193](../include/swordfish/model.hpp#L193)
+Source: [include/swordfish/model.hpp:200](../include/swordfish/model.hpp#L200)
 
 ## include/swordfish/native_io.hpp :: native_number
 
@@ -1435,13 +1525,7 @@ Read a bounded collection length before allocating observation containers.
 
 Read a statically sized numeric array from the typed native stream.
 
-Source: [include/swordfish/native_io.hpp:24](../include/swordfish/native_io.hpp#L24)
-
-Contract details:
-
-```text
-Fill fixed arrays from their statically declared schema width.
-```
+Source: [include/swordfish/native_io.hpp:27](../include/swordfish/native_io.hpp#L27)
 
 ## include/swordfish/native_io.hpp :: native_vector
 
@@ -1449,7 +1533,7 @@ Fill fixed arrays from their statically declared schema width.
 
 Read a length-prefixed finite numeric vector from native transport.
 
-Source: [include/swordfish/native_io.hpp:28](../include/swordfish/native_io.hpp#L28)
+Source: [include/swordfish/native_io.hpp:32](../include/swordfish/native_io.hpp#L32)
 
 Contract details:
 
@@ -1463,13 +1547,7 @@ Read a length-prefixed scalar vector.
 
 Read a length-prefixed fixed-width numeric settings table.
 
-Source: [include/swordfish/native_io.hpp:32](../include/swordfish/native_io.hpp#L32)
-
-Contract details:
-
-```text
-Read a length-prefixed fixed-width settings table.
-```
+Source: [include/swordfish/native_io.hpp:39](../include/swordfish/native_io.hpp#L39)
 
 ## include/swordfish/native_io.hpp :: read_native_input
 
@@ -1477,16 +1555,7 @@ Read a length-prefixed fixed-width settings table.
 
 Read the complete native model data and explicit historical deviations without generated factories or SS3 fixtures; validate finite values, counts, constraints and supported dimensions.
 
-Source: [include/swordfish/native_io.hpp:39](../include/swordfish/native_io.hpp#L39)
-
-Contract details:
-
-```text
-Read a native state and its initial deviations from a validated frontend stream.
-C++ repeats finite/count/duplicate/shape checks and invokes InputData validation.
-The public JSON format is documented by native_input.py; transport order is
-private to this version. The initial parameter map uses each native value.
-```
+Source: [include/swordfish/native_io.hpp:50](../include/swordfish/native_io.hpp#L50)
 
 ## include/swordfish/population.hpp :: Deviations
 
@@ -1494,7 +1563,7 @@ private to this version. The initial parameter map uses each native value.
 
 Map recruitment years to fitted log recruitment deviations, including early age-structure deviations.
 
-Source: [include/swordfish/population.hpp:22](../include/swordfish/population.hpp#L22)
+Source: [include/swordfish/population.hpp:24](../include/swordfish/population.hpp#L24)
 
 Contract details:
 
@@ -1513,7 +1582,7 @@ dependent final year.
 
 Per-season selected numbers, selected weight, beginning weights and mature weights for mortality and biomass calculations.
 
-Source: [include/swordfish/population.hpp:29](../include/swordfish/population.hpp#L29)
+Source: [include/swordfish/population.hpp:31](../include/swordfish/population.hpp#L31)
 
 Contract details:
 
@@ -1528,11 +1597,11 @@ the supported spawning integration time.
 
 ## include/swordfish/population.hpp :: seasonal_biology
 
-`SeasonalBiology<T> seasonal_biology(const InputData & data, const ParameterValues<T> & p, const std::vector<std::vector<T>> & curves, int season)`
+`SeasonalBiology<T> seasonal_biology(const InputData & data, const ParameterValues<T> & p, const std::vector<std::vector<T>> & curves, int season, FixedBiology * fixed)`
 
 Integrate growth, selectivity and mature weight for one of four seasons; produce all fleet/sex/age factors needed by population dynamics.
 
-Source: [include/swordfish/population.hpp:49](../include/swordfish/population.hpp#L49)
+Source: [include/swordfish/population.hpp:52](../include/swordfish/population.hpp#L52)
 
 ## include/swordfish/population.hpp :: fishing_at_age
 
@@ -1540,7 +1609,7 @@ Source: [include/swordfish/population.hpp:49](../include/swordfish/population.hp
 
 Multiply fleet apical annual fishing rates by numbers selectivity to obtain fleet-specific sex/age mortality arrays.
 
-Source: [include/swordfish/population.hpp:93](../include/swordfish/population.hpp#L93)
+Source: [include/swordfish/population.hpp:116](../include/swordfish/population.hpp#L116)
 
 ## include/swordfish/population.hpp :: HybridResult
 
@@ -1548,7 +1617,7 @@ Source: [include/swordfish/population.hpp:93](../include/swordfish/population.hp
 
 Hybrid-catch solution containing fleet apical rates, predicted catches and mortality-at-age arrays.
 
-Source: [include/swordfish/population.hpp:106](../include/swordfish/population.hpp#L106)
+Source: [include/swordfish/population.hpp:129](../include/swordfish/population.hpp#L129)
 
 Contract details:
 
@@ -1566,7 +1635,7 @@ catches are only used where SS3 deliberately uses that tuning heuristic.
 
 Explicitly initialize accumulated catch and apical-rate scalars to numerical zero, including AD types.
 
-Source: [include/swordfish/population.hpp:111](../include/swordfish/population.hpp#L111)
+Source: [include/swordfish/population.hpp:134](../include/swordfish/population.hpp#L134)
 
 Contract details:
 
@@ -1581,7 +1650,7 @@ numerical zero, including AD types.
 
 Reproduce SS3 method-3 finite catch tuning, including Pope initialization, smooth caps, mixed catch units and the configured finite adjustment count.
 
-Source: [include/swordfish/population.hpp:132](../include/swordfish/population.hpp#L132)
+Source: [include/swordfish/population.hpp:155](../include/swordfish/population.hpp#L155)
 
 ## include/swordfish/population.hpp :: recruitment_bias
 
@@ -1589,7 +1658,7 @@ Source: [include/swordfish/population.hpp:132](../include/swordfish/population.h
 
 Evaluate the piecewise recruitment-bias ramp for a historical year from the advanced control settings.
 
-Source: [include/swordfish/population.hpp:234](../include/swordfish/population.hpp#L234)
+Source: [include/swordfish/population.hpp:257](../include/swordfish/population.hpp#L257)
 
 Contract details:
 
@@ -1609,7 +1678,7 @@ control blocks.
 
 Apply a year's fitted deviation and log-bias correction to expected recruitment without changing the deviation map.
 
-Source: [include/swordfish/population.hpp:264](../include/swordfish/population.hpp#L264)
+Source: [include/swordfish/population.hpp:287](../include/swordfish/population.hpp#L287)
 
 ## include/swordfish/population.hpp :: seasonal_ssb
 
@@ -1617,7 +1686,7 @@ Source: [include/swordfish/population.hpp:264](../include/swordfish/population.h
 
 Combine beginning numbers, fishing mortality and mature weights to compute spawning biomass under SS3 v3.30.20 timing.
 
-Source: [include/swordfish/population.hpp:288](../include/swordfish/population.hpp#L288)
+Source: [include/swordfish/population.hpp:311](../include/swordfish/population.hpp#L311)
 
 ## include/swordfish/population.hpp :: Equilibrium
 
@@ -1625,7 +1694,7 @@ Source: [include/swordfish/population.hpp:288](../include/swordfish/population.h
 
 Per-season beginning population states, equilibrium recruitment and spawning biomass for constant seasonal mortality.
 
-Source: [include/swordfish/population.hpp:310](../include/swordfish/population.hpp#L310)
+Source: [include/swordfish/population.hpp:333](../include/swordfish/population.hpp#L333)
 
 Contract details:
 
@@ -1644,7 +1713,7 @@ group includes survivors already at age 15.
 
 Solve the stationary seasonal sex/age population for supplied fishing rates and recruitment, including July settlement and the plus group.
 
-Source: [include/swordfish/population.hpp:330](../include/swordfish/population.hpp#L330)
+Source: [include/swordfish/population.hpp:353](../include/swordfish/population.hpp#L353)
 
 ## include/swordfish/population.hpp :: InitialPopulation
 
@@ -1652,7 +1721,7 @@ Source: [include/swordfish/population.hpp:330](../include/swordfish/population.h
 
 Virgin and initially fished equilibria plus January starting abundance after early recruitment deviations.
 
-Source: [include/swordfish/population.hpp:386](../include/swordfish/population.hpp#L386)
+Source: [include/swordfish/population.hpp:409](../include/swordfish/population.hpp#L409)
 
 Contract details:
 
@@ -1671,7 +1740,7 @@ the starting age structure.
 
 Calculate virgin and initial-fishing Beverton-Holt equilibria, then apply early deviations and bias correction to the initial age structure.
 
-Source: [include/swordfish/population.hpp:406](../include/swordfish/population.hpp#L406)
+Source: [include/swordfish/population.hpp:429](../include/swordfish/population.hpp#L429)
 
 ## include/swordfish/population.hpp :: PopulationSeason
 
@@ -1679,7 +1748,7 @@ Source: [include/swordfish/population.hpp:406](../include/swordfish/population.h
 
 One historical season's beginning and midpoint abundance, hybrid catch, removals, recruitment and biomass summaries.
 
-Source: [include/swordfish/population.hpp:453](../include/swordfish/population.hpp#L453)
+Source: [include/swordfish/population.hpp:476](../include/swordfish/population.hpp#L476)
 
 Contract details:
 
@@ -1698,7 +1767,7 @@ recruitment. Hybrid fishing is recomputed from that season observed catches.
 
 Historical seasonal trajectory and its virgin/initial equilibrium provenance.
 
-Source: [include/swordfish/population.hpp:466](../include/swordfish/population.hpp#L466)
+Source: [include/swordfish/population.hpp:489](../include/swordfish/population.hpp#L489)
 
 Contract details:
 
@@ -1713,11 +1782,11 @@ run.
 
 ## include/swordfish/population.hpp :: run_population
 
-`PopulationRun<T> run_population(const InputData & data, const ParameterValues<T> & p, const Deviations<T> & deviations)`
+`PopulationRun<T> run_population(const InputData & data, const ParameterValues<T> & p, const Deviations<T> & deviations, FixedBiology * fixed)`
 
 Run all historical seasons from original catches and native parameters, recalculating recruitment and caching biology within this evaluation only.
 
-Source: [include/swordfish/population.hpp:483](../include/swordfish/population.hpp#L483)
+Source: [include/swordfish/population.hpp:508](../include/swordfish/population.hpp#L508)
 
 ## include/swordfish/projection.hpp :: dynamic_unfished
 
@@ -1894,12 +1963,13 @@ Source: [include/swordfish/reference_io.hpp:79](../include/swordfish/reference_i
 
 One flattened management reference-point quantity, native units, point estimate and proportion-interval flag.
 
-Source: [include/swordfish/reference_uncertainty.hpp:17](../include/swordfish/reference_uncertainty.hpp#L17)
+Source: [include/swordfish/reference_uncertainty.hpp:19](../include/swordfish/reference_uncertainty.hpp#L19)
 
 Contract details:
 
 ```text
-One reference-point quantity with native units; proportions get bounded intervals.
+One reference-point quantity with native units; proportions get bounded
+intervals.
 ```
 
 ## include/swordfish/reference_uncertainty.hpp :: reference_estimates
@@ -1908,16 +1978,7 @@ One reference-point quantity with native units; proportions get bounded interval
 
 Flatten all six quantities for each of four model reference points; enforce known structural zeros and target proportions to avoid numerical root noise.
 
-Source: [include/swordfish/reference_uncertainty.hpp:26](../include/swordfish/reference_uncertainty.hpp#L26)
-
-Contract details:
-
-```text
-Flatten all six standard quantities for each benchmark into a stable 24-row order.
-Known unfished zeros/SPR=1 and target SPR=.2 are exact constants. Btgt20 raw
-SPR is .2/h under the supported positive Beverton-Holt equilibrium, avoiding
-spurious root-rounding derivatives when h is fixed.
-```
+Source: [include/swordfish/reference_uncertainty.hpp:29](../include/swordfish/reference_uncertainty.hpp#L29)
 
 ## include/swordfish/reference_uncertainty.hpp :: write_uncertainty_matrix
 
@@ -1925,12 +1986,13 @@ spurious root-rounding derivatives when h is fixed.
 
 Write a finite, dimension-checked labeled matrix with all coordinate/output correlations retained.
 
-Source: [include/swordfish/reference_uncertainty.hpp:42](../include/swordfish/reference_uncertainty.hpp#L42)
+Source: [include/swordfish/reference_uncertainty.hpp:61](../include/swordfish/reference_uncertainty.hpp#L61)
 
 Contract details:
 
 ```text
-Write a finite labeled matrix, retaining full coordinate/output correlations.
+Write a finite labeled matrix, retaining full coordinate/output
+correlations.
 ```
 
 ## include/swordfish/reference_uncertainty.hpp :: write_reference_point_uncertainty
@@ -1939,16 +2001,17 @@ Write a finite labeled matrix, retaining full coordinate/output correlations.
 
 Compute fresh two-step AD-gradient curvature and two-step reference-point Jacobians, propagate the full covariance, and write validated SEs, CVs and 95% local intervals without SS3 files or saved covariance.
 
-Source: [include/swordfish/reference_uncertainty.hpp:56](../include/swordfish/reference_uncertainty.hpp#L56)
+Source: [include/swordfish/reference_uncertainty.hpp:89](../include/swordfish/reference_uncertainty.hpp#L89)
 
 Contract details:
 
 ```text
-Calculate fresh curvature and propagate J V J-transpose for this fitted model.
-The caller must have verified convergence. Every estimate uses the same native
-parameter/deviation decoding and profiled Q as the fit. Hessian and Jacobian
-checks at 1e-4 and 5e-5 reject numerical instability. Outputs are conditional
-local parameter intervals; no forecast process, bootstrap or model uncertainty.
+Calculate fresh curvature and propagate J V J-transpose for this fitted
+model. The caller must have verified convergence. Every estimate uses the
+same native parameter/deviation decoding and profiled Q as the fit. Hessian
+and Jacobian checks at 1e-4 and 5e-5 reject numerical instability. Outputs
+are conditional local parameter intervals; no forecast process, bootstrap or
+model uncertainty.
 ```
 
 ## include/swordfish/report.hpp :: write_reference_points
@@ -2928,6 +2991,36 @@ Contract details:
 ```text
 Run test dynamics; return zero on success and nonzero on a failed check or
 invalid input.
+```
+
+## tests/test_fixed_biology.cpp :: compare_paths
+
+`void compare_paths(swordfish::SwordfishModel & model, const std::vector<double> & point)`
+
+Compare the full cached and original objectives and all coordinate gradients at the same model state, using the original equations as the validation oracle.
+
+Source: [tests/test_fixed_biology.cpp:10](../tests/test_fixed_biology.cpp#L10)
+
+Contract details:
+
+```text
+Compare the entire objective/gradient, keeping the original equations as the
+oracle.
+```
+
+## tests/test_fixed_biology.cpp :: main
+
+`int main()`
+
+Run test fixed biology; return zero on success and nonzero on a failed check or invalid input.
+
+Source: [tests/test_fixed_biology.cpp:27](../tests/test_fixed_biology.cpp#L27)
+
+Contract details:
+
+```text
+Check cached/uncached agreement, cache invalidation and estimated-growth
+fallback.
 ```
 
 ## tests/test_input_factory.cpp :: main

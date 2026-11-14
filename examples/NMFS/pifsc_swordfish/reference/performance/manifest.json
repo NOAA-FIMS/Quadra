@@ -1,0 +1,23 @@
+{
+  "description": "Evaluation-scoped fixed-biology workspace; cached/original objective and gradients, estimated-growth fallback, full model suite and native uncertainty validation pass.",
+  "source_git_commit": "44bc72bab30ce5c7463632e0c324c10a95f9ce28",
+  "implementation_files_sha256": {
+    "include/swordfish/fixed_biology.hpp": "7d7290f1a1a31180ef8b5ab6e1194d1c8088b870abb44da8bba34c717b0e3554",
+    "include/swordfish/population.hpp": "88f184985f1a2622633b1e768fde3026f08f8aad903db1f56b98e3dcfffc85d7",
+    "include/swordfish/likelihood.hpp": "9e252d33204bcf10da227495002332318933b46bbc7a3b9a79ae921b02f32f2e",
+    "include/swordfish/model.hpp": "3a05b3060c0b82fcc2f8a71cdde5aef3d95a57f044966626493bb8e3f68067ed",
+    "tests/test_fixed_biology.cpp": "30a06ed3e98fb54b8fdbc2575312239c131eaf5121047b688b60411086557fcd"
+  },
+  "files_sha256": {
+    "management_reference_point_uncertainty.csv": "b4d6c3f69f5fcae36aa77079db4c2ca24edb8648c8d257c2929073c2fc00e3ae",
+    "reference_uncertainty_summary.json": "1b39487c065d96018c5c776c454ddda97915c2c7e6d5da8723028449632499a9",
+    "benchmark_source.txt": "7e5dd8f23774020c5bc17e57fbfaefbe879b7ea19b724714c40b2fa12b850139",
+    "cache_validation.json": "cedf5f3f2e26746deb4f7cda9e26f8c9dd978f32eebd30d1b840cb29698937ee",
+    "quadra_fit_summary.json": "588dcfe3012e0d05eff47bff28023b64bf7b8a389ea8851488eddeee5e0027f7",
+    "model_tests.log": "39fa9bdc8fd6abd7825edfa5785eb9809fa941eefb549e01fffc335fe6e6d826",
+    "native_uncertainty.log": "a791cc48e370b7fddd02e5744ce68720396cbc114eb6acdedcedf56cfc6ba1db",
+    "benchmark_comparison.json": "a8e30f7277dffd08915ac00a2a4fdbf435feffecf08950a1a10fe19b315a58b2"
+  },
+  "timing_note": "Evaluation microbenchmark on this machine. Full uncertainty run overlapped build/test activity and is not an end-to-end speed comparison.",
+  "observation_inputs_not_published": true
+}

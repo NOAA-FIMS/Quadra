@@ -1,0 +1,42 @@
+{
+  "samples": [
+    {
+      "mode": "uncached",
+      "objective_seconds": 0.00672662,
+      "gradient_seconds": 0.433123,
+      "reference_seconds": 0.0129689
+    },
+    {
+      "mode": "cached",
+      "objective_seconds": 0.00369644,
+      "gradient_seconds": 0.348546,
+      "reference_seconds": 0.0126652
+    },
+    {
+      "mode": "cached",
+      "objective_seconds": 0.00374197,
+      "gradient_seconds": 0.348632,
+      "reference_seconds": 0.0127129
+    },
+    {
+      "mode": "uncached",
+      "objective_seconds": 0.0067476,
+      "gradient_seconds": 0.40705,
+      "reference_seconds": 0.0127144
+    }
+  ],
+  "method": "same -O2 binary; alternating original/cache order; 10 scalar, 6 gradient, 10 reference evaluations per sample",
+  "benchmark_source_sha256": "7e5dd8f23774020c5bc17e57fbfaefbe879b7ea19b724714c40b2fa12b850139",
+  "objective": {
+    "original_seconds": 0.00673711,
+    "cached_seconds": 0.0037192049999999997,
+    "speedup": 1.8114381971415936,
+    "time_reduction": 0.4479524603279448
+  },
+  "gradient": {
+    "original_seconds": 0.42008650000000003,
+    "cached_seconds": 0.34858900000000004,
+    "speedup": 1.2051054393569505,
+    "time_reduction": 0.17019709036115183
+  }
+}

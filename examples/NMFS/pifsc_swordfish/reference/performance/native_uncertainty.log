@@ -1,0 +1,37 @@
+Native input: /Users/matthew.supernaw/FIMS-Testing/FIMS_Quadra/8_25/Quadra/examples/NMFS/pifsc_swordfish/build/native/swordfish-ss-par-start.json
+Native model: 84 independent coordinates; initial objective 289.299639305924
+L-BFGS: outer eval =   1, fx =     289.299639, |grad| = [1;31m    0.004217[0m
+L-BFGS: outer eval =  25, fx =     289.299639, |grad| = [1;31m    0.000179[0m
+L-BFGS: outer eval =  27, fx =     289.299639, |grad| = [1;32m    0.000094[0m
+L-BFGS: stopped at first iterate satisfying requested fixed-effect gradient tolerance.
+Reference-point uncertainty step 0.000100: column 1/84
+Reference-point uncertainty step 0.000100: column 8/84
+Reference-point uncertainty step 0.000100: column 15/84
+Reference-point uncertainty step 0.000100: column 22/84
+Reference-point uncertainty step 0.000100: column 29/84
+Reference-point uncertainty step 0.000100: column 36/84
+Reference-point uncertainty step 0.000100: column 43/84
+Reference-point uncertainty step 0.000100: column 50/84
+Reference-point uncertainty step 0.000100: column 57/84
+Reference-point uncertainty step 0.000100: column 64/84
+Reference-point uncertainty step 0.000100: column 71/84
+Reference-point uncertainty step 0.000100: column 78/84
+Reference-point uncertainty step 0.000100: column 84/84
+Reference-point uncertainty step 0.000050: column 1/84
+Reference-point uncertainty step 0.000050: column 8/84
+Reference-point uncertainty step 0.000050: column 15/84
+Reference-point uncertainty step 0.000050: column 22/84
+Reference-point uncertainty step 0.000050: column 29/84
+Reference-point uncertainty step 0.000050: column 36/84
+Reference-point uncertainty step 0.000050: column 43/84
+Reference-point uncertainty step 0.000050: column 50/84
+Reference-point uncertainty step 0.000050: column 57/84
+Reference-point uncertainty step 0.000050: column 64/84
+Reference-point uncertainty step 0.000050: column 71/84
+Reference-point uncertainty step 0.000050: column 78/84
+Reference-point uncertainty step 0.000050: column 84/84
+Reference-point uncertainty validated; intervals written.
+Objective: 289.299639; gradient norm: 0.000094; reference points written.
+real 141.95
+user 86.47
+sys 53.64

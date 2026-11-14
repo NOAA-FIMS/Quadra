@@ -128,6 +128,8 @@ using LengthKeys = std::array<std::vector<std::vector<T>>, 2>;
 /// supported season-integrated convention.
 /// @param cached Optional age-length keys from this same parameter evaluation
 /// and time; nullptr recomputes them.
+/// @param fixed Optional ordinary numeric keys when all biological dependencies
+/// are fixed; these never retain AD values across evaluations.
 /// @return The typed result described above, with the module units and indexing
 /// conventions.
 template <class T>
@@ -135,7 +137,8 @@ std::array<std::vector<T>, 2>
 sampled_lengths(const InputData &data, const ParameterValues<T> &p,
                 const PopulationSeason<T> &row, const std::vector<T> &curve,
                 const ObservationTime &time,
-                const LengthKeys<T> *cached = nullptr) {
+                const LengthKeys<T> *cached = nullptr,
+                const NumericLengthKeys *fixed = nullptr) {
   using std::exp;
   std::array<std::vector<T>, 2> length;
   for (auto &v : length)
@@ -149,10 +152,21 @@ sampled_lengths(const InputData &data, const ParameterValues<T> &p,
       const T available =
           row.beginning[j] *
           (time.elapsed < 0 ? exposure(z, 0.25) : exp(-z * time.elapsed));
-      const auto key = cached ? cached->at(sex).at(a)
-                              : age_length_key(data, p, sex, a, time.alk_time);
-      for (size_t b = 0; b < key.size(); ++b)
-        length[sex][b] += available * key[b] * curve[b];
+      auto accumulate = [&](const auto &key) {
+        using KeyScalar = typename std::decay_t<decltype(key)>::value_type;
+        for (size_t b = 0; b < key.size(); ++b) {
+          if constexpr (std::is_same_v<KeyScalar, double>)
+            if (key[b] == 0.)
+              continue;
+          length[sex][b] += available * key[b] * curve[b];
+        }
+      };
+      if (fixed)
+        accumulate(fixed->at(sex).at(a));
+      else if (cached)
+        accumulate(cached->at(sex).at(a));
+      else
+        accumulate(age_length_key(data, p, sex, a, time.alk_time));
     }
   return length;
 }
@@ -365,13 +379,15 @@ template <class T> struct LikelihoodResult {
 /// @param run Completed historical population trajectory; references into it
 /// must not outlive it.
 /// @param phase Estimation phase used to resolve persistent lambda changes.
+/// @param fixed Optional numeric biology from this same evaluation and inputs.
 /// @return The typed result described above, with the module units and indexing
 /// conventions.
 template <class T>
 LikelihoodResult<T>
 evaluate_likelihood(const InputData &data, const ParameterValues<T> &p,
                     const Deviations<T> &deviations,
-                    const PopulationRun<T> &run, int phase = 5) {
+                    const PopulationRun<T> &run, int phase = 5,
+                    FixedBiology *fixed = nullptr) {
   using std::exp;
   using std::log;
   LikelihoodResult<T> out;
@@ -394,6 +410,10 @@ evaluate_likelihood(const InputData &data, const ParameterValues<T> &p,
   auto sample_for = [&](const PopulationSeason<T> &row,
                         const std::vector<T> &curve,
                         const ObservationTime &time) {
+    if (fixed && fixed->enabled())
+      return sampled_lengths(data, p, row, curve, time,
+                             static_cast<const LengthKeys<T> *>(nullptr),
+                             &fixed->length_keys(time.alk_time));
     const int slot = int(std::round(time.alk_time / 0.125));
     if (!keys.count(slot)) {
       LengthKeys<T> value;

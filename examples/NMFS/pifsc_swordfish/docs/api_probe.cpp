@@ -9,3 +9,5 @@
 #include "swordfish/native_io.hpp"
 
 #include "swordfish/reference_uncertainty.hpp"
+
+#include "swordfish/fixed_biology.hpp"

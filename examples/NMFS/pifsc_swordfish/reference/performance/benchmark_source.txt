@@ -1,0 +1,7 @@
+#include "swordfish/native_io.hpp"
+#include "swordfish/model.hpp"
+#include "core/autodiff/model_gradient.hpp"
+#include <chrono>
+#include <iostream>
+DECLARE_ADGRAPH();
+int main(int argc,char**){auto input=swordfish::read_native_input(std::cin);auto p=swordfish::initial_values<double>(input.first);swordfish::SwordfishModel model(std::move(input.first),std::move(p),std::move(input.second));auto x=model.initial_vector();auto measure=[&](auto action,int count){auto start=std::chrono::steady_clock::now();double value=0;for(int i=0;i<count;++i)value=action();std::cout<<std::chrono::duration<double>(std::chrono::steady_clock::now()-start).count()/count<<" seconds/call, check "<<value<<'\n';};if(argc>1)model.use_fixed_biology_cache=false;std::cout<<(model.use_fixed_biology_cache?"Cached\n":"Original\n");std::cout<<"Objective: ";measure([&]{return model(x);},10);std::cout<<"AD gradient: ";measure([&]{return quadra::evaluate_gradient(model,x).objective_value_m;},6);std::cout<<"Reference points: ";measure([&]{return model.reference_points(x).back().second.yield;},10);}

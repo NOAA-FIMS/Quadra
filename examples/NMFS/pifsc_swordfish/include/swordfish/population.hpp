@@ -11,6 +11,8 @@
  */
 #pragma once
 #include "biology.hpp"
+#include "fixed_biology.hpp"
+#include <type_traits>
 
 namespace swordfish {
 /// Map recruitment years to fitted log recruitment deviations, including early
@@ -42,41 +44,62 @@ template <class T> struct SeasonalBiology {
 /// @param curves Fleet length-selectivity vectors for the chosen year/block
 /// combination.
 /// @param season One-based quarter, 1..4.
+/// @param fixed Optional numeric workspace for fixed biology; estimated curves
+/// remain differentiable. Null/disabled workspaces use the original equations.
 /// @return The typed result described above, with the module units and indexing
 /// conventions.
 template <class T>
-SeasonalBiology<T>
-seasonal_biology(const InputData &data, const ParameterValues<T> &p,
-                 const std::vector<std::vector<T>> &curves, int season) {
+SeasonalBiology<T> seasonal_biology(const InputData &data,
+                                    const ParameterValues<T> &p,
+                                    const std::vector<std::vector<T>> &curves,
+                                    int season, FixedBiology *fixed = nullptr) {
   if (season < 1 || season > 4)
     throw std::invalid_argument("Season index");
   SeasonalBiology<T> b;
   b.selectivity.resize(nfishing);
   b.selected_biomass.resize(nfishing);
   std::array<std::vector<T>, 2> weights;
-  for (int sex = 0; sex < 2; ++sex)
-    for (size_t bin = 0; bin < data.population_length_bins.size(); ++bin)
-      weights[sex].push_back(
-          weight_at_length(p, sex, length_midpoint(data, bin)));
+  if (fixed && !fixed->enabled())
+    fixed = nullptr;
+  if (!fixed)
+    for (int sex = 0; sex < 2; ++sex)
+      for (size_t bin = 0; bin < data.population_length_bins.size(); ++bin)
+        weights[sex].push_back(
+            weight_at_length(p, sex, length_midpoint(data, bin)));
   for (int sex = 0; sex < 2; ++sex)
     for (int a = 0; a < nage; ++a) {
-      const auto key =
-          age_length_key(data, p, sex, a, (season - 1) * 0.25 + 0.125);
-      b.weight_begin[cell(sex, a)] =
-          weight_at_age(data, p, sex, a, (season - 1) * 0.25);
-      for (int f = 0; f < nfishing; ++f) {
-        T numbers = T(0), biomass = T(0);
-        for (size_t bin = 0; bin < key.size(); ++bin) {
-          const T selected = key[bin] * curves.at(f).at(bin);
-          numbers += selected;
-          biomass += selected * weights[sex][bin];
+      auto integrate = [&](const auto &key, const auto &individual_weights) {
+        for (int f = 0; f < nfishing; ++f) {
+          T numbers = T(0), biomass = T(0);
+          for (size_t bin = 0; bin < key.size(); ++bin) {
+            using KeyScalar = typename std::decay_t<decltype(key)>::value_type;
+            // A fixed, exactly zero probability contributes neither value nor
+            // derivative.
+            if constexpr (std::is_same_v<KeyScalar, double>)
+              if (key[bin] == 0.)
+                continue;
+            const T selected = key[bin] * curves.at(f).at(bin);
+            numbers += selected;
+            biomass += selected * individual_weights[bin];
+          }
+          b.selectivity[f][cell(sex, a)] = numbers;
+          b.selected_biomass[f][cell(sex, a)] = biomass;
         }
-        b.selectivity[f][cell(sex, a)] = numbers;
-        b.selected_biomass[f][cell(sex, a)] = biomass;
+      };
+      const double start = (season - 1) * 0.25, midpoint = start + 0.125;
+      if (fixed) {
+        integrate(fixed->length_keys(midpoint)[sex][a],
+                  fixed->length_weights[sex]);
+        b.weight_begin[cell(sex, a)] =
+            T(fixed->weights_at_age(start)[cell(sex, a)]);
+      } else {
+        integrate(age_length_key(data, p, sex, a, midpoint), weights[sex]);
+        b.weight_begin[cell(sex, a)] = weight_at_age(data, p, sex, a, start);
       }
     }
   for (int a = 0; a < nage; ++a)
-    b.mature_weight[a] = mature_weight_at_age(data, p, a);
+    b.mature_weight[a] =
+        fixed ? T(fixed->mature_weights[a]) : mature_weight_at_age(data, p, a);
   return b;
 }
 /// Multiply fleet apical annual fishing rates by numbers selectivity to obtain
@@ -477,12 +500,13 @@ template <class T> struct PopulationRun {
 /// estimated values must be present.
 /// @param deviations Historical fitted log recruitment deviations, including
 /// early age-structure effects.
+/// @param fixed Optional same-evaluation numeric biology shared with likelihood.
 /// @return The typed result described above, with the module units and indexing
 /// conventions.
 template <class T>
-PopulationRun<T> run_population(const InputData &data,
-                                const ParameterValues<T> &p,
-                                const Deviations<T> &deviations) {
+PopulationRun<T>
+run_population(const InputData &data, const ParameterValues<T> &p,
+               const Deviations<T> &deviations, FixedBiology *fixed = nullptr) {
   using std::exp;
   if (data.catches.empty())
     throw std::invalid_argument("Original catch observations are required");
@@ -504,7 +528,7 @@ PopulationRun<T> run_population(const InputData &data,
       const auto curves = length_selectivity(data, p, year);
       std::array<SeasonalBiology<T>, 4> value;
       for (int s = 0; s < 4; ++s)
-        value[s] = seasonal_biology(data, p, curves, s + 1);
+        value[s] = seasonal_biology(data, p, curves, s + 1, fixed);
       it = biology_cache.emplace(key, std::move(value)).first;
     }
     return it->second;

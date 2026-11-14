@@ -165,5 +165,12 @@
   "ReferenceEstimate": "One flattened management reference-point quantity, native units, point estimate and proportion-interval flag.",
   "reference_estimates": "Flatten all six quantities for each of four model reference points; enforce known structural zeros and target proportions to avoid numerical root noise.",
   "write_uncertainty_matrix": "Write a finite, dimension-checked labeled matrix with all coordinate/output correlations retained.",
-  "write_reference_point_uncertainty": "Compute fresh two-step AD-gradient curvature and two-step reference-point Jacobians, propagate the full covariance, and write validated SEs, CVs and 95% local intervals without SS3 files or saved covariance."
+  "write_reference_point_uncertainty": "Compute fresh two-step AD-gradient curvature and two-step reference-point Jacobians, propagate the full covariance, and write validated SEs, CVs and 95% local intervals without SS3 files or saved covariance.",
+  "NumericLengthKeys": "Ordinary double-valued sex/age/length probabilities for a single within-year time; no AD tape state.",
+  "FixedBiology": "Evaluation-scoped numeric biology workspace shared by population and observations. Owns the parameter snapshot, borrows input data, and disables itself conservatively when biology is estimated.",
+  "FixedBiology::FixedBiology": "Check biological estimation flags before precomputing ordinary length weights and mature weights; no cross-evaluation AD state is retained.",
+  "FixedBiology::enabled": "Report whether all biological dependencies are fixed and the numeric workspace was requested.",
+  "FixedBiology::length_keys": "Calculate each time-specific sex/age/length probability table once within this evaluation; reject use when biological parameters are estimated.",
+  "FixedBiology::weights_at_age": "Calculate individual beginning-season weights once per within-year time for fixed biological settings.",
+  "tests/test_fixed_biology.cpp::compare_paths": "Compare the full cached and original objectives and all coordinate gradients at the same model state, using the original equations as the validation oracle."
 }

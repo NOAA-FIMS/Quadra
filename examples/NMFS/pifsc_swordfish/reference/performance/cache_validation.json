@@ -1,0 +1,59 @@
+{
+  "passed": true,
+  "objective": 289.29963930564895,
+  "objective_difference": -1.1368683772161603e-13,
+  "maximum_relative_estimate_difference": 2.4288128807085746e-12,
+  "maximum_relative_SE_difference": 1.173231336570879e-05,
+  "SS3_SE_checks": [
+    {
+      "quantity": "SSB_unfished",
+      "relative_difference": 3.5849873916138364e-06,
+      "passed": true
+    },
+    {
+      "quantity": "SSB_Btgt",
+      "relative_difference": 5.579842494940479e-06,
+      "passed": true
+    },
+    {
+      "quantity": "Dead_Catch_Btgt",
+      "relative_difference": 3.4005672120418495e-06,
+      "passed": true
+    },
+    {
+      "quantity": "annF_Btgt",
+      "relative_difference": 3.188826876443507e-06,
+      "passed": true
+    },
+    {
+      "quantity": "SSB_SPR",
+      "relative_difference": 4.132466221329345e-06,
+      "passed": true
+    },
+    {
+      "quantity": "Dead_Catch_SPR",
+      "relative_difference": 4.381829672661652e-06,
+      "passed": true
+    },
+    {
+      "quantity": "annF_SPR",
+      "relative_difference": 2.593472027800914e-06,
+      "passed": true
+    },
+    {
+      "quantity": "SSB_MSY",
+      "relative_difference": 2.5870905929759047e-06,
+      "passed": true
+    },
+    {
+      "quantity": "Dead_Catch_MSY",
+      "relative_difference": 4.003444755928953e-06,
+      "passed": true
+    },
+    {
+      "quantity": "annF_MSY",
+      "relative_difference": 1.907161518488465e-06,
+      "passed": true
+    }
+  ]
+}
