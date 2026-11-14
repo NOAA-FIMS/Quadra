@@ -500,7 +500,8 @@ template <class T> struct PopulationRun {
 /// estimated values must be present.
 /// @param deviations Historical fitted log recruitment deviations, including
 /// early age-structure effects.
-/// @param fixed Optional same-evaluation numeric biology shared with likelihood.
+/// @param fixed Optional same-evaluation numeric biology shared with
+/// likelihood.
 /// @return The typed result described above, with the module units and indexing
 /// conventions.
 template <class T>
