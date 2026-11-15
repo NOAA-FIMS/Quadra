@@ -1,0 +1,66 @@
+{
+  "passed": true,
+  "tolerance_relative": 0.01,
+  "checks": [
+    {
+      "quantity": "SSB_unfished",
+      "quadra_SE": 5012.572029928051,
+      "ss3_SE": 5012.59,
+      "relative_difference": 3.5849873916138364e-06
+    },
+    {
+      "quantity": "SSB_Btgt",
+      "quadra_SE": 1002.514406096302,
+      "ss3_SE": 1002.52,
+      "relative_difference": 5.579842494940479e-06
+    },
+    {
+      "quantity": "Dead_Catch_Btgt",
+      "quadra_SE": 642.5788148601204,
+      "ss3_SE": 642.581,
+      "relative_difference": 3.4005672120418495e-06
+    },
+    {
+      "quantity": "annF_Btgt",
+      "quadra_SE": 0.003601798514451468,
+      "ss3_SE": 0.00360181,
+      "relative_difference": 3.188826876443507e-06
+    },
+    {
+      "quantity": "SSB_SPR",
+      "quadra_SE": 887.9413305972812,
+      "ss3_SE": 887.945,
+      "relative_difference": 4.132466221329345e-06
+    },
+    {
+      "quantity": "Dead_Catch_SPR",
+      "quadra_SE": 647.2701637599623,
+      "ss3_SE": 647.273,
+      "relative_difference": 4.381829672661652e-06
+    },
+    {
+      "quantity": "annF_SPR",
+      "quadra_SE": 0.0037980401498635646,
+      "ss3_SE": 0.00379805,
+      "relative_difference": 2.593472027800914e-06
+    },
+    {
+      "quantity": "SSB_MSY",
+      "quadra_SE": 813.9818941496508,
+      "ss3_SE": 813.984,
+      "relative_difference": 2.5870905929759047e-06
+    },
+    {
+      "quantity": "Dead_Catch_MSY",
+      "quadra_SE": 648.4424039862653,
+      "ss3_SE": 648.445,
+      "relative_difference": 4.003444755928953e-06
+    },
+    {
+      "quantity": "annF_MSY",
+      "quadra_SE": 0.003996697622333369,
+      "ss3_SE": 0.00399669,
+      "relative_difference": 1.907161518488465e-06
+    }
+  ]
+}

@@ -7,6 +7,7 @@
 #include "swordfish/csv.hpp"
 #include "swordfish/model.hpp"
 #include "swordfish/native_io.hpp"
+#include "swordfish/optimizer_scaling.hpp"
 #include "swordfish/reference_uncertainty.hpp"
 #include "swordfish/report.hpp"
 #include <filesystem>
@@ -16,15 +17,25 @@ DECLARE_ADGRAPH();
 /// Evaluate or fit a native model state and write its complete derived outputs.
 int main(int argc, char **argv) {
   try {
-    if (argc != 5 && argc != 6)
-      throw std::invalid_argument(
-          "Backend usage: OUTPUT evaluate|fit MAX_ITERATIONS "
-          "GRADIENT_TOLERANCE; input on stdin");
+    if (argc < 5 || argc > 7)
+      throw std::invalid_argument("Backend usage: OUTPUT MODE MAX_ITERATIONS "
+                                  "TOLERANCE [uncertainty] [metric=PATH]");
     const std::filesystem::path output = argv[1];
     const std::string mode = argv[2];
-    const bool uncertainty = argc == 6;
-    if (uncertainty && (std::string(argv[5]) != "uncertainty" || mode != "fit"))
-      throw std::invalid_argument("Uncertainty requires fit mode");
+    bool uncertainty = false;
+    std::string metric_path;
+    for (int i = 5; i < argc; ++i) {
+      const std::string option = argv[i];
+      if (option == "uncertainty" && !uncertainty)
+        uncertainty = true;
+      else if (option.rfind("metric=", 0) == 0 && metric_path.empty())
+        metric_path = option.substr(7);
+      else
+        throw std::invalid_argument("Unknown/duplicate native backend option");
+    }
+    if (mode != "fit" && (uncertainty || !metric_path.empty()))
+      throw std::invalid_argument(
+          "Uncertainty and optimizer metric require fit mode");
     if (mode != "fit" && mode != "evaluate")
       throw std::invalid_argument("Native mode");
     const int iterations = swordfish::csv_integer(argv[3]);
@@ -50,10 +61,33 @@ int main(int argc, char **argv) {
     bool converged = false;
     int completed = 0;
     if (mode == "fit") {
-      auto initial_parameters = model.initial_parameters();
-      const auto fit = quadra::optimize_lbfgs(model, initial_parameters,
-                                              quadra::default_laplace_options(),
-                                              iterations, tolerance);
+      quadra::OptResult fit;
+      if (metric_path.empty()) {
+        auto initial_parameters = model.initial_parameters();
+        fit = quadra::optimize_lbfgs(model, initial_parameters,
+                                     quadra::default_laplace_options(),
+                                     iterations, tolerance);
+        x = fit.par;
+      } else {
+        const auto covariance = swordfish::read_optimizer_metric(
+            metric_path, model.parameter_names_impl());
+        Eigen::LLT<Eigen::MatrixXd> decomposition(covariance);
+        Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> eigen(covariance);
+        if (decomposition.info() != Eigen::Success ||
+            eigen.info() != Eigen::Success)
+          throw std::runtime_error("Optimizer metric factorization failed");
+        swordfish::OptimizerScaling<swordfish::SwordfishModel> scaled(
+            model, x, decomposition.matrixL());
+        quadra::ParameterVector initial_parameters;
+        for (const auto &name : model.parameter_names_impl())
+          initial_parameters.add(quadra::Parameter(name, 0.));
+        const double scaled_tolerance = std::min(
+            1e-7, tolerance * std::sqrt(eigen.eigenvalues().minCoeff()) * .1);
+        fit = quadra::optimize_lbfgs(scaled, initial_parameters,
+                                     quadra::default_laplace_options(),
+                                     iterations, scaled_tolerance);
+        x = scaled.expand(fit.par);
+      }
       std::ofstream trace(output / "quadra_fit_trace.csv");
       trace << "evaluation,objective,gradient_norm\n" << std::setprecision(17);
       for (const auto &row : fit.trajectory)
@@ -65,7 +99,6 @@ int main(int argc, char **argv) {
       if (!fit.converged)
         throw std::runtime_error(
             "Native fit did not converge; fitted outputs were not written");
-      x = fit.par;
       completed = fit.iterations;
       converged = true;
     }
@@ -103,6 +136,8 @@ int main(int argc, char **argv) {
             << ",\"converged\":" << (converged ? "true" : "false")
             << ",\"free_parameters\":" << x.size()
             << ",\"optimizer_iterations\":" << completed
+            << ",\"optimizer_metric_used\":"
+            << (metric_path.empty() ? "false" : "true")
             << ",\"reference_points_calculated\":true,\"reference_uncertainty_"
                "calculated\":"
             << (uncertainty ? "true" : "false") << "}\n";

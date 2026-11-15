@@ -1557,6 +1557,86 @@ Read the complete native model data and explicit historical deviations without g
 
 Source: [include/swordfish/native_io.hpp:50](../include/swordfish/native_io.hpp#L50)
 
+## include/swordfish/optimizer_scaling.hpp :: read_optimizer_metric
+
+`Eigen::MatrixXd read_optimizer_metric(const std::string & path, const std::vector<std::string> & names)`
+
+Read a finite symmetric positive-definite optimizer scaling matrix with exact independent-coordinate labels and reject missing, reordered or trailing records.
+
+Source: [include/swordfish/optimizer_scaling.hpp:16](../include/swordfish/optimizer_scaling.hpp#L16)
+
+## include/swordfish/optimizer_scaling.hpp :: OptimizerScaling
+
+`OptimizerScaling`
+
+Constant linear optimizer-coordinate adapter preserving the original model objective and all derivative dependencies; its metric is not an inferential covariance for the new fit.
+
+Source: [include/swordfish/optimizer_scaling.hpp:47](../include/swordfish/optimizer_scaling.hpp#L47)
+
+## include/swordfish/optimizer_scaling.hpp :: OptimizerScaling::OptimizerScaling<Model>
+
+`OptimizerScaling::OptimizerScaling<Model>(Model & m, std::vector<double> x, Eigen::MatrixXd scaling)`
+
+Borrow the objective and copy its center and finite square linear factor, validating coordinate dimensions.
+
+Source: [include/swordfish/optimizer_scaling.hpp:52](../include/swordfish/optimizer_scaling.hpp#L52)
+
+Contract details:
+
+```text
+Borrow the objective and copy its starting coordinates and linear factor.
+```
+
+## include/swordfish/optimizer_scaling.hpp :: OptimizerScaling::parameter_names_impl
+
+`std::vector<std::string> OptimizerScaling::parameter_names_impl() const`
+
+Preserve canonical independent-coordinate ordering through the optimizer adapter.
+
+Source: [include/swordfish/optimizer_scaling.hpp:59](../include/swordfish/optimizer_scaling.hpp#L59)
+
+Contract details:
+
+```text
+Preserve canonical coordinate order through the optimizer adapter.
+```
+
+## include/swordfish/optimizer_scaling.hpp :: OptimizerScaling::expand
+
+`std::vector<T> OptimizerScaling::expand(const std::vector<T> & z) const`
+
+Map scaled displacements into original model coordinates as center plus factor times displacement.
+
+Source: [include/swordfish/optimizer_scaling.hpp:63](../include/swordfish/optimizer_scaling.hpp#L63)
+
+Contract details:
+
+```text
+Expand scaled optimizer coordinates into original model coordinates.
+```
+
+## include/swordfish/optimizer_scaling.hpp :: OptimizerScaling::operator()
+
+`T OptimizerScaling::operator()(const std::vector<T> & z) const`
+
+Evaluate the unchanged model objective after constant linear optimizer scaling.
+
+Source: [include/swordfish/optimizer_scaling.hpp:76](../include/swordfish/optimizer_scaling.hpp#L76)
+
+Contract details:
+
+```text
+Evaluate the same scalar likelihood after constant optimizer scaling.
+```
+
+## include/swordfish/optimizer_scaling.hpp :: OptimizerScaling::evaluate_impl
+
+`T OptimizerScaling::evaluate_impl(const std::vector<T> & z, quadra::ModelReportContext & ) const`
+
+Expose the scaled scalar objective through the regular Quadra model interface.
+
+Source: [include/swordfish/optimizer_scaling.hpp:81](../include/swordfish/optimizer_scaling.hpp#L81)
+
 ## include/swordfish/population.hpp :: Deviations
 
 `std::map<int, T>`
@@ -1786,7 +1866,7 @@ run.
 
 Run all historical seasons from original catches and native parameters, recalculating recruitment and caching biology within this evaluation only.
 
-Source: [include/swordfish/population.hpp:508](../include/swordfish/population.hpp#L508)
+Source: [include/swordfish/population.hpp:509](../include/swordfish/population.hpp#L509)
 
 ## include/swordfish/projection.hpp :: dynamic_unfished
 
@@ -2638,7 +2718,7 @@ check or invalid input.
 
 Run swordfish native; return zero on success and nonzero on a failed check or invalid input.
 
-Source: [src/swordfish_native.cpp:17](../src/swordfish_native.cpp#L17)
+Source: [src/swordfish_native.cpp:18](../src/swordfish_native.cpp#L18)
 
 Contract details:
 
@@ -3136,6 +3216,66 @@ Run test model gradient; return zero on success and nonzero on a failed
 check or invalid input.
 ```
 
+## tests/test_optimizer_scaling.cpp :: Quadratic
+
+`Quadratic`
+
+Analytic correlated quadratic used to verify scaling without assessment data.
+
+Source: [tests/test_optimizer_scaling.cpp:11](../tests/test_optimizer_scaling.cpp#L11)
+
+Contract details:
+
+```text
+Analytic correlated quadratic used to check optimizer scaling independently
+of fish data.
+```
+
+## tests/test_optimizer_scaling.cpp :: Quadratic::parameter_names_impl
+
+`std::vector<std::string> Quadratic::parameter_names_impl() const`
+
+Return the two analytic coordinate labels for matrix identity checks.
+
+Source: [tests/test_optimizer_scaling.cpp:13](../tests/test_optimizer_scaling.cpp#L13)
+
+Contract details:
+
+```text
+Stable coordinate labels for matrix identity checks.
+```
+
+## tests/test_optimizer_scaling.cpp :: Quadratic::operator()
+
+`T Quadratic::operator()(const std::vector<T> & x) const`
+
+Evaluate a known correlated positive quadratic with optimum at zero.
+
+Source: [tests/test_optimizer_scaling.cpp:17](../tests/test_optimizer_scaling.cpp#L17)
+
+## tests/test_optimizer_scaling.cpp :: Quadratic::evaluate_impl
+
+`T Quadratic::evaluate_impl(const std::vector<T> & x, quadra::ModelReportContext & ) const`
+
+Expose the analytic quadratic through the Quadra model interface.
+
+Source: [tests/test_optimizer_scaling.cpp:21](../tests/test_optimizer_scaling.cpp#L21)
+
+## tests/test_optimizer_scaling.cpp :: main
+
+`int main()`
+
+Run test optimizer scaling; return zero on success and nonzero on a failed check or invalid input.
+
+Source: [tests/test_optimizer_scaling.cpp:28](../tests/test_optimizer_scaling.cpp#L28)
+
+Contract details:
+
+```text
+Check objective/gradient chain rule, optimum recovery and metric label/SPD
+rejection.
+```
+
 ## tests/test_population.cpp :: require
 
 `void require(bool ok, const char * message)`
@@ -3514,6 +3654,38 @@ Notes
 -----
 The guide is a presentation of the checked API inventory and optional accepted-run evidence. PDF dependencies are separate from the numerical runtime. Rebuilding the PDF does not itself certify model science; render and inspect the resulting pages before delivery.
 ```
+
+## scripts/build_native_release_report.py :: table
+
+`table(rows, widths)`
+
+Create a compact scientific results table with repeated, high-contrast headers.
+
+Source: [scripts/build_native_release_report.py:14](../scripts/build_native_release_report.py#L14)
+
+## scripts/build_native_release_report.py :: build
+
+`build(bundle)`
+
+Report accepted baseline/local-start checks, uncertainty and exact input/source identity.
+
+Source: [scripts/build_native_release_report.py:24](../scripts/build_native_release_report.py#L24)
+
+## scripts/build_native_release_report.py :: build.footer
+
+`footer(canvas, document)`
+
+Identify the case and number pages without overlapping report content.
+
+Source: [scripts/build_native_release_report.py:83](../scripts/build_native_release_report.py#L83)
+
+## scripts/build_native_release_report.py :: main
+
+`main()`
+
+Build the PDF for one already numerically accepted staging bundle.
+
+Source: [scripts/build_native_release_report.py:92](../scripts/build_native_release_report.py#L92)
 
 ## scripts/build_ss_par_report.py :: build
 
@@ -4614,6 +4786,102 @@ no compilation, generated C++ factory, SS3 source files or reference outputs.
 Existing output directories are rejected. Progress streams to the terminal.
 ```
 
+## scripts/run_native_release.py :: hashes
+
+`hashes(directory)`
+
+Hash a source/artifact tree in relative-path order, excluding Python caches.
+
+Source: [scripts/run_native_release.py:29](../scripts/run_native_release.py#L29)
+
+## scripts/run_native_release.py :: copy_snapshot
+
+`copy_snapshot(case, bundle)`
+
+Copy model/framework source and selected comparison targets, never raw SS3 files or binaries.
+
+Source: [scripts/run_native_release.py:35](../scripts/run_native_release.py#L35)
+
+## scripts/run_native_release.py :: run_stage
+
+`run_stage(name, command, cwd, bundle, records, timeout=1800)`
+
+Stream stage output to console/log, enforce a deadline and terminate its process group on failure.
+
+Source: [scripts/run_native_release.py:53](../scripts/run_native_release.py#L53)
+
+## scripts/run_native_release.py :: run_stage.pump
+
+`pump()`
+
+Drain child output continuously, retaining logs if console output closes.
+
+Source: [scripts/run_native_release.py:61](../scripts/run_native_release.py#L61)
+
+## scripts/run_native_release.py :: parameter_values
+
+`parameter_values(path)`
+
+Read a finite, duplicate-free complete native parameter map for seed comparison.
+
+Source: [scripts/run_native_release.py:95](../scripts/run_native_release.py#L95)
+
+## scripts/run_native_release.py :: verify_seed
+
+`verify_seed(document, expected)`
+
+Require the release baseline to use the preserved .par-imported vector before Quadra fitting.
+
+Source: [scripts/run_native_release.py:103](../scripts/run_native_release.py#L103)
+
+## scripts/run_native_release.py :: coordinate_schema
+
+`coordinate_schema(document)`
+
+Match the model's independent bounded-logit coordinates, excluding the final main deviation.
+
+Source: [scripts/run_native_release.py:111](../scripts/run_native_release.py#L111)
+
+## scripts/run_native_release.py :: metric_factor
+
+`metric_factor(path, names)`
+
+Read the fresh labeled covariance and compute an unregularized numeric Cholesky factor.
+
+Source: [scripts/run_native_release.py:122](../scripts/run_native_release.py#L122)
+
+## scripts/run_native_release.py :: perturbed_input
+
+`perturbed_input(document, factor, seed, scale)`
+
+Perturb the .par starting coordinates along fresh covariance directions; preserve fixed settings.
+
+Source: [scripts/run_native_release.py:143](../scripts/run_native_release.py#L143)
+
+## scripts/run_native_release.py :: accept
+
+`accept(bundle, frozen, records)`
+
+Gate convergence, SS3 points/SEs, start recovery and run-bound input/binary/covariance hashes.
+
+Source: [scripts/run_native_release.py:161](../scripts/run_native_release.py#L161)
+
+## scripts/run_native_release.py :: release
+
+`release(case, input_path, destination, pdf_python)`
+
+Freeze, build, fit and publish a new local native bundle only after every gate and PDF succeeds.
+
+Source: [scripts/run_native_release.py:204](../scripts/run_native_release.py#L204)
+
+## scripts/run_native_release.py :: main
+
+`main()`
+
+Run a clean native-only release using the recorded .par-derived starting JSON.
+
+Source: [scripts/run_native_release.py:259](../scripts/run_native_release.py#L259)
+
 ## scripts/run_release.py :: verify_sources
 
 `verify_sources(case)`
@@ -5523,7 +5791,7 @@ Source: [tests/test_native_input.py:43](../tests/test_native_input.py#L43)
 
 Reject duplicate object keys, NaN and infinity at the JSON boundary.
 
-Source: [tests/test_native_input.py:53](../tests/test_native_input.py#L53)
+Source: [tests/test_native_input.py:56](../tests/test_native_input.py#L56)
 
 ## tests/test_native_input.py :: NativeInputTests.test_types_shapes_and_unknown_fields
 
@@ -5531,7 +5799,7 @@ Source: [tests/test_native_input.py:53](../tests/test_native_input.py#L53)
 
 Reject booleans as numbers, fractional integers, bad arrays and misspelled keys.
 
-Source: [tests/test_native_input.py:58](../tests/test_native_input.py#L58)
+Source: [tests/test_native_input.py:61](../tests/test_native_input.py#L61)
 
 ## tests/test_native_input.py :: NativeInputTests.test_bounds_names_and_deviation_constraints
 
@@ -5539,7 +5807,63 @@ Source: [tests/test_native_input.py:58](../tests/test_native_input.py#L58)
 
 Reject incomplete/duplicate names, invalid starts and dependent-deviation inconsistencies.
 
-Source: [tests/test_native_input.py:65](../tests/test_native_input.py#L65)
+Source: [tests/test_native_input.py:68](../tests/test_native_input.py#L68)
+
+## tests/test_native_release.py :: NativeReleaseTests
+
+`NativeReleaseTests`
+
+Check seed identity, covariance perturbations, source isolation and failed publication paths.
+
+Source: [tests/test_native_release.py:15](../tests/test_native_release.py#L15)
+
+## tests/test_native_release.py :: NativeReleaseTests.test_seed_and_perturbations
+
+`test_seed_and_perturbations(self)`
+
+Preserve fixed settings, perturb reproducibly and reconstruct the dependent deviation.
+
+Source: [tests/test_native_release.py:17](../tests/test_native_release.py#L17)
+
+## tests/test_native_release.py :: NativeReleaseTests.test_metric_identity_and_positive_definiteness
+
+`test_metric_identity_and_positive_definiteness(self)`
+
+Read a known SPD matrix; reject wrong labels and indefinite directions.
+
+Source: [tests/test_native_release.py:33](../tests/test_native_release.py#L33)
+
+## tests/test_native_release.py :: NativeReleaseTests.test_pdf_interpreter_keeps_virtual_environment
+
+`test_pdf_interpreter_keeps_virtual_environment(self)`
+
+Preserve the selected venv launcher rather than resolving it to the base Python.
+
+Source: [tests/test_native_release.py:43](../tests/test_native_release.py#L43)
+
+## tests/test_native_release.py :: NativeReleaseTests.test_existing_destination_is_preserved
+
+`test_existing_destination_is_preserved(self)`
+
+Reject an existing release before reading missing inputs or starting child processes.
+
+Source: [tests/test_native_release.py:51](../tests/test_native_release.py#L51)
+
+## tests/test_native_release.py :: NativeReleaseTests.test_stage_failure_and_timeout
+
+`test_stage_failure_and_timeout(self)`
+
+Retain error logs/counters and terminate a timed-out process group.
+
+Source: [tests/test_native_release.py:58](../tests/test_native_release.py#L58)
+
+## tests/test_native_release.py :: NativeReleaseTests.test_snapshot_excludes_raw_inputs_and_old_outputs
+
+`test_snapshot_excludes_raw_inputs_and_old_outputs(self)`
+
+Copy source/targets into the correct layout without observation files or existing binaries.
+
+Source: [tests/test_native_release.py:68](../tests/test_native_release.py#L68)
 
 ## tests/test_runtime.py :: RuntimeTests
 

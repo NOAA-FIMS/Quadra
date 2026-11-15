@@ -11,3 +11,5 @@
 #include "swordfish/reference_uncertainty.hpp"
 
 #include "swordfish/fixed_biology.hpp"
+
+#include "swordfish/optimizer_scaling.hpp"

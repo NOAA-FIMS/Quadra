@@ -235,3 +235,16 @@ test-fixed-biology: build/test_fixed_biology
 
 build/test_fixed_biology: tests/test_fixed_biology.cpp $(wildcard include/swordfish/*.hpp) build/swordfish_input.hpp
 	$(CXX) $(CPPFLAGS) -I$(QUADRA_ROOT)/external/eigen $(CXXFLAGS) $(DEPFLAGS) $< -o $@
+
+.PHONY: test-optimizer-scaling
+test-optimizer-scaling: build/test_optimizer_scaling
+	./build/test_optimizer_scaling
+
+build/test_optimizer_scaling: tests/test_optimizer_scaling.cpp include/swordfish/optimizer_scaling.hpp include/swordfish/delta_method.hpp include/swordfish/csv.hpp | build
+	$(CXX) $(CPPFLAGS) -I$(QUADRA_ROOT)/external/eigen $(CXXFLAGS) $(DEPFLAGS) $< -o $@
+
+NATIVE_INPUT ?= build/native/swordfish-ss-par-start.json
+PDF_PYTHON ?= $(PYTHON)
+.PHONY: native-release
+native-release:
+	$(PYTHON) scripts/run_native_release.py --input "$(NATIVE_INPUT)" --pdf-python "$(PDF_PYTHON)"

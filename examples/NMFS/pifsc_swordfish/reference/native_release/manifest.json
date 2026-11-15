@@ -1,0 +1,8 @@
+{
+  "files_sha256": {
+    "summary.json": "15fada308030d1131c5c8ee96ce8b3a254663f8dcca5ddc9b4b3cbdab9e6d3d4",
+    "reference_point_comparison.json": "1dda57d4fb7dec33600b0a9a131ef2f9c8dae54c3b1a6b8f4d8ea8096b3dc961",
+    "acceptance.json": "7612e8c236353b71efb1f002d2c9fe283c3876c37c1d19060d82fed8c55f91c4",
+    "reference_SE_comparison.json": "efcbdd67a824d6bea081c2797d6332b7c63b9ee16a386ef78043d62e0dc166cd"
+  }
+}

@@ -49,6 +49,9 @@ class NativeInputTests(unittest.TestCase):
         invalid=subprocess.run([sys.executable,str(script),'--input','missing.json','--output','unused','--mode','evaluate','--uncertainty'],capture_output=True,text=True)
         self.assertEqual(invalid.returncode,2)
         self.assertIn('requires --mode fit',invalid.stderr)
+        metric=subprocess.run([sys.executable,str(script),'--input','missing.json','--output','unused','--mode','evaluate','--optimizer-metric','missing.csv'],capture_output=True,text=True)
+        self.assertEqual(metric.returncode,2)
+        self.assertIn('requires --mode fit',metric.stderr)
 
     def test_json_duplicates_and_nonfinite(self):
         """Reject duplicate object keys, NaN and infinity at the JSON boundary."""

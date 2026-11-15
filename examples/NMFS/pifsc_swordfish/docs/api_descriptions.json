@@ -172,5 +172,17 @@
   "FixedBiology::enabled": "Report whether all biological dependencies are fixed and the numeric workspace was requested.",
   "FixedBiology::length_keys": "Calculate each time-specific sex/age/length probability table once within this evaluation; reject use when biological parameters are estimated.",
   "FixedBiology::weights_at_age": "Calculate individual beginning-season weights once per within-year time for fixed biological settings.",
-  "tests/test_fixed_biology.cpp::compare_paths": "Compare the full cached and original objectives and all coordinate gradients at the same model state, using the original equations as the validation oracle."
+  "tests/test_fixed_biology.cpp::compare_paths": "Compare the full cached and original objectives and all coordinate gradients at the same model state, using the original equations as the validation oracle.",
+  "read_optimizer_metric": "Read a finite symmetric positive-definite optimizer scaling matrix with exact independent-coordinate labels and reject missing, reordered or trailing records.",
+  "OptimizerScaling": "Constant linear optimizer-coordinate adapter preserving the original model objective and all derivative dependencies; its metric is not an inferential covariance for the new fit.",
+  "OptimizerScaling::OptimizerScaling": "Borrow the objective and copy its center and finite square linear factor, validating coordinate dimensions.",
+  "OptimizerScaling::parameter_names_impl": "Preserve canonical independent-coordinate ordering through the optimizer adapter.",
+  "OptimizerScaling::expand": "Map scaled displacements into original model coordinates as center plus factor times displacement.",
+  "OptimizerScaling::operator()": "Evaluate the unchanged model objective after constant linear optimizer scaling.",
+  "OptimizerScaling::evaluate_impl": "Expose the scaled scalar objective through the regular Quadra model interface.",
+  "tests/test_optimizer_scaling.cpp::Quadratic": "Analytic correlated quadratic used to verify scaling without assessment data.",
+  "tests/test_optimizer_scaling.cpp::Quadratic::parameter_names_impl": "Return the two analytic coordinate labels for matrix identity checks.",
+  "tests/test_optimizer_scaling.cpp::Quadratic::operator()": "Evaluate a known correlated positive quadratic with optimum at zero.",
+  "tests/test_optimizer_scaling.cpp::Quadratic::evaluate_impl": "Expose the analytic quadratic through the Quadra model interface.",
+  "OptimizerScaling::OptimizerScaling<Model>": "Borrow the objective and copy its center and finite square linear factor, validating coordinate dimensions."
 }

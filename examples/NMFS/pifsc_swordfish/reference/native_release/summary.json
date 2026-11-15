@@ -1,0 +1,64 @@
+{
+  "passed": true,
+  "bundle": "runs/native-release-20261115-001",
+  "release_manifest_sha256": "805acf779f9d9db7a3eaeb78db25f98805aa96e7bec622506ac6d8af7e93011a",
+  "input_sha256": "7ca7e55c77cc70cef66a6224c6083738adeff232d5d34b5f78f623284c258737",
+  "source_and_target_files": 2183,
+  "hashed_artifacts": 2275,
+  "stages": [
+    {
+      "name": "clean_native_build",
+      "seconds": 23.71209195899428,
+      "returncode": 0
+    },
+    {
+      "name": "optimizer_scaling_checks",
+      "seconds": 0.1801217090105638,
+      "returncode": 0
+    },
+    {
+      "name": "native_schema_checks",
+      "seconds": 0.2936055000172928,
+      "returncode": 0
+    },
+    {
+      "name": "release_guardrails",
+      "seconds": 0.23639145799097605,
+      "returncode": 0
+    },
+    {
+      "name": "framework_regressions",
+      "seconds": 12.55392162501812,
+      "returncode": 0
+    },
+    {
+      "name": "baseline_fit_uncertainty",
+      "seconds": 149.52942658399115,
+      "returncode": 0
+    },
+    {
+      "name": "start-01",
+      "seconds": 9.883897124993382,
+      "returncode": 0
+    },
+    {
+      "name": "start-02",
+      "seconds": 25.639738874975592,
+      "returncode": 0
+    },
+    {
+      "name": "start-03",
+      "seconds": 19.517042958003003,
+      "returncode": 0
+    },
+    {
+      "name": "summary_pdf",
+      "seconds": 0.1877575840044301,
+      "returncode": 0
+    }
+  ],
+  "pdf_sha256": "a479b81f0b28071fc16b42944f9a20b9d3ffb85ca740c2d9e383303e0b70ff36",
+  "raw_ss3_files_in_snapshot": false,
+  "bundle_contains_observations": true,
+  "full_bundle_not_published_to_git": true
+}

@@ -2748,6 +2748,144 @@
     },
     {
       "language": "C++",
+      "file": "include/swordfish/optimizer_scaling.hpp",
+      "line": 16,
+      "name": "read_optimizer_metric",
+      "kind": "function",
+      "signature": "Eigen::MatrixXd read_optimizer_metric(const std::string & path, const std::vector<std::string> & names)",
+      "parameters": [
+        {
+          "name": "path",
+          "type": "const std::string &"
+        },
+        {
+          "name": "names",
+          "type": "const std::vector<std::string> &"
+        }
+      ],
+      "fields": [],
+      "documentation": "",
+      "purpose": "Read a finite symmetric positive-definite optimizer scaling matrix with exact independent-coordinate labels and reject missing, reordered or trailing records."
+    },
+    {
+      "language": "C++",
+      "file": "include/swordfish/optimizer_scaling.hpp",
+      "line": 47,
+      "name": "OptimizerScaling",
+      "kind": "class/struct",
+      "signature": "OptimizerScaling",
+      "parameters": [],
+      "fields": [
+        {
+          "name": "model",
+          "type": "Model &"
+        },
+        {
+          "name": "center",
+          "type": "std::vector<double>"
+        },
+        {
+          "name": "factor",
+          "type": "Eigen::MatrixXd"
+        }
+      ],
+      "documentation": "",
+      "purpose": "Constant linear optimizer-coordinate adapter preserving the original model objective and all derivative dependencies; its metric is not an inferential covariance for the new fit."
+    },
+    {
+      "language": "C++",
+      "file": "include/swordfish/optimizer_scaling.hpp",
+      "line": 52,
+      "name": "OptimizerScaling::OptimizerScaling<Model>",
+      "kind": "function",
+      "signature": "OptimizerScaling::OptimizerScaling<Model>(Model & m, std::vector<double> x, Eigen::MatrixXd scaling)",
+      "parameters": [
+        {
+          "name": "m",
+          "type": "Model &"
+        },
+        {
+          "name": "x",
+          "type": "std::vector<double>"
+        },
+        {
+          "name": "scaling",
+          "type": "Eigen::MatrixXd"
+        }
+      ],
+      "fields": [],
+      "documentation": "Borrow the objective and copy its starting coordinates and linear factor.",
+      "purpose": "Borrow the objective and copy its center and finite square linear factor, validating coordinate dimensions."
+    },
+    {
+      "language": "C++",
+      "file": "include/swordfish/optimizer_scaling.hpp",
+      "line": 59,
+      "name": "OptimizerScaling::parameter_names_impl",
+      "kind": "function",
+      "signature": "std::vector<std::string> OptimizerScaling::parameter_names_impl() const",
+      "parameters": [],
+      "fields": [],
+      "documentation": "Preserve canonical coordinate order through the optimizer adapter.",
+      "purpose": "Preserve canonical independent-coordinate ordering through the optimizer adapter."
+    },
+    {
+      "language": "C++",
+      "file": "include/swordfish/optimizer_scaling.hpp",
+      "line": 63,
+      "name": "OptimizerScaling::expand",
+      "kind": "function",
+      "signature": "std::vector<T> OptimizerScaling::expand(const std::vector<T> & z) const",
+      "parameters": [
+        {
+          "name": "z",
+          "type": "const std::vector<T> &"
+        }
+      ],
+      "fields": [],
+      "documentation": "Expand scaled optimizer coordinates into original model coordinates.",
+      "purpose": "Map scaled displacements into original model coordinates as center plus factor times displacement."
+    },
+    {
+      "language": "C++",
+      "file": "include/swordfish/optimizer_scaling.hpp",
+      "line": 76,
+      "name": "OptimizerScaling::operator()",
+      "kind": "function",
+      "signature": "T OptimizerScaling::operator()(const std::vector<T> & z) const",
+      "parameters": [
+        {
+          "name": "z",
+          "type": "const std::vector<T> &"
+        }
+      ],
+      "fields": [],
+      "documentation": "Evaluate the same scalar likelihood after constant optimizer scaling.",
+      "purpose": "Evaluate the unchanged model objective after constant linear optimizer scaling."
+    },
+    {
+      "language": "C++",
+      "file": "include/swordfish/optimizer_scaling.hpp",
+      "line": 81,
+      "name": "OptimizerScaling::evaluate_impl",
+      "kind": "function",
+      "signature": "T OptimizerScaling::evaluate_impl(const std::vector<T> & z, quadra::ModelReportContext & ) const",
+      "parameters": [
+        {
+          "name": "z",
+          "type": "const std::vector<T> &"
+        },
+        {
+          "name": "",
+          "type": "quadra::ModelReportContext &"
+        }
+      ],
+      "fields": [],
+      "documentation": "",
+      "purpose": "Expose the scaled scalar objective through the regular Quadra model interface."
+    },
+    {
+      "language": "C++",
       "file": "include/swordfish/population.hpp",
       "line": 24,
       "name": "Deviations",
@@ -3187,7 +3325,7 @@
     {
       "language": "C++",
       "file": "include/swordfish/population.hpp",
-      "line": 508,
+      "line": 509,
       "name": "run_population",
       "kind": "function",
       "signature": "PopulationRun<T> run_population(const InputData & data, const ParameterValues<T> & p, const Deviations<T> & deviations, FixedBiology * fixed)",
@@ -4589,7 +4727,7 @@
     {
       "language": "C++",
       "file": "src/swordfish_native.cpp",
-      "line": 17,
+      "line": 18,
       "name": "main",
       "kind": "function",
       "signature": "int main(int argc, char ** argv)",
@@ -5206,6 +5344,80 @@
     },
     {
       "language": "C++",
+      "file": "tests/test_optimizer_scaling.cpp",
+      "line": 11,
+      "name": "Quadratic",
+      "kind": "class/struct",
+      "signature": "Quadratic",
+      "parameters": [],
+      "fields": [],
+      "documentation": "Analytic correlated quadratic used to check optimizer scaling independently\nof fish data.",
+      "purpose": "Analytic correlated quadratic used to verify scaling without assessment data."
+    },
+    {
+      "language": "C++",
+      "file": "tests/test_optimizer_scaling.cpp",
+      "line": 13,
+      "name": "Quadratic::parameter_names_impl",
+      "kind": "function",
+      "signature": "std::vector<std::string> Quadratic::parameter_names_impl() const",
+      "parameters": [],
+      "fields": [],
+      "documentation": "Stable coordinate labels for matrix identity checks.",
+      "purpose": "Return the two analytic coordinate labels for matrix identity checks."
+    },
+    {
+      "language": "C++",
+      "file": "tests/test_optimizer_scaling.cpp",
+      "line": 17,
+      "name": "Quadratic::operator()",
+      "kind": "function",
+      "signature": "T Quadratic::operator()(const std::vector<T> & x) const",
+      "parameters": [
+        {
+          "name": "x",
+          "type": "const std::vector<T> &"
+        }
+      ],
+      "fields": [],
+      "documentation": "",
+      "purpose": "Evaluate a known correlated positive quadratic with optimum at zero."
+    },
+    {
+      "language": "C++",
+      "file": "tests/test_optimizer_scaling.cpp",
+      "line": 21,
+      "name": "Quadratic::evaluate_impl",
+      "kind": "function",
+      "signature": "T Quadratic::evaluate_impl(const std::vector<T> & x, quadra::ModelReportContext & ) const",
+      "parameters": [
+        {
+          "name": "x",
+          "type": "const std::vector<T> &"
+        },
+        {
+          "name": "",
+          "type": "quadra::ModelReportContext &"
+        }
+      ],
+      "fields": [],
+      "documentation": "",
+      "purpose": "Expose the analytic quadratic through the Quadra model interface."
+    },
+    {
+      "language": "C++",
+      "file": "tests/test_optimizer_scaling.cpp",
+      "line": 28,
+      "name": "main",
+      "kind": "function",
+      "signature": "int main()",
+      "parameters": [],
+      "fields": [],
+      "documentation": "Check objective/gradient chain rule, optimum recovery and metric label/SPD\nrejection.",
+      "purpose": "Run test optimizer scaling; return zero on success and nonzero on a failed check or invalid input."
+    },
+    {
+      "language": "C++",
       "file": "tests/test_population.cpp",
       "line": 11,
       "name": "require",
@@ -5530,6 +5742,46 @@
       "signature": "main()",
       "purpose": "Parse optional accepted-release evidence and create the stable guide PDF artifact.",
       "documentation": "Parse optional accepted-release evidence and create the stable guide PDF artifact.\n\nNotes\n-----\nThe guide is a presentation of the checked API inventory and optional accepted-run evidence. PDF dependencies are separate from the numerical runtime. Rebuilding the PDF does not itself certify model science; render and inspect the resulting pages before delivery."
+    },
+    {
+      "language": "Python",
+      "file": "scripts/build_native_release_report.py",
+      "line": 14,
+      "name": "table",
+      "kind": "function",
+      "signature": "table(rows, widths)",
+      "purpose": "Create a compact scientific results table with repeated, high-contrast headers.",
+      "documentation": "Create a compact scientific results table with repeated, high-contrast headers."
+    },
+    {
+      "language": "Python",
+      "file": "scripts/build_native_release_report.py",
+      "line": 24,
+      "name": "build",
+      "kind": "function",
+      "signature": "build(bundle)",
+      "purpose": "Report accepted baseline/local-start checks, uncertainty and exact input/source identity.",
+      "documentation": "Report accepted baseline/local-start checks, uncertainty and exact input/source identity."
+    },
+    {
+      "language": "Python",
+      "file": "scripts/build_native_release_report.py",
+      "line": 83,
+      "name": "build.footer",
+      "kind": "function",
+      "signature": "footer(canvas, document)",
+      "purpose": "Identify the case and number pages without overlapping report content.",
+      "documentation": "Identify the case and number pages without overlapping report content."
+    },
+    {
+      "language": "Python",
+      "file": "scripts/build_native_release_report.py",
+      "line": 92,
+      "name": "main",
+      "kind": "function",
+      "signature": "main()",
+      "purpose": "Build the PDF for one already numerically accepted staging bundle.",
+      "documentation": "Build the PDF for one already numerically accepted staging bundle."
     },
     {
       "language": "Python",
@@ -6103,6 +6355,126 @@
     },
     {
       "language": "Python",
+      "file": "scripts/run_native_release.py",
+      "line": 29,
+      "name": "hashes",
+      "kind": "function",
+      "signature": "hashes(directory)",
+      "purpose": "Hash a source/artifact tree in relative-path order, excluding Python caches.",
+      "documentation": "Hash a source/artifact tree in relative-path order, excluding Python caches."
+    },
+    {
+      "language": "Python",
+      "file": "scripts/run_native_release.py",
+      "line": 35,
+      "name": "copy_snapshot",
+      "kind": "function",
+      "signature": "copy_snapshot(case, bundle)",
+      "purpose": "Copy model/framework source and selected comparison targets, never raw SS3 files or binaries.",
+      "documentation": "Copy model/framework source and selected comparison targets, never raw SS3 files or binaries."
+    },
+    {
+      "language": "Python",
+      "file": "scripts/run_native_release.py",
+      "line": 53,
+      "name": "run_stage",
+      "kind": "function",
+      "signature": "run_stage(name, command, cwd, bundle, records, timeout=1800)",
+      "purpose": "Stream stage output to console/log, enforce a deadline and terminate its process group on failure.",
+      "documentation": "Stream stage output to console/log, enforce a deadline and terminate its process group on failure."
+    },
+    {
+      "language": "Python",
+      "file": "scripts/run_native_release.py",
+      "line": 61,
+      "name": "run_stage.pump",
+      "kind": "function",
+      "signature": "pump()",
+      "purpose": "Drain child output continuously, retaining logs if console output closes.",
+      "documentation": "Drain child output continuously, retaining logs if console output closes."
+    },
+    {
+      "language": "Python",
+      "file": "scripts/run_native_release.py",
+      "line": 95,
+      "name": "parameter_values",
+      "kind": "function",
+      "signature": "parameter_values(path)",
+      "purpose": "Read a finite, duplicate-free complete native parameter map for seed comparison.",
+      "documentation": "Read a finite, duplicate-free complete native parameter map for seed comparison."
+    },
+    {
+      "language": "Python",
+      "file": "scripts/run_native_release.py",
+      "line": 103,
+      "name": "verify_seed",
+      "kind": "function",
+      "signature": "verify_seed(document, expected)",
+      "purpose": "Require the release baseline to use the preserved .par-imported vector before Quadra fitting.",
+      "documentation": "Require the release baseline to use the preserved .par-imported vector before Quadra fitting."
+    },
+    {
+      "language": "Python",
+      "file": "scripts/run_native_release.py",
+      "line": 111,
+      "name": "coordinate_schema",
+      "kind": "function",
+      "signature": "coordinate_schema(document)",
+      "purpose": "Match the model's independent bounded-logit coordinates, excluding the final main deviation.",
+      "documentation": "Match the model's independent bounded-logit coordinates, excluding the final main deviation."
+    },
+    {
+      "language": "Python",
+      "file": "scripts/run_native_release.py",
+      "line": 122,
+      "name": "metric_factor",
+      "kind": "function",
+      "signature": "metric_factor(path, names)",
+      "purpose": "Read the fresh labeled covariance and compute an unregularized numeric Cholesky factor.",
+      "documentation": "Read the fresh labeled covariance and compute an unregularized numeric Cholesky factor."
+    },
+    {
+      "language": "Python",
+      "file": "scripts/run_native_release.py",
+      "line": 143,
+      "name": "perturbed_input",
+      "kind": "function",
+      "signature": "perturbed_input(document, factor, seed, scale)",
+      "purpose": "Perturb the .par starting coordinates along fresh covariance directions; preserve fixed settings.",
+      "documentation": "Perturb the .par starting coordinates along fresh covariance directions; preserve fixed settings."
+    },
+    {
+      "language": "Python",
+      "file": "scripts/run_native_release.py",
+      "line": 161,
+      "name": "accept",
+      "kind": "function",
+      "signature": "accept(bundle, frozen, records)",
+      "purpose": "Gate convergence, SS3 points/SEs, start recovery and run-bound input/binary/covariance hashes.",
+      "documentation": "Gate convergence, SS3 points/SEs, start recovery and run-bound input/binary/covariance hashes."
+    },
+    {
+      "language": "Python",
+      "file": "scripts/run_native_release.py",
+      "line": 204,
+      "name": "release",
+      "kind": "function",
+      "signature": "release(case, input_path, destination, pdf_python)",
+      "purpose": "Freeze, build, fit and publish a new local native bundle only after every gate and PDF succeeds.",
+      "documentation": "Freeze, build, fit and publish a new local native bundle only after every gate and PDF succeeds."
+    },
+    {
+      "language": "Python",
+      "file": "scripts/run_native_release.py",
+      "line": 259,
+      "name": "main",
+      "kind": "function",
+      "signature": "main()",
+      "purpose": "Run a clean native-only release using the recorded .par-derived starting JSON.",
+      "documentation": "Run a clean native-only release using the recorded .par-derived starting JSON."
+    },
+    {
+      "language": "Python",
       "file": "scripts/run_release.py",
       "line": 17,
       "name": "verify_sources",
@@ -6554,7 +6926,7 @@
     {
       "language": "Python",
       "file": "tests/test_native_input.py",
-      "line": 53,
+      "line": 56,
       "name": "NativeInputTests.test_json_duplicates_and_nonfinite",
       "kind": "function",
       "signature": "test_json_duplicates_and_nonfinite(self)",
@@ -6564,7 +6936,7 @@
     {
       "language": "Python",
       "file": "tests/test_native_input.py",
-      "line": 58,
+      "line": 61,
       "name": "NativeInputTests.test_types_shapes_and_unknown_fields",
       "kind": "function",
       "signature": "test_types_shapes_and_unknown_fields(self)",
@@ -6574,12 +6946,82 @@
     {
       "language": "Python",
       "file": "tests/test_native_input.py",
-      "line": 65,
+      "line": 68,
       "name": "NativeInputTests.test_bounds_names_and_deviation_constraints",
       "kind": "function",
       "signature": "test_bounds_names_and_deviation_constraints(self)",
       "purpose": "Reject incomplete/duplicate names, invalid starts and dependent-deviation inconsistencies.",
       "documentation": "Reject incomplete/duplicate names, invalid starts and dependent-deviation inconsistencies."
+    },
+    {
+      "language": "Python",
+      "file": "tests/test_native_release.py",
+      "line": 15,
+      "name": "NativeReleaseTests",
+      "kind": "class",
+      "signature": "NativeReleaseTests",
+      "purpose": "Check seed identity, covariance perturbations, source isolation and failed publication paths.",
+      "documentation": "Check seed identity, covariance perturbations, source isolation and failed publication paths."
+    },
+    {
+      "language": "Python",
+      "file": "tests/test_native_release.py",
+      "line": 17,
+      "name": "NativeReleaseTests.test_seed_and_perturbations",
+      "kind": "function",
+      "signature": "test_seed_and_perturbations(self)",
+      "purpose": "Preserve fixed settings, perturb reproducibly and reconstruct the dependent deviation.",
+      "documentation": "Preserve fixed settings, perturb reproducibly and reconstruct the dependent deviation."
+    },
+    {
+      "language": "Python",
+      "file": "tests/test_native_release.py",
+      "line": 33,
+      "name": "NativeReleaseTests.test_metric_identity_and_positive_definiteness",
+      "kind": "function",
+      "signature": "test_metric_identity_and_positive_definiteness(self)",
+      "purpose": "Read a known SPD matrix; reject wrong labels and indefinite directions.",
+      "documentation": "Read a known SPD matrix; reject wrong labels and indefinite directions."
+    },
+    {
+      "language": "Python",
+      "file": "tests/test_native_release.py",
+      "line": 43,
+      "name": "NativeReleaseTests.test_pdf_interpreter_keeps_virtual_environment",
+      "kind": "function",
+      "signature": "test_pdf_interpreter_keeps_virtual_environment(self)",
+      "purpose": "Preserve the selected venv launcher rather than resolving it to the base Python.",
+      "documentation": "Preserve the selected venv launcher rather than resolving it to the base Python."
+    },
+    {
+      "language": "Python",
+      "file": "tests/test_native_release.py",
+      "line": 51,
+      "name": "NativeReleaseTests.test_existing_destination_is_preserved",
+      "kind": "function",
+      "signature": "test_existing_destination_is_preserved(self)",
+      "purpose": "Reject an existing release before reading missing inputs or starting child processes.",
+      "documentation": "Reject an existing release before reading missing inputs or starting child processes."
+    },
+    {
+      "language": "Python",
+      "file": "tests/test_native_release.py",
+      "line": 58,
+      "name": "NativeReleaseTests.test_stage_failure_and_timeout",
+      "kind": "function",
+      "signature": "test_stage_failure_and_timeout(self)",
+      "purpose": "Retain error logs/counters and terminate a timed-out process group.",
+      "documentation": "Retain error logs/counters and terminate a timed-out process group."
+    },
+    {
+      "language": "Python",
+      "file": "tests/test_native_release.py",
+      "line": 68,
+      "name": "NativeReleaseTests.test_snapshot_excludes_raw_inputs_and_old_outputs",
+      "kind": "function",
+      "signature": "test_snapshot_excludes_raw_inputs_and_old_outputs(self)",
+      "purpose": "Copy source/targets into the correct layout without observation files or existing binaries.",
+      "documentation": "Copy source/targets into the correct layout without observation files or existing binaries."
     },
     {
       "language": "Python",

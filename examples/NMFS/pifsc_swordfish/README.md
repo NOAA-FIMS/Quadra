@@ -20,6 +20,10 @@ Fixed biological calculations now share an evaluation-scoped numeric workspace.
 Estimating biology automatically retains its full differentiable path. See
 [PERFORMANCE.md](PERFORMANCE.md) for the design, benchmarks and validation.
 
+For a clean native build, fresh uncertainty, three seeded local starts and a
+hashed run bundle with PDF summary, see [NATIVE_RELEASE.md](NATIVE_RELEASE.md).
+The command is `make native-release PDF_PYTHON=PATH_TO_REPORTLAB_PYTHON`.
+
 An additional control-input initialization experiment now recovers the same
 optimum without reading SS3 fitted estimates or covariance. It needs an explicit
 catch-feasibility stage before evaluating the full likelihood. See
