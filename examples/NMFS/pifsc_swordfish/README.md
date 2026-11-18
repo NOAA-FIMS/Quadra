@@ -8,6 +8,10 @@ comparisons and a converged Quadra joint-likelihood fit initialized
 from the supplied SS3 parameter estimates.
 Striped marlin will use its own workspace once its inputs are supplied.
 
+The repository-level [SS3 intake utility](../../../utilities/README.md) is
+`utilities/ss3_to_pifsc_swordfish.py`. It accepts explicit data/control paths and
+an optional `.par`, and produces native JSON plus source-hash provenance.
+
 To run directly from normalized input, use `make native-swordfish`, then
 `./swordfish --input build/native/swordfish.json --output build/native/my-fit`.
 See [NATIVE_INPUT.md](NATIVE_INPUT.md) for the self-contained JSON schema, local

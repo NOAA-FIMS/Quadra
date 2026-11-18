@@ -86,6 +86,13 @@ new evidence of convergence from arbitrary starts.
 
 ## Optional one-time preparation
 
+For direct SS3 intake, use the repository's
+[`utilities/ss3_to_pifsc_swordfish.py`](../../../utilities/ss3_to_pifsc_swordfish.py)
+with `--data`, `--control`, optional `--parameters` and a new `--output` JSON.
+See the [utilities guide](../../../utilities/README.md). It uses the existing
+strict parsers, preserves initialization provenance and requires no compiler.
+The native runner remains independent of this conversion step.
+
 To recreate the example from the existing parsed-input JSON and a complete
 native parameter CSV:
 

@@ -5270,6 +5270,52 @@ Notes
 All hashes are content based. Covariance identity covers the complete native fit and relevant source/configuration, so touching timestamps cannot make a stale covariance valid. JSON publication uses a sibling temporary file and replacement; this is not a distributed-filesystem transaction.
 ```
 
+## scripts/ss3_to_native.py :: write_pair
+
+`write_pair(output, document, provenance)`
+
+Create JSON and provenance exclusively, rolling back owned files on ordinary errors.
+
+Source: [scripts/ss3_to_native.py:14](../scripts/ss3_to_native.py#L14)
+
+Contract details:
+
+```text
+Create JSON and provenance exclusively, rolling back owned files on ordinary errors.
+
+Existing outputs and sidecars are never replaced. Both documents are fully
+serialized before creation. This is not a multi-file atomic transaction
+across an uncatchable process termination.
+```
+
+## scripts/ss3_to_native.py :: convert_files
+
+`convert_files(data_path, control_path, output, parameter_path=None)`
+
+Read explicit SS3 paths once for intake and write a complete self-contained native input.
+
+Source: [scripts/ss3_to_native.py:41](../scripts/ss3_to_native.py#L41)
+
+Contract details:
+
+```text
+Read explicit SS3 paths once for intake and write a complete self-contained native input.
+
+No hardcoded source filenames, Report.sso, forecast files, covariance or C++
+compiler are needed. Optional .par values override all native starts and
+historical deviations, including fixed settings. Otherwise the original
+control starts and zero deviations are used, without silent feasibility
+adjustments. Input hashes and saved .par metadata go into a separate sidecar.
+```
+
+## scripts/ss3_to_native.py :: main
+
+`main()`
+
+Convert explicit .dat/.ctl and optional .par files; report intake errors without a traceback.
+
+Source: [scripts/ss3_to_native.py:74](../scripts/ss3_to_native.py#L74)
+
 ## scripts/ss_par.py :: parse
 
 `parse(path, inputs)`
@@ -5912,6 +5958,78 @@ Source: [tests/test_runtime.py:45](../tests/test_runtime.py#L45)
 A timed-out stage must stop its process group and retain a failure log record.
 
 Source: [tests/test_runtime.py:56](../tests/test_runtime.py#L56)
+
+## tests/test_ss3_converter.py :: ConverterTests
+
+`ConverterTests`
+
+Verify explicit filenames, initialization provenance and non-overwriting output behavior.
+
+Source: [tests/test_ss3_converter.py:18](../tests/test_ss3_converter.py#L18)
+
+## tests/test_ss3_converter.py :: ConverterTests.setUpClass
+
+`setUpClass(cls)`
+
+Reuse the synthetic parameter-file fixture; no fitted report or downloaded .par is read.
+
+Source: [tests/test_ss3_converter.py:21](../tests/test_ss3_converter.py#L21)
+
+## tests/test_ss3_converter.py :: ConverterTests.sources
+
+`sources(self, directory)`
+
+Copy only observation/control files under arbitrary names, without Report.sso.
+
+Source: [tests/test_ss3_converter.py:26](../tests/test_ss3_converter.py#L26)
+
+## tests/test_ss3_converter.py :: ConverterTests.test_control_initialization
+
+`test_control_initialization(self)`
+
+Preserve control starts/zero deviations and bind native output to source hashes.
+
+Source: [tests/test_ss3_converter.py:33](../tests/test_ss3_converter.py#L33)
+
+## tests/test_ss3_converter.py :: ConverterTests.test_parameter_initialization
+
+`test_parameter_initialization(self)`
+
+Import fixed settings and deviations directly from a supplied parameter snapshot.
+
+Source: [tests/test_ss3_converter.py:48](../tests/test_ss3_converter.py#L48)
+
+## tests/test_ss3_converter.py :: ConverterTests.test_existing_outputs_and_invalid_inputs
+
+`test_existing_outputs_and_invalid_inputs(self)`
+
+Protect either existing output, and leave no files after a malformed input fails.
+
+Source: [tests/test_ss3_converter.py:60](../tests/test_ss3_converter.py#L60)
+
+## tests/test_ss3_converter.py :: ConverterTests.test_pair_rollback
+
+`test_pair_rollback(self)`
+
+A sidecar creation failure removes only the newly created native output.
+
+Source: [tests/test_ss3_converter.py:74](../tests/test_ss3_converter.py#L74)
+
+## tests/test_ss3_converter.py :: ConverterTests.test_pair_rollback.fail_sidecar
+
+`fail_sidecar(path, *args, **kwargs)`
+
+Simulate an I/O failure after reserving the first output.
+
+Source: [tests/test_ss3_converter.py:78](../tests/test_ss3_converter.py#L78)
+
+## tests/test_ss3_converter.py :: ConverterTests.test_command_help
+
+`test_command_help(self)`
+
+Expose all source-file options without requiring a model executable.
+
+Source: [tests/test_ss3_converter.py:86](../tests/test_ss3_converter.py#L86)
 
 ## tests/test_ss_par.py :: ParameterFileTests
 

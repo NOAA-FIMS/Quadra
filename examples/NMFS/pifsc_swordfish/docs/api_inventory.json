@@ -6635,6 +6635,36 @@
     },
     {
       "language": "Python",
+      "file": "scripts/ss3_to_native.py",
+      "line": 14,
+      "name": "write_pair",
+      "kind": "function",
+      "signature": "write_pair(output, document, provenance)",
+      "purpose": "Create JSON and provenance exclusively, rolling back owned files on ordinary errors.",
+      "documentation": "Create JSON and provenance exclusively, rolling back owned files on ordinary errors.\n\nExisting outputs and sidecars are never replaced. Both documents are fully\nserialized before creation. This is not a multi-file atomic transaction\nacross an uncatchable process termination."
+    },
+    {
+      "language": "Python",
+      "file": "scripts/ss3_to_native.py",
+      "line": 41,
+      "name": "convert_files",
+      "kind": "function",
+      "signature": "convert_files(data_path, control_path, output, parameter_path=None)",
+      "purpose": "Read explicit SS3 paths once for intake and write a complete self-contained native input.",
+      "documentation": "Read explicit SS3 paths once for intake and write a complete self-contained native input.\n\nNo hardcoded source filenames, Report.sso, forecast files, covariance or C++\ncompiler are needed. Optional .par values override all native starts and\nhistorical deviations, including fixed settings. Otherwise the original\ncontrol starts and zero deviations are used, without silent feasibility\nadjustments. Input hashes and saved .par metadata go into a separate sidecar."
+    },
+    {
+      "language": "Python",
+      "file": "scripts/ss3_to_native.py",
+      "line": 74,
+      "name": "main",
+      "kind": "function",
+      "signature": "main()",
+      "purpose": "Convert explicit .dat/.ctl and optional .par files; report intake errors without a traceback.",
+      "documentation": "Convert explicit .dat/.ctl and optional .par files; report intake errors without a traceback."
+    },
+    {
+      "language": "Python",
       "file": "scripts/ss_par.py",
       "line": 6,
       "name": "parse",
@@ -7082,6 +7112,96 @@
       "signature": "test_stage_timeout_records_failure(self)",
       "purpose": "A timed-out stage must stop its process group and retain a failure log record.",
       "documentation": "A timed-out stage must stop its process group and retain a failure log record."
+    },
+    {
+      "language": "Python",
+      "file": "tests/test_ss3_converter.py",
+      "line": 18,
+      "name": "ConverterTests",
+      "kind": "class",
+      "signature": "ConverterTests",
+      "purpose": "Verify explicit filenames, initialization provenance and non-overwriting output behavior.",
+      "documentation": "Verify explicit filenames, initialization provenance and non-overwriting output behavior."
+    },
+    {
+      "language": "Python",
+      "file": "tests/test_ss3_converter.py",
+      "line": 21,
+      "name": "ConverterTests.setUpClass",
+      "kind": "function",
+      "signature": "setUpClass(cls)",
+      "purpose": "Reuse the synthetic parameter-file fixture; no fitted report or downloaded .par is read.",
+      "documentation": "Reuse the synthetic parameter-file fixture; no fitted report or downloaded .par is read."
+    },
+    {
+      "language": "Python",
+      "file": "tests/test_ss3_converter.py",
+      "line": 26,
+      "name": "ConverterTests.sources",
+      "kind": "function",
+      "signature": "sources(self, directory)",
+      "purpose": "Copy only observation/control files under arbitrary names, without Report.sso.",
+      "documentation": "Copy only observation/control files under arbitrary names, without Report.sso."
+    },
+    {
+      "language": "Python",
+      "file": "tests/test_ss3_converter.py",
+      "line": 33,
+      "name": "ConverterTests.test_control_initialization",
+      "kind": "function",
+      "signature": "test_control_initialization(self)",
+      "purpose": "Preserve control starts/zero deviations and bind native output to source hashes.",
+      "documentation": "Preserve control starts/zero deviations and bind native output to source hashes."
+    },
+    {
+      "language": "Python",
+      "file": "tests/test_ss3_converter.py",
+      "line": 48,
+      "name": "ConverterTests.test_parameter_initialization",
+      "kind": "function",
+      "signature": "test_parameter_initialization(self)",
+      "purpose": "Import fixed settings and deviations directly from a supplied parameter snapshot.",
+      "documentation": "Import fixed settings and deviations directly from a supplied parameter snapshot."
+    },
+    {
+      "language": "Python",
+      "file": "tests/test_ss3_converter.py",
+      "line": 60,
+      "name": "ConverterTests.test_existing_outputs_and_invalid_inputs",
+      "kind": "function",
+      "signature": "test_existing_outputs_and_invalid_inputs(self)",
+      "purpose": "Protect either existing output, and leave no files after a malformed input fails.",
+      "documentation": "Protect either existing output, and leave no files after a malformed input fails."
+    },
+    {
+      "language": "Python",
+      "file": "tests/test_ss3_converter.py",
+      "line": 74,
+      "name": "ConverterTests.test_pair_rollback",
+      "kind": "function",
+      "signature": "test_pair_rollback(self)",
+      "purpose": "A sidecar creation failure removes only the newly created native output.",
+      "documentation": "A sidecar creation failure removes only the newly created native output."
+    },
+    {
+      "language": "Python",
+      "file": "tests/test_ss3_converter.py",
+      "line": 78,
+      "name": "ConverterTests.test_pair_rollback.fail_sidecar",
+      "kind": "function",
+      "signature": "fail_sidecar(path, *args, **kwargs)",
+      "purpose": "Simulate an I/O failure after reserving the first output.",
+      "documentation": "Simulate an I/O failure after reserving the first output."
+    },
+    {
+      "language": "Python",
+      "file": "tests/test_ss3_converter.py",
+      "line": 86,
+      "name": "ConverterTests.test_command_help",
+      "kind": "function",
+      "signature": "test_command_help(self)",
+      "purpose": "Expose all source-file options without requiring a model executable.",
+      "documentation": "Expose all source-file options without requiring a model executable."
     },
     {
       "language": "Python",
