@@ -2,7 +2,7 @@
 
 Generated from the canonical fitted Quadra swordfish model on 2026-11-13.
 All eight source hashes in `../source_manifest.json` were rechecked unchanged.
-Methods and commands: [PROJECTIONS.md](../../PROJECTIONS.md).
+Methods and commands: [PROJECTIONS.md](../../docs/PROJECTIONS.md).
 
 Validation: 1,551 dynamic unfished comparisons and 47 historical SPR comparisons
 pass. Unfished/fished projection stationarity, recruitment, yield, annual F,

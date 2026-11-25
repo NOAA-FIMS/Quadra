@@ -42,7 +42,7 @@ The final local measurements were:
 | Objective | 6.74 ms | 3.72 ms | 44.8% |
 | AD gradient | 420 ms | 349 ms | 17.0% |
 
-[Benchmark samples and method](reference/performance/benchmark_comparison.json)
+[Benchmark samples and method](../reference/performance/benchmark_comparison.json)
 are preserved with the measurement harness in `benchmark_source.txt`.
 
 Reference-point calculations are already much cheaper than AD gradients. This
@@ -64,7 +64,7 @@ unregularized and must pass the same two-step positive-definiteness/stability
 checks. Earlier release/covariance snapshots remain historical evidence; this
 change does not refresh a full immutable release bundle.
 
-The [fresh uncertainty comparison](reference/performance/cache_validation.json)
+The [fresh uncertainty comparison](../reference/performance/cache_validation.json)
 recovers the previous objective to about `1e-13`, reference estimates within
 `2.5e-12` relative difference and reference SEs within `1.2e-5` relative
 (about 0.0012%). All ten saved SS3 reference-point SE checks still pass.

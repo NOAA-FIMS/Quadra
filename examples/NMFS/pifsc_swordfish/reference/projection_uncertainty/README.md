@@ -1,7 +1,7 @@
 # Validated local projection uncertainty snapshot
 
 Methods, interpretation, and reproduction commands:
-[PROJECTION_UNCERTAINTY.md](../../PROJECTION_UNCERTAINTY.md).
+[PROJECTION_UNCERTAINTY.md](../../docs/PROJECTION_UNCERTAINTY.md).
 
 Contains 250 pointwise intervals across five scenarios, ten years and five
 quantities, with the complete Jacobian and native output covariance. Input

@@ -1,11 +1,10 @@
-"""Optional SS3 intake command; reusable parsers stay separate from the native runner."""
-import argparse
+"""Independent SS3 conversion oracle for tests; no production CLI."""
 from contextlib import ExitStack
 import json
 import hashlib
 import os
 from pathlib import Path
-from export_native import convert
+from .native_export import convert
 from runtime import file_hash
 from ss_par import parse as parse_parameters
 from swordfish_inputs import parse_data, parse_control
@@ -69,24 +68,3 @@ def convert_files(data_path, control_path, output, parameter_path=None):
                                 length_compositions=len(observations['length_compositions'])))
     sidecar=write_pair(output,document,provenance)
     return document,sidecar
-
-
-def main():
-    """Convert explicit .dat/.ctl and optional .par files; report intake errors without a traceback."""
-    parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--data',type=Path,required=True,help='SS3 observation file')
-    parser.add_argument('--control',type=Path,required=True,help='SS3 control file')
-    parser.add_argument('--parameters',type=Path,help='Optional SS3 .par file supplying starts and fixed values')
-    parser.add_argument('--output',type=Path,required=True,help='New native JSON file; existing files are protected')
-    args=parser.parse_args()
-    try:document,sidecar=convert_files(args.data,args.control,args.output,args.parameters)
-    except (OSError,ValueError,KeyError) as error:parser.exit(1,'Conversion failed: '+str(error)+'\n')
-    print('Native JSON: '+str(args.output))
-    print('Provenance: '+str(sidecar))
-    if args.parameters:
-        print('Initialization: supplied .par vector (saved SS3 fit metadata is recorded in the sidecar).')
-    else:
-        print('Initialization: control values and zero recruitment deviations. The literal swordfish control point requires the separate catch-feasibility workflow before full-likelihood fitting.')
-
-
-if __name__=='__main__':main()

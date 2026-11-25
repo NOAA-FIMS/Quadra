@@ -2712,18 +2712,18 @@ Run swordfish diagnostics; return zero on success and nonzero on a failed
 check or invalid input.
 ```
 
-## src/swordfish_native.cpp :: main
+## src/pifsc_swordfish.cpp :: main
 
 `int main(int argc, char ** argv)`
 
-Run swordfish native; return zero on success and nonzero on a failed check or invalid input.
+Run pifsc_swordfish; return zero on success, two on command errors, and one on input/model failures.
 
-Source: [src/swordfish_native.cpp:18](../src/swordfish_native.cpp#L18)
+Source: [src/pifsc_swordfish.cpp:141](../src/pifsc_swordfish.cpp#L141)
 
 Contract details:
 
 ```text
-Evaluate or fit a native model state and write its complete derived outputs.
+Convert SS3 inputs or run the PIFSC swordfish model directly from JSON.
 ```
 
 ## src/swordfish_projection.cpp :: main
@@ -4027,27 +4027,6 @@ Notes
 C++ declarations are obtained from Clang AST JSON and Python declarations from ast. Anonymous lambdas, vendor internals and generated factory bodies are excluded explicitly. Description coverage is enforced before publishing the inventory; regenerate after changing declaration locations.
 ```
 
-## scripts/document_api.py :: python_entries.visit
-
-`visit(node, scope='')`
-
-Retain nested qualified names while ignoring anonymous lambda expressions.
-
-Source: [scripts/document_api.py:149](../scripts/document_api.py#L149)
-
-Contract details:
-
-```text
-Retain nested qualified names while ignoring anonymous lambda expressions.
-
-Parameters
-----------
-node
-    Current syntax-tree declaration/context.
-scope
-    Enclosing class/function qualification accumulated during traversal.
-```
-
 ## scripts/document_api.py :: descriptions
 
 `descriptions(entries)`
@@ -4116,13 +4095,13 @@ Notes
 C++ declarations are obtained from Clang AST JSON and Python declarations from ast. Anonymous lambdas, vendor internals and generated factory bodies are excluded explicitly. Description coverage is enforced before publishing the inventory; regenerate after changing declaration locations.
 ```
 
-## scripts/export_native.py :: convert
+## tests/support/native_export.py :: convert
 
 `convert(source, values)`
 
 Map parsed observations/settings and explicit native starts into the named schema.
 
-Source: [scripts/export_native.py:9](../scripts/export_native.py#L9)
+Source: [tests/support/native_export.py:5](../tests/support/native_export.py#L5)
 
 Contract details:
 
@@ -4134,14 +4113,6 @@ functions, bias ramp, observation inclusion and likelihood weights. Native
 starts may come from a complete Quadra parameter CSV. No fitted trajectory
 or SS3 report quantities become observations or population drivers.
 ```
-
-## scripts/export_native.py :: main
-
-`main()`
-
-Export once from parsed input JSON or optional SS3 observations/control sources.
-
-Source: [scripts/export_native.py:50](../scripts/export_native.py#L50)
 
 ## scripts/import_ss3.py :: read_lines
 
@@ -4283,7 +4254,7 @@ Section/table matching is version specific. Raw files are preserved byte for byt
 
 Reject missing/unknown fields instead of silently accepting misspelled settings.
 
-Source: [scripts/native_input.py:24](../scripts/native_input.py#L24)
+Source: [scripts/native_input.py:27](../scripts/native_input.py#L27)
 
 ## scripts/native_input.py :: atom
 
@@ -4291,7 +4262,7 @@ Source: [scripts/native_input.py:24](../scripts/native_input.py#L24)
 
 Validate a scalar/fixed array and encode finite typed values for the C++ reader.
 
-Source: [scripts/native_input.py:30](../scripts/native_input.py#L30)
+Source: [scripts/native_input.py:33](../scripts/native_input.py#L33)
 
 ## scripts/native_input.py :: record
 
@@ -4299,7 +4270,7 @@ Source: [scripts/native_input.py:30](../scripts/native_input.py#L30)
 
 Validate one named record and serialize fields in the transport's declared order.
 
-Source: [scripts/native_input.py:51](../scripts/native_input.py#L51)
+Source: [scripts/native_input.py:54](../scripts/native_input.py#L54)
 
 ## scripts/native_input.py :: rows
 
@@ -4307,7 +4278,7 @@ Source: [scripts/native_input.py:51](../scripts/native_input.py#L51)
 
 Bound variable collection sizes before serializing or allocating model observations.
 
-Source: [scripts/native_input.py:57](../scripts/native_input.py#L57)
+Source: [scripts/native_input.py:60](../scripts/native_input.py#L60)
 
 ## scripts/native_input.py :: encode
 
@@ -4315,7 +4286,7 @@ Source: [scripts/native_input.py:57](../scripts/native_input.py#L57)
 
 Validate native schema v1 and produce a typed in-memory stream for the reusable model.
 
-Source: [scripts/native_input.py:63](../scripts/native_input.py#L63)
+Source: [scripts/native_input.py:66](../scripts/native_input.py#L66)
 
 Contract details:
 
@@ -4334,7 +4305,7 @@ rather than a general arbitrary-species schema. No source files are opened.
 
 Reject unsupported layouts and invalid observation references before launching C++.
 
-Source: [scripts/native_input.py:127](../scripts/native_input.py#L127)
+Source: [scripts/native_input.py:130](../scripts/native_input.py#L130)
 
 ## scripts/native_input.py :: unique_object
 
@@ -4342,7 +4313,7 @@ Source: [scripts/native_input.py:127](../scripts/native_input.py#L127)
 
 Reject duplicate JSON object keys before values can be silently replaced.
 
-Source: [scripts/native_input.py:165](../scripts/native_input.py#L165)
+Source: [scripts/native_input.py:168](../scripts/native_input.py#L168)
 
 ## scripts/native_input.py :: load
 
@@ -4350,7 +4321,7 @@ Source: [scripts/native_input.py:165](../scripts/native_input.py#L165)
 
 Load strict JSON, rejecting nonfinite constants and ambiguous duplicate keys.
 
-Source: [scripts/native_input.py:174](../scripts/native_input.py#L174)
+Source: [scripts/native_input.py:177](../scripts/native_input.py#L177)
 
 ## scripts/native_input.py :: load.bad_constant
 
@@ -4358,7 +4329,7 @@ Source: [scripts/native_input.py:174](../scripts/native_input.py#L174)
 
 Reject JSON extensions for NaN and infinity.
 
-Source: [scripts/native_input.py:176](../scripts/native_input.py#L176)
+Source: [scripts/native_input.py:179](../scripts/native_input.py#L179)
 
 ## scripts/prepare_biology.py :: prepare
 
@@ -4766,24 +4737,6 @@ Optimization receives no Report.sso, fitted parameter CSV or saved covariance.
 The matched-fixed sensitivity changes only the explicit fixed male-growth
 setting. Existing output directories are rejected rather than overwritten.
 Optimizer stdout/stderr is streamed to the terminal and flushed to a log.
-```
-
-## scripts/run_native.py :: main
-
-`main()`
-
-Validate JSON, stream native data to the backend and save exact input provenance.
-
-Source: [scripts/run_native.py:12](../scripts/run_native.py#L12)
-
-Contract details:
-
-```text
-Validate JSON, stream native data to the backend and save exact input provenance.
-
-The binary is compiled once by make native-swordfish. Dataset changes need
-no compilation, generated C++ factory, SS3 source files or reference outputs.
-Existing output directories are rejected. Progress streams to the terminal.
 ```
 
 ## scripts/run_native_release.py :: hashes
@@ -5270,13 +5223,13 @@ Notes
 All hashes are content based. Covariance identity covers the complete native fit and relevant source/configuration, so touching timestamps cannot make a stale covariance valid. JSON publication uses a sibling temporary file and replacement; this is not a distributed-filesystem transaction.
 ```
 
-## scripts/ss3_to_native.py :: write_pair
+## tests/support/ss3_oracle.py :: write_pair
 
 `write_pair(output, document, provenance)`
 
 Create JSON and provenance exclusively, rolling back owned files on ordinary errors.
 
-Source: [scripts/ss3_to_native.py:14](../scripts/ss3_to_native.py#L14)
+Source: [tests/support/ss3_oracle.py:13](../tests/support/ss3_oracle.py#L13)
 
 Contract details:
 
@@ -5288,13 +5241,13 @@ serialized before creation. This is not a multi-file atomic transaction
 across an uncatchable process termination.
 ```
 
-## scripts/ss3_to_native.py :: convert_files
+## tests/support/ss3_oracle.py :: convert_files
 
 `convert_files(data_path, control_path, output, parameter_path=None)`
 
 Read explicit SS3 paths once for intake and write a complete self-contained native input.
 
-Source: [scripts/ss3_to_native.py:41](../scripts/ss3_to_native.py#L41)
+Source: [tests/support/ss3_oracle.py:40](../tests/support/ss3_oracle.py#L40)
 
 Contract details:
 
@@ -5307,14 +5260,6 @@ historical deviations, including fixed settings. Otherwise the original
 control starts and zero deviations are used, without silent feasibility
 adjustments. Input hashes and saved .par metadata go into a separate sidecar.
 ```
-
-## scripts/ss3_to_native.py :: main
-
-`main()`
-
-Convert explicit .dat/.ctl and optional .par files; report intake errors without a traceback.
-
-Source: [scripts/ss3_to_native.py:74](../scripts/ss3_to_native.py#L74)
 
 ## scripts/ss_par.py :: parse
 
@@ -5797,7 +5742,7 @@ Source: [tests/test_inputs.py:65](../tests/test_inputs.py#L65)
 
 Make typed scalar/array placeholders for a format-only synthetic fixture.
 
-Source: [tests/test_native_input.py:12](../tests/test_native_input.py#L12)
+Source: [tests/test_native_input.py:11](../tests/test_native_input.py#L11)
 
 ## tests/test_native_input.py :: fixture
 
@@ -5805,7 +5750,7 @@ Source: [tests/test_native_input.py:12](../tests/test_native_input.py#L12)
 
 Create a complete native schema example for validation tests, without real observations.
 
-Source: [tests/test_native_input.py:18](../tests/test_native_input.py#L18)
+Source: [tests/test_native_input.py:17](../tests/test_native_input.py#L17)
 
 ## tests/test_native_input.py :: NativeInputTests
 
@@ -5813,7 +5758,7 @@ Source: [tests/test_native_input.py:18](../tests/test_native_input.py#L18)
 
 Reject ambiguous JSON and malformed model states before the backend runs.
 
-Source: [tests/test_native_input.py:35](../tests/test_native_input.py#L35)
+Source: [tests/test_native_input.py:34](../tests/test_native_input.py#L34)
 
 ## tests/test_native_input.py :: NativeInputTests.test_valid_transport_and_roundtrip
 
@@ -5821,15 +5766,7 @@ Source: [tests/test_native_input.py:35](../tests/test_native_input.py#L35)
 
 Check named-schema roundtrip and private transport version without source conversion.
 
-Source: [tests/test_native_input.py:37](../tests/test_native_input.py#L37)
-
-## tests/test_native_input.py :: NativeInputTests.test_uncertainty_cli
-
-`test_uncertainty_cli(self)`
-
-Expose uncertainty help and reject interval calculation without fit mode.
-
-Source: [tests/test_native_input.py:43](../tests/test_native_input.py#L43)
+Source: [tests/test_native_input.py:36](../tests/test_native_input.py#L36)
 
 ## tests/test_native_input.py :: NativeInputTests.test_json_duplicates_and_nonfinite
 
@@ -5837,7 +5774,7 @@ Source: [tests/test_native_input.py:43](../tests/test_native_input.py#L43)
 
 Reject duplicate object keys, NaN and infinity at the JSON boundary.
 
-Source: [tests/test_native_input.py:56](../tests/test_native_input.py#L56)
+Source: [tests/test_native_input.py:42](../tests/test_native_input.py#L42)
 
 ## tests/test_native_input.py :: NativeInputTests.test_types_shapes_and_unknown_fields
 
@@ -5845,7 +5782,7 @@ Source: [tests/test_native_input.py:56](../tests/test_native_input.py#L56)
 
 Reject booleans as numbers, fractional integers, bad arrays and misspelled keys.
 
-Source: [tests/test_native_input.py:61](../tests/test_native_input.py#L61)
+Source: [tests/test_native_input.py:47](../tests/test_native_input.py#L47)
 
 ## tests/test_native_input.py :: NativeInputTests.test_bounds_names_and_deviation_constraints
 
@@ -5853,7 +5790,7 @@ Source: [tests/test_native_input.py:61](../tests/test_native_input.py#L61)
 
 Reject incomplete/duplicate names, invalid starts and dependent-deviation inconsistencies.
 
-Source: [tests/test_native_input.py:68](../tests/test_native_input.py#L68)
+Source: [tests/test_native_input.py:54](../tests/test_native_input.py#L54)
 
 ## tests/test_native_release.py :: NativeReleaseTests
 
@@ -5965,7 +5902,7 @@ Source: [tests/test_runtime.py:56](../tests/test_runtime.py#L56)
 
 Verify explicit filenames, initialization provenance and non-overwriting output behavior.
 
-Source: [tests/test_ss3_converter.py:18](../tests/test_ss3_converter.py#L18)
+Source: [tests/test_ss3_converter.py:17](../tests/test_ss3_converter.py#L17)
 
 ## tests/test_ss3_converter.py :: ConverterTests.setUpClass
 
@@ -5973,7 +5910,7 @@ Source: [tests/test_ss3_converter.py:18](../tests/test_ss3_converter.py#L18)
 
 Reuse the synthetic parameter-file fixture; no fitted report or downloaded .par is read.
 
-Source: [tests/test_ss3_converter.py:21](../tests/test_ss3_converter.py#L21)
+Source: [tests/test_ss3_converter.py:20](../tests/test_ss3_converter.py#L20)
 
 ## tests/test_ss3_converter.py :: ConverterTests.sources
 
@@ -5981,7 +5918,7 @@ Source: [tests/test_ss3_converter.py:21](../tests/test_ss3_converter.py#L21)
 
 Copy only observation/control files under arbitrary names, without Report.sso.
 
-Source: [tests/test_ss3_converter.py:26](../tests/test_ss3_converter.py#L26)
+Source: [tests/test_ss3_converter.py:25](../tests/test_ss3_converter.py#L25)
 
 ## tests/test_ss3_converter.py :: ConverterTests.test_control_initialization
 
@@ -5989,7 +5926,7 @@ Source: [tests/test_ss3_converter.py:26](../tests/test_ss3_converter.py#L26)
 
 Preserve control starts/zero deviations and bind native output to source hashes.
 
-Source: [tests/test_ss3_converter.py:33](../tests/test_ss3_converter.py#L33)
+Source: [tests/test_ss3_converter.py:32](../tests/test_ss3_converter.py#L32)
 
 ## tests/test_ss3_converter.py :: ConverterTests.test_parameter_initialization
 
@@ -5997,7 +5934,7 @@ Source: [tests/test_ss3_converter.py:33](../tests/test_ss3_converter.py#L33)
 
 Import fixed settings and deviations directly from a supplied parameter snapshot.
 
-Source: [tests/test_ss3_converter.py:48](../tests/test_ss3_converter.py#L48)
+Source: [tests/test_ss3_converter.py:47](../tests/test_ss3_converter.py#L47)
 
 ## tests/test_ss3_converter.py :: ConverterTests.test_existing_outputs_and_invalid_inputs
 
@@ -6005,7 +5942,7 @@ Source: [tests/test_ss3_converter.py:48](../tests/test_ss3_converter.py#L48)
 
 Protect either existing output, and leave no files after a malformed input fails.
 
-Source: [tests/test_ss3_converter.py:60](../tests/test_ss3_converter.py#L60)
+Source: [tests/test_ss3_converter.py:59](../tests/test_ss3_converter.py#L59)
 
 ## tests/test_ss3_converter.py :: ConverterTests.test_pair_rollback
 
@@ -6013,23 +5950,7 @@ Source: [tests/test_ss3_converter.py:60](../tests/test_ss3_converter.py#L60)
 
 A sidecar creation failure removes only the newly created native output.
 
-Source: [tests/test_ss3_converter.py:74](../tests/test_ss3_converter.py#L74)
-
-## tests/test_ss3_converter.py :: ConverterTests.test_pair_rollback.fail_sidecar
-
-`fail_sidecar(path, *args, **kwargs)`
-
-Simulate an I/O failure after reserving the first output.
-
-Source: [tests/test_ss3_converter.py:78](../tests/test_ss3_converter.py#L78)
-
-## tests/test_ss3_converter.py :: ConverterTests.test_command_help
-
-`test_command_help(self)`
-
-Expose all source-file options without requiring a model executable.
-
-Source: [tests/test_ss3_converter.py:86](../tests/test_ss3_converter.py#L86)
+Source: [tests/test_ss3_converter.py:73](../tests/test_ss3_converter.py#L73)
 
 ## tests/test_ss_par.py :: ParameterFileTests
 

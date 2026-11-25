@@ -216,7 +216,7 @@ def build(output,release=None):
     heading('9. Regeneration and references')
     code('python3 scripts/document_api.py\npython3 scripts/build_guide.py --release runs/swordfish-release-003')
     paragraph('The inventory uses Clang declaration ASTs for named C++ entities and Python ast for named Python entities. Missing descriptions fail generation. It excludes anonymous lambdas, vendor internals and generated factory bodies; R plot functions are included. Source Doxygen comments/docstrings and docs/API_REFERENCE.md provide editable and searchable companions.')
-    paragraph('Primary local references: original SS3 data/control/starter/forecast and Report.sso, ISC 2023 swordfish assessment PDF, source_manifest.json, MODEL_AND_COMPARISON.md, FIT_DIAGNOSTICS.md, PROJECTIONS.md, PROJECTION_UNCERTAINTY.md and RELEASE_READINESS.md. Exact source/output identities and the environment are retained with each accepted bundle.')
+    paragraph('Primary local references: original SS3 data/control/starter/forecast and Report.sso, ISC 2023 swordfish assessment PDF, source_manifest.json, docs/MODEL_AND_COMPARISON.md, docs/FIT_DIAGNOSTICS.md, docs/PROJECTIONS.md, docs/PROJECTION_UNCERTAINTY.md and docs/RELEASE_READINESS.md. Exact source/output identities and the environment are retained with each accepted bundle.')
     output.parent.mkdir(parents=True,exist_ok=True)
     with tempfile.NamedTemporaryFile(suffix='.pdf',dir=output.parent,delete=False) as stream:temporary=Path(stream.name)
     try:

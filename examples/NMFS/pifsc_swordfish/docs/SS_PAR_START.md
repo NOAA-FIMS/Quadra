@@ -97,13 +97,13 @@ The model API exposes the same calculation as `model.reference_points(x)`.
 The standard historical fit, control-start fits and report regeneration also
 write the table; no separate benchmark command is required.
 
-The [saved experiment](reference/ss_par/comparison_summary.json) and its
-[hash manifest](reference/ss_par/manifest.json) preserve the derived results;
+The [saved experiment](../reference/ss_par/comparison_summary.json) and its
+[hash manifest](../reference/ss_par/manifest.json) preserve the derived results;
 the original `.par` file remains excluded from version control. No new
 uncertainty or projection results are certified by this test. The subsequent
-[integrated reference-point run](reference/model_reference_points/benchmark_comparison.json)
+[integrated reference-point run](../reference/model_reference_points/benchmark_comparison.json)
 passes all ten SS3 checks, with maximum relative error about `5.69e-6`.
 
-The [one-page PDF report](output/pdf/swordfish_ss_par_start.pdf) presents the
+The [one-page PDF report](../output/pdf/swordfish_ss_par_start.pdf) presents the
 comparison. Regenerate it with `python scripts/build_ss_par_report.py` in the
 documentation environment containing ReportLab.

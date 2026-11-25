@@ -3,7 +3,6 @@ import copy
 import json
 from pathlib import Path
 import sys
-import subprocess
 import unittest
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'scripts'))
 from native_input import DIMENSIONS,GROWTH,BIOLOGY,RECRUITMENT,SCALARS,TABLES,PARAMETER_NAMES,UNITS,atom,encode,load
@@ -39,19 +38,6 @@ class NativeInputTests(unittest.TestCase):
         model=fixture();document,payload=load(json.dumps(model))
         self.assertEqual(document,model);self.assertEqual(payload,encode(model))
         self.assertTrue(payload.startswith('QUADRA_SWORDFISH_NATIVE_V1\n'))
-
-    def test_uncertainty_cli(self):
-        """Expose uncertainty help and reject interval calculation without fit mode."""
-        script=Path(__file__).resolve().parents[1]/'scripts/run_native.py'
-        help_result=subprocess.run([sys.executable,str(script),'--help'],capture_output=True,text=True)
-        self.assertEqual(help_result.returncode,0,help_result.stderr)
-        self.assertIn('--uncertainty',help_result.stdout)
-        invalid=subprocess.run([sys.executable,str(script),'--input','missing.json','--output','unused','--mode','evaluate','--uncertainty'],capture_output=True,text=True)
-        self.assertEqual(invalid.returncode,2)
-        self.assertIn('requires --mode fit',invalid.stderr)
-        metric=subprocess.run([sys.executable,str(script),'--input','missing.json','--output','unused','--mode','evaluate','--optimizer-metric','missing.csv'],capture_output=True,text=True)
-        self.assertEqual(metric.returncode,2)
-        self.assertIn('requires --mode fit',metric.stderr)
 
     def test_json_duplicates_and_nonfinite(self):
         """Reject duplicate object keys, NaN and infinity at the JSON boundary."""

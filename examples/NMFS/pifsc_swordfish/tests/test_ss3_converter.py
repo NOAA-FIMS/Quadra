@@ -3,14 +3,13 @@ import hashlib
 import json
 from pathlib import Path
 import shutil
-import subprocess
 import sys
 import tempfile
 import unittest
 from unittest.mock import patch
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'scripts'))
-from ss3_to_native import convert_files, write_pair
+from support.ss3_oracle import convert_files, write_pair
 from native_input import load
 import test_ss_par
 
@@ -83,11 +82,6 @@ class ConverterTests(unittest.TestCase):
                 with self.assertRaises(OSError):write_pair(output,{},dict(source='test'))
             self.assertFalse(output.exists());self.assertFalse(sidecar.exists())
 
-    def test_command_help(self):
-        """Expose all source-file options without requiring a model executable."""
-        result=subprocess.run([sys.executable,str(ROOT/'scripts/ss3_to_native.py'),'--help'],capture_output=True,text=True)
-        self.assertEqual(result.returncode,0,result.stderr)
-        for flag in ['--data','--control','--parameters','--output']:self.assertIn(flag,result.stdout)
 
 
 if __name__=='__main__':unittest.main()

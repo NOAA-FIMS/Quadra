@@ -1,7 +1,9 @@
-#!/usr/bin/env python3
-"""Native normalized-input command; build its backend with make native-swordfish."""
-from pathlib import Path
-import runpy
-import sys
-sys.path.insert(0,str(Path(__file__).resolve().parent/'scripts'))
-runpy.run_module('run_native',run_name='__main__')
+#!/bin/sh
+# Convenience entry point; all intake, validation and modeling run in C++.
+case_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd) || exit 1
+binary="$case_dir/build/pifsc_swordfish"
+if [ ! -x "$binary" ]; then
+    echo "Build the native runner first: make pifsc_swordfish" >&2
+    exit 1
+fi
+exec "$binary" "$@"

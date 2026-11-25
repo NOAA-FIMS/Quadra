@@ -184,7 +184,7 @@ def accept(bundle, frozen, records):
     with (baseline/'objective_gradient.csv').open() as stream:center=list(csv.DictReader(stream))
     names=[r['parameter'] for r in center];factor=metric_factor(baseline/'reference_coordinate_covariance.csv',names)
     deviations=[math.sqrt(sum(v*v for v in row)) for row in factor]
-    recoveries=[];binary_hash=file_hash(frozen/'build/swordfish_native')
+    recoveries=[];binary_hash=file_hash(frozen/'build/pifsc_swordfish')
     for info in records:
         folder=bundle/'results'/info['name'];status=json.loads((folder/'run_status.json').read_text())
         if status['status']!='completed' or status['binary_sha256']!=binary_hash or status['input_sha256']!=file_hash(bundle/'inputs'/info['input']):raise ValueError('Run/input/binary identity failed')
@@ -220,19 +220,19 @@ def release(case, input_path, destination, pdf_python):
         if (frozen/'data/raw').exists() or list((frozen/'build').glob('*')):raise ValueError('Snapshot is not a clean native build')
         (staging/'inputs').mkdir();(staging/'inputs/model.json').write_bytes(source)
         (staging/'results').mkdir();make=['make','CXX='+compiler,'PYTHON='+sys.executable]
-        run_stage('clean_native_build',make+['native-swordfish','test-portable','build/test_optimizer_scaling'],frozen,staging,stages)
+        run_stage('clean_native_build',make+['pifsc_swordfish','test-portable','build/test_optimizer_scaling'],frozen,staging,stages)
         run_stage('optimizer_scaling_checks',['./build/test_optimizer_scaling'],frozen,staging,stages)
         run_stage('native_schema_checks',[sys.executable,'-m','unittest','discover','-s','tests','-p','test_native_input.py'],frozen,staging,stages)
         run_stage('release_guardrails',[sys.executable,'-m','unittest','discover','-s','tests','-p','test_native_release.py'],frozen,staging,stages)
         run_stage('framework_regressions',make+['test-framework'],frozen,staging,stages)
-        run_stage('baseline_fit_uncertainty',[sys.executable,'swordfish','--input',str(staging/'inputs/model.json'),'--output',str(staging/'results/baseline'),'--uncertainty'],frozen,staging,stages)
+        run_stage('baseline_fit_uncertainty',['./swordfish','--input',str(staging/'inputs/model.json'),'--output',str(staging/'results/baseline'),'--uncertainty'],frozen,staging,stages)
         records=[dict(name='baseline',input='model.json')]
         covariance=staging/'results/baseline/reference_coordinate_covariance.csv'
         schema=coordinate_schema(document);factor=metric_factor(covariance,[r[0] for r in schema])
         for index,(seed,scale) in enumerate([(101,.1),(202,.25),(303,.5)],1):
             name=f'start-{index:02d}';filename=name+'.json';candidate=perturbed_input(document,factor,seed,scale)
             atomic_json(staging/'inputs'/filename,candidate)
-            run_stage(name,[sys.executable,'swordfish','--input',str(staging/'inputs'/filename),'--output',str(staging/'results'/name),'--max-iterations','300','--optimizer-metric',str(covariance)],frozen,staging,stages)
+            run_stage(name,['./swordfish','--input',str(staging/'inputs'/filename),'--output',str(staging/'results'/name),'--max-iterations','300','--optimizer-metric',str(covariance)],frozen,staging,stages)
             records.append(dict(name=name,input=filename,seed=seed,scale=scale))
         acceptance=accept(staging,frozen,records);atomic_json(staging/'acceptance.json',acceptance);atomic_json(staging/'stages.json',stages)
         run_stage('summary_pdf',[str(pdf_python),'scripts/build_native_release_report.py',str(staging)],frozen,staging,stages)

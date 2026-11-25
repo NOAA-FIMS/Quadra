@@ -91,7 +91,7 @@ the framework and selected targets needed for another clean native run.
 The native frontend additionally accepts:
 
 ```bash
-./swordfish --input MY_PERTURBED_INPUT.json --output NEW_RESULTS \
+./build/pifsc_swordfish --input MY_PERTURBED_INPUT.json --output NEW_RESULTS \
   --optimizer-metric PRIOR_BASELINE_RESULTS/reference_coordinate_covariance.csv
 ```
 
@@ -112,7 +112,7 @@ all ten SS3 SE comparisons and both numerical uncertainty steps pass.
 
 All 2,275 artifact hashes and 2,183 frozen source/target hashes were verified
 after publication. The two-page PDF was rendered and visually checked.
-The [compact acceptance record](reference/native_release/acceptance.json),
-[bundle summary](reference/native_release/summary.json) and
-[PDF summary](output/pdf/native_release_summary.pdf) are available separately;
+The [compact acceptance record](../reference/native_release/acceptance.json),
+[bundle summary](../reference/native_release/summary.json) and
+[PDF summary](../output/pdf/native_release_summary.pdf) are available separately;
 the complete observation-bearing bundle remains local under ignored `runs/`.

@@ -3,8 +3,8 @@
 Run from the swordfish case directory:
 
 ```bash
-make native-swordfish
-./swordfish --input build/native/swordfish-ss-par-start.json \
+make pifsc_swordfish
+./build/pifsc_swordfish --input build/native/swordfish-ss-par-start.json \
   --output build/native/my-reference-uncertainty --uncertainty
 ```
 
@@ -66,9 +66,9 @@ uncertainty, bootstrap or simultaneous coverage is added. The implementation use
 the existing correlated delta-method utilities and checks against the earlier
 canonical-fit SEs; it does not claim equivalence to a different FIMS likelihood.
 
-The [saved native run](reference/reference_point_uncertainty/reference_uncertainty_summary.json)
+The [saved native run](../reference/reference_point_uncertainty/reference_uncertainty_summary.json)
 passes both step checks. Its ten corresponding SEs also match the saved printed
-SS3 SEs, with [maximum relative difference below 0.0006%](reference/reference_point_uncertainty/SS3_reference_SE_comparison.json).
+SS3 SEs, with [maximum relative difference below 0.0006%](../reference/reference_point_uncertainty/SS3_reference_SE_comparison.json).
 For example:
 
 | MSY quantity | Estimate | SE | CV | 95% interval |
@@ -79,7 +79,7 @@ For example:
 
 These bounds use the log-scale method above; earlier canonical diagnostics used
 symmetric native-scale Wald intervals, so SEs agree while interval endpoints
-can differ. The [PDF figure](output/pdf/swordfish_reference_point_uncertainty.pdf)
+can differ. The [PDF figure](../output/pdf/swordfish_reference_point_uncertainty.pdf)
 shows the positive pointwise intervals.
 
 For an optional scientific PDF (requires base R):

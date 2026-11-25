@@ -119,7 +119,7 @@ and unresolved differences from published bootstrap forecasts are explicit.
 A clean isolated release workflow validates source/covariance provenance and
 publishes a new bundle only after its acceptance gates pass. See the example's
 [operations and API PDF](pifsc_swordfish/output/pdf/swordfish_operations_and_api_guide.pdf)
-and [release contract](pifsc_swordfish/RELEASE_READINESS.md). Original supplied
+and [release contract](pifsc_swordfish/docs/RELEASE_READINESS.md). Original supplied
 source files remain local and excluded from git; derived comparison summaries
 are retained for review. Independent scientific review and hosted CI execution
 remain separate from the recorded local acceptance results.

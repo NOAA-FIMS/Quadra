@@ -1,8 +1,4 @@
-"""Optional one-time exporter into native JSON; not imported by the native runner."""
-import argparse
-import csv
-import json
-from pathlib import Path
+"""Independent native-schema mapping for conversion parity tests."""
 from native_input import DIMENSIONS, GROWTH, RECRUITMENT, UNITS, encode
 
 
@@ -45,32 +41,3 @@ def convert(source, values):
     result=dict(schema='quadra.swordfish.v1',units=UNITS,model=model,parameters=parameters,recruitment_deviations=dev)
     encode(result)
     return result
-
-
-def main():
-    """Export once from parsed input JSON or optional SS3 observations/control sources."""
-    parser=argparse.ArgumentParser(description=__doc__)
-    source=parser.add_mutually_exclusive_group(required=True)
-    source.add_argument('--source-normalized',type=Path)
-    source.add_argument('--ss3-directory',type=Path)
-    parser.add_argument('--initial-parameters',type=Path,help='Complete native Quadra CSV; omitted uses control starts and zero deviations')
-    parser.add_argument('--output',type=Path,required=True)
-    args=parser.parse_args()
-    if args.output.exists():raise FileExistsError(args.output)
-    if args.source_normalized:
-        model=json.loads(args.source_normalized.read_text())
-    else:
-        from swordfish_inputs import load_inputs
-        model=load_inputs(args.ss3_directory)
-    values=None
-    if args.initial_parameters:
-        with args.initial_parameters.open() as stream:rows=list(csv.DictReader(stream))
-        values={r['parameter']:float(r['value']) for r in rows}
-        if len(values)!=len(rows):raise ValueError('Duplicate initial parameter')
-    result=convert(model,values)
-    args.output.parent.mkdir(parents=True,exist_ok=True)
-    with args.output.open('x') as stream:json.dump(result,stream,indent=2,allow_nan=False);stream.write('\n')
-    print('Native model input: '+str(args.output))
-
-
-if __name__=='__main__':main()

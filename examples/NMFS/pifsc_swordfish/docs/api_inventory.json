@@ -4726,8 +4726,8 @@
     },
     {
       "language": "C++",
-      "file": "src/swordfish_native.cpp",
-      "line": 18,
+      "file": "src/pifsc_swordfish.cpp",
+      "line": 141,
       "name": "main",
       "kind": "function",
       "signature": "int main(int argc, char ** argv)",
@@ -4742,8 +4742,8 @@
         }
       ],
       "fields": [],
-      "documentation": "Evaluate or fit a native model state and write its complete derived outputs.",
-      "purpose": "Run swordfish native; return zero on success and nonzero on a failed check or invalid input."
+      "documentation": "Convert SS3 inputs or run the PIFSC swordfish model directly from JSON.",
+      "purpose": "Run pifsc_swordfish; return zero on success, two on command errors, and one on input/model failures."
     },
     {
       "language": "C++",
@@ -5976,16 +5976,6 @@
     {
       "language": "Python",
       "file": "scripts/document_api.py",
-      "line": 149,
-      "name": "python_entries.visit",
-      "kind": "function",
-      "signature": "visit(node, scope='')",
-      "purpose": "Retain nested qualified names while ignoring anonymous lambda expressions.",
-      "documentation": "Retain nested qualified names while ignoring anonymous lambda expressions.\n\nParameters\n----------\nnode\n    Current syntax-tree declaration/context.\nscope\n    Enclosing class/function qualification accumulated during traversal."
-    },
-    {
-      "language": "Python",
-      "file": "scripts/document_api.py",
       "line": 170,
       "name": "descriptions",
       "kind": "function",
@@ -6015,23 +6005,13 @@
     },
     {
       "language": "Python",
-      "file": "scripts/export_native.py",
-      "line": 9,
+      "file": "tests/support/native_export.py",
+      "line": 5,
       "name": "convert",
       "kind": "function",
       "signature": "convert(source, values)",
       "purpose": "Map parsed observations/settings and explicit native starts into the named schema.",
       "documentation": "Map parsed observations/settings and explicit native starts into the named schema.\n\nExisting numeric settings are preserved, including selectivity block\nfunctions, bias ramp, observation inclusion and likelihood weights. Native\nstarts may come from a complete Quadra parameter CSV. No fitted trajectory\nor SS3 report quantities become observations or population drivers."
-    },
-    {
-      "language": "Python",
-      "file": "scripts/export_native.py",
-      "line": 50,
-      "name": "main",
-      "kind": "function",
-      "signature": "main()",
-      "purpose": "Export once from parsed input JSON or optional SS3 observations/control sources.",
-      "documentation": "Export once from parsed input JSON or optional SS3 observations/control sources."
     },
     {
       "language": "Python",
@@ -6086,7 +6066,7 @@
     {
       "language": "Python",
       "file": "scripts/native_input.py",
-      "line": 24,
+      "line": 27,
       "name": "exact_keys",
       "kind": "function",
       "signature": "exact_keys(value, keys, label)",
@@ -6096,7 +6076,7 @@
     {
       "language": "Python",
       "file": "scripts/native_input.py",
-      "line": 30,
+      "line": 33,
       "name": "atom",
       "kind": "function",
       "signature": "atom(value, kind)",
@@ -6106,7 +6086,7 @@
     {
       "language": "Python",
       "file": "scripts/native_input.py",
-      "line": 51,
+      "line": 54,
       "name": "record",
       "kind": "function",
       "signature": "record(value, fields, label)",
@@ -6116,7 +6096,7 @@
     {
       "language": "Python",
       "file": "scripts/native_input.py",
-      "line": 57,
+      "line": 60,
       "name": "rows",
       "kind": "function",
       "signature": "rows(value)",
@@ -6126,7 +6106,7 @@
     {
       "language": "Python",
       "file": "scripts/native_input.py",
-      "line": 63,
+      "line": 66,
       "name": "encode",
       "kind": "function",
       "signature": "encode(document)",
@@ -6136,7 +6116,7 @@
     {
       "language": "Python",
       "file": "scripts/native_input.py",
-      "line": 127,
+      "line": 130,
       "name": "validate_layout",
       "kind": "function",
       "signature": "validate_layout(document)",
@@ -6146,7 +6126,7 @@
     {
       "language": "Python",
       "file": "scripts/native_input.py",
-      "line": 165,
+      "line": 168,
       "name": "unique_object",
       "kind": "function",
       "signature": "unique_object(pairs)",
@@ -6156,7 +6136,7 @@
     {
       "language": "Python",
       "file": "scripts/native_input.py",
-      "line": 174,
+      "line": 177,
       "name": "load",
       "kind": "function",
       "signature": "load(text)",
@@ -6166,7 +6146,7 @@
     {
       "language": "Python",
       "file": "scripts/native_input.py",
-      "line": 176,
+      "line": 179,
       "name": "load.bad_constant",
       "kind": "function",
       "signature": "bad_constant(value)",
@@ -6342,16 +6322,6 @@
       "signature": "main()",
       "purpose": "Execute fresh strict/matched-fixed fits, then read the saved reference only for comparison.",
       "documentation": "Execute fresh strict/matched-fixed fits, then read the saved reference only for comparison.\n\nOptimization receives no Report.sso, fitted parameter CSV or saved covariance.\nThe matched-fixed sensitivity changes only the explicit fixed male-growth\nsetting. Existing output directories are rejected rather than overwritten.\nOptimizer stdout/stderr is streamed to the terminal and flushed to a log."
-    },
-    {
-      "language": "Python",
-      "file": "scripts/run_native.py",
-      "line": 12,
-      "name": "main",
-      "kind": "function",
-      "signature": "main()",
-      "purpose": "Validate JSON, stream native data to the backend and save exact input provenance.",
-      "documentation": "Validate JSON, stream native data to the backend and save exact input provenance.\n\nThe binary is compiled once by make native-swordfish. Dataset changes need\nno compilation, generated C++ factory, SS3 source files or reference outputs.\nExisting output directories are rejected. Progress streams to the terminal."
     },
     {
       "language": "Python",
@@ -6635,8 +6605,8 @@
     },
     {
       "language": "Python",
-      "file": "scripts/ss3_to_native.py",
-      "line": 14,
+      "file": "tests/support/ss3_oracle.py",
+      "line": 13,
       "name": "write_pair",
       "kind": "function",
       "signature": "write_pair(output, document, provenance)",
@@ -6645,23 +6615,13 @@
     },
     {
       "language": "Python",
-      "file": "scripts/ss3_to_native.py",
-      "line": 41,
+      "file": "tests/support/ss3_oracle.py",
+      "line": 40,
       "name": "convert_files",
       "kind": "function",
       "signature": "convert_files(data_path, control_path, output, parameter_path=None)",
       "purpose": "Read explicit SS3 paths once for intake and write a complete self-contained native input.",
       "documentation": "Read explicit SS3 paths once for intake and write a complete self-contained native input.\n\nNo hardcoded source filenames, Report.sso, forecast files, covariance or C++\ncompiler are needed. Optional .par values override all native starts and\nhistorical deviations, including fixed settings. Otherwise the original\ncontrol starts and zero deviations are used, without silent feasibility\nadjustments. Input hashes and saved .par metadata go into a separate sidecar."
-    },
-    {
-      "language": "Python",
-      "file": "scripts/ss3_to_native.py",
-      "line": 74,
-      "name": "main",
-      "kind": "function",
-      "signature": "main()",
-      "purpose": "Convert explicit .dat/.ctl and optional .par files; report intake errors without a traceback.",
-      "documentation": "Convert explicit .dat/.ctl and optional .par files; report intake errors without a traceback."
     },
     {
       "language": "Python",
@@ -6906,7 +6866,7 @@
     {
       "language": "Python",
       "file": "tests/test_native_input.py",
-      "line": 12,
+      "line": 11,
       "name": "field_default",
       "kind": "function",
       "signature": "field_default(kind)",
@@ -6916,7 +6876,7 @@
     {
       "language": "Python",
       "file": "tests/test_native_input.py",
-      "line": 18,
+      "line": 17,
       "name": "fixture",
       "kind": "function",
       "signature": "fixture()",
@@ -6926,7 +6886,7 @@
     {
       "language": "Python",
       "file": "tests/test_native_input.py",
-      "line": 35,
+      "line": 34,
       "name": "NativeInputTests",
       "kind": "class",
       "signature": "NativeInputTests",
@@ -6936,7 +6896,7 @@
     {
       "language": "Python",
       "file": "tests/test_native_input.py",
-      "line": 37,
+      "line": 36,
       "name": "NativeInputTests.test_valid_transport_and_roundtrip",
       "kind": "function",
       "signature": "test_valid_transport_and_roundtrip(self)",
@@ -6946,17 +6906,7 @@
     {
       "language": "Python",
       "file": "tests/test_native_input.py",
-      "line": 43,
-      "name": "NativeInputTests.test_uncertainty_cli",
-      "kind": "function",
-      "signature": "test_uncertainty_cli(self)",
-      "purpose": "Expose uncertainty help and reject interval calculation without fit mode.",
-      "documentation": "Expose uncertainty help and reject interval calculation without fit mode."
-    },
-    {
-      "language": "Python",
-      "file": "tests/test_native_input.py",
-      "line": 56,
+      "line": 42,
       "name": "NativeInputTests.test_json_duplicates_and_nonfinite",
       "kind": "function",
       "signature": "test_json_duplicates_and_nonfinite(self)",
@@ -6966,7 +6916,7 @@
     {
       "language": "Python",
       "file": "tests/test_native_input.py",
-      "line": 61,
+      "line": 47,
       "name": "NativeInputTests.test_types_shapes_and_unknown_fields",
       "kind": "function",
       "signature": "test_types_shapes_and_unknown_fields(self)",
@@ -6976,7 +6926,7 @@
     {
       "language": "Python",
       "file": "tests/test_native_input.py",
-      "line": 68,
+      "line": 54,
       "name": "NativeInputTests.test_bounds_names_and_deviation_constraints",
       "kind": "function",
       "signature": "test_bounds_names_and_deviation_constraints(self)",
@@ -7116,7 +7066,7 @@
     {
       "language": "Python",
       "file": "tests/test_ss3_converter.py",
-      "line": 18,
+      "line": 17,
       "name": "ConverterTests",
       "kind": "class",
       "signature": "ConverterTests",
@@ -7126,7 +7076,7 @@
     {
       "language": "Python",
       "file": "tests/test_ss3_converter.py",
-      "line": 21,
+      "line": 20,
       "name": "ConverterTests.setUpClass",
       "kind": "function",
       "signature": "setUpClass(cls)",
@@ -7136,7 +7086,7 @@
     {
       "language": "Python",
       "file": "tests/test_ss3_converter.py",
-      "line": 26,
+      "line": 25,
       "name": "ConverterTests.sources",
       "kind": "function",
       "signature": "sources(self, directory)",
@@ -7146,7 +7096,7 @@
     {
       "language": "Python",
       "file": "tests/test_ss3_converter.py",
-      "line": 33,
+      "line": 32,
       "name": "ConverterTests.test_control_initialization",
       "kind": "function",
       "signature": "test_control_initialization(self)",
@@ -7156,7 +7106,7 @@
     {
       "language": "Python",
       "file": "tests/test_ss3_converter.py",
-      "line": 48,
+      "line": 47,
       "name": "ConverterTests.test_parameter_initialization",
       "kind": "function",
       "signature": "test_parameter_initialization(self)",
@@ -7166,7 +7116,7 @@
     {
       "language": "Python",
       "file": "tests/test_ss3_converter.py",
-      "line": 60,
+      "line": 59,
       "name": "ConverterTests.test_existing_outputs_and_invalid_inputs",
       "kind": "function",
       "signature": "test_existing_outputs_and_invalid_inputs(self)",
@@ -7176,32 +7126,12 @@
     {
       "language": "Python",
       "file": "tests/test_ss3_converter.py",
-      "line": 74,
+      "line": 73,
       "name": "ConverterTests.test_pair_rollback",
       "kind": "function",
       "signature": "test_pair_rollback(self)",
       "purpose": "A sidecar creation failure removes only the newly created native output.",
       "documentation": "A sidecar creation failure removes only the newly created native output."
-    },
-    {
-      "language": "Python",
-      "file": "tests/test_ss3_converter.py",
-      "line": 78,
-      "name": "ConverterTests.test_pair_rollback.fail_sidecar",
-      "kind": "function",
-      "signature": "fail_sidecar(path, *args, **kwargs)",
-      "purpose": "Simulate an I/O failure after reserving the first output.",
-      "documentation": "Simulate an I/O failure after reserving the first output."
-    },
-    {
-      "language": "Python",
-      "file": "tests/test_ss3_converter.py",
-      "line": 86,
-      "name": "ConverterTests.test_command_help",
-      "kind": "function",
-      "signature": "test_command_help(self)",
-      "purpose": "Expose all source-file options without requiring a model executable.",
-      "documentation": "Expose all source-file options without requiring a model executable."
     },
     {
       "language": "Python",

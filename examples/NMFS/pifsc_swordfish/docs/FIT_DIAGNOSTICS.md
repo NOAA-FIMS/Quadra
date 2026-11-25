@@ -15,7 +15,7 @@ make robustness
 make test-benchmarks
 ```
 
-A reviewable snapshot is saved in [reference/fit_diagnostics](reference/fit_diagnostics).
+A reviewable snapshot is saved in [reference/fit_diagnostics](../reference/fit_diagnostics).
 Outputs go in `build/`; the canonical fitted parameters are read without being
 overwritten. Uncertainty requires Eigen, already provided by Quadra. Python
 comparison scripts use only the standard library.

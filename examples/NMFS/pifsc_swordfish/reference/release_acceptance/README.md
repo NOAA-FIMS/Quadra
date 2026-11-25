@@ -13,4 +13,4 @@ session. Failed development snapshots remain unpublished under ignored runs/.
 
 Documentation: `documentation_validation.json` binds the final 41-page PDF and
 280-declaration API catalog to their hashes. All pages were rendered/reviewed.
-See `../../RELEASE_READINESS.md` for operational guarantees and limitations.
+See `../../docs/RELEASE_READINESS.md` for operational guarantees and limitations.

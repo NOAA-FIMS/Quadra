@@ -21,7 +21,7 @@ of initialization without borrowing any estimated free parameters.
 The matched configuration recovers the existing optimum: objective difference
 -1.97e-10, maximum parameter difference 1.39e-5 reference standard errors,
 and maximum annual spawning-biomass difference 0.05893 tonnes. The saved
-[comparison JSON](reference/control_start/comparison/comparison_summary.json)
+[comparison JSON](../reference/control_start/comparison/comparison_summary.json)
 contains the acceptance thresholds and input hashes. Reference standard errors
 are read only after fitting to express parameter differences; they do not
 provide optimizer scaling.
@@ -62,7 +62,7 @@ make fit-control-start
 
 The dedicated factory generator and executable require only the two original
 `.dat`/`.ctl` inputs. An isolated build/test with those two files passed; the
-saved [test log](reference/control_start/input_only_build_test.log) records it.
+saved [test log](../reference/control_start/input_only_build_test.log) records it.
 The comparison stage additionally reads saved reference summaries and outputs.
 Python 3, a C++17 compiler and the repository's Eigen headers are required.
 
@@ -93,7 +93,7 @@ when using it.
 
 The accepted experiment resumed its own phase-4 checkpoints (`003`), refined
 them (`004`), then recovered the saturated coordinate (`005`). All three stages
-are preserved under [reference/control_start](reference/control_start/manifest.json),
+are preserved under [reference/control_start](../reference/control_start/manifest.json),
 including initial values, stage traces, metric diagnostics and final predictions.
 The manifest hashes saved evidence. Earlier stages ran earlier revisions of the
 new executable, so this is not an immutable release snapshot or a fresh
@@ -106,7 +106,7 @@ regenerated for these source changes. No cold-fit uncertainty or projections
 are certified here. Missing SS3 bootstrap/projection inputs and the separate
 striped marlin implementation remain outside this initialization experiment.
 
-The [PDF report](output/pdf/swordfish_control_start.pdf) presents the results and
+The [PDF report](../output/pdf/swordfish_control_start.pdf) presents the results and
 annual biomass comparison. Regenerate it with the documentation Python environment:
 
 ```bash

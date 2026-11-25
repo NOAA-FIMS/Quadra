@@ -16,7 +16,7 @@ make plot-projections
 The second command additionally requires R; base R is sufficient. Model execution
 and CSV comparisons use C++ and standard-library Python only. Results are written
 to `build/projections/`; a reviewable snapshot is in
-[reference/projections](reference/projections). Original `forecast.ss` remains
+[reference/projections](../reference/projections). Original `forecast.ss` remains
 unchanged and requests zero projection years.
 
 ## Dynamic unfished history

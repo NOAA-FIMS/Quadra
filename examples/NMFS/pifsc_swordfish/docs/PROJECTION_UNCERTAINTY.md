@@ -5,9 +5,9 @@ biomass, recruitment, January biomass, dead catch and annual F. The 250 point
 estimates reproduce the deterministic forecasts. Numerical validation checks
 propagation through the complete scenario calculation.
 
-[Five-page chart](reference/projection_uncertainty/projection_uncertainty.pdf)
-(one page per quantity), [all intervals](reference/projection_uncertainty/projection_uncertainty.csv),
-and [2031 results](reference/projection_uncertainty/projection_uncertainty_2031.csv).
+[Five-page chart](../reference/projection_uncertainty/projection_uncertainty.pdf)
+(one page per quantity), [all intervals](../reference/projection_uncertainty/projection_uncertainty.csv),
+and [2031 results](../reference/projection_uncertainty/projection_uncertainty_2031.csv).
 
 ## Reproduce
 

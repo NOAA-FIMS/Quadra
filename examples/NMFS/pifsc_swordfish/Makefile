@@ -39,7 +39,7 @@ build/test_biology: tests/test_biology.cpp include/swordfish/biology.hpp include
 audit-biology: prepare build/audit_biology
 	./build/audit_biology build/ss3_biology_fixtures.txt build/biology_audit.csv
 
-test: audit audit-biology audit-population audit-likelihood build/test_dynamics build/test_biology build/test_population build/test_input_factory build/test_likelihood build/test_model_gradient build/test_benchmarks build/test_projection build/test_delta_method build/test_csv build/test_control_start build/test_fixed_biology
+test: audit audit-biology audit-population audit-likelihood build/test_dynamics build/test_biology build/test_population build/test_input_factory build/test_likelihood build/test_model_gradient build/test_benchmarks build/test_projection build/test_delta_method build/test_csv build/test_control_start build/test_fixed_biology build/test_native_json
 	./build/test_dynamics
 	./build/test_biology
 	./build/test_population
@@ -52,6 +52,7 @@ test: audit audit-biology audit-population audit-likelihood build/test_dynamics 
 	./build/test_csv
 	./build/test_control_start
 	./build/test_fixed_biology
+	./build/test_native_json
 	$(PYTHON) -m unittest discover -s tests -p 'test_*.py'
 
 build/swordfish_population_input.hpp: scripts/prepare_population.py scripts/prepare_model.py scripts/swordfish_inputs.py data/raw/swo2023_v004.dat data/raw/swo2023_v007.ctl data/raw/Report.sso
@@ -223,10 +224,10 @@ SS_PAR ?= data/raw/ss.par
 fit-ss-par:
 	$(PYTHON) scripts/run_ss_par.py "$(SS_PAR)"
 
-.PHONY: native-swordfish
-native-swordfish: build/swordfish_native
+.PHONY: pifsc_swordfish
+pifsc_swordfish: build/pifsc_swordfish
 
-build/swordfish_native: src/swordfish_native.cpp $(wildcard include/swordfish/*.hpp) | build
+build/pifsc_swordfish: src/pifsc_swordfish.cpp $(wildcard include/swordfish/*.hpp include/swordfish/third_party/*) | build
 	$(CXX) $(CPPFLAGS) -I$(QUADRA_ROOT)/external/eigen $(CXXFLAGS) $(DEPFLAGS) $< -o $@
 
 .PHONY: test-fixed-biology
@@ -248,3 +249,16 @@ PDF_PYTHON ?= $(PYTHON)
 .PHONY: native-release
 native-release:
 	$(PYTHON) scripts/run_native_release.py --input "$(NATIVE_INPUT)" --pdf-python "$(PDF_PYTHON)"
+
+.PHONY: test-ss3-conversion
+test-ss3-conversion: pifsc_swordfish
+	$(PYTHON) -m unittest discover -s tests -p 'test_*converter*.py'
+
+.PHONY: test-native-cli
+test-native-cli: pifsc_swordfish build/test_native_json
+	./build/test_native_json
+	$(PYTHON) -m unittest discover -s tests -p 'test_native_*.py'
+	$(PYTHON) -m unittest discover -s tests -p 'test_*converter*.py'
+
+build/test_native_json: tests/test_native_json.cpp $(wildcard include/swordfish/*.hpp include/swordfish/third_party/*) | build
+	$(CXX) $(CPPFLAGS) -I$(QUADRA_ROOT)/external/eigen $(CXXFLAGS) $(DEPFLAGS) $< -o $@

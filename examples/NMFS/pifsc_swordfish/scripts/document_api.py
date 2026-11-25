@@ -144,7 +144,7 @@ def python_entries():
     C++ declarations are obtained from Clang AST JSON and Python declarations from ast. Anonymous lambdas, vendor internals and generated factory bodies are excluded explicitly. Description coverage is enforced before publishing the inventory; regenerate after changing declaration locations.
     """
     entries=[]
-    for path in sorted(list((ROOT/'scripts').glob('*.py'))+list((ROOT/'tests').glob('*.py'))):
+    for path in sorted(list((ROOT/'scripts').glob('*.py'))+list((ROOT/'tests').rglob('*.py'))):
         tree=ast.parse(path.read_text());relative=str(path.relative_to(ROOT))
         def visit(node,scope=''):
             """Retain nested qualified names while ignoring anonymous lambda expressions.

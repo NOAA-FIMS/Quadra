@@ -1,4 +1,7 @@
-"""Versioned native JSON validation and typed transport; no SS3 imports or file reads."""
+"""Shared schema checks for research/release tools and independent tests.
+
+Production JSON intake and validation live in C++; this module is not a runner.
+"""
 import json
 import math
 
